@@ -1,0 +1,24 @@
+target
+ideatarget
+.target
+bin
+.cache
+.cache-main
+.cache-tests
+.classpath
+.project
+.tmpBin
+.factorypath
+.settings
+.toDelete
+logs
+
+## intelliJ
+.idea
+*.iml
+
+.metals
+.bloop
+
+## visual studio
+.vs
