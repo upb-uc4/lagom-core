@@ -28,7 +28,7 @@ val defaultCassandraKafkaDependencies = Seq(
 
 
 lazy val `lagom` = (project in file("."))
-  .aggregate(`shared`, `hyperledger-api`, `hyperledger-impl`)
+  .aggregate(`shared`, `hyperledger-service-api`, `hyperledger-service-impl`)
 
 lazy val `shared` = (project in file("shared"))
   .settings(
@@ -39,14 +39,14 @@ lazy val `shared` = (project in file("shared"))
     )
   )
 
-lazy val `hyperledger-api` = (project in file("hyperledger/api"))
+lazy val `hyperledger-service-api` = (project in file("hyperledger_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
 
-lazy val `hyperledger-impl` = (project in file("hyperledger/impl"))
+lazy val `hyperledger-service-impl` = (project in file("hyperledger_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= implDefaultDependencies
   )
-  .dependsOn(`hyperledger-api`, `shared`)
+  .dependsOn(`hyperledger-service-api`, `shared`)
