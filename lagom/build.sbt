@@ -39,12 +39,12 @@ lazy val `shared` = (project in file("shared"))
     )
   )
 
-lazy val `hyperledger-api` = (project in file("hyperledger-api"))
+lazy val `hyperledger-api` = (project in file("hyperledger/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
 
-lazy val `hyperledger-impl` = (project in file("hyperledger-impl"))
+lazy val `hyperledger-impl` = (project in file("hyperledger/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= implDefaultDependencies
