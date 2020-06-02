@@ -50,3 +50,16 @@ lazy val `hyperledger-service-impl` = (project in file("hyperledger_service/impl
     libraryDependencies ++= implDefaultDependencies
   )
   .dependsOn(`hyperledger-service-api`, `shared`)
+
+lazy val `course-service-api` = (project in file("course_service/api"))
+  .settings(
+    libraryDependencies ++= apiDefaultDependencies
+  )
+
+lazy val `course-service-impl` = (project in file("course_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies ++= defaultCassandraKafkaDependencies
+  )
+  .dependsOn(`course-service-api`, `shared`, `hyperledger-service-api`)
