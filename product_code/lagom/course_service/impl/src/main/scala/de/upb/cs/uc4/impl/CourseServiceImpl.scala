@@ -1,111 +1,90 @@
 package de.upb.cs.uc4.impl
 
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, ExceptionMessage, TransportErrorCode}
-import com.lightbend.lagom.scaladsl.persistence.PersistentEntityRegistry
+import com.lightbend.lagom.scaladsl.persistence.ReadSide
+import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import de.upb.cs.uc4.api.CourseService
 import de.upb.cs.uc4.impl.actor.CourseState
-import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, GetAllCourses}
+import de.upb.cs.uc4.impl.commands.{UpdateCourse, CourseCommand, CreateCourse, GetCourse}
+import de.upb.cs.uc4.impl.readside.CourseEventProcessor
 import de.upb.cs.uc4.model.Course
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation}
+import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Implementation of the Universitycredits4Service.
   */
-class CourseServiceImpl(
-  clusterSharding: ClusterSharding,
-  persistentEntityRegistry: PersistentEntityRegistry
-)(implicit ec: ExecutionContext)
-  extends CourseService {
+class CourseServiceImpl(clusterSharding: ClusterSharding,
+                        readSide: ReadSide, processor: CourseEventProcessor, cassandraSession: CassandraSession)
+                       (implicit ec: ExecutionContext) extends CourseService {
+  readSide.register(processor)
 
   /**
     * Looks up the entity for the given ID.
     */
-  private def entityRef(): EntityRef[CourseCommand] =
-    clusterSharding.entityRefFor(CourseState.typeKey, "courses")
+  private def entityRef(id: Long): EntityRef[CourseCommand] =
+    clusterSharding.entityRefFor(CourseState.typeKey, id.toString)
 
-  implicit val timeout = Timeout(5.seconds)
+  implicit val timeout: Timeout = Timeout(5.seconds)
 
-  override def getAllCourses(): ServiceCall[NotUsed, Seq[Course]] = ServiceCall {
-    _ =>
+  /** @inheritdoc */
+  override def getAllCourses: ServiceCall[NotUsed, Source[Course, NotUsed]] = ServiceCall{ _ =>
+    val response = cassandraSession.select("SELECT id FROM courses ;")
+      .map(row => row.getLong("id")).mapAsync(8)(findCourseByCourseId().invoke(_))
 
-      // Look up the sharded entity (aka the aggregate instance) for the given ID.
-      val ref = entityRef()
-
-      ref.ask[Seq[Course]](replyTo => GetAllCourses(replyTo))
-      //answer.map(course => course)
+    Future.successful(response)
   }
 
+  /** @inheritdoc */
   override def addCourse(): ServiceCall[Course, Done] = ServiceCall {
     courseToAdd =>
     // Look up the sharded entity (aka the aggregate instance) for the given ID.
-    val ref = entityRef()
+    val ref = entityRef(courseToAdd.courseId)
 
     ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
       .map {
         case Accepted => Done
-        case _        => throw new BadRequest(TransportErrorCode.MethodNotAllowed, new ExceptionMessage("Nope", "Nope"), new Throwable)
+        case Rejected(reason) => throw new BadRequest(TransportErrorCode.BadRequest,
+          new ExceptionMessage("Id already in use", reason), new Throwable)
       }
   }
 
-  /*private def convertEvent(
-    helloEvent: EventStreamElement[Course]
-  ): api.GreetingMessageChanged = {
-    helloEvent.event match {
-      case GreetingMessageChanged(msg) =>
-        api.GreetingMessageChanged(helloEvent.entityId, msg)
-    }
-  }*/
-  /**
-    * Deletes a course
-    *
-    * @param courseId Course ID to delete
-    * @return void
-    */
-  override def deleteCourse(courseId: Long): ServiceCall[NotUsed, Done] = ???
+  /** @inheritdoc */
+  override def deleteCourse(): ServiceCall[Long, Done] = ???
 
-  /**
-    * Find courses by course ID
-    * Find courses by course ID
-    *
-    * @return Seq[Course] Body Parameter  Course ID to filter by
-    */
-  override def findCoursesByCourseId(): ServiceCall[Int, Seq[Course]] = ???
+  /** @inheritdoc */
+  override def findCourseByCourseId(): ServiceCall[Long, Course] = ServiceCall{ id =>
+    entityRef(id).ask[Course](replyTo => GetCourse(replyTo))
+  }
 
-  /**
-    * Find courses by course name
-    * Find courses by course name
-    *
-    * @return Seq[Course] Body Parameter  Course Name to filter by
-    */
-  override def findCoursesByCourseName(): ServiceCall[String, Seq[Course]] = ???
+  /** @inheritdoc */
+  override def findCoursesByCourseName(): ServiceCall[String, Source[Course, NotUsed]] = ServiceCall{ name =>
+    getAllCourses.invoke().map(_.filter(course => course.name == name))
+  }
 
-  /**
-    * Find courses by lecturer ID
-    * Find courses by lecturer with the provided ID
-    *
-    * @return Seq[Course] Body Parameter  Lecturer ID to filter by
-    */
-  override def findCoursesByLecturerId(): ServiceCall[Int, Seq[Course]] = ???
+  /** @inheritdoc */
+  override def findCoursesByLecturerId(): ServiceCall[Long, Source[Course, NotUsed]] = ServiceCall{ lecturerId =>
+    getAllCourses.invoke().map(_.filter(course => course.lecturerId == lecturerId))
+  }
 
-  /**
-    * Find courses by lecturer name
-    * Find courses by lecturer with the provided name
-    *
-    * @return Seq[Course] Body Parameter  Lecturer Name to filter by
-    */
-  override def findCoursesByLecturerName(): ServiceCall[String, Seq[Course]] = ???
+  /** @inheritdoc */
+  override def updateCourse(): ServiceCall[Course, Done] = ServiceCall {
+    courseToChange =>
+      // Look up the sharded entity (aka the aggregate instance) for the given ID.
+      val ref = entityRef(courseToChange.courseId)
 
-  /**
-    * Update an existing course
-    *
-    * @return void Body Parameter  Course object that needs to be added to the database
-    */
-  override def updateCourse(): ServiceCall[Course, Done] = ???
+      ref.ask[Confirmation](replyTo => UpdateCourse(courseToChange, replyTo))
+        .map {
+          case Accepted => Done
+          case Rejected(reason) => throw new BadRequest(TransportErrorCode.BadRequest,
+            new ExceptionMessage("Id does not exist", reason), new Throwable)
+        }
+  }
 }

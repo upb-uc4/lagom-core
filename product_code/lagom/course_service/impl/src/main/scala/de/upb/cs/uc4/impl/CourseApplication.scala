@@ -8,6 +8,7 @@ import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationCo
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.api.CourseService
 import de.upb.cs.uc4.impl.actor.{CourseBehaviour, CourseState}
+import de.upb.cs.uc4.impl.readside.{CourseDatabase, CourseEventProcessor}
 import play.api.libs.ws.ahc.AhcWSComponents
 
 abstract class CourseApplication(context: LagomApplicationContext)
@@ -15,6 +16,10 @@ abstract class CourseApplication(context: LagomApplicationContext)
     with CassandraPersistenceComponents
     with LagomKafkaComponents
     with AhcWSComponents {
+
+  // Create ReadSide
+  lazy val database: CourseDatabase = wire[CourseDatabase]
+  lazy val processor: CourseEventProcessor = wire[CourseEventProcessor]
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CourseService](wire[CourseServiceImpl])
@@ -29,5 +34,8 @@ abstract class CourseApplication(context: LagomApplicationContext)
       entityContext => CourseBehaviour.create(entityContext)
     )
   )
+}
 
+object CourseApplication{
+  val cassandraOffset: String = "UniversityCredits4Courses"
 }

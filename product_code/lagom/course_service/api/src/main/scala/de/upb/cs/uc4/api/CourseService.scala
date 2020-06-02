@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.api
 
+import akka.stream.scaladsl.Source
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
@@ -29,10 +30,9 @@ trait CourseService extends Service {
   /**
     * Deletes a course
     *
-    * @param courseId Course ID to delete
     * @return void
     */
-  def deleteCourse(courseId: Long): ServiceCall[NotUsed, Done]
+  def deleteCourse(): ServiceCall[Long, Done]
 
   /**
     * Find courses by course ID
@@ -40,15 +40,15 @@ trait CourseService extends Service {
     *
     * @return Seq[Course] Body Parameter  Course ID to filter by
     */
-  def findCoursesByCourseId(): ServiceCall[Int, Seq[Course]]
+  def findCourseByCourseId(): ServiceCall[Long, Course]
 
   /**
     * Find courses by course name
     * Find courses by course name
     *
-    * @return Seq[Course] Body Parameter  Course Name to filter by
+    * @return Source[Course, NotUsed]
     */
-  def findCoursesByCourseName(): ServiceCall[String, Seq[Course]]
+  def findCoursesByCourseName(): ServiceCall[String, Source[Course, NotUsed]]
 
   /**
     * Find courses by lecturer ID
@@ -56,15 +56,7 @@ trait CourseService extends Service {
     *
     * @return Seq[Course] Body Parameter  Lecturer ID to filter by
     */
-  def findCoursesByLecturerId(): ServiceCall[Int, Seq[Course]]
-
-  /**
-    * Find courses by lecturer name
-    * Find courses by lecturer with the provided name
-    *
-    * @return Seq[Course] Body Parameter  Lecturer Name to filter by
-    */
-  def findCoursesByLecturerName(): ServiceCall[String, Seq[Course]]
+  def findCoursesByLecturerId(): ServiceCall[Long, Source[Course, NotUsed]]
 
   /**
     * Get all courses
@@ -72,7 +64,7 @@ trait CourseService extends Service {
     *
     * @return Seq[Course]
     */
-  def getAllCourses: ServiceCall[NotUsed, Seq[Course]]
+  def getAllCourses: ServiceCall[NotUsed, Source[Course, NotUsed]]
 
   /**
     * Update an existing course
@@ -86,43 +78,11 @@ trait CourseService extends Service {
     named("CourseApi").withCalls(
       restCall(Method.POST, "/course", addCourse _),
       restCall(Method.DELETE, "/course", deleteCourse _),
-      restCall(Method.GET, "/course/findByCourseID", findCoursesByCourseId _),
+      restCall(Method.GET, "/course/findByCourseID", findCourseByCourseId _),
       restCall(Method.GET, "/course/findByCourseName", findCoursesByCourseName _),
       restCall(Method.GET, "/course/findByLecturerID", findCoursesByLecturerId _),
-      restCall(Method.GET, "/course/findByLecturerName", findCoursesByLecturerName _),
       restCall(Method.GET, "/course", getAllCourses _),
       restCall(Method.PUT, "/course", updateCourse _)
     ).withAutoAcl(true)
   }
 }
-
-/*
-  * The greeting message class.
-
-case class GreetingMessage(message: String)
-
-object GreetingMessage {
-  /**
-    * Format for converting greeting messages to and from JSON.
-    *
-    * This will be picked up by a Lagom implicit conversion from Play's JSON format to Lagom's message serializer.
-    */
-  implicit val format: Format[GreetingMessage] = Json.format[GreetingMessage]
-}
-
-
-
-/**
-  * The greeting message class used by the topic stream.
-  * Different than [[GreetingMessage]], this message includes the name (id).
-  */
-case class GreetingMessageChanged(name: String, message: String)
-
-object GreetingMessageChanged {
-  /**
-    * Format for converting greeting messages to and from JSON.
-    *
-    * This will be picked up by a Lagom implicit conversion from Play's JSON format to Lagom's message serializer.
-    */
-  implicit val format: Format[GreetingMessageChanged] = Json.format[GreetingMessageChanged]
-}*/
