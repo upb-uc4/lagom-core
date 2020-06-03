@@ -1,7 +1,6 @@
 package de.upb.cs.uc4.impl
 
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
-import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -10,13 +9,13 @@ import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import de.upb.cs.uc4.api.CourseService
 import de.upb.cs.uc4.impl.actor.CourseState
-import de.upb.cs.uc4.impl.commands.{UpdateCourse, CourseCommand, CreateCourse, GetCourse}
+import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, GetCourse, UpdateCourse}
 import de.upb.cs.uc4.impl.readside.CourseEventProcessor
 import de.upb.cs.uc4.model.Course
 import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Implementation of the Universitycredits4Service.
@@ -34,7 +33,6 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  /** @inheritdoc */
   /*override def getAllCourses: ServiceCall[NotUsed, Source[Course, NotUsed]] = ServiceCall{ _ =>
     val response = cassandraSession.select("SELECT id FROM courses ;")
       .map(row => row.getLong("id")).mapAsync(8)(findCourseByCourseId().invoke(_))
@@ -42,10 +40,13 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
     Future.successful(response)
   }*/
 
+  /** @inheritdoc */
   override def getAllCourses: ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
-    
-    cassandraSession.selectAll("SELECT id FROM courses ;").map(_.map(row => Await.result(findCourseByCourseId().invoke(row.getLong("id")), 1.seconds)))
-
+    cassandraSession.selectAll("SELECT id FROM courses ;")
+      .map( seq => seq
+        .map(row => row.getLong("id"))       //Future[Seq[Long]]
+        .map(findCourseByCourseId().invoke(_))).    //Future[Seq[Future[Course]]]
+      flatMap(seq => Future.sequence(seq))          //Future[Seq[Course]]
   }
 
   /** @inheritdoc */
@@ -70,8 +71,9 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
     entityRef(id).ask[Course](replyTo => GetCourse(replyTo))
   }
 
+  /*
   /** @inheritdoc */
-  /*override def findCoursesByCourseName(): ServiceCall[String, Source[Course, NotUsed]] = ServiceCall{ name =>
+  override def findCoursesByCourseName(): ServiceCall[String, Source[Course, NotUsed]] = ServiceCall{ name =>
     getAllCourses.invoke().map(_.filter(course => course.name == name))
   }
 
