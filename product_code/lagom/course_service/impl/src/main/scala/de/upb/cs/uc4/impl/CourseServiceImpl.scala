@@ -16,7 +16,7 @@ import de.upb.cs.uc4.model.Course
 import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
   * Implementation of the Universitycredits4Service.
@@ -35,11 +35,17 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   /** @inheritdoc */
-  override def getAllCourses: ServiceCall[NotUsed, Source[Course, NotUsed]] = ServiceCall{ _ =>
+  /*override def getAllCourses: ServiceCall[NotUsed, Source[Course, NotUsed]] = ServiceCall{ _ =>
     val response = cassandraSession.select("SELECT id FROM courses ;")
       .map(row => row.getLong("id")).mapAsync(8)(findCourseByCourseId().invoke(_))
 
     Future.successful(response)
+  }*/
+
+  override def getAllCourses: ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
+    
+    cassandraSession.selectAll("SELECT id FROM courses ;").map(_.map(row => Await.result(findCourseByCourseId().invoke(row.getLong("id")), 1.seconds)))
+
   }
 
   /** @inheritdoc */
@@ -65,12 +71,21 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def findCoursesByCourseName(): ServiceCall[String, Source[Course, NotUsed]] = ServiceCall{ name =>
+  /*override def findCoursesByCourseName(): ServiceCall[String, Source[Course, NotUsed]] = ServiceCall{ name =>
     getAllCourses.invoke().map(_.filter(course => course.name == name))
   }
 
   /** @inheritdoc */
   override def findCoursesByLecturerId(): ServiceCall[Long, Source[Course, NotUsed]] = ServiceCall{ lecturerId =>
+    getAllCourses.invoke().map(_.filter(course => course.lecturerId == lecturerId))
+  }*/
+
+  override def findCoursesByCourseName(): ServiceCall[String, Seq[Course]] = ServiceCall{ name =>
+    getAllCourses.invoke().map(_.filter(course => course.name == name))
+  }
+
+  /** @inheritdoc */
+  override def findCoursesByLecturerId(): ServiceCall[Long, Seq[Course]] = ServiceCall{ lecturerId =>
     getAllCourses.invoke().map(_.filter(course => course.lecturerId == lecturerId))
   }
 

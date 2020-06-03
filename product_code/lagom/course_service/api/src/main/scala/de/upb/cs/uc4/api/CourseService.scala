@@ -48,7 +48,8 @@ trait CourseService extends Service {
     *
     * @return Source[Course, NotUsed]
     */
-  def findCoursesByCourseName(): ServiceCall[String, Source[Course, NotUsed]]
+  //def findCoursesByCourseName(): ServiceCall[String, Source[Course, NotUsed]]
+  def findCoursesByCourseName(): ServiceCall[String, Seq[Course]]
 
   /**
     * Find courses by lecturer ID
@@ -56,7 +57,8 @@ trait CourseService extends Service {
     *
     * @return Seq[Course] Body Parameter  Lecturer ID to filter by
     */
-  def findCoursesByLecturerId(): ServiceCall[Long, Source[Course, NotUsed]]
+  //def findCoursesByLecturerId(): ServiceCall[Long, Source[Course, NotUsed]]
+  def findCoursesByLecturerId(): ServiceCall[Long, Seq[Course]]
 
   /**
     * Get all courses
@@ -64,7 +66,8 @@ trait CourseService extends Service {
     *
     * @return Seq[Course]
     */
-  def getAllCourses: ServiceCall[NotUsed, Source[Course, NotUsed]]
+  //def getAllCourses: ServiceCall[NotUsed, Source[Course, NotUsed]]
+  def getAllCourses: ServiceCall[NotUsed, Seq[Course]]
 
   /**
     * Update an existing course
