@@ -23,11 +23,14 @@ case class Course (
                   maxStudents: Option[Long]*/
 
                   courseId: Long,
-                  name: String,
+                  courseName: String,
+                  courseType: String,
                   startDate: String,
                   endDate: String,
+                  ects: Long,
                   lecturerId: Long,
-                  maxStudents: Long
+                  maxStudents: Long,
+                  description: String
 )
 
 object Course {

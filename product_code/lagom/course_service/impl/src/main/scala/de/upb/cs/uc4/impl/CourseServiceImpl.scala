@@ -84,7 +84,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def findCoursesByCourseName(): ServiceCall[String, Seq[Course]] = ServiceCall{ name =>
-    getAllCourses.invoke().map(_.filter(course => course.name == name))
+    getAllCourses.invoke().map(_.filter(course => course.courseName == name))
   }
 
   /** @inheritdoc */
