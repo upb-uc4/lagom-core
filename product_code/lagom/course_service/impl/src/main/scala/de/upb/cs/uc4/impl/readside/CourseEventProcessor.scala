@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.impl.readside
 
-import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, ReadSideProcessor}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraReadSide
+import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, ReadSideProcessor}
 import de.upb.cs.uc4.impl.CourseApplication
 import de.upb.cs.uc4.impl.events.{CourseEvent, OnCourseCreate}
 

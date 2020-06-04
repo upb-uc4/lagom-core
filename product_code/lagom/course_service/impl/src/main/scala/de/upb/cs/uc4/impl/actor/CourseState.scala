@@ -2,7 +2,6 @@ package de.upb.cs.uc4.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
-import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, ExceptionMessage, TransportErrorCode}
 import de.upb.cs.uc4.impl.CourseApplication
 import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, GetCourse, UpdateCourse}
 import de.upb.cs.uc4.impl.events.{CourseEvent, OnCourseCreate, OnCourseUpdate}
@@ -22,22 +21,18 @@ case class CourseState(optCourse: Option[Course]) {
           Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
         } else {
          Effect.reply(replyTo) (Rejected("A course with the given Id already exist."))
-
-          //throw BadRequest("A course with the given Id already exist.")
         }
 
       case UpdateCourse(course, replyTo) =>
         if(optCourse.isDefined){
           Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted }
         } else {
-          throw BadRequest("A course with the given Id does not exist.")
+          Effect.reply(replyTo) (Rejected("A course with the given Id does not exist."))
         }
 
-      case GetCourse(replyTo) => optCourse match {
-        case Some(course) => Effect.reply(replyTo)(course)
-        case None => throw new BadRequest(TransportErrorCode.NotFound,
-          new ExceptionMessage("Not Found", "Course does not exist."), new Throwable)
-      }
+      case GetCourse(replyTo) =>
+        Effect.reply(replyTo) (optCourse)
+
       case _ =>
         println("Unknown Command")
         Effect.noReply

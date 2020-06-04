@@ -3,12 +3,11 @@ package de.upb.cs.uc4.impl
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import akka.{Done, NotUsed}
-import com.lightbend.lagom.scaladsl.server.{LocalServiceLocator, ServerServiceCall}
-import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, ExceptionMessage, MessageProtocol, ResponseHeader, TransportErrorCode}
-import com.lightbend.lagom.scaladsl.api.transport.ResponseHeader
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, NotFound, ResponseHeader}
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
+import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.api.CourseService
 import de.upb.cs.uc4.impl.actor.CourseState
 import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, GetCourse, UpdateCourse}
@@ -35,13 +34,6 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  /*override def getAllCourses: ServiceCall[NotUsed, Source[Course, NotUsed]] = ServiceCall{ _ =>
-    val response = cassandraSession.select("SELECT id FROM courses ;")
-      .map(row => row.getLong("id")).mapAsync(8)(findCourseByCourseId().invoke(_))
-
-    Future.successful(response)
-  }*/
-
   /** @inheritdoc */
   override def getAllCourses: ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
     cassandraSession.selectAll("SELECT id FROM courses ;")
@@ -53,29 +45,26 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def addCourse(): ServiceCall[Course, Done] = ServerServiceCall {
-    (requestheader,courseToAdd) =>
+    (_,courseToAdd) =>
 
     // Look up the sharded entity (aka the aggregate instance) for the given ID.
     val ref = entityRef(courseToAdd.courseId)
 
     ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
       .map {
-        case Accepted => {/*
-          val sucCode : Int = 201
+        case Accepted => {
+          val sucCode : Int = 201 //Creation Successful
           val mProtocol: MessageProtocol = MessageProtocol.empty
-          val strList : List[(String,String)] =  List[(String,String)](("1","Operation Succesfull"))*/
-          (ResponseHeader.Ok,Done)
+          val strList : List[(String,String)] =  List[(String,String)](("1","Operation successful"))
+          (ResponseHeader(sucCode,mProtocol,strList),Done)
         }
         case Rejected(reason) =>
         {
-          val erCode : Int = 409
+          val erCode : Int = 409 // Already exists
           val mProtocol: MessageProtocol = MessageProtocol.empty
           val strList : List[(String,String)] =  List[(String,String)](("1",reason))
           (ResponseHeader(erCode,mProtocol,strList),Done)
-
-         // (ResponseHeader(404,MessageProtocol.empty,List[(String,String)]("ups","no")),Done)
         }
-          //throw new BadRequest(TransportErrorCode.BadRequest, new ExceptionMessage("Id already in use", reason), new Throwable)
       }
 
   }
@@ -85,20 +74,15 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def findCourseByCourseId(): ServiceCall[Long, Course] = ServiceCall{ id =>
-    entityRef(id).ask[Course](replyTo => GetCourse(replyTo))
+    entityRef(id).ask[Option[Course]](replyTo => GetCourse(replyTo)).map{
+      case Some(course) => course
+      case None =>  throw  NotFound("ID was not found")
+
+    }
   }
 
-  /*
-  /** @inheritdoc */
-  override def findCoursesByCourseName(): ServiceCall[String, Source[Course, NotUsed]] = ServiceCall{ name =>
-    getAllCourses.invoke().map(_.filter(course => course.name == name))
-  }
 
   /** @inheritdoc */
-  override def findCoursesByLecturerId(): ServiceCall[Long, Source[Course, NotUsed]] = ServiceCall{ lecturerId =>
-    getAllCourses.invoke().map(_.filter(course => course.lecturerId == lecturerId))
-  }*/
-
   override def findCoursesByCourseName(): ServiceCall[String, Seq[Course]] = ServiceCall{ name =>
     getAllCourses.invoke().map(_.filter(course => course.name == name))
   }
@@ -109,16 +93,27 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def updateCourse(): ServiceCall[Course, Done] = ServiceCall {
-    courseToChange =>
+  override def updateCourse(): ServiceCall[Course, Done] = ServerServiceCall {
+    (responseHeader,courseToChange) =>
       // Look up the sharded entity (aka the aggregate instance) for the given ID.
       val ref = entityRef(courseToChange.courseId)
 
       ref.ask[Confirmation](replyTo => UpdateCourse(courseToChange, replyTo))
         .map {
-          case Accepted => Done
-          case Rejected(reason) => throw new BadRequest(TransportErrorCode.BadRequest,
-            new ExceptionMessage("Id does not exist", reason), new Throwable)
+          case Accepted => {
+            val sucCode : Int = 200 // Ok
+            val mProtocol: MessageProtocol = MessageProtocol.empty
+            val strList : List[(String,String)] =  List[(String,String)](("1","Operation Succesfull"))
+            (ResponseHeader(sucCode,mProtocol,strList),Done)
+          }
+          case Rejected(reason) =>
+            {
+              val erCode : Int = 404 // not found
+              val mProtocol: MessageProtocol = MessageProtocol.empty
+              val strList : List[(String,String)] =  List[(String,String)](("1",reason))
+              (ResponseHeader(erCode,mProtocol,strList),Done)
+            }
+
         }
   }
 }

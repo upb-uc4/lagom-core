@@ -2,8 +2,8 @@ package de.upb.cs.uc4.impl.readside
 
 import akka.Done
 import com.datastax.driver.core.{BoundStatement, PreparedStatement}
-import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, EventStreamElement}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
+import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, EventStreamElement}
 import de.upb.cs.uc4.impl.events.{CourseEvent, OnCourseCreate}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
