@@ -116,7 +116,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   override def allowedMethods: ServiceCall[NotUsed, Done] = ServerServiceCall{
     (_, _ ) =>
       Future.successful {
-        (ResponseHeader(200, MessageProtocol.empty, List(("Allow", "GET, POST, OPTIONS, PUT"))), Done)
+        (ResponseHeader(200, MessageProtocol.empty, List(
+          ("Allow", "GET, POST, OPTIONS, PUT"),
+          ("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT")
+        )), Done)
       }
   }
 }
