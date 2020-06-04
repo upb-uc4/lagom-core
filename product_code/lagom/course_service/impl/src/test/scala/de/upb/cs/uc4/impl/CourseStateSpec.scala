@@ -7,14 +7,14 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 
-class ContentAggregateSpec extends ScalaTestWithActorTestKit(s"""
+class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"
     """) with AnyWordSpecLike with Matchers {
 
-  /*
-  "Memory aggregate" should {
+
+  "CourseState" should {
 
     "get default memory" in {
       val probe = createTestProbe[Content]()
@@ -35,5 +35,5 @@ class ContentAggregateSpec extends ScalaTestWithActorTestKit(s"""
       probe2.expectMessage(Content(List("First")))
     }
 
-  }*/
+  }
 }
