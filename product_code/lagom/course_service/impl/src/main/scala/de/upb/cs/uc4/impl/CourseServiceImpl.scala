@@ -10,7 +10,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.api.CourseService
 import de.upb.cs.uc4.impl.actor.CourseState
-import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, GetCourse, UpdateCourse}
+import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, DeleteCourse, GetCourse, UpdateCourse}
 import de.upb.cs.uc4.impl.readside.CourseEventProcessor
 import de.upb.cs.uc4.model.Course
 import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
@@ -36,11 +36,19 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def getAllCourses: ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
+    import scala.util.control.Exception._
+
     cassandraSession.selectAll("SELECT id FROM courses ;")
       .map( seq => seq
-        .map(row => row.getLong("id"))       //Future[Seq[Long]]
-        .map(findCourseByCourseId().invoke(_))).    //Future[Seq[Future[Course]]]
-      flatMap(seq => Future.sequence(seq))          //Future[Seq[Course]]
+        .map(row => row.getLong("id")) //Future[Seq[Long]]
+        .map(entityRef(_).ask[Option[Course]](replyTo => GetCourse(replyTo))) //Future[Seq[Future[Option[Course]]]]
+      )
+      .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[Course]]]
+      .map(seq => seq
+        .filter(opt => opt.isDefined) //Filter every not existing course
+        .map(opt => opt.get) //Future[Seq[Course]]
+      )
+    )
   }
 
   /** @inheritdoc */
@@ -52,32 +60,30 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
     ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
       .map {
-        case Accepted => {
-          val sucCode : Int = 201 //Creation Successful
-          val mProtocol: MessageProtocol = MessageProtocol.empty
-          val strList : List[(String,String)] =  List[(String,String)](("1","Operation successful"))
-          (ResponseHeader(sucCode,mProtocol,strList),Done)
-        }
-        case Rejected(reason) =>
-        {
-          val erCode : Int = 409 // Already exists
-          val mProtocol: MessageProtocol = MessageProtocol.empty
-          val strList : List[(String,String)] =  List[(String,String)](("1",reason))
-          (ResponseHeader(erCode,mProtocol,strList),Done)
-        }
+        case Accepted => // Creation Successful
+          (ResponseHeader(201, MessageProtocol.empty, List[(String,String)](("1","Operation successful"))),Done)
+        case Rejected(reason) => // Already exists
+          (ResponseHeader(409,  MessageProtocol.empty, List[(String,String)](("1",reason))),Done)
       }
 
   }
 
   /** @inheritdoc */
-  override def deleteCourse(): ServiceCall[Long, Done] = ???
+  override def deleteCourse(): ServiceCall[Long, Done] = ServerServiceCall { (_, id) =>
+    entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
+      .map {
+        case Accepted => // OK
+          (ResponseHeader(200, MessageProtocol.empty, List[(String,String)](("1","Operation Successful"))),Done)
+        case Rejected(reason) => // Not Found
+          (ResponseHeader(404, MessageProtocol.empty, List[(String,String)](("1",reason))),Done)
+      }
+  }
 
   /** @inheritdoc */
   override def findCourseByCourseId(): ServiceCall[Long, Course] = ServiceCall{ id =>
     entityRef(id).ask[Option[Course]](replyTo => GetCourse(replyTo)).map{
       case Some(course) => course
-      case None =>  throw  NotFound("ID was not found")
-
+      case None =>  throw NotFound("ID was not found")
     }
   }
 
@@ -100,20 +106,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
       ref.ask[Confirmation](replyTo => UpdateCourse(courseToChange, replyTo))
         .map {
-          case Accepted => {
-            val sucCode : Int = 200 // Ok
-            val mProtocol: MessageProtocol = MessageProtocol.empty
-            val strList : List[(String,String)] =  List[(String,String)](("1","Operation Succesfull"))
-            (ResponseHeader(sucCode,mProtocol,strList),Done)
-          }
-          case Rejected(reason) =>
-            {
-              val erCode : Int = 404 // not found
-              val mProtocol: MessageProtocol = MessageProtocol.empty
-              val strList : List[(String,String)] =  List[(String,String)](("1",reason))
-              (ResponseHeader(erCode,mProtocol,strList),Done)
-            }
-
+          case Accepted => // OK
+            (ResponseHeader(200, MessageProtocol.empty, List[(String,String)](("1","Operation Successful"))),Done)
+          case Rejected(reason) => // Not Found
+            (ResponseHeader(404, MessageProtocol.empty, List[(String,String)](("1",reason))),Done)
         }
   }
 }

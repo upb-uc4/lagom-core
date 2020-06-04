@@ -2,7 +2,7 @@ package de.upb.cs.uc4.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.impl.actor.CourseState
-import de.upb.cs.uc4.impl.events.{OnCourseCreate, OnCourseUpdate}
+import de.upb.cs.uc4.impl.events.{OnCourseCreate, OnCourseDelete, OnCourseUpdate}
 import de.upb.cs.uc4.shared.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq
@@ -25,7 +25,8 @@ object CourseSerializerRegistry extends SharedSerializerRegistry {
 
     //Events
     JsonSerializer[OnCourseCreate],
-    JsonSerializer[OnCourseUpdate]
+    JsonSerializer[OnCourseUpdate],
+    JsonSerializer[OnCourseDelete]
 
   )
 }

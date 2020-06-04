@@ -3,8 +3,8 @@ package de.upb.cs.uc4.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
 import de.upb.cs.uc4.impl.CourseApplication
-import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, GetCourse, UpdateCourse}
-import de.upb.cs.uc4.impl.events.{CourseEvent, OnCourseCreate, OnCourseUpdate}
+import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, DeleteCourse, GetCourse, UpdateCourse}
+import de.upb.cs.uc4.impl.events.{CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate}
 import de.upb.cs.uc4.model.Course
 import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}
 import play.api.libs.json.{Format, Json}
@@ -33,6 +33,13 @@ case class CourseState(optCourse: Option[Course]) {
       case GetCourse(replyTo) =>
         Effect.reply(replyTo) (optCourse)
 
+      case DeleteCourse(id, replyTo) =>
+        if(optCourse.isDefined){
+          Effect.persist(OnCourseDelete(id)).thenReply(replyTo) { _ => Accepted }
+        } else {
+          Effect.reply(replyTo)(Rejected("A course with the given Id does not exist."))
+        }
+
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -42,6 +49,7 @@ case class CourseState(optCourse: Option[Course]) {
     evt match {
       case OnCourseCreate(course) => copy(Some(course))
       case OnCourseUpdate(course) => copy(Some(course))
+      case OnCourseDelete(_) => copy(None)
       case _ =>
         println("Unknown Event")
         this
