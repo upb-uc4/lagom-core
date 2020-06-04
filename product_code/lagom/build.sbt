@@ -28,14 +28,17 @@ val defaultCassandraKafkaDependencies = Seq(
 
 
 lazy val `lagom` = (project in file("."))
-  .aggregate(`shared`, `hyperledger-service-api`, `hyperledger-service-impl`)
+  .aggregate(`shared`,
+    `course-service-api`, `course-service-impl`,
+    `hyperledger-service-api`, `hyperledger-service-impl`)
 
 lazy val `shared` = (project in file("shared"))
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslServer,
       lagomScaladslTestKit,
-      scalaTest
+      scalaTest,
+      filters
     )
   )
 
