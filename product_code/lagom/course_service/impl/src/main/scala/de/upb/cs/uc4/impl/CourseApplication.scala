@@ -10,16 +10,21 @@ import de.upb.cs.uc4.api.CourseService
 import de.upb.cs.uc4.impl.actor.{CourseBehaviour, CourseState}
 import de.upb.cs.uc4.impl.readside.{CourseDatabase, CourseEventProcessor}
 import play.api.libs.ws.ahc.AhcWSComponents
+import play.api.mvc.EssentialFilter
+import play.filters.cors.CORSComponents
 
 abstract class CourseApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
     with CassandraPersistenceComponents
     with LagomKafkaComponents
+    with CORSComponents
     with AhcWSComponents {
 
   // Create ReadSide
   lazy val database: CourseDatabase = wire[CourseDatabase]
   lazy val processor: CourseEventProcessor = wire[CourseEventProcessor]
+
+  override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CourseService](wire[CourseServiceImpl])

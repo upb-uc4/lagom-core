@@ -26,7 +26,7 @@ object CourseBehaviour {
 
   }
   /*
-   * This method is extracted to write unit tests that are completely independendant to Akka Cluster.
+   * This method is extracted to write unit tests that are completely independent to Akka Cluster.
    */
   private[impl] def create(persistenceId: PersistenceId): EventSourcedBehavior[CourseCommand, CourseEvent, CourseState]
   = EventSourcedBehavior

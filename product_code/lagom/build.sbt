@@ -16,6 +16,7 @@ val apiDefaultDependencies = Seq(
 
 val implDefaultDependencies = Seq(
   lagomScaladslTestKit,
+  filters,
   macwire,
   scalaTest
 )
