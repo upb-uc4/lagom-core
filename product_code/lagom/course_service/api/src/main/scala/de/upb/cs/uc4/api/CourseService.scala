@@ -2,7 +2,7 @@ package de.upb.cs.uc4.api
 
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceAcl, ServiceCall}
+import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.model.Course
 
 object CourseService  {
@@ -81,11 +81,8 @@ trait CourseService extends Service {
       restCall(Method.GET, "/course/findByCourseName", findCoursesByCourseName _),
       restCall(Method.GET, "/course/findByLecturerID", findCoursesByLecturerId _),
       restCall(Method.GET, "/course", getAllCourses _),
-      restCall(Method.PUT, "/course", updateCourse _)
+      restCall(Method.PUT, "/course", updateCourse _),
+      restCall(Method.OPTIONS, "/course", addCourse _)
     ).withAutoAcl(true)
-      .withAcls(
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "/course"),
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "/course/[a-zA-Z0-9]*"),
-      )
   }
 }
