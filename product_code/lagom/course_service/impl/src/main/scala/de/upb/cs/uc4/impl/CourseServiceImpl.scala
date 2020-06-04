@@ -10,7 +10,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.api.CourseService
 import de.upb.cs.uc4.impl.actor.CourseState
-import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, DeleteCourse, GetCourse, UpdateCourse}
+import de.upb.cs.uc4.impl.commands._
 import de.upb.cs.uc4.impl.readside.CourseEventProcessor
 import de.upb.cs.uc4.model.Course
 import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
@@ -36,7 +36,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def getAllCourses: ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
-    import scala.util.control.Exception._
+
 
     cassandraSession.selectAll("SELECT id FROM courses ;")
       .map( seq => seq
