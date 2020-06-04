@@ -27,9 +27,11 @@ case class Course (
                   courseType: String,
                   startDate: String,
                   endDate: String,
-                  ects: Long,
+                  ects: Int,
                   lecturerId: Long,
-                  maxStudents: Long,
+                  maxStudents: Int,
+                  currentParticipants : Int,
+                  language: String,
                   description: String
 )
 
