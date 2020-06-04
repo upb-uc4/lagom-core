@@ -72,7 +72,7 @@ trait CourseService extends Service {
     */
   def updateCourse(): ServiceCall[Course, Done]
 
-  def checkCourse: ServiceCall[Course, Done]
+  def allowedMethods: ServiceCall[NotUsed, Done]
 
   final override def descriptor: Descriptor = {
     import Service._
@@ -84,7 +84,7 @@ trait CourseService extends Service {
       restCall(Method.GET, "/course/findByLecturerID", findCoursesByLecturerId _),
       restCall(Method.GET, "/course", getAllCourses _),
       restCall(Method.PUT, "/course", updateCourse _),
-      restCall(Method.OPTIONS, "/course", checkCourse _)
+      restCall(Method.OPTIONS, "/course", allowedMethods _)
     ).withAutoAcl(true)
   }
 }

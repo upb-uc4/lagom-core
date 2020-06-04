@@ -61,9 +61,9 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
     ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
       .map {
         case Accepted => // Creation Successful
-          (ResponseHeader(201, MessageProtocol.empty, List[(String,String)](("1","Operation successful"))),Done)
+          (ResponseHeader(201, MessageProtocol.empty, List(("1","Operation successful"))),Done)
         case Rejected(reason) => // Already exists
-          (ResponseHeader(409,  MessageProtocol.empty, List[(String,String)](("1",reason))),Done)
+          (ResponseHeader(409,  MessageProtocol.empty, List(("1",reason))),Done)
       }
 
   }
@@ -73,9 +73,9 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
     entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
       .map {
         case Accepted => // OK
-          (ResponseHeader(200, MessageProtocol.empty, List[(String,String)](("1","Operation Successful"))),Done)
+          (ResponseHeader(200, MessageProtocol.empty, List(("1","Operation Successful"))),Done)
         case Rejected(reason) => // Not Found
-          (ResponseHeader(404, MessageProtocol.empty, List[(String,String)](("1",reason))),Done)
+          (ResponseHeader(404, MessageProtocol.empty, List(("1",reason))),Done)
       }
   }
 
@@ -107,13 +107,16 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       ref.ask[Confirmation](replyTo => UpdateCourse(courseToChange, replyTo))
         .map {
           case Accepted => // OK
-            (ResponseHeader(200, MessageProtocol.empty, List[(String,String)](("1","Operation Successful"))),Done)
+            (ResponseHeader(200, MessageProtocol.empty, List(("1","Operation Successful"))),Done)
           case Rejected(reason) => // Not Found
-            (ResponseHeader(404, MessageProtocol.empty, List[(String,String)](("1",reason))),Done)
+            (ResponseHeader(404, MessageProtocol.empty, List(("1",reason))),Done)
         }
   }
 
-  override def checkCourse: ServiceCall[Course, Done] = ServiceCall{
-    _ => Future.successful(Done)
+  override def allowedMethods: ServiceCall[NotUsed, Done] = ServerServiceCall{
+    (_, _ ) =>
+      Future.successful {
+        (ResponseHeader(200, MessageProtocol.empty, List(("Allow", "GET, POST, OPTIONS, PUT"))), Done)
+      }
   }
 }
