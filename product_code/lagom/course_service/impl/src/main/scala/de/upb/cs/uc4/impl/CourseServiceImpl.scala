@@ -112,4 +112,8 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
             (ResponseHeader(404, MessageProtocol.empty, List[(String,String)](("1",reason))),Done)
         }
   }
+
+  override def checkCourse: ServiceCall[Course, Done] = ServiceCall{
+    _ => Future.successful(Done)
+  }
 }
