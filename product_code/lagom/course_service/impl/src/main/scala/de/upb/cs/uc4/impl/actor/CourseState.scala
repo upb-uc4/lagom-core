@@ -7,7 +7,7 @@ import de.upb.cs.uc4.impl.CourseApplication
 import de.upb.cs.uc4.impl.commands.{CourseCommand, CreateCourse, GetCourse, UpdateCourse}
 import de.upb.cs.uc4.impl.events.{CourseEvent, OnCourseCreate, OnCourseUpdate}
 import de.upb.cs.uc4.model.Course
-import de.upb.cs.uc4.shared.messages.Accepted
+import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}
 import play.api.libs.json.{Format, Json}
 
 /**
@@ -21,7 +21,9 @@ case class CourseState(optCourse: Option[Course]) {
         if(optCourse.isEmpty){
           Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
         } else {
-          throw BadRequest("A course with the given Id already exist.")
+         Effect.reply(replyTo) (Rejected("A course with the given Id already exist."))
+
+          //throw BadRequest("A course with the given Id already exist.")
         }
 
       case UpdateCourse(course, replyTo) =>

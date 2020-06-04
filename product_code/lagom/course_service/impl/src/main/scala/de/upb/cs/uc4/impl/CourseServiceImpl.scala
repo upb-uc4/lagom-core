@@ -3,8 +3,10 @@ package de.upb.cs.uc4.impl
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.server.{LocalServiceLocator, ServerServiceCall}
+import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, ExceptionMessage, MessageProtocol, ResponseHeader, TransportErrorCode}
+import com.lightbend.lagom.scaladsl.api.transport.ResponseHeader
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, ExceptionMessage, TransportErrorCode}
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import de.upb.cs.uc4.api.CourseService
@@ -50,17 +52,32 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def addCourse(): ServiceCall[Course, Done] = ServiceCall {
-    courseToAdd =>
+  override def addCourse(): ServiceCall[Course, Done] = ServerServiceCall {
+    (requestheader,courseToAdd) =>
+
     // Look up the sharded entity (aka the aggregate instance) for the given ID.
     val ref = entityRef(courseToAdd.courseId)
 
     ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
       .map {
-        case Accepted => Done
-        case Rejected(reason) => throw new BadRequest(TransportErrorCode.BadRequest,
-          new ExceptionMessage("Id already in use", reason), new Throwable)
+        case Accepted => {/*
+          val sucCode : Int = 201
+          val mProtocol: MessageProtocol = MessageProtocol.empty
+          val strList : List[(String,String)] =  List[(String,String)](("1","Operation Succesfull"))*/
+          (ResponseHeader.Ok,Done)
+        }
+        case Rejected(reason) =>
+        {
+          val erCode : Int = 409
+          val mProtocol: MessageProtocol = MessageProtocol.empty
+          val strList : List[(String,String)] =  List[(String,String)](("1",reason))
+          (ResponseHeader(erCode,mProtocol,strList),Done)
+
+         // (ResponseHeader(404,MessageProtocol.empty,List[(String,String)]("ups","no")),Done)
+        }
+          //throw new BadRequest(TransportErrorCode.BadRequest, new ExceptionMessage("Id already in use", reason), new Throwable)
       }
+
   }
 
   /** @inheritdoc */
