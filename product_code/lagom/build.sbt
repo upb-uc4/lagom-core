@@ -80,4 +80,4 @@ lazy val `authentication-service-impl` = (project in file("authentication_servic
     libraryDependencies ++= implDefaultDependencies,
     libraryDependencies ++= defaultCassandraKafkaDependencies
   )
-  .dependsOn(`authentication-service-api`, `shared`)
+  .dependsOn(`authentication-service-api`,  `shared`)
