@@ -21,16 +21,16 @@ trait CourseService extends Service {
   def addCourse(): ServiceCall[Course, Done]
 
   /** Deletes a course */
-  def deleteCourse(): ServiceCall[Long, Done]
+  def deleteCourse(id: Long): ServiceCall[NotUsed, Done]
 
   /**  Find courses by course ID */
-  def findCourseByCourseId(): ServiceCall[Long, Course]
+  def findCourseByCourseId(id: Long): ServiceCall[NotUsed, Course]
 
   /** Find courses by course name */
-  def findCoursesByCourseName(): ServiceCall[String, Seq[Course]]
+  def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]]
 
   /** Find courses by lecturer with the provided ID */
-  def findCoursesByLecturerId(): ServiceCall[Long, Seq[Course]]
+  def findCoursesByLecturerId(id: Long): ServiceCall[NotUsed, Seq[Course]]
 
   /** Get all courses */
   def getAllCourses: ServiceCall[NotUsed, Seq[Course]]
@@ -45,10 +45,10 @@ trait CourseService extends Service {
     import Service._
     named("CourseApi").withCalls(
       restCall(Method.POST, "/course", addCourse _),
-      restCall(Method.DELETE, "/course", deleteCourse _),
-      restCall(Method.GET, "/course/findByCourseID", findCourseByCourseId _),
-      restCall(Method.GET, "/course/findByCourseName", findCoursesByCourseName _),
-      restCall(Method.GET, "/course/findByLecturerID", findCoursesByLecturerId _),
+      restCall(Method.DELETE, "/course?id", deleteCourse _),
+      restCall(Method.GET, "/course/findByCourseId?id", findCourseByCourseId _),
+      restCall(Method.GET, "/course/findByCourseName?name", findCoursesByCourseName _),
+      restCall(Method.GET, "/course/findByLecturerId?id", findCoursesByLecturerId _),
       restCall(Method.GET, "/course", getAllCourses _),
       restCall(Method.PUT, "/course", updateCourse _),
       restCall(Method.OPTIONS, "/course", allowedMethods _)

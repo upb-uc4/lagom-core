@@ -63,7 +63,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def deleteCourse(): ServiceCall[Long, Done] = ServerServiceCall { (_, id) =>
+  override def deleteCourse(id: Long): ServiceCall[NotUsed, Done] = ServerServiceCall { (_, _) =>
     entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
       .map {
         case Accepted => // OK
@@ -74,7 +74,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def findCourseByCourseId(): ServiceCall[Long, Course] = ServiceCall{ id =>
+  override def findCourseByCourseId(id: Long): ServiceCall[NotUsed, Course] = ServiceCall{ _ =>
     entityRef(id).ask[Option[Course]](replyTo => GetCourse(replyTo)).map{
       case Some(course) => course
       case None =>  throw NotFound("ID was not found")
@@ -82,13 +82,13 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def findCoursesByCourseName(): ServiceCall[String, Seq[Course]] = ServiceCall{ name =>
+  override def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
     getAllCourses.invoke().map(_.filter(course => course.courseName == name))
   }
 
   /** @inheritdoc */
-  override def findCoursesByLecturerId(): ServiceCall[Long, Seq[Course]] = ServiceCall{ lecturerId =>
-    getAllCourses.invoke().map(_.filter(course => course.lecturerId == lecturerId))
+  override def findCoursesByLecturerId(id: Long): ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
+    getAllCourses.invoke().map(_.filter(course => course.lecturerId == id))
   }
 
   /** @inheritdoc */
