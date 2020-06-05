@@ -24,6 +24,7 @@ abstract class CourseApplication(context: LagomApplicationContext)
   lazy val database: CourseDatabase = wire[CourseDatabase]
   lazy val processor: CourseEventProcessor = wire[CourseEventProcessor]
 
+  // Set HttpFilter to the default CorsFilter
   override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
 
   // Bind the service that this server provides
@@ -42,5 +43,6 @@ abstract class CourseApplication(context: LagomApplicationContext)
 }
 
 object CourseApplication{
+  /** Functions as offset for the database */
   val cassandraOffset: String = "UniversityCredits4Courses"
 }

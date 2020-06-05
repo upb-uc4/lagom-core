@@ -9,11 +9,13 @@ import de.upb.cs.uc4.model.Course
 import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}
 import play.api.libs.json.{Format, Json}
 
-/**
-  * The current state of the Aggregate.
-  */
+/** The current state of a Course */
 case class CourseState(optCourse: Option[Course]) {
 
+  /** Functions as a CommandHandler
+    *
+    * @param cmd the given command
+    */
   def applyCommand(cmd: CourseCommand): ReplyEffect[CourseEvent, CourseState] =
     cmd match {
       case CreateCourse(course, replyTo)  =>
@@ -45,6 +47,10 @@ case class CourseState(optCourse: Option[Course]) {
         Effect.noReply
     }
 
+  /** Functions as an EventHandler
+    *
+    * @param evt the given event
+    */
   def applyEvent(evt: CourseEvent): CourseState =
     evt match {
       case OnCourseCreate(course) => copy(Some(course))

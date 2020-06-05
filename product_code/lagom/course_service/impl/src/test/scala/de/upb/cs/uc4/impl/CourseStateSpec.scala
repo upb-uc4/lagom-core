@@ -11,12 +11,14 @@ import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+/** Tests for the CourseState */
 class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"
     """) with AnyWordSpecLike with Matchers {
 
+  //Test courses
   val course0: Course = Course(18, "Course 0", "Lecture", "Today", "Tomorrow", 8, 11, 60, 20, "german", "A test")
   val course1: Course = Course(17, "Course 1", "Lecture", "Today", "Tomorrow", 8, 11, 60, 20, "german", "A test")
   val course2: Course = Course(16, "Course 1", "Lecture", "Today", "Tomorrow", 8, 12, 60, 20, "german", "A test")

@@ -8,6 +8,7 @@ import de.upb.cs.uc4.impl.events.{CourseEvent, OnCourseCreate, OnCourseDelete}
 class CourseEventProcessor(readSide: CassandraReadSide, database: CourseDatabase)
   extends ReadSideProcessor[CourseEvent]{
 
+  /** @inheritdoc */
   override def buildHandler(): ReadSideProcessor.ReadSideHandler[CourseEvent] =
     readSide.builder[CourseEvent](CourseApplication.cassandraOffset)
       .setGlobalPrepare(database.globalPrepare)
@@ -16,5 +17,6 @@ class CourseEventProcessor(readSide: CassandraReadSide, database: CourseDatabase
       .setEventHandler[OnCourseDelete](database.deleteCourse)
       .build()
 
+  /** @inheritdoc */
   override def aggregateTags: Set[AggregateEventTag[CourseEvent]] = Set(CourseEvent.Tag)
 }

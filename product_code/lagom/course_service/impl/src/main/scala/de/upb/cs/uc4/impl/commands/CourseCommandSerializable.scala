@@ -1,5 +1,4 @@
 package de.upb.cs.uc4.impl.commands
 
-trait CourseCommandSerializable {
-
-}
+/** Base class for serialization */
+trait CourseCommandSerializable

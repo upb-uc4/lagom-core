@@ -34,6 +34,7 @@ class CourseDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     prepInsert.flatMap(_ => prepDelete.map(_ => Done))
   }
 
+  /** EventHandler for OnCourseCreate event */
   def addCourse(eventElement: EventStreamElement[OnCourseCreate]): Future[List[BoundStatement]] = {
     insertCourse().map { ps =>
       val bindWriteTitle = ps.bind()
@@ -42,6 +43,7 @@ class CourseDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     }
   }
 
+  /** EventHandler for OnCourseDelete event */
   def deleteCourse(eventElement: EventStreamElement[OnCourseDelete]): Future[List[BoundStatement]] = {
     deleteCourse().map { ps =>
       val bindWriteTitle = ps.bind()

@@ -2,8 +2,9 @@ package de.upb.cs.uc4.impl.events
 
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEvent, AggregateEventTag}
 
-/**
-  * This interface defines all the events that the Universitycredits4Aggregate supports.
+/** The trait for the events needed in the state
+  * Every event is a case class containing the
+  * necessary information to apply the event
   */
 trait CourseEvent extends AggregateEvent[CourseEvent] {
   def aggregateTag: AggregateEventTag[CourseEvent] = CourseEvent.Tag

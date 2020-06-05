@@ -27,6 +27,5 @@ object CourseSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[OnCourseCreate],
     JsonSerializer[OnCourseUpdate],
     JsonSerializer[OnCourseDelete]
-
   )
 }

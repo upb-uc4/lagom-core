@@ -18,17 +18,13 @@ import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * Implementation of the Universitycredits4Service.
-  */
+/** Implementation of the CourseService */
 class CourseServiceImpl(clusterSharding: ClusterSharding,
                         readSide: ReadSide, processor: CourseEventProcessor, cassandraSession: CassandraSession)
                        (implicit ec: ExecutionContext) extends CourseService {
   readSide.register(processor)
 
-  /**
-    * Looks up the entity for the given ID.
-    */
+  /** Looks up the entity for the given ID */
   private def entityRef(id: Long): EntityRef[CourseCommand] =
     clusterSharding.entityRefFor(CourseState.typeKey, id.toString)
 
@@ -36,8 +32,6 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def getAllCourses: ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
-
-
     cassandraSession.selectAll("SELECT id FROM courses ;")
       .map( seq => seq
         .map(row => row.getLong("id")) //Future[Seq[Long]]
@@ -87,7 +81,6 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
     }
   }
 
-
   /** @inheritdoc */
   override def findCoursesByCourseName(): ServiceCall[String, Seq[Course]] = ServiceCall{ name =>
     getAllCourses.invoke().map(_.filter(course => course.courseName == name))
@@ -113,12 +106,13 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         }
   }
 
+  /** @inheritdoc */
   override def allowedMethods: ServiceCall[NotUsed, Done] = ServerServiceCall{
     (_, _ ) =>
       Future.successful {
         (ResponseHeader(200, MessageProtocol.empty, List(
-          ("Allow", "GET, POST, OPTIONS, PUT"),
-          ("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT")
+          ("Allow", "GET, POST, OPTIONS, PUT, DELETE"),
+          ("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
         )), Done)
       }
   }

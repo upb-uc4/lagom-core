@@ -11,67 +11,34 @@ object CourseService  {
 
 /**
   * The UniversityCredits4 service interface.
-  * <p>
+  *
   * This describes everything that Lagom needs to know about how to serve and
   * consume the Universitycredits4Service.
   */
 trait CourseService extends Service {
 
-  /**
-    * Add a new course to the database
-    *
-    * @return void Body Parameter  Course object that needs to be added to the database
-    */
+  /** Add a new course to the database */
   def addCourse(): ServiceCall[Course, Done]
 
-
-  // apiKey:String  -- not yet supported header params
-  /**
-    * Deletes a course
-    *
-    * @return void
-    */
+  /** Deletes a course */
   def deleteCourse(): ServiceCall[Long, Done]
 
-  /**
-    * Find courses by course ID
-    * Find courses by course ID
-    *
-    * @return Seq[Course] Body Parameter  Course ID to filter by
-    */
+  /**  Find courses by course ID */
   def findCourseByCourseId(): ServiceCall[Long, Course]
 
-  /**
-    * Find courses by course name
-    * Find courses by course name
-    *
-    * @return Source[Course, NotUsed]
-    */
+  /** Find courses by course name */
   def findCoursesByCourseName(): ServiceCall[String, Seq[Course]]
 
-  /**
-    * Find courses by lecturer ID
-    * Find courses by lecturer with the provided ID
-    *
-    * @return Seq[Course] Body Parameter  Lecturer ID to filter by
-    */
+  /** Find courses by lecturer with the provided ID */
   def findCoursesByLecturerId(): ServiceCall[Long, Seq[Course]]
 
-  /**
-    * Get all courses
-    * Returns all courses
-    *
-    * @return Seq[Course]
-    */
+  /** Get all courses */
   def getAllCourses: ServiceCall[NotUsed, Seq[Course]]
 
-  /**
-    * Update an existing course
-    *
-    * @return void Body Parameter  Course object that needs to be added to the database
-    */
+  /** Update an existing course */
   def updateCourse(): ServiceCall[Course, Done]
 
+  /** Allows GET, POST, PUT, DELETE */
   def allowedMethods: ServiceCall[NotUsed, Done]
 
   final override def descriptor: Descriptor = {

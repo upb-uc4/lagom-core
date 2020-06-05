@@ -1,9 +1,8 @@
 package de.upb.cs.uc4.impl
 
-import akka.{Done, NotUsed}
-import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, NotFound, RequestHeader, ResponseHeader, TransportException}
-import com.lightbend.lagom.scaladsl.server.{LocalServiceLocator, ServerServiceCall}
+import akka.Done
+import com.lightbend.lagom.scaladsl.api.transport.{NotFound, TransportException}
+import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.api.CourseService
 import de.upb.cs.uc4.model.Course
@@ -11,8 +10,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
-import scala.concurrent.Future
-
+/** Tests for the CourseService
+  * All tests need to be started in the defined order
+  */
 class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val server = ServiceTest.startServer(
@@ -24,20 +24,15 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
   val client: CourseService = server.serviceClient.implement[CourseService]
 
+  //Test courses
   val course0: Course = Course(18, "Course 0", "Lecture", "Today", "Tomorrow", 8, 11, 60, 20, "german", "A test")
   val course1: Course = Course(17, "Course 1", "Lecture", "Today", "Tomorrow", 8, 11, 60, 20, "german", "A test")
   val course2: Course = Course(16, "Course 1", "Lecture", "Today", "Tomorrow", 8, 12, 60, 20, "german", "A test")
   val course3: Course = Course(18, "Course 3", "Lecture", "Today", "Tomorrow", 8, 11, 60, 20, "german", "A test")
 
-  val sort: (Course, Course) => Boolean = (c1, c2) => c1.courseId < c2.courseId
-
-  def invokeWithHeaders[Request, Response](serviceCall: ServiceCall[Request, Response], request: Request):
-    Future[ResponseHeader] = {
-      serviceCall.asInstanceOf[ServerServiceCall[Request, Response]].invokeWithHeaders(RequestHeader.Default, request).map(_._1)
-  }
-
   override protected def afterAll(): Unit = server.stop()
 
+  /** Tests only working if the whole instance is started */
   "CourseService service" should {
 
     "get all courses with no courses" in {

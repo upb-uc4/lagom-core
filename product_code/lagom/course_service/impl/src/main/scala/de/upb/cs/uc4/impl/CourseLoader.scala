@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.impl
 
-import com.lightbend.lagom.scaladsl.api.ServiceLocator
+import com.lightbend.lagom.scaladsl.api.{Descriptor, ServiceLocator}
 import com.lightbend.lagom.scaladsl.api.ServiceLocator.NoServiceLocator
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.server._
@@ -16,7 +16,7 @@ class CourseLoader extends LagomApplicationLoader {
   override def loadDevMode(context: LagomApplicationContext): LagomApplication =
     new CourseApplication(context) with LagomDevModeComponents
 
-  override def describeService = Some(readDescriptor[CourseService])
+  override def describeService: Some[Descriptor] = Some(readDescriptor[CourseService])
 }
 
 
