@@ -9,11 +9,10 @@ object CourseService  {
   val TOPIC_NAME = "Courses"
 }
 
-/**
-  * The UniversityCredits4 service interface.
+/** The CourseService interface.
   *
   * This describes everything that Lagom needs to know about how to serve and
-  * consume the Universitycredits4Service.
+  * consume the CourseService.
   */
 trait CourseService extends Service {
 
