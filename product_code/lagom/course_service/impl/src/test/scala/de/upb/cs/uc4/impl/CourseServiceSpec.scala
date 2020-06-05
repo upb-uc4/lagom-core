@@ -68,28 +68,28 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "delete a course" in {
       for {
-        _ <- client.deleteCourse().invoke(course2.courseId)
-        answer <- client.findCourseByCourseId().invoke(course2.courseId).failed
+        _ <- client.deleteCourse(course2.courseId).invoke()
+        answer <- client.findCourseByCourseId(course2.courseId).invoke().failed
       }yield{
         answer shouldBe a [NotFound]
       }
     }
 
     "delete a non-existing course" in {
-      client.deleteCourse().invoke(42).failed.map{
+      client.deleteCourse(42).invoke().failed.map{
         answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
     "find a course" in {
-      client.findCourseByCourseId().invoke(17).map{answer =>
+      client.findCourseByCourseId(course1.courseId).invoke().map{answer =>
         answer should ===(course1)
       }
     }
 
     "find a non-existing course" in {
-      client.findCourseByCourseId().invoke(42).failed.map{
+      client.findCourseByCourseId(42).invoke().failed.map{
         answer =>
           answer shouldBe a [NotFound]
       }
@@ -98,7 +98,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "update an existing course" in {
       for{
         _ <-client.updateCourse().invoke(course3)
-        answer <- client.findCourseByCourseId().invoke(course0.courseId)
+        answer <- client.findCourseByCourseId(course0.courseId).invoke()
       }yield{
         answer should ===(course3)
       }
