@@ -84,7 +84,7 @@ services:
 
   chaincode:
     container_name: chaincode
-    image: chaincode_gradlew
+    image: uc4official/chaincode_gradlew
     tty: true
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
