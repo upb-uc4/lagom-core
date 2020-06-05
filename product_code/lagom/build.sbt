@@ -16,6 +16,7 @@ val apiDefaultDependencies = Seq(
 
 val implDefaultDependencies = Seq(
   lagomScaladslTestKit,
+  filters,
   macwire,
   scalaTest
 )
@@ -28,14 +29,17 @@ val defaultCassandraKafkaDependencies = Seq(
 
 
 lazy val `lagom` = (project in file("."))
-  .aggregate(`shared`, `hyperledger-service-api`, `hyperledger-service-impl`)
+  .aggregate(`shared`,
+    `course-service-api`, `course-service-impl`,
+    `hyperledger-service-api`, `hyperledger-service-impl`)
 
 lazy val `shared` = (project in file("shared"))
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslServer,
       lagomScaladslTestKit,
-      scalaTest
+      scalaTest,
+      filters
     )
   )
 
@@ -50,3 +54,16 @@ lazy val `hyperledger-service-impl` = (project in file("hyperledger_service/impl
     libraryDependencies ++= implDefaultDependencies
   )
   .dependsOn(`hyperledger-service-api`, `shared`)
+
+lazy val `course-service-api` = (project in file("course_service/api"))
+  .settings(
+    libraryDependencies ++= apiDefaultDependencies
+  )
+
+lazy val `course-service-impl` = (project in file("course_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies ++= defaultCassandraKafkaDependencies
+  )
+  .dependsOn(`course-service-api`, `shared`, `hyperledger-service-api`)

@@ -2,6 +2,7 @@ package de.upb.cs.uc4.shared.messages
 
 import play.api.libs.json._
 
+/** Accepted version of the Confirmation */
 trait Accepted extends Confirmation
 
 case object Accepted extends Accepted {
