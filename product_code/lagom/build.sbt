@@ -31,7 +31,8 @@ val defaultCassandraKafkaDependencies = Seq(
 lazy val `lagom` = (project in file("."))
   .aggregate(`shared`,
     `course-service-api`, `course-service-impl`,
-    `hyperledger-service-api`, `hyperledger-service-impl`)
+    `hyperledger-service-api`, `hyperledger-service-impl`,
+    `authentication-service-api`, `authentication-service-impl`)
 
 lazy val `shared` = (project in file("shared"))
   .settings(
@@ -66,4 +67,17 @@ lazy val `course-service-impl` = (project in file("course_service/impl"))
     libraryDependencies ++= implDefaultDependencies,
     libraryDependencies ++= defaultCassandraKafkaDependencies
   )
-  .dependsOn(`course-service-api`, `shared`, `hyperledger-service-api`)
+  .dependsOn(`course-service-api`, `shared`, `hyperledger-service-api`, `authentication-service-api`)
+
+lazy val `authentication-service-api` = (project in file("authentication_service/api"))
+  .settings(
+    libraryDependencies ++= apiDefaultDependencies
+  )
+
+lazy val `authentication-service-impl` = (project in file("authentication_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies ++= defaultCassandraKafkaDependencies
+  )
+  .dependsOn(`authentication-service-api`, `shared`)
