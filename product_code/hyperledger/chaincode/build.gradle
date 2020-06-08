@@ -7,9 +7,10 @@ plugins {
     id 'java-library-distribution'
     id 'jacoco'
     id 'application'
+    id 'com.github.johnrengelman.shadow' version '5.1.0'
 }
 
-group 'uc4.org'
+group 'org.hyperledger.fabric.samples'
 version '1.0-SNAPSHOT'
 
 dependencies {
@@ -30,6 +31,16 @@ repositories {
     jcenter()
     maven {
         url 'https://jitpack.io'
+    }
+}
+
+shadowJar {
+    baseName = 'chaincode'
+    version = null
+    classifier = null
+
+    manifest {
+        attributes 'Main-Class': 'org.hyperledger.fabric.contract.ContractRouter'
     }
 }
 
@@ -91,11 +102,11 @@ application {
 //    finalizedBy jacocoTestReport
 //}
 
-test {
-    useJUnitPlatform()
-    testLogging {
-        events "passed", "skipped", "failed"
-    }
-}
+//test {
+//    useJUnitPlatform()
+//    testLogging {
+//        events "passed", "skipped", "failed"
+//    }
+//}
 
 check.dependsOn jacocoTestCoverageVerification
