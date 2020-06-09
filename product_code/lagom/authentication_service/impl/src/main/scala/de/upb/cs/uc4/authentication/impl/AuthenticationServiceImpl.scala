@@ -52,12 +52,16 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
     )
   }(this, ec)
 
+  override def delete(username: String): ServiceCall[NotUsed, Done] = authenticated[NotUsed, Done](Role.Admin) { _ =>
+    cassandraSession.executeWrite("DELETE FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
+  }(this, ec)
+
   override def options(): ServiceCall[NotUsed, Done] = ServerServiceCall {
     (_, _) =>
       Future.successful {
         (ResponseHeader(200, MessageProtocol.empty, List(
-          ("Allow", "POST, OPTIONS"),
-          ("Access-Control-Allow-Methods", "POST, OPTIONS")
+          ("Allow", "POST, OPTIONS, DELETE"),
+          ("Access-Control-Allow-Methods", "POST, OPTIONS, DELETE")
         )), Done)
       }
   }

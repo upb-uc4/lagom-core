@@ -13,6 +13,8 @@ trait AuthenticationService extends Service {
 
   def set(): ServiceCall[User, Done]
 
+  def delete(username: String): ServiceCall[NotUsed, Done]
+
   def options(): ServiceCall[NotUsed, Done]
 
   final override def descriptor: Descriptor = {
@@ -20,10 +22,12 @@ trait AuthenticationService extends Service {
     named("AuthenticationApi").withCalls(
       restCall(Method.POST, "/authentication", set _),
       restCall(Method.GET, "/authentication", check _),
+      restCall(Method.DELETE, "/authentication?username", delete _),
       restCall(Method.OPTIONS, "/authentication", options _)
     ).withAcls(
-      ServiceAcl.forMethodAndPathRegex(Method.POST, "/authentication"),
-      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "/authentication")
+      ServiceAcl.forMethodAndPathRegex(Method.POST, "\\Q/authentication\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.DELETE, "\\Q/authentication\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q/authentication\\E")
     )
   }
 }
