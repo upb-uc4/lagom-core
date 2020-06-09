@@ -7,4 +7,6 @@ object Role extends Enumeration {
   val Admin, Student, Lecturer = Value
 
   implicit val format: Format[Role] = Json.formatEnum(this)
+
+  def All: Seq[Role] = values.toSeq
 }

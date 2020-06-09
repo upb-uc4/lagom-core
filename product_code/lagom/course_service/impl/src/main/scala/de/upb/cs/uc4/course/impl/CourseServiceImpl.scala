@@ -34,7 +34,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   /** @inheritdoc */
-  override def getAllCourses: ServiceCall[NotUsed, Seq[Course]] = authenticated(Role.values.toSeq){ _ =>
+  override def getAllCourses: ServerServiceCall[NotUsed, Seq[Course]] = authenticated(Role.All: _*){ _ =>
     cassandraSession.selectAll("SELECT id FROM courses ;")
       .map( seq => seq
         .map(row => row.getLong("id")) //Future[Seq[Long]]
@@ -77,7 +77,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   })
 
   /** @inheritdoc */
-  override def findCourseByCourseId(id: Long): ServiceCall[NotUsed, Course] = ServiceCall{ _ =>
+  override def findCourseByCourseId(id: Long): ServiceCall[NotUsed, Course] = authenticated(Role.All: _*){ _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map{
       case Some(course) => course
       case None =>  throw NotFound("ID was not found")
@@ -85,18 +85,24 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
-    getAllCourses.invoke().map(_.filter(course => course.courseName == name))
+  override def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall{
+    (header, request) =>
+      getAllCourses.invokeWithHeaders(header, request).map{
+        case (header, response) => (header, response.filter(course => course.courseName == name))
+      }
   }
 
   /** @inheritdoc */
-  override def findCoursesByLecturerId(id: Long): ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
-    getAllCourses.invoke().map(_.filter(course => course.lecturerId == id))
+  override def findCoursesByLecturerId(id: Long): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall{
+    (header, request) =>
+      getAllCourses.invokeWithHeaders(header, request).map{
+        case (header, response) => (header, response.filter(course => course.lecturerId == id))
+      }
   }
 
   /** @inheritdoc */
   override def updateCourse(): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall {
-    (responseHeader,courseToChange) =>
+    (_, courseToChange) =>
       // Look up the sharded entity (aka the aggregate instance) for the given ID.
       val ref = entityRef(courseToChange.courseId)
 

@@ -21,7 +21,7 @@ trait AuthenticationService extends Service {
     import Service._
     named("AuthenticationApi").withCalls(
       restCall(Method.POST, "/authentication", set _),
-      restCall(Method.GET, "/authentication", check _),
+      restCall(Method.GET, "/authentication?username&password", check _),
       restCall(Method.DELETE, "/authentication?username", delete _),
       restCall(Method.OPTIONS, "/authentication", options _)
     ).withAcls(

@@ -29,10 +29,6 @@ object ServiceCallFactory {
 
   def authenticated[Request, Response](role: Role*)(serviceCall: ServerServiceCall[Request, Response])
                                       (implicit auth: AuthenticationService, ec: ExecutionContext)
-  : ServerServiceCall[Request, Response] = authenticated(role)(serviceCall)
-
-  def authenticated[Request, Response](role: Seq[Role])(serviceCall: ServerServiceCall[Request, Response])
-                                      (implicit auth: AuthenticationService, ec: ExecutionContext)
   : ServerServiceCall[Request, Response] = {
     ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
       val userPw = getUserAndPassword(requestHeader)
