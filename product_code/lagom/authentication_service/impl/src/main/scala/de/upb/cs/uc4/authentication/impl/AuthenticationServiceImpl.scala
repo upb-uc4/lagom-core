@@ -43,8 +43,7 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
   override def set(): ServiceCall[User, Done] = authenticated[User, Done](Role.Admin) { user =>
     val salt = Random.alphanumeric.take(64).mkString
     cassandraSession.executeWrite(
-      "INSERT INTO authenticationTable (name, salt, password, role) " +
-        s"VALUES (?, ?, ?, ?);",
+      "INSERT INTO authenticationTable (name, salt, password, role) VALUES (?, ?, ?, ?);",
       Hashing.sha256(user.username),
       salt,
       Hashing.sha256(salt + user.password),

@@ -8,12 +8,15 @@ import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, NotFound, Re
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
+import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.readside.CourseEventProcessor
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.shared.ServiceCallFactory._
+import de.upb.cs.uc4.user.model.Role
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -21,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /** Implementation of the CourseService */
 class CourseServiceImpl(clusterSharding: ClusterSharding,
                         readSide: ReadSide, processor: CourseEventProcessor, cassandraSession: CassandraSession)
-                       (implicit ec: ExecutionContext) extends CourseService {
+                       (implicit ec: ExecutionContext, auth: AuthenticationService) extends CourseService {
   readSide.register(processor)
 
   /** Looks up the entity for the given ID */
@@ -31,7 +34,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   /** @inheritdoc */
-  override def getAllCourses: ServiceCall[NotUsed, Seq[Course]] = ServiceCall{ _ =>
+  override def getAllCourses: ServiceCall[NotUsed, Seq[Course]] = authenticated(Role.values.toSeq){ _ =>
     cassandraSession.selectAll("SELECT id FROM courses ;")
       .map( seq => seq
         .map(row => row.getLong("id")) //Future[Seq[Long]]
@@ -46,7 +49,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def addCourse(): ServiceCall[Course, Done] = ServerServiceCall {
+  override def addCourse(): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall{
     (_,courseToAdd) =>
 
     // Look up the sharded entity (aka the aggregate instance) for the given ID.
@@ -59,11 +62,11 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         case Rejected(reason) => // Already exists
           (ResponseHeader(409,  MessageProtocol.empty, List(("1",reason))),Done)
       }
-
-  }
+  })
 
   /** @inheritdoc */
-  override def deleteCourse(id: Long): ServiceCall[NotUsed, Done] = ServerServiceCall { (_, _) =>
+  override def deleteCourse(id: Long): ServiceCall[NotUsed, Done] = authenticated(Role.Admin, Role.Lecturer)(
+    ServerServiceCall { (_, _) =>
     entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
       .map {
         case Accepted => // OK
@@ -71,7 +74,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         case Rejected(reason) => // Not Found
           (ResponseHeader(404, MessageProtocol.empty, List(("1",reason))),Done)
       }
-  }
+  })
 
   /** @inheritdoc */
   override def findCourseByCourseId(id: Long): ServiceCall[NotUsed, Course] = ServiceCall{ _ =>
@@ -92,7 +95,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def updateCourse(): ServiceCall[Course, Done] = ServerServiceCall {
+  override def updateCourse(): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall {
     (responseHeader,courseToChange) =>
       // Look up the sharded entity (aka the aggregate instance) for the given ID.
       val ref = entityRef(courseToChange.courseId)
@@ -104,7 +107,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           case Rejected(reason) => // Not Found
             (ResponseHeader(404, MessageProtocol.empty, List(("1",reason))),Done)
         }
-  }
+  })
 
   /** @inheritdoc */
   override def allowedMethods: ServiceCall[NotUsed, Done] = ServerServiceCall{
