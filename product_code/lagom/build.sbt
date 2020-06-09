@@ -70,7 +70,7 @@ lazy val `course-service-impl` = (project in file("course_service/impl"))
     libraryDependencies ++= implDefaultDependencies,
     libraryDependencies ++= defaultCassandraKafkaDependencies
   )
-  .dependsOn(`course-service-api`, `shared`, `hyperledger-service-api`, `authentication-service-api`)
+  .dependsOn(`course-service-api`, `shared`, `hyperledger-service-api`)
 
 lazy val `authentication-service-api` = (project in file("authentication_service/api"))
   .settings(

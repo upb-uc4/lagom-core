@@ -19,6 +19,7 @@ import scala.util.Random
 class AuthenticationServiceImpl(cassandraSession: CassandraSession)
                                (implicit ec: ExecutionContext) extends AuthenticationService {
 
+  /** @inheritdoc */
   override def check(username: String, password: String): ServiceCall[Seq[Role], AuthenticationResponse] = ServiceCall {
     roles =>
       cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
@@ -40,8 +41,9 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
         }
   }
 
+  /** @inheritdoc */
   override def set(): ServiceCall[User, Done] = authenticated[User, Done](Role.Admin) { user =>
-    val salt = Random.alphanumeric.take(64).mkString
+    val salt = Random.alphanumeric.take(64).mkString //Generates random salt with 64 characters
     cassandraSession.executeWrite(
       "INSERT INTO authenticationTable (name, salt, password, role) VALUES (?, ?, ?, ?);",
       Hashing.sha256(user.username),
@@ -51,10 +53,12 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
     )
   }(this, ec)
 
+  /** @inheritdoc */
   override def delete(username: String): ServiceCall[NotUsed, Done] = authenticated[NotUsed, Done](Role.Admin) { _ =>
     cassandraSession.executeWrite("DELETE FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
   }(this, ec)
 
+  /** @inheritdoc */
   override def options(): ServiceCall[NotUsed, Done] = ServerServiceCall {
     (_, _) =>
       Future.successful {
