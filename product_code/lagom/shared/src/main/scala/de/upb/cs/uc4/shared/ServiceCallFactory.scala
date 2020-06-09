@@ -27,6 +27,12 @@ object ServiceCallFactory {
       serviceCall
     }
 
+  /** Wraps a [[com.lightbend.lagom.scaladsl.api.ServiceCall]] to make it authenticated.
+    * Authentication checks username, password and role (to check privileges).
+    *
+    * @param serviceCall which should get wrapped
+    * @return finished [[com.lightbend.lagom.scaladsl.server.ServerServiceCall]]
+    */
   def authenticated[Request, Response](role: Role*)(serviceCall: ServerServiceCall[Request, Response])
                                       (implicit auth: AuthenticationService, ec: ExecutionContext)
   : ServerServiceCall[Request, Response] = {
