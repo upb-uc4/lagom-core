@@ -9,6 +9,7 @@ scalaVersion in ThisBuild := "2.13.0"
 
 val macwire = "com.softwaremill.macwire" %% "macros" % "2.3.3" % "provided"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.1.1" % Test
+val guava = "com.google.guava" % "guava" % "29.0-jre"
 
 val apiDefaultDependencies = Seq(
   lagomScaladslApi
@@ -40,9 +41,11 @@ lazy val `shared` = (project in file("shared"))
       lagomScaladslServer,
       lagomScaladslTestKit,
       scalaTest,
-      filters
+      filters,
+      guava
     )
   )
+  .dependsOn(`authentication-service-api`)
 
 lazy val `hyperledger-service-api` = (project in file("hyperledger_service/api"))
   .settings(
@@ -73,6 +76,7 @@ lazy val `authentication-service-api` = (project in file("authentication_service
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
+  .dependsOn(`user-service-api`)
 
 lazy val `authentication-service-impl` = (project in file("authentication_service/impl"))
   .enablePlugins(LagomScala)
@@ -81,3 +85,8 @@ lazy val `authentication-service-impl` = (project in file("authentication_servic
     libraryDependencies ++= defaultCassandraKafkaDependencies
   )
   .dependsOn(`authentication-service-api`,  `shared`)
+
+lazy val `user-service-api` = (project in file("user_service/api"))
+  .settings(
+    libraryDependencies ++= apiDefaultDependencies
+  )
