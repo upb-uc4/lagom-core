@@ -53,6 +53,11 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
       )
     )
 
+  /** Adds an account to the authentication database
+    *
+    * @param name is the name and password of the user
+    * @param role is the authentication role of the user
+    */
   private def createAccount(name: String, role: Role): Future[Done] = {
     val salt = Random.alphanumeric.take(64).mkString
     cassandraSession.executeWrite(
