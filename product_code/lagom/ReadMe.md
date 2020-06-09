@@ -18,7 +18,7 @@ sbt runAll
 If you don't have sbt installed, go home.
 
 ### Errors
-If you encounter any not expected errors, use following command:
+If you encounter any unexpected errors, use following command:
 ````shell script
 sbt clean
 ````
