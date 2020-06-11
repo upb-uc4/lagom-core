@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Start sleep"
-sleep 30000s #15s
+sleep 15s
 echo "Finish sleep"
 
 pushd /opt/gopath/src/chaincode
