@@ -17,6 +17,7 @@ val apiDefaultDependencies = Seq(
 
 val implDefaultDependencies = Seq(
   lagomScaladslTestKit,
+  lagomScaladslAkkaDiscovery,
   filters,
   macwire,
   scalaTest
@@ -30,6 +31,7 @@ val defaultCassandraKafkaDependencies = Seq(
 
 
 lazy val `lagom` = (project in file("."))
+  .enablePlugins(DockerPlugin)
   .aggregate(`shared`,
     `course-service-api`, `course-service-impl`,
     `hyperledger-service-api`, `hyperledger-service-impl`,
