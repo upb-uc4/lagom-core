@@ -82,7 +82,7 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     "delete a non-existing course" in {
-      val ref = spawn(CourseBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4")))
+      val ref = spawn(CourseBehaviour.create(PersistenceId("fake-type-hint", "fake-id-6")))
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! DeleteCourse(69, probe1.ref)
@@ -90,7 +90,7 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     "delete an existing course" in {
-      val ref = spawn(CourseBehaviour.create(PersistenceId("fake-type-hint", "fake-id-5")))
+      val ref = spawn(CourseBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateCourse(course0, probe1.ref)
