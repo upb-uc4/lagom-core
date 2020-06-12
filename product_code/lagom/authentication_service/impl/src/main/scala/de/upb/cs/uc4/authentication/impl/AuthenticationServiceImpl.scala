@@ -2,7 +2,7 @@ package de.upb.cs.uc4.authentication.impl
 
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, Forbidden, MessageProtocol, ResponseHeader, TransportErrorCode}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
@@ -11,7 +11,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationR
 import de.upb.cs.uc4.shared.Hashing
 import de.upb.cs.uc4.shared.ServiceCallFactory._
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{Role, User}
+import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -41,7 +41,25 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
         }
   }
 
-  /** @inheritdoc */
+  def getRoleServerService(): ServerServiceCall[NotUsed, JsonRole] = ServerServiceCall{
+    (requestHeader, _) =>
+      var username = getUserAndPassword(requestHeader) match {
+        case Some(usernamePassword) => usernamePassword._1
+        case _ => throw new Forbidden(TransportErrorCode(500, 1003, "Internal Server Error"), new ExceptionMessage("Internal Server Error", "Failed to retrieve Username"))
+      }
+      cassandraSession.selectOne("SELECT role FROM authenticationTable WHERE name=? ;", Hashing.sha256(username)).map{
+        case Some(row) => (ResponseHeader(200, MessageProtocol.empty, List(("1","Operation Successful"))), JsonRole(Role.withName(row.getString("role"))))
+
+        case _ => throw new Forbidden(TransportErrorCode(500, 1003, "Internal Server Error"), new ExceptionMessage("Internal Server Error", "Failed to retrieve Username"))
+      }
+  }
+
+  /** @inheritdoc*/
+  override def getRole(): ServiceCall[NotUsed, JsonRole] = authenticated[NotUsed, JsonRole](Role.Student, Role.Lecturer, Role.Admin){
+    getRoleServerService()
+  }(auth = this, ec)
+
+  /** @inheritdoc*/
   override def set(): ServiceCall[User, Done] = authenticated[User, Done](Role.Admin) { user =>
     val salt = Random.alphanumeric.take(64).mkString //Generates random salt with 64 characters
     cassandraSession.executeWrite(

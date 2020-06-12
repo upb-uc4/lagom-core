@@ -62,7 +62,7 @@ object ServiceCallFactory {
     * @param requestHeader with the an authentication header
     * @return an Option with a String tuple
     */
-  private def getUserAndPassword(requestHeader: RequestHeader): Option[(String, String)] ={
+  def getUserAndPassword(requestHeader: RequestHeader): Option[(String, String)] ={
     requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
       case Array("Basic", userAndPass) =>
         new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":")match {
