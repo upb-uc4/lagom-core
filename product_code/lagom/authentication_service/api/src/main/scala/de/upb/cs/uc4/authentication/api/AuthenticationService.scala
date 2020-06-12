@@ -26,8 +26,11 @@ trait AuthenticationService extends Service {
   /** Deletes authentication and password of a user  */
   def delete(username: String): ServiceCall[NotUsed, Done]
 
-  /** Allows GET, POST, DELETE */
+  /** Allows POST, DELETE, OPTIONS */
   def options(): ServiceCall[NotUsed, Done]
+
+  /** Allows GET, OPTIONS */
+  def optionsGet(): ServiceCall[NotUsed, Done]
 
   final override def descriptor: Descriptor = {
     import Service._
@@ -36,12 +39,14 @@ trait AuthenticationService extends Service {
       restCall(Method.GET, "/authentication?username&password", check _),
       restCall(Method.GET, "/authentication/getRole", getRole _),
       restCall(Method.DELETE, "/authentication?username", delete _),
-      restCall(Method.OPTIONS, "/authentication", options _)
+      restCall(Method.OPTIONS, "/authentication", options _),
+      restCall(Method.OPTIONS, "/authentication/getRole", optionsGet _)
     ).withAcls(
       ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q/authentication/getRole\\E"),
       ServiceAcl.forMethodAndPathRegex(Method.POST, "\\Q/authentication\\E"),
       ServiceAcl.forMethodAndPathRegex(Method.DELETE, "\\Q/authentication\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q/authentication\\E")
+      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q/authentication\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q/authentication/getRole\\E")
     )
   }
 }

@@ -81,8 +81,19 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
     (_, _) =>
       Future.successful {
         (ResponseHeader(200, MessageProtocol.empty, List(
-          ("Allow", "GET, POST, OPTIONS, DELETE"),
-          ("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE")
+          ("Allow", "POST, OPTIONS, DELETE"),
+          ("Access-Control-Allow-Methods", "POST, OPTIONS, DELETE")
+        )), Done)
+      }
+  }
+
+  /** @inheritdoc */
+  override def optionsGet(): ServiceCall[NotUsed, Done] = ServerServiceCall {
+    (_, _) =>
+      Future.successful {
+        (ResponseHeader(200, MessageProtocol.empty, List(
+          ("Allow", "GET, OPTIONS"),
+          ("Access-Control-Allow-Methods", "GET, OPTIONS")
         )), Done)
       }
   }

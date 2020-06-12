@@ -125,4 +125,14 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         )), Done)
       }
   }
+  /** @inheritdoc */
+  override def allowedMethodsGet: ServiceCall[NotUsed, Done] = ServerServiceCall{
+    (_, _ ) =>
+      Future.successful {
+        (ResponseHeader(200, MessageProtocol.empty, List(
+          ("Allow", "GET, OPTIONS"),
+          ("Access-Control-Allow-Methods", "GET, OPTIONS")
+        )), Done)
+      }
+  }
 }

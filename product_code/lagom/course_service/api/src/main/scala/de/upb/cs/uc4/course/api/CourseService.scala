@@ -40,6 +40,9 @@ trait CourseService extends Service {
   /** Allows GET, POST, PUT, DELETE */
   def allowedMethods: ServiceCall[NotUsed, Done]
 
+  /** Allows GET */
+  def allowedMethodsGet: ServiceCall[NotUsed, Done]
+
   final override def descriptor: Descriptor = {
     import Service._
     named("CourseApi").withCalls(
@@ -50,6 +53,9 @@ trait CourseService extends Service {
       restCall(Method.GET, "/course/findByLecturerId?id", findCoursesByLecturerId _),
       restCall(Method.GET, "/course", getAllCourses _),
       restCall(Method.PUT, "/course", updateCourse _),
+      restCall(Method.OPTIONS, "/course/findByCourseId", allowedMethodsGet _),
+      restCall(Method.OPTIONS, "/course/findByCourseName", allowedMethodsGet _),
+      restCall(Method.OPTIONS, "/course/findByLecturerId", allowedMethodsGet _),
       restCall(Method.OPTIONS, "/course", allowedMethods _)
     ).withAutoAcl(true)
   }

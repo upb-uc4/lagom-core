@@ -47,8 +47,12 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         override def delete(username: String): ServiceCall[NotUsed, Done] =
           ServiceCall { _ =>  Future.successful(Done)}
 
-        /** Allows GET, POST, DELETE */
+        /** Allows GET, POST, DELETE, OPTIONS*/
         override def options(): ServiceCall[NotUsed, Done] =
+          ServiceCall { _ =>  Future.successful(Done)}
+
+        /** Allows GET, OPTIONS */
+        override def optionsGet(): ServiceCall[NotUsed, Done] =
           ServiceCall { _ =>  Future.successful(Done)}
       }
     }
