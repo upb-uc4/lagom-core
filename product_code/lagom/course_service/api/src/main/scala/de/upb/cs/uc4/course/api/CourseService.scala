@@ -29,7 +29,7 @@ trait CourseService extends Service {
   def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]]
 
   /** Find courses by lecturer with the provided ID */
-  def findCoursesByLecturerId(id: Long): ServiceCall[NotUsed, Seq[Course]]
+  def findCoursesByLecturerId(id: String): ServiceCall[NotUsed, Seq[Course]]
 
   /** Get all courses */
   def getAllCourses: ServiceCall[NotUsed, Seq[Course]]

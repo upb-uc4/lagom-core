@@ -93,7 +93,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def findCoursesByLecturerId(id: Long): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall{
+  override def findCoursesByLecturerId(id: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall{
     (header, request) =>
       getAllCourses.invokeWithHeaders(header, request).map{
         case (header, response) => (header, response.filter(course => course.lecturerId == id))
