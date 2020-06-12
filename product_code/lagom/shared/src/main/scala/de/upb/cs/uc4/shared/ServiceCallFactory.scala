@@ -2,7 +2,7 @@ package de.upb.cs.uc4.shared
 
 import java.util.Base64
 
-import com.lightbend.lagom.scaladsl.api.transport.{Forbidden, NotFound, RequestHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{Forbidden, NotFound, RequestHeader, TransportErrorCode, ExceptionMessage}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse
@@ -42,15 +42,15 @@ object ServiceCallFactory {
       val userPw = getUserAndPassword(requestHeader)
 
       if(userPw.isEmpty){
-        throw Forbidden("No Authentication.")
+        throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "No Authorization given"))
       }
 
       val (user, pw) = userPw.get
 
       auth.check(user, pw).invoke(role).map{
         case AuthenticationResponse.Correct => serviceCall
-        case AuthenticationResponse.WrongUsername => throw NotFound("Username does not exist.")
-        case AuthenticationResponse.WrongPassword => throw Forbidden("Wrong password.")
+        case AuthenticationResponse.WrongUsername => throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
+        case AuthenticationResponse.WrongPassword => throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
         case AuthenticationResponse.NotAuthorized => throw Forbidden("Not enough privileges for this call.")
       }
     }
