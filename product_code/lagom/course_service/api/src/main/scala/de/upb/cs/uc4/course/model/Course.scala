@@ -31,8 +31,8 @@ case class Course (
                   lecturerId: Long,
                   maxParticipants: Int,
                   currentParticipants : Int,
-                  language: String,
-                  description: String
+                  courseLanguage: String,
+                  courseDescription: String
 )
 
 object Course {
