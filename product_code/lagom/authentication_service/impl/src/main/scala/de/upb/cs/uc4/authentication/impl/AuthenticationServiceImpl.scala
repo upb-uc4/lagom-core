@@ -81,8 +81,8 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
     (_, _) =>
       Future.successful {
         (ResponseHeader(200, MessageProtocol.empty, List(
-          ("Allow", "POST, OPTIONS, DELETE"),
-          ("Access-Control-Allow-Methods", "POST, OPTIONS, DELETE")
+          ("Allow", "GET, POST, OPTIONS, DELETE"),
+          ("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE")
         )), Done)
       }
   }
