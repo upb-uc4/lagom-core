@@ -4,7 +4,7 @@ services:
 
   orderer:
     container_name: orderer
-    image: hyperledger/fabric-orderer
+    image: hyperledger/fabric-orderer:2.1.1
     environment:
       - FABRIC_LOGGING_SPEC=debug
       - ORDERER_GENERAL_LISTENADDRESS=orderer
@@ -33,7 +33,7 @@ services:
   
   peer:
     container_name: peer
-    image: hyperledger/fabric-peer
+    image: hyperledger/fabric-peer:2.1.1
     environment:
       - CORE_PEER_ID=peer
       - CORE_PEER_ADDRESS=peer:7051
@@ -60,7 +60,7 @@ services:
 
   cli:
     container_name: cli
-    image: hyperledger/fabric-tools
+    image: hyperledger/fabric-tools:2.1.1
     tty: true
     environment:
       - GOPATH=/opt/gopath
