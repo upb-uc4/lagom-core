@@ -8,7 +8,7 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse
-import de.upb.cs.uc4.user.model.{Role, User}
+import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -115,6 +115,27 @@ class AuthenticationServiceSpec extends AsyncWordSpec with Matchers with BeforeA
       client.delete(user0.username).handleRequestHeader(addAuthorizationHeader("admin", "admin"))
         .invoke().flatMap(_ => client.check(user0.username, user0.password).invoke(Role.All)).map { answer =>
         answer shouldEqual AuthenticationResponse.WrongUsername
+      }
+    }
+
+    "return the correct role for student" in {
+      client.getRole().handleRequestHeader(addAuthorizationHeader("student", "student"))
+        .invoke().map{ answer =>
+        answer shouldEqual JsonRole(Role.Student)
+      }
+    }
+
+    "return the correct role for lecturer" in {
+      client.getRole().handleRequestHeader(addAuthorizationHeader("lecturer", "lecturer"))
+        .invoke().map{ answer =>
+        answer shouldEqual JsonRole(Role.Lecturer)
+      }
+    }
+
+    "return the correct role for admin" in {
+      client.getRole().handleRequestHeader(addAuthorizationHeader("admin", "admin"))
+        .invoke().map{ answer =>
+        answer shouldEqual JsonRole(Role.Admin)
       }
     }
   }

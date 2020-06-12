@@ -13,7 +13,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationR
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.User
+import de.upb.cs.uc4.user.model.{JsonRole, User, Role}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -34,6 +34,10 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         /** Checks if the username and password pair exists */
         override def check(username: String, password: String): ServiceCall[Seq[Role], AuthenticationResponse] =
           ServiceCall { _ =>  Future.successful(AuthenticationResponse.Correct)}
+
+        /** Gets the role of a user */
+        override def getRole(): ServiceCall[NotUsed, JsonRole] =
+          ServiceCall { _ =>  Future.successful(JsonRole(Role.Admin))}
 
         /** Sets authentication and password of a user */
         override def set(): ServiceCall[User, Done] =
