@@ -9,6 +9,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationResponse
 import de.upb.cs.uc4.user.model.Role.Role
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.annotation.varargs
 import scala.concurrent.ExecutionContext
 
 object ServiceCallFactory {
@@ -33,6 +34,7 @@ object ServiceCallFactory {
     * @param serviceCall which should get wrapped
     * @return finished [[com.lightbend.lagom.scaladsl.server.ServerServiceCall]]
     */
+  @varargs
   def authenticated[Request, Response](role: Role*)(serviceCall: ServerServiceCall[Request, Response])
                                       (implicit auth: AuthenticationService, ec: ExecutionContext)
   : ServerServiceCall[Request, Response] = {
