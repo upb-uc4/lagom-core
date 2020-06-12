@@ -6,6 +6,6 @@ trait HyperLedgerService extends Service {
 
   final override def descriptor: Descriptor = {
     import Service._
-    named("HyperLedgerApi")
+    named("hyperLedger")
   }
 }

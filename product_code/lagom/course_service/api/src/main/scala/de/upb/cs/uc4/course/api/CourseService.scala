@@ -42,7 +42,7 @@ trait CourseService extends Service {
 
   final override def descriptor: Descriptor = {
     import Service._
-    named("CourseApi").withCalls(
+    named("course").withCalls(
       restCall(Method.POST, "/course", addCourse _),
       restCall(Method.DELETE, "/course?id", deleteCourse _),
       restCall(Method.GET, "/course/findByCourseId?id", findCourseByCourseId _),
