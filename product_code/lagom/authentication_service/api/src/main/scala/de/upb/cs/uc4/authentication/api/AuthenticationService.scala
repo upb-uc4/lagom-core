@@ -13,12 +13,15 @@ import de.upb.cs.uc4.user.model.{JsonRole, User}
   * consume the AuthenticationService.
   */
 trait AuthenticationService extends Service {
+  /** Prefix for the path for the endpoints, a name/identifier for the service*/
+  val pathPrefix = "/authentication-management"
+  val usernameRegularExp = "[a-zA-Z][a-zA-Z0-9]+"
 
   /** Checks if the username and password pair exists */
   def check(username: String, password: String): ServiceCall[Seq[Role], AuthenticationResponse]
 
   /** Checks if the username and password pair exists */
-  def getRole(): ServiceCall[NotUsed, JsonRole]
+  def getRole(username: String): ServiceCall[NotUsed, JsonRole]
 
   /** Sets authentication and password of a user */
   def set(): ServiceCall[User, Done]
@@ -32,21 +35,32 @@ trait AuthenticationService extends Service {
   /** Allows GET, OPTIONS */
   def optionsGet(): ServiceCall[NotUsed, Done]
 
+  /** Allows POST */
+  def allowedMethodsPOST(): ServiceCall[NotUsed, Done]
+
+  /** Allows GET */
+  def allowedMethodsGET(): ServiceCall[NotUsed, Done]
+
+  /** Allows DELETE */
+  def allowedMethodsDELETE(): ServiceCall[NotUsed, Done]
+
   final override def descriptor: Descriptor = {
     import Service._
     named("AuthenticationApi").withCalls(
-      restCall(Method.POST, "/authentication", set _),
-      restCall(Method.GET, "/authentication?username&password", check _),
-      restCall(Method.GET, "/authentication/getRole", getRole _),
-      restCall(Method.DELETE, "/authentication?username", delete _),
-      restCall(Method.OPTIONS, "/authentication", options _),
-      restCall(Method.OPTIONS, "/authentication/getRole", optionsGet _)
+      restCall(Method.POST, pathPrefix + "/users", set _),
+      restCall(Method.GET, pathPrefix + "/users?username&password", check _),
+      restCall(Method.GET, pathPrefix + "/users/:username/role", getRole _),
+      restCall(Method.DELETE, pathPrefix + "/users/:username", delete _),
+      restCall(Method.OPTIONS, pathPrefix + "/users", allowedMethodsPOST _),
+      restCall(Method.OPTIONS, pathPrefix + "/users/:username/role", allowedMethodsGET _),
+      restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedMethodsDELETE _)
     ).withAcls(
-      ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q/authentication/getRole\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.POST, "\\Q/authentication\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.DELETE, "\\Q/authentication\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q/authentication\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q/authentication/getRole\\E")
+      ServiceAcl.forMethodAndPathRegex(Method.POST, s"\\Q$pathPrefix/users\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/users/\\E$usernameRegularExp\\Q/role\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.DELETE, s"\\Q$pathPrefix/users/\\E$usernameRegularExp"),
+      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/users\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/users/\\E$usernameRegularExp\\Q/role\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/users/\\E$usernameRegularExp")
     )
   }
 }

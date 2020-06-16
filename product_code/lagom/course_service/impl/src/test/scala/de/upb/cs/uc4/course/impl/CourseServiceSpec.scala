@@ -36,7 +36,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
           ServiceCall { _ =>  Future.successful(AuthenticationResponse.Correct)}
 
         /** Gets the role of a user */
-        override def getRole(): ServiceCall[NotUsed, JsonRole] =
+        override def getRole(username: String): ServiceCall[NotUsed, JsonRole] =
           ServiceCall { _ =>  Future.successful(JsonRole(Role.Admin))}
 
         /** Sets authentication and password of a user */
@@ -54,6 +54,15 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         /** Allows GET, OPTIONS */
         override def optionsGet(): ServiceCall[NotUsed, Done] =
           ServiceCall { _ =>  Future.successful(Done)}
+
+        /** Allows POST */
+        override def allowedMethodsPOST(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
+
+        /** Allows GET */
+        override def allowedMethodsGET(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
+
+        /** Allows DELETE */
+        override def allowedMethodsDELETE(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
       }
     }
   }
@@ -137,7 +146,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "update an existing course" in {
       for{
-        _ <-client.updateCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course3)
+        _ <-client.updateCourse(course3.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course3)
         answer <- client.findCourseByCourseId(course0.courseId).handleRequestHeader(addAuthorizationHeader()).invoke()
       }yield{
         answer should ===(course3)
@@ -145,7 +154,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "update a non-existing course" in {
-      client.updateCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course2).failed.map{
+      client.updateCourse(course2.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course2).failed.map{
         answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }

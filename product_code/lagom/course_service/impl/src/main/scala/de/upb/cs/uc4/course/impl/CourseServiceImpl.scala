@@ -4,7 +4,7 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, NotFound, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, Forbidden, MessageProtocol, NotFound, ResponseHeader, TransportErrorCode}
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
@@ -85,10 +85,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall{
+  override def findCoursesByCourseName(courseName: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall{
     (header, request) =>
       getAllCourses.invokeWithHeaders(header, request).map{
-        case (header, response) => (header, response.filter(course => course.courseName == name))
+        case (header, response) => (header, response.filter(course => course.courseName == courseName))
       }
   }
 
@@ -101,10 +101,13 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def updateCourse(): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall {
+  override def updateCourse(id : Long): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall {
     (_, courseToChange) =>
       // Look up the sharded entity (aka the aggregate instance) for the given ID.
-      val ref = entityRef(courseToChange.courseId)
+      if(id != courseToChange.courseId){
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("00", "Course ID and ID in path do not match"))
+      }
+      val ref = entityRef(id)
 
       ref.ask[Confirmation](replyTo => UpdateCourse(courseToChange, replyTo))
         .map {
@@ -126,13 +129,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       }
   }
   /** @inheritdoc */
-  override def allowedMethodsGet: ServiceCall[NotUsed, Done] = ServerServiceCall{
-    (_, _ ) =>
-      Future.successful {
-        (ResponseHeader(200, MessageProtocol.empty, List(
-          ("Allow", "GET, OPTIONS"),
-          ("Access-Control-Allow-Methods", "GET, OPTIONS")
-        )), Done)
-      }
-  }
+  override def allowedMethodsGETPOST: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
+
+  /** @inheritdoc */
+  override def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT, DELETE")
+
+
 }

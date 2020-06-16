@@ -2,7 +2,9 @@ package de.upb.cs.uc4.shared
 
 import java.util.Base64
 
-import com.lightbend.lagom.scaladsl.api.transport.{Forbidden, NotFound, RequestHeader, TransportErrorCode, ExceptionMessage}
+import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, Forbidden, NotFound, RequestHeader, TransportErrorCode, ResponseHeader, MessageProtocol}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse
@@ -10,7 +12,7 @@ import de.upb.cs.uc4.user.model.Role.Role
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.varargs
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 object ServiceCallFactory {
 
@@ -72,4 +74,21 @@ object ServiceCallFactory {
       case _ => None
     }
   }
+
+  /**
+    * ServiceCall that returns a list of allowed methods, all of which will also be listed as access controlled
+    *
+    * @param listOfOptions with the allowed options. Schema: "GET, POST, DELETE"
+    *                      OPTIONS is added automatically
+    */
+  def allowedMethodsCustom(listOfOptions: String): ServiceCall[NotUsed, Done] =ServerServiceCall{
+    (_, _ ) =>
+      Future.successful {
+        (ResponseHeader(200, MessageProtocol.empty, List(
+          ("Allow", listOfOptions + ", OPTIONS"),
+          ("Access-Control-Allow-Methods", listOfOptions + ", OPTIONS")
+        )), Done)
+      }
+  }
+
 }

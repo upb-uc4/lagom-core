@@ -119,21 +119,21 @@ class AuthenticationServiceSpec extends AsyncWordSpec with Matchers with BeforeA
     }
 
     "return the correct role for student" in {
-      client.getRole().handleRequestHeader(addAuthorizationHeader("student", "student"))
+      client.getRole("student").handleRequestHeader(addAuthorizationHeader("student", "student"))
         .invoke().map{ answer =>
         answer shouldEqual JsonRole(Role.Student)
       }
     }
 
     "return the correct role for lecturer" in {
-      client.getRole().handleRequestHeader(addAuthorizationHeader("lecturer", "lecturer"))
+      client.getRole("lecturer").handleRequestHeader(addAuthorizationHeader("lecturer", "lecturer"))
         .invoke().map{ answer =>
         answer shouldEqual JsonRole(Role.Lecturer)
       }
     }
 
     "return the correct role for admin" in {
-      client.getRole().handleRequestHeader(addAuthorizationHeader("admin", "admin"))
+      client.getRole("admin").handleRequestHeader(addAuthorizationHeader("admin", "admin"))
         .invoke().map{ answer =>
         answer shouldEqual JsonRole(Role.Admin)
       }
