@@ -1,29 +1,29 @@
 apiVersion: "apps/v1"
 kind: Deployment
 metadata:
-  name: course
+  name: authentication
 spec:
   replicas: 3
 
   selector:
     matchLabels:
-      app: course
+      app: authentication
 
   template:
     metadata:
       labels:
-        app: course
+        app: authentication
     spec:
       containers:
-        - name: course
-          image: "uc4official/course_service:latest"
+        - name: authentication
+          image: "uc4official/authentication_service:latest"
           env:
             - name: JAVA_OPTS
               value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf"
             - name: APPLICATION_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: course-application-secret
+                  name: authentication-application-secret
                   key: secret
             - name: KAFKA_SERVICE_NAME
               value: "_clients._tcp.strimzi-kafka-brokers"
@@ -56,14 +56,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: course
+  name: authentication
 spec:
   ports:
     - name: http
       port: 80
       targetPort: 9000
   selector:
-    app: course
+    app: authentication
   type: LoadBalancer
 ---
 kind: Role
