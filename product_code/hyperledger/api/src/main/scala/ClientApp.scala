@@ -10,25 +10,21 @@ object ClientApp {
     val walletPath = Paths.get("wallet")
     val wallet = Wallets.newFileSystemWallet(walletPath)
     // load a CCP
-    val networkConfigPath = Paths.get("..", "..", "..", "test-network", "organizations", "peerOrganizations", "org1.example.com", "connection-org1.yaml")
+    val networkConfigPath = Paths.get("connection_profile.yaml")
     val builder = Gateway.createBuilder
-    builder.identity(wallet, "appUser").networkConfig(networkConfigPath).discovery(true)
+    builder.identity(wallet, "cli").networkConfig(networkConfigPath).discovery(true)
     // create a gateway connection
     try {
       val gateway = builder.connect
       try { // get the network and contract
-        println("try get network")
         val network = gateway.getNetwork("myc")
-        println("try get contract uc4")
         val contract = network.getContract("UC4")
-        println("try queryALl")
         var result = contract.evaluateTransaction("queryAll")
-        println("queryResult: ")
+        println("Before:")
         println(new String(result, StandardCharsets.UTF_8))
-        println("Begin transaction:")
         contract.submitTransaction("changeLectureId", "FoC", "Foundations of Cryptography")
         result = contract.evaluateTransaction("queryAll")
-        println("After transaction:")
+        println("After:")
         println(new String(result, StandardCharsets.UTF_8))
       } finally if (gateway != null) gateway.close()
     }
