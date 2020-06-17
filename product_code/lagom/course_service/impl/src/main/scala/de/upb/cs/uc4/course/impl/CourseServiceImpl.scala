@@ -8,6 +8,7 @@ import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, Forbidden, 
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
+import com.datastax.driver.core.utils.UUIDs
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
@@ -29,7 +30,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CourseCommand] =
-    clusterSharding.entityRefFor(CourseState.typeKey, id.toString)
+    clusterSharding.entityRefFor(CourseState.typeKey, id)
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -52,7 +53,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   override def addCourse(): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall{
     (_,courseProposal) =>
       // Generate unique ID for the course to add
-      val courseToAdd = courseProposal.copy(courseId = com.datastax.driver.core.utils.UUIDs.timeBased.toString)
+      val courseToAdd = courseProposal.copy(courseId = UUIDs.timeBased.toString)
       // Look up the sharded entity (aka the aggregate instance) for the given ID.
       val ref = entityRef(courseToAdd.courseId)
 
