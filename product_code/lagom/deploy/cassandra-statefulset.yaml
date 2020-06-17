@@ -6,7 +6,7 @@ metadata:
     app: cassandra
 spec:
   serviceName: cassandra
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: cassandra
@@ -64,14 +64,14 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
-        readinessProbe:
-          exec:
-            command:
-            - /bin/bash
-            - -c
-            - /ready-probe.sh
-          initialDelaySeconds: 15
-          timeoutSeconds: 5
+        #readinessProbe:
+        #  exec:
+        #    command:
+        #    - /bin/bash
+        #    - -c
+        #    - /ready-probe.sh
+        #  initialDelaySeconds: 15
+        #  timeoutSeconds: 5
         # These volume mounts are persistent. They are like inline claims,
         # but not exactly because the names need to match exactly one of
         # the stateful pod volumes.
