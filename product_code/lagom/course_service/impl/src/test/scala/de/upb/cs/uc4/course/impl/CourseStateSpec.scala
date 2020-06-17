@@ -19,10 +19,10 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
     """) with AnyWordSpecLike with Matchers {
 
   //Test courses
-  val course0: Course = Course(18, "Course 0", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
-  val course1: Course = Course(17, "Course 1", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
-  val course2: Course = Course(16, "Course 1", "Lecture", "Today", "Tomorrow", 8, "12", 60, 20, "german", "A test")
-  val course3: Course = Course(18, "Course 3", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course0: Course = Course("18", "Course 0", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course1: Course = Course("17", "Course 1", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course2: Course = Course("16", "Course 1", "Lecture", "Today", "Tomorrow", 8, "12", 60, 20, "german", "A test")
+  val course3: Course = Course("18", "Course 3", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
 
   "CourseState" should {
 
@@ -85,7 +85,7 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
       val ref = spawn(CourseBehaviour.create(PersistenceId("fake-type-hint", "fake-id-6")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! DeleteCourse(69, probe1.ref)
+      ref ! DeleteCourse("69", probe1.ref)
       probe1.expectMessageType[Rejected]
     }
 

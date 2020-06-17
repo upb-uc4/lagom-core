@@ -22,10 +22,10 @@ trait CourseService extends Service {
   def addCourse(): ServiceCall[Course, Done]
 
   /** Deletes a course */
-  def deleteCourse(id: Long): ServiceCall[NotUsed, Done]
+  def deleteCourse(id: String): ServiceCall[NotUsed, Done]
 
   /**  Find courses by course ID */
-  def findCourseByCourseId(id: Long): ServiceCall[NotUsed, Course]
+  def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course]
 
   /** Find courses by course name */
   def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]]
@@ -37,7 +37,7 @@ trait CourseService extends Service {
   def getAllCourses: ServiceCall[NotUsed, Seq[Course]]
 
   /** Update an existing course */
-  def updateCourse(id: Long): ServiceCall[Course, Done]
+  def updateCourse(id: String): ServiceCall[Course, Done]
 
   /** Allows GET, POST, PUT, DELETE */
   def allowedMethods: ServiceCall[NotUsed, Done]

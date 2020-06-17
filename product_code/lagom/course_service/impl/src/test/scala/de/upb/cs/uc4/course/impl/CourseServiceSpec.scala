@@ -70,10 +70,10 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   val client: CourseService = server.serviceClient.implement[CourseService]
 
   //Test courses
-  val course0: Course = Course(18, "Course 0", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
-  val course1: Course = Course(17, "Course 1", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
-  val course2: Course = Course(16, "Course 1", "Lecture", "Today", "Tomorrow", 8, "12", 60, 20, "german", "A test")
-  val course3: Course = Course(18, "Course 3", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course0: Course = Course("18", "Course 0", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course1: Course = Course("17", "Course 1", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course2: Course = Course("16", "Course 1", "Lecture", "Today", "Tomorrow", 8, "12", 60, 20, "german", "A test")
+  val course3: Course = Course("18", "Course 3", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -126,7 +126,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "delete a non-existing course" in {
-      client.deleteCourse(42).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{
+      client.deleteCourse("42").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{
         answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
@@ -139,7 +139,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "find a non-existing course" in {
-      client.findCourseByCourseId(42).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{ answer =>
+      client.findCourseByCourseId("42").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{ answer =>
           answer shouldBe a [NotFound]
       }
     }
