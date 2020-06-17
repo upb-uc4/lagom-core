@@ -8,6 +8,7 @@ import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, Forbidden, 
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
+import com.datastax.driver.core.utils.UUIDs
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
@@ -28,8 +29,8 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   readSide.register(processor)
 
   /** Looks up the entity for the given ID */
-  private def entityRef(id: Long): EntityRef[CourseCommand] =
-    clusterSharding.entityRefFor(CourseState.typeKey, id.toString)
+  private def entityRef(id: String): EntityRef[CourseCommand] =
+    clusterSharding.entityRefFor(CourseState.typeKey, id)
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -37,7 +38,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   override def getAllCourses: ServerServiceCall[NotUsed, Seq[Course]] = authenticated(Role.All: _*){ _ =>
     cassandraSession.selectAll("SELECT id FROM courses ;")
       .map( seq => seq
-        .map(row => row.getLong("id")) //Future[Seq[Long]]
+        .map(row => row.getString("id")) //Future[Seq[String]]
         .map(entityRef(_).ask[Option[Course]](replyTo => GetCourse(replyTo))) //Future[Seq[Future[Option[Course]]]]
       )
       .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[Course]]]
@@ -50,22 +51,25 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def addCourse(): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall{
-    (_,courseToAdd) =>
+    (_,courseProposal) =>
+      // Generate unique ID for the course to add
+      val courseToAdd = courseProposal.copy(courseId = UUIDs.timeBased.toString)
+      // Look up the sharded entity (aka the aggregate instance) for the given ID.
+      val ref = entityRef(courseToAdd.courseId)
 
-    // Look up the sharded entity (aka the aggregate instance) for the given ID.
-    val ref = entityRef(courseToAdd.courseId)
-
-    ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
-      .map {
-        case Accepted => // Creation Successful
-          (ResponseHeader(201, MessageProtocol.empty, List(("1","Operation successful"))),Done)
-        case Rejected(reason) => // Already exists
-          (ResponseHeader(409,  MessageProtocol.empty, List(("1",reason))),Done)
-      }
+       ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
+         .map {
+           case Accepted => // Creation Successful
+            (ResponseHeader(201, MessageProtocol.empty, List(("1","Operation successful"))),Done)
+           case Rejected(reason) => // Already exists
+            (ResponseHeader(409,  MessageProtocol.empty, List(("1",reason))),Done)
+                   // This case should never be executed, as an UUID is generated. The statement was not removed to
+                   // check uniqueness of generated UUIDs and catch other failures.
+         }
   })
 
   /** @inheritdoc */
-  override def deleteCourse(id: Long): ServiceCall[NotUsed, Done] = authenticated(Role.Admin, Role.Lecturer)(
+  override def deleteCourse(id: String): ServiceCall[NotUsed, Done] = authenticated(Role.Admin, Role.Lecturer)(
     ServerServiceCall { (_, _) =>
     entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
       .map {
@@ -77,7 +81,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   })
 
   /** @inheritdoc */
-  override def findCourseByCourseId(id: Long): ServiceCall[NotUsed, Course] = authenticated(Role.All: _*){ _ =>
+  override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(Role.All: _*){ _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map{
       case Some(course) => course
       case None =>  throw NotFound("ID was not found")
@@ -101,7 +105,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def updateCourse(id : Long): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall {
+  override def updateCourse(id : String): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall {
     (_, courseToChange) =>
       // Look up the sharded entity (aka the aggregate instance) for the given ID.
       if(id != courseToChange.courseId){

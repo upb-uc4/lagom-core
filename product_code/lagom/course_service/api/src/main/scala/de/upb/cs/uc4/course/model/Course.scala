@@ -22,7 +22,7 @@ case class Course (
                   lecturerId: Option[Long],
                   maxStudents: Option[Long]*/
 
-                  courseId: Long,
+                  courseId: String,
                   courseName: String,
                   courseType: String,
                   startDate: String,

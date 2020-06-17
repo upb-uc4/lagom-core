@@ -20,7 +20,7 @@ class CourseDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
   def globalPrepare(): Future[Done] = {
     session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS courses ( " +
-        "id BIGINT, PRIMARY KEY (id)) ;")
+        "id TEXT, PRIMARY KEY (id)) ;")
   }
 
   /** Finishes preparation of CQL Statements */
@@ -38,7 +38,7 @@ class CourseDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
   def addCourse(eventElement: EventStreamElement[OnCourseCreate]): Future[List[BoundStatement]] = {
     insertCourse().map { ps =>
       val bindWriteTitle = ps.bind()
-      bindWriteTitle.setLong("id", eventElement.event.course.courseId)
+      bindWriteTitle.setString("id", eventElement.event.course.courseId)
       List(bindWriteTitle)
     }
   }
@@ -47,7 +47,7 @@ class CourseDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
   def deleteCourse(eventElement: EventStreamElement[OnCourseDelete]): Future[List[BoundStatement]] = {
     deleteCourse().map { ps =>
       val bindWriteTitle = ps.bind()
-      bindWriteTitle.setLong("id", eventElement.event.id)
+      bindWriteTitle.setString("id", eventElement.event.id)
       List(bindWriteTitle)
     }
   }
