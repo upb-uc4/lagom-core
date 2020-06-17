@@ -34,6 +34,12 @@ case class Course (
                   courseLanguage: String,
                   courseDescription: String
 ) {
+  /*
+  Checks if a course is similar to another course.
+  As courses, received from the frontend, have no ID (or no trustworthy ID) we need to check if courses with similar
+  characteristics already exists. The idea is to  prevent course duplicates when a course shall be added.
+
+   */
   def similar(other: Course): Boolean ={
     courseName == other.courseName &&
       courseType == other.courseType &&

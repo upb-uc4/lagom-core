@@ -55,7 +55,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       getAllCourses.invokeWithHeaders(header, NotUsed).flatMap[(ResponseHeader, Done.type)] { //Future[(ResponseHeader, Seq[Courses])]
         case (_, courses) =>
           if (courses.exists(_.similar(courseProposal))) {
-            Future.successful((ResponseHeader(409, MessageProtocol.empty, List(("1", "Course is not unique"))), Done))
+            Future.failed(
+              new Forbidden(TransportErrorCode(409, 1003, "Bad Request"),
+                new ExceptionMessage("00", "Course is not unique")))
+            //Future.successful((ResponseHeader(409, MessageProtocol.empty, List(("1", "Course is not unique"))), Done))
           } else {
             // Generate unique ID for the course to add
             val courseToAdd = courseProposal.copy(courseId = com.datastax.driver.core.utils.UUIDs.timeBased.toString)

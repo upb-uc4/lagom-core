@@ -20,7 +20,7 @@ class CourseDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
   def globalPrepare(): Future[Done] = {
     session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS courses ( " +
-        "id BIGINT, PRIMARY KEY (id)) ;")
+        "id TEXT, PRIMARY KEY (id)) ;")
   }
 
   /** Finishes preparation of CQL Statements */
