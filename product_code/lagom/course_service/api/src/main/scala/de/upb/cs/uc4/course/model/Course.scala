@@ -33,7 +33,13 @@ case class Course (
                   currentParticipants : Int,
                   courseLanguage: String,
                   courseDescription: String
-)
+) {
+  def similar(other: Course): Boolean ={
+    courseName == other.courseName &&
+      courseType == other.courseType &&
+      (startDate == other.startDate || endDate == other.endDate)
+  }
+}
 
 object Course {
   implicit val format: Format[Course] = Json.format

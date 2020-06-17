@@ -50,17 +50,28 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def addCourse(): ServiceCall[Course, Done] = authenticated(Role.Admin, Role.Lecturer)(ServerServiceCall{
-    (_,courseToAdd) =>
+    (header,courseProposal) =>
 
-    // Look up the sharded entity (aka the aggregate instance) for the given ID.
-    val ref = entityRef(courseToAdd.courseId)
+      getAllCourses.invokeWithHeaders(header, NotUsed).flatMap[(ResponseHeader, Done.type)] { //Future[(ResponseHeader, Seq[Courses])]
+        case (_, courses) =>
+          if (courses.exists(_.similar(courseProposal))) {
+            Future.successful((ResponseHeader(409, MessageProtocol.empty, List(("1", "Course is not unique"))), Done))
+          } else {
+            // Generate unique ID for the course to add
+            val courseToAdd = courseProposal.copy(courseId = com.datastax.driver.core.utils.UUIDs.timeBased.toString)
+            // Look up the sharded entity (aka the aggregate instance) for the given ID.
+            val ref = entityRef(courseToAdd.courseId)
 
-    ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
-      .map {
-        case Accepted => // Creation Successful
-          (ResponseHeader(201, MessageProtocol.empty, List(("1","Operation successful"))),Done)
-        case Rejected(reason) => // Already exists
-          (ResponseHeader(409,  MessageProtocol.empty, List(("1",reason))),Done)
+            ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
+              .map {
+                case Accepted => // Creation Successful
+                  (ResponseHeader(201, MessageProtocol.empty, List(("1","Operation successful"))),Done)
+                case Rejected(reason) => // Already exists
+                  (ResponseHeader(409,  MessageProtocol.empty, List(("1",reason))),Done)
+                   // This case should never be executed, as an UUID is generated. The statement was not removed to
+                   // check uniqueness of generated UUIDs and catch other failures.
+              }
+          }
       }
   })
 
