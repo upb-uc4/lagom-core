@@ -4,7 +4,9 @@ import play.api.libs.json.{Format, Json}
 
 object CourseType extends Enumeration {
   type CourseType = Value
-  val Lecture, Seminar, ProjectGroup = Value
+  val Lecture = Value("Lecture")
+  val Seminar = Value("Seminar")
+  val ProjectGroup = Value("Project Group")
   //Todo no spaces in Enumeration (ApiDoc: Project Group)
 
 

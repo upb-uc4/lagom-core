@@ -3,7 +3,8 @@ import play.api.libs.json.{Format, Json}
 
 object CourseLanguage  extends Enumeration{
   type CourseLanguage = Value
-  val German, English = Value
+  val German = Value("German")
+  val English = Value("English")
 
   implicit val format: Format[CourseLanguage] = Json.formatEnum(this)
 

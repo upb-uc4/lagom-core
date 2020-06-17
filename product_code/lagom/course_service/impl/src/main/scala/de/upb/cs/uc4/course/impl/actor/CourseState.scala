@@ -66,8 +66,8 @@ case class CourseState(optCourse: Option[Course]) {
     }
 
   def validateCourseSyntax(course: Course): String = {
-    val nameRegex = "[a-zA-Z0-9\\s]+".r // Allowed characters for coursename
-    val descriptionRegex = "[a-zA-Z0-9\\s]+".r // Allowed characters  for description
+    val nameRegex = """[\s\S]*""".r // Allowed characters for coursename "[a-zA-Z0-9\\s]+".r
+    val descriptionRegex = """[\s\S]*""".r // Allowed characters  for description
     val dateRegex = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
     course match {
 
