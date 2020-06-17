@@ -17,7 +17,7 @@ import de.upb.cs.uc4.course.model.CourseType.CourseType
 import play.api.libs.json._
 
 case class Course(
-                   courseId: Long,
+                   courseId: String,
                    courseName: String,
                    courseType: CourseType,
                    startDate: String,
@@ -46,7 +46,6 @@ case class Course(
     )
   }
 }
-
 
 object Course {
   implicit val format: Format[Course] = Json.format
