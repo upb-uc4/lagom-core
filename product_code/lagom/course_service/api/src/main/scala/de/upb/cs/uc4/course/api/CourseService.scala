@@ -15,42 +15,50 @@ object CourseService  {
   * consume the CourseService.
   */
 trait CourseService extends Service {
+  /** Prefix for the path for the endpoints, a name/identifier for the service*/
+  val pathPrefix = "/course-management"
 
   /** Add a new course to the database */
   def addCourse(): ServiceCall[Course, Done]
 
   /** Deletes a course */
-  def deleteCourse(id: Long): ServiceCall[NotUsed, Done]
+  def deleteCourse(id: String): ServiceCall[NotUsed, Done]
 
   /**  Find courses by course ID */
-  def findCourseByCourseId(id: Long): ServiceCall[NotUsed, Course]
+  def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course]
 
   /** Find courses by course name */
   def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]]
 
   /** Find courses by lecturer with the provided ID */
-  def findCoursesByLecturerId(id: Long): ServiceCall[NotUsed, Seq[Course]]
+  def findCoursesByLecturerId(id: String): ServiceCall[NotUsed, Seq[Course]]
 
   /** Get all courses */
   def getAllCourses: ServiceCall[NotUsed, Seq[Course]]
 
   /** Update an existing course */
-  def updateCourse(): ServiceCall[Course, Done]
+  def updateCourse(id: String): ServiceCall[Course, Done]
 
   /** Allows GET, POST, PUT, DELETE */
   def allowedMethods: ServiceCall[NotUsed, Done]
 
+  /** Allows GET POST*/
+  def allowedMethodsGETPOST: ServiceCall[NotUsed, Done]
+
+  /** Allows GET PUT DELETE*/
+  def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done]
+
   final override def descriptor: Descriptor = {
     import Service._
     named("course").withCalls(
-      restCall(Method.POST, "/course", addCourse _),
-      restCall(Method.DELETE, "/course?id", deleteCourse _),
-      restCall(Method.GET, "/course/findByCourseId?id", findCourseByCourseId _),
-      restCall(Method.GET, "/course/findByCourseName?name", findCoursesByCourseName _),
-      restCall(Method.GET, "/course/findByLecturerId?id", findCoursesByLecturerId _),
-      restCall(Method.GET, "/course", getAllCourses _),
-      restCall(Method.PUT, "/course", updateCourse _),
-      restCall(Method.OPTIONS, "/course", allowedMethods _)
+      restCall(Method.GET, pathPrefix + "/courses", getAllCourses _),
+      restCall(Method.POST, pathPrefix + "/courses", addCourse _),
+      restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _),
+      restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),
+      restCall(Method.GET, pathPrefix + "/courses/:id", findCourseByCourseId _),
+      restCall(Method.GET, pathPrefix + "/courses?courseName", findCoursesByCourseName _),
+      restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
+      restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _)
     ).withAutoAcl(true)
   }
 }

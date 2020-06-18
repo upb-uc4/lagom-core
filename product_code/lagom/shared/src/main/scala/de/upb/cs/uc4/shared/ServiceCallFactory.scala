@@ -2,7 +2,9 @@ package de.upb.cs.uc4.shared
 
 import java.util.Base64
 
-import com.lightbend.lagom.scaladsl.api.transport.{Forbidden, NotFound, RequestHeader}
+import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse
@@ -10,7 +12,7 @@ import de.upb.cs.uc4.user.model.Role.Role
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.varargs
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 object ServiceCallFactory {
 
@@ -42,15 +44,15 @@ object ServiceCallFactory {
       val userPw = getUserAndPassword(requestHeader)
 
       if(userPw.isEmpty){
-        throw Forbidden("No Authentication.")
+        throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "No Authorization given"))
       }
 
       val (user, pw) = userPw.get
 
       auth.check(user, pw).invoke(role).map{
         case AuthenticationResponse.Correct => serviceCall
-        case AuthenticationResponse.WrongUsername => throw NotFound("Username does not exist.")
-        case AuthenticationResponse.WrongPassword => throw Forbidden("Wrong password.")
+        case AuthenticationResponse.WrongUsername => throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
+        case AuthenticationResponse.WrongPassword => throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
         case AuthenticationResponse.NotAuthorized => throw Forbidden("Not enough privileges for this call.")
       }
     }
@@ -62,7 +64,7 @@ object ServiceCallFactory {
     * @param requestHeader with the an authentication header
     * @return an Option with a String tuple
     */
-  private def getUserAndPassword(requestHeader: RequestHeader): Option[(String, String)] ={
+  def getUserAndPassword(requestHeader: RequestHeader): Option[(String, String)] ={
     requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
       case Array("Basic", userAndPass) =>
         new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":")match {
@@ -72,4 +74,21 @@ object ServiceCallFactory {
       case _ => None
     }
   }
+
+  /**
+    * ServiceCall that returns a list of allowed methods, all of which will also be listed as access controlled
+    *
+    * @param listOfOptions with the allowed options. Schema: "GET, POST, DELETE"
+    *                      OPTIONS is added automatically
+    */
+  def allowedMethodsCustom(listOfOptions: String): ServiceCall[NotUsed, Done] =ServerServiceCall{
+    (_, _ ) =>
+      Future.successful {
+        (ResponseHeader(200, MessageProtocol.empty, List(
+          ("Allow", listOfOptions + ", OPTIONS"),
+          ("Access-Control-Allow-Methods", listOfOptions + ", OPTIONS")
+        )), Done)
+      }
+  }
+
 }

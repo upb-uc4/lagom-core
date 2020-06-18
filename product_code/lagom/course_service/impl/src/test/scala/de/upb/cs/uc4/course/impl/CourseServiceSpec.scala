@@ -13,7 +13,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationR
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.User
+import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -35,6 +35,10 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         override def check(username: String, password: String): ServiceCall[Seq[Role], AuthenticationResponse] =
           ServiceCall { _ =>  Future.successful(AuthenticationResponse.Correct)}
 
+        /** Gets the role of a user */
+        override def getRole(username: String): ServiceCall[NotUsed, JsonRole] =
+          ServiceCall { _ =>  Future.successful(JsonRole(Role.Admin))}
+
         /** Sets authentication and password of a user */
         override def set(): ServiceCall[User, Done] =
           ServiceCall { _ =>  Future.successful(Done)}
@@ -43,9 +47,22 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         override def delete(username: String): ServiceCall[NotUsed, Done] =
           ServiceCall { _ =>  Future.successful(Done)}
 
-        /** Allows GET, POST, DELETE */
+        /** Allows GET, POST, DELETE, OPTIONS*/
         override def options(): ServiceCall[NotUsed, Done] =
           ServiceCall { _ =>  Future.successful(Done)}
+
+        /** Allows GET, OPTIONS */
+        override def optionsGet(): ServiceCall[NotUsed, Done] =
+          ServiceCall { _ =>  Future.successful(Done)}
+
+        /** Allows POST */
+        override def allowedMethodsPOST(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
+
+        /** Allows GET */
+        override def allowedMethodsGET(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
+
+        /** Allows DELETE */
+        override def allowedMethodsDELETE(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
       }
     }
   }
@@ -53,10 +70,10 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   val client: CourseService = server.serviceClient.implement[CourseService]
 
   //Test courses
-  val course0: Course = Course(18, "Course 0", "Lecture", "Today", "Tomorrow", 8, 11, 60, 20, "german", "A test")
-  val course1: Course = Course(17, "Course 1", "Lecture", "Today", "Tomorrow", 8, 11, 60, 20, "german", "A test")
-  val course2: Course = Course(16, "Course 1", "Lecture", "Today", "Tomorrow", 8, 12, 60, 20, "german", "A test")
-  val course3: Course = Course(18, "Course 3", "Lecture", "Today", "Tomorrow", 8, 11, 60, 20, "german", "A test")
+  val course0: Course = Course("18", "Course 0", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course1: Course = Course("17", "Course 1", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course2: Course = Course("16", "Course 2", "Lecture", "Today", "Tomorrow", 8, "12", 60, 20, "german", "A test")
+  val course3: Course = Course("18", "Course 1", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -91,53 +108,21 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       }
     }
 
-    "create a course with an id with is already in use" in {
-      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course3).failed.map{
-        answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(409)
-      }
-    }
-
-    "delete a course" in {
-      for {
-        _ <- client.deleteCourse(course2.courseId).handleRequestHeader(addAuthorizationHeader()).invoke()
-        answer <- client.findCourseByCourseId(course2.courseId).handleRequestHeader(addAuthorizationHeader())
-          .invoke().failed
-      }yield{
-        answer shouldBe a [NotFound]
-      }
-    }
-
     "delete a non-existing course" in {
-      client.deleteCourse(42).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{
+      client.deleteCourse("42").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{
         answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
-    "find a course" in {
-      client.findCourseByCourseId(course1.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map{answer =>
-        answer should ===(course1)
-      }
-    }
-
     "find a non-existing course" in {
-      client.findCourseByCourseId(42).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{ answer =>
+      client.findCourseByCourseId("42").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{ answer =>
           answer shouldBe a [NotFound]
       }
     }
 
-    "update an existing course" in {
-      for{
-        _ <-client.updateCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course3)
-        answer <- client.findCourseByCourseId(course0.courseId).handleRequestHeader(addAuthorizationHeader()).invoke()
-      }yield{
-        answer should ===(course3)
-      }
-    }
-
     "update a non-existing course" in {
-      client.updateCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course2).failed.map{
+      client.updateCourse(course2.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course2).failed.map{
         answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
