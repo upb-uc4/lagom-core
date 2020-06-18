@@ -46,7 +46,7 @@ trait AuthenticationService extends Service {
 
   final override def descriptor: Descriptor = {
     import Service._
-    named("AuthenticationApi").withCalls(
+    named("authentication").withCalls(
       restCall(Method.POST, pathPrefix + "/users", set _),
       restCall(Method.GET, pathPrefix + "/users?username&password", check _),
       restCall(Method.GET, pathPrefix + "/users/:username/role", getRole _),

@@ -1,15 +1,27 @@
 import scala.concurrent.duration._
+import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
-version in ThisBuild := "ALPHA"
+version in ThisBuild := "0.0.2"
 lagomCassandraMaxBootWaitingTime in ThisBuild := 60.seconds
+lagomServiceEnableSsl in ThisBuild := true
 
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.13.0"
 
+// Docker
+def dockerSettings = Seq(
+  dockerUpdateLatest := true,
+  dockerBaseImage := "adoptopenjdk/openjdk8",
+  dockerUsername := Some("uc4official"),
+  dockerChmodType := DockerChmodType.UserGroupWriteExecute,
+)
+
+// Dependencies
 val macwire = "com.softwaremill.macwire" %% "macros" % "2.3.3" % "provided"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.1.1" % Test
 val guava = "com.google.guava" % "guava" % "29.0-jre"
+val akkaDiscoveryKubernetes = "com.lightbend.akka.discovery" %% "akka-discovery-kubernetes-api" % "1.0.8"
 
 val apiDefaultDependencies = Seq(
   lagomScaladslApi
@@ -17,6 +29,8 @@ val apiDefaultDependencies = Seq(
 
 val implDefaultDependencies = Seq(
   lagomScaladslTestKit,
+  lagomScaladslAkkaDiscovery,
+  akkaDiscoveryKubernetes,
   filters,
   macwire,
   scalaTest
@@ -28,12 +42,12 @@ val defaultCassandraKafkaDependencies = Seq(
 )
 
 
-
+// Projects
 lazy val `lagom` = (project in file("."))
   .aggregate(`shared`,
-    `course-service-api`, `course-service-impl`,
-    `hyperledger-service-api`, `hyperledger-service-impl`,
-    `authentication-service-api`, `authentication-service-impl`)
+    `course_service_api`, `course_service`,
+    `hyperledger_service_api`, `hyperledger_service`,
+    `authentication_service_api`, `authentication_service`)
 
 lazy val `shared` = (project in file("shared"))
   .settings(
@@ -45,48 +59,51 @@ lazy val `shared` = (project in file("shared"))
       guava
     )
   )
-  .dependsOn(`authentication-service-api`)
+  .dependsOn(`authentication_service_api`)
 
-lazy val `hyperledger-service-api` = (project in file("hyperledger_service/api"))
+lazy val `hyperledger_service_api` = (project in file("hyperledger_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
 
-lazy val `hyperledger-service-impl` = (project in file("hyperledger_service/impl"))
+lazy val `hyperledger_service` = (project in file("hyperledger_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= implDefaultDependencies
   )
-  .dependsOn(`hyperledger-service-api`, `shared`)
+  .settings(dockerSettings)
+  .dependsOn(`hyperledger_service_api`, `shared`)
 
-lazy val `course-service-api` = (project in file("course_service/api"))
+lazy val `course_service_api` = (project in file("course_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
 
-lazy val `course-service-impl` = (project in file("course_service/impl"))
+lazy val `course_service` = (project in file("course_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= implDefaultDependencies,
     libraryDependencies ++= defaultCassandraKafkaDependencies
   )
-  .dependsOn(`course-service-api`, `shared`, `hyperledger-service-api`)
+  .settings(dockerSettings)
+  .dependsOn(`course_service_api`, `shared`)
 
-lazy val `authentication-service-api` = (project in file("authentication_service/api"))
+lazy val `authentication_service_api` = (project in file("authentication_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
-  .dependsOn(`user-service-api`)
+  .dependsOn(`user_service_api`)
 
-lazy val `authentication-service-impl` = (project in file("authentication_service/impl"))
+lazy val `authentication_service` = (project in file("authentication_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= implDefaultDependencies,
     libraryDependencies ++= defaultCassandraKafkaDependencies
   )
-  .dependsOn(`authentication-service-api`,  `shared`)
+  .settings(dockerSettings)
+  .dependsOn(`authentication_service_api`,  `shared`)
 
-lazy val `user-service-api` = (project in file("user_service/api"))
+lazy val `user_service_api` = (project in file("user_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
