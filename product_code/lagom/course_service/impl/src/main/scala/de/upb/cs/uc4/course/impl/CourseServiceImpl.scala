@@ -67,6 +67,11 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         }
   })
 
+  /** Matches the course creation/update error code to the suitable response exception.
+   *
+   * @param code which describes why a course cannot be created/updated
+   * @throws Forbidden providing transport protocol error codes and a human readable error description
+   */
   def throwForbidden(code : String) = {
     code match {
       case ("10") =>

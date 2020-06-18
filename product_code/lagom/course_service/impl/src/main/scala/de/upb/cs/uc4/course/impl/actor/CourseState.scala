@@ -65,6 +65,11 @@ case class CourseState(optCourse: Option[Course]) {
         Effect.noReply
     }
 
+  /** Checks if the course attributes correspond to agreed syntax and semantics
+   *
+   * @param course which attributes shall be verified
+   * @return response-code which gives detailed description of syntax or semantics violation
+   */
   def validateCourseSyntax(course: Course): String = {
     val nameRegex = """[\s\S]*""".r // Allowed characters for coursename "[a-zA-Z0-9\\s]+".r
     val descriptionRegex = """[\s\S]*""".r // Allowed characters  for description
