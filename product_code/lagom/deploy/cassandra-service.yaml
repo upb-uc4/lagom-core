@@ -7,6 +7,10 @@ metadata:
 spec:
   clusterIP: None
   ports:
-  - port: 9042
+    - name: "cql"
+      protocol: "TCP"
+      port: 9042
+      targetPort: 9042
+      nodePort: 0
   selector:
     app: cassandra

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: authentication
 spec:
-  replicas: 3
+  replicas: 1
 
   selector:
     matchLabels:
@@ -25,10 +25,10 @@ spec:
                 secretKeyRef:
                   name: authentication-application-secret
                   key: secret
-            - name: KAFKA_SERVICE_NAME
-              value: "_clients._tcp.strimzi-kafka-brokers"
+            - name: CASSANDRA_SERVICE_NAME
+              value: "_cql._tcp.cassandra"
             - name: REQUIRED_CONTACT_POINT_NR
-              value: "3"
+              value: "1"
           resources:
             limits:
               memory: 512Mi
@@ -65,25 +65,3 @@ spec:
   selector:
     app: authentication
   type: LoadBalancer
----
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: pod-reader
-rules:
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "watch", "list"]
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: read-pods
-subjects:
-  - kind: ServiceAccount
-    name: default
-roleRef:
-  kind: Role
-  name: pod-reader
-  apiGroup: rbac.authorization.k8s.io
----
