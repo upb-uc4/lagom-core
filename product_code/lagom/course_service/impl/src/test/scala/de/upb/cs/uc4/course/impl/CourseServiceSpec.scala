@@ -11,7 +11,7 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationResponse
 import de.upb.cs.uc4.course.api.CourseService
-import de.upb.cs.uc4.course.model.Course
+import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
 import org.scalatest.matchers.should.Matchers
@@ -70,10 +70,10 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   val client: CourseService = server.serviceClient.implement[CourseService]
 
   //Test courses
-  val course0: Course = Course("18", "Course 0", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
-  val course1: Course = Course("17", "Course 1", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
-  val course2: Course = Course("16", "Course 2", "Lecture", "Today", "Tomorrow", 8, "12", 60, 20, "german", "A test")
-  val course3: Course = Course("18", "Course 1", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course0: Course = Course("18", "Course 0", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
+  val course1: Course = Course("17", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
+  val course2: Course = Course("16", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "12", 60, 20, CourseLanguage.German, "A test")
+  val course3: Course = Course("18", "Course 3", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -122,7 +122,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "update a non-existing course" in {
-      client.updateCourse(course2.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course2).failed.map{
+      client.updateCourse(course3.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course3).failed.map{
         answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
