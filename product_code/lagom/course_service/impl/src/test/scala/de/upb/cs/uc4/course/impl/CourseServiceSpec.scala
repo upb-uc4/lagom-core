@@ -13,7 +13,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationR
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{JsonRole, User, Role}
+import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}

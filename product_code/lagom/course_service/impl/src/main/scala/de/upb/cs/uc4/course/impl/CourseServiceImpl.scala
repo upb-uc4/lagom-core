@@ -4,7 +4,7 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, Forbidden, MessageProtocol, NotFound, ResponseHeader, TransportErrorCode}
+import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
@@ -15,8 +15,8 @@ import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.readside.CourseEventProcessor
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 import de.upb.cs.uc4.shared.ServiceCallFactory._
+import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 import de.upb.cs.uc4.user.model.Role
 
 import scala.concurrent.duration._
@@ -57,16 +57,48 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       // Look up the sharded entity (aka the aggregate instance) for the given ID.
       val ref = entityRef(courseToAdd.courseId)
 
-       ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
-         .map {
-           case Accepted => // Creation Successful
+      ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
+        .map {
+          case Accepted => // Creation Successful
             (ResponseHeader(201, MessageProtocol.empty, List(("1","Operation successful"))),Done)
-           case Rejected(reason) => // Already exists
-            (ResponseHeader(409,  MessageProtocol.empty, List(("1",reason))),Done)
-                   // This case should never be executed, as an UUID is generated. The statement was not removed to
-                   // check uniqueness of generated UUIDs and catch other failures.
-         }
+          case Rejected("A course with the given Id already exist.") => // Already exists
+            (ResponseHeader(409,  MessageProtocol.empty, List(("1","A course with the given Id already exist."))),Done)
+          case Rejected(rejectedMessage) => throwForbidden(rejectedMessage)
+        }
   })
+
+  /** Matches the course creation/update error code to the suitable response exception.
+   *
+   * @param code which describes why a course cannot be created/updated
+   * @throws Forbidden providing transport protocol error codes and a human readable error description
+   */
+  def throwForbidden(code : String) = {
+    code match {
+      case ("10") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("10", "Course name must not be empty"))
+      case ("11") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("11", "Course name has invalid characters"))
+      //(ResponseHeader(400,  MessageProtocol.empty, List(("10","Course name must not be empty"))),Done)
+      case ("20") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("20", "Course type must be one of [\"Lecture\", \"Seminar\", \"ProjectGroup\"]"))
+      case ("30") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("30", "startDate must be the following format \"yyyy-mm-dd\""))
+      case ("40") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("40", "endDate must be the following format \"yyyy-mm-dd\""))
+      case ("50") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("50", "ects must be a positive integer number"))
+      case ("60") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("60", "lecturerID unknown"))
+      case ("70") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("70", "maxParticipants must be a positive integer number"))
+      case ("80") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("80", "\tlanguage must be one of [\"German\", \"English\"]"))
+      case ("90") =>
+        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("90", "description invalid characters"))
+      case (s) =>
+        throw new Forbidden(TransportErrorCode(500, 1003, "Server error"), new ExceptionMessage("0", s"internal server error: $s")) // default case, should not happen
+    }
+  }
 
   /** @inheritdoc */
   override def deleteCourse(id: String): ServiceCall[NotUsed, Done] = authenticated(Role.Admin, Role.Lecturer)(
@@ -117,8 +149,9 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         .map {
           case Accepted => // OK
             (ResponseHeader(200, MessageProtocol.empty, List(("1","Operation Successful"))),Done)
-          case Rejected(reason) => // Not Found
-            (ResponseHeader(404, MessageProtocol.empty, List(("1",reason))),Done)
+          case Rejected("A course with the given Id does not exist.") => // Not Found
+            (ResponseHeader(404, MessageProtocol.empty, List(("1","A course with the given Id does not exist."))),Done)
+          case Rejected(rejectedMessage) => throwForbidden(rejectedMessage)
         }
   })
 
