@@ -29,7 +29,9 @@ jobs:
         pushd ./product_code/hyperledger/dev_network
         echo start docker-compose
         docker-compose -f docker-compose-simple.yaml up -d
-        echo started docker-compose in a new shell
+        echo started docker-compose in a new shell -- begin sleep
+        sleep 180
+        echo finish sleep
         popd
     
     # run sbt tests
