@@ -18,7 +18,7 @@ object ClientApp {
       val gateway = builder.connect
       try { // get the network and contract
         val network = gateway.getNetwork("myc")
-        val contract = network.getContract("UC4")
+        val contract = network.getContract("mycc")
         var result = contract.evaluateTransaction("queryAll")
         println("Before:")
         println(new String(result, StandardCharsets.UTF_8))
