@@ -1,13 +1,13 @@
-name: Scala CI
+name: Hyperledger Test Pipeline
 
 on:
   push:
-    branches: [ feature/hyperledger_automated_test_deployment ]
+    branches: [ feature/hyperledger* ]
   pull_request:
-    branches: [ feature/hyperledger_automated_test_deployment ]
+    branches: [ develop ]
 
 jobs:
-  build:
+  DeployAndTestAccess:
 
     runs-on: ubuntu-latest
 
@@ -25,20 +25,27 @@ jobs:
     # set up Dev_network
     - name: Set up dev_network - dockers
       run: |
-        echo pushd ./product_code/hyperledger/dev_network
         pushd ./product_code/hyperledger/dev_network
-        echo start docker-compose
-        /bin/bash docker-compose -f docker-compose-simple.yaml up
-        echo started docker-compose in a new shell -- begin sleep
-        sleep 120
-        echo finished sleep
+        echo ##########################
+        echo #  start docker-compose  #
+        echo ##########################
+        docker-compose -f docker-compose-simple.yaml up -d
+        echo ##########################
+        echo # started docker-compose #
+        echo ##########################
+        echo #     begin sleep        #
+        echo ##########################
+        sleep 180
+        echo #    finish sleep        #
+        echo ##########################
         popd
     
     # run sbt tests
     - name: Run tests
       run: |
         pushd ./product_code/hyperledger/api
-        echo starting test
+        echo ##########################
+        echo #    starting test       #
+        echo ##########################
         sbt test
-        echo test finished
         popd
