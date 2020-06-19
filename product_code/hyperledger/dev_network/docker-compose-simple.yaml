@@ -6,7 +6,7 @@ services:
     container_name: orderer
     image: hyperledger/fabric-orderer:2.1.1
     environment:
-      - FABRIC_LOGGING_SPEC=debug
+      #- FABRIC_LOGGING_SPEC=debug
       - ORDERER_GENERAL_LISTENADDRESS=orderer
       - ORDERER_GENERAL_BOOTSTRAPMETHOD=file
       - ORDERER_GENERAL_BOOTSTRAPFILE=orderer.block
@@ -34,13 +34,14 @@ services:
   peer:
     container_name: peer
     image: hyperledger/fabric-peer:2.1.1
-    environment:
+    environment: # maybe add tls with "CORE_PEER_TLS_ENABLED=true"
       - CORE_PEER_ID=peer
       - CORE_PEER_ADDRESS=peer:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051 # added
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer:7051
       - CORE_PEER_LOCALMSPID=DEFAULT
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
-      - FABRIC_LOGGING_SPEC=DEBUG
+      #- FABRIC_LOGGING_SPEC=DEBUG
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
       - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb:5984
