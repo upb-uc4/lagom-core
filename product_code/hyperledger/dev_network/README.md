@@ -69,7 +69,7 @@ The channel name can be adjusted by setting the variable ```CHAINCODE_NAME``` in
 
 ```
 University-Credits-4.0/product_code/hyperledger/dev_network/scripts/variables.sh
-```.
+```
 
 The channel name can currently not be changed, unless you are familiar with hyperledger's configtx tool etc.
 
