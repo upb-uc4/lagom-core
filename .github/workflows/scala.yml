@@ -26,26 +26,26 @@ jobs:
     - name: Set up dev_network - dockers
       run: |
         pushd ./product_code/hyperledger/dev_network
-        echo ##########################
-        echo #  start docker-compose  #
-        echo ##########################
+        echo "##########################"
+        echo "#  start docker-compose  #"
+        echo "##########################"
         docker-compose -f docker-compose-simple.yaml up -d
-        echo ##########################
-        echo # started docker-compose #
-        echo ##########################
-        echo #     begin sleep        #
-        echo ##########################
+        echo "##########################"
+        echo "# started docker-compose #"
+        echo "##########################"
+        echo "#     begin sleep        #"
+        echo "##########################"
         sleep 180
-        echo #    finish sleep        #
-        echo ##########################
+        echo "#    finish sleep        #"
+        echo "##########################"
         popd
     
     # run sbt tests
     - name: Run tests
       run: |
         pushd ./product_code/hyperledger/api
-        echo ##########################
-        echo #    starting test       #
-        echo ##########################
+        echo "##########################"
+        echo "#    starting test       #"
+        echo "##########################"
         sbt test
         popd
