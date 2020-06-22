@@ -1,4 +1,5 @@
 import org.scalatest.FunSuite
+import de.upb.cs.uc4.hyperledger.ConnectionManager
 
 class ConnectionTests extends FunSuite {
 
@@ -7,11 +8,11 @@ class ConnectionTests extends FunSuite {
    */
   test("Check gateway connection") {
     // retrieve possible identities
-    val wallet = ClientApp.getWallet()
+    val wallet = ConnectionManager.getWallet()
     assert(wallet != null, "Wallet retrieved was null.")
 
     // prepare Network Builder
-    val builder = ClientApp.getBuilder(wallet, ClientApp.connection_profile_path, ClientApp.client_name)
+    val builder = ConnectionManager.getBuilder(wallet, ConnectionManager.connection_profile_path, ConnectionManager.client_name)
     assert(builder != null, "Builder retrieved was null, maybe the connection profile did not match the running network.")
 
     // get gateway object
@@ -19,7 +20,7 @@ class ConnectionTests extends FunSuite {
     assert(gateway != null, "Gateway retrieved was null.")
 
     // cleanup
-    ClientApp.disposeGateway(gateway)
+    ConnectionManager.disposeGateway(gateway)
   }
 
   /*  Simple Test to check for an available connection to our chaincode.
@@ -28,11 +29,11 @@ class ConnectionTests extends FunSuite {
   test("Check network connection") {
 
     // retrieve possible identities
-    val wallet = ClientApp.getWallet()
+    val wallet = ConnectionManager.getWallet()
     assert(wallet != null, "Wallet retrieved was null.")
 
     // prepare Network Builder
-    val builder = ClientApp.getBuilder(wallet, ClientApp.connection_profile_path, ClientApp.client_name)
+    val builder = ConnectionManager.getBuilder(wallet, ConnectionManager.connection_profile_path, ConnectionManager.client_name)
     assert(builder != null, "Builder retrieved was null, maybe the connection profile did not match the running network.")
 
     // get gateway object
@@ -41,10 +42,10 @@ class ConnectionTests extends FunSuite {
 
     // try connecting to the network
     try{
-      val network = gateway.getNetwork(ClientApp.channel_name)
+      val network = gateway.getNetwork(ConnectionManager.channel_name)
       assert(network != null, "Network retrieved was null.")
     } finally {
-      ClientApp.disposeGateway(gateway)
+      ConnectionManager.disposeGateway(gateway)
     }
   }
 
@@ -53,11 +54,12 @@ class ConnectionTests extends FunSuite {
    */
   test("Check chaincode connection") {
     // test full chaincode connection
-    val gateway = ClientApp.initializeConnection()
+    val (gateway, chaincode) = ConnectionManager.initializeConnection()
     assert(gateway != null, "Gateway retrieved was null.")
+    assert(chaincode != null, "Chaincode retrieved was null.")
 
     // cleanup
-    ClientApp.disposeGateway(gateway)
+    ConnectionManager.disposeGateway(gateway)
   }
 
 }

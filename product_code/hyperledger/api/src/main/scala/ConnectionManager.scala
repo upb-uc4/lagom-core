@@ -1,11 +1,10 @@
 package de.upb.cs.uc4.hyperledger
 
-import java.nio.charset.StandardCharsets
 import org.hyperledger.fabric.gateway.{Contract, Gateway, Network, Wallet, Wallets}
 import java.nio.file.{Path, Paths}
 import org.hyperledger.fabric.gateway.Gateway.Builder
 
-object ChaincodeAccessManager {
+object ConnectionManager{
 
   val channel_name = "myc"
   val chaincode_name = "mycc"
@@ -13,39 +12,21 @@ object ChaincodeAccessManager {
   val connection_profile_path = Paths.get("connection_profile.yaml")
 
   @throws[Exception]
-  def main(args: Array[String]) = {
-    val (gateway, chaincode) = ChaincodeAccessManager.initializeConnection()
-
-    try{
-      var result = chaincode.evaluateTransaction("queryAll")
-      println("Before:")
-      println(new String(result, StandardCharsets.UTF_8))
-      chaincode.submitTransaction("changeLectureId", "FoC", "Foundations of Cryptography")
-      result = chaincode.evaluateTransaction("queryAll")
-      println("After:")
-      println(new String(result, StandardCharsets.UTF_8))
-    } finally {
-      ChaincodeAccessManager.disposeGateway(gateway)
-    }
-
-  }
-
-  @throws[Exception]
   def initializeConnection() : (Gateway, Contract) = { // Load a file system based wallet for managing identities.
 
     // retrieve possible identities
-    val wallet : Wallet = ChaincodeAccessManager.getWallet()
+    val wallet : Wallet = ConnectionManager.getWallet()
 
     // prepare Network Builder
-    val builder : Builder = ChaincodeAccessManager.getBuilder(wallet, ChaincodeAccessManager.connection_profile_path, ChaincodeAccessManager.client_name)
+    val builder : Builder = ConnectionManager.getBuilder(wallet, ConnectionManager.connection_profile_path, ConnectionManager.client_name)
 
     val gateway : Gateway = builder.connect
     var contract : Contract = null
     try{
-      val network : Network = gateway.getNetwork(ChaincodeAccessManager.channel_name)
-      contract = network.getContract(ChaincodeAccessManager.chaincode_name)
+      val network : Network = gateway.getNetwork(ConnectionManager.channel_name)
+      contract = network.getContract(ConnectionManager.chaincode_name)
     } catch {
-      case e => ChaincodeAccessManager.disposeGateway(gateway); throw e;
+      case e => ConnectionManager.disposeGateway(gateway); throw e;
     }
 
     return (gateway, contract)
