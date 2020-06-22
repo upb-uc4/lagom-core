@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /opt/gopath/src/chaincodedev/scripts/variables.sh
+
 #perhaps wait for stuff to start?
 sleep 10s
 
@@ -27,7 +29,7 @@ echo "#                                   INSTALLING CHAINCODE                  
 echo "############################################################################################"
 
 # chaincode points to the chaincode directory in the UC4 repo
-peer chaincode install -p chaincode -n mycc -v 0 -l java
+peer chaincode install -p chaincode -n ${CHAINCODE_NAME} -v 0 -l java
 
 echo "############################################################################################"
 echo "#                                   CHAINCODE INSTALLED                                    #"
@@ -38,7 +40,7 @@ echo "#                                   INITIALIZING CHAINCODE                
 echo "############################################################################################"
 
 # TODO: change the function to call the actual init-function
-peer chaincode instantiate -n mycc -v 0 -c '{"Args":["initLedger"]}' -C myc
+peer chaincode instantiate -n ${CHAINCODE_NAME} -v 0 -c '{"Args":["initLedger"]}' -C myc
 
 echo "############################################################################################"
 echo "#                                   CHAINCODE INITIALIZED                                  #"
