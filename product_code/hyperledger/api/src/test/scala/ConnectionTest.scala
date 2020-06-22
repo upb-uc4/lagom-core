@@ -1,10 +1,9 @@
+import de.upb.cd.uc4.hyperledger.ConnectionManager
 import org.scalatest.FunSuite
-import de.upb.cs.uc4.hyperledger.ConnectionManager
 
 class ConnectionTests extends FunSuite {
 
-  /*  Simple Test to check for an available connection to our chaincode.
-   *  Will fail if any step in connecting to the chaincode fails
+  /*  Simple Test to check for an available gateway according to the network configuration file
    */
   test("Check gateway connection") {
     // retrieve possible identities
@@ -23,8 +22,7 @@ class ConnectionTests extends FunSuite {
     ConnectionManager.disposeGateway(gateway)
   }
 
-  /*  Simple Test to check for an available connection to our chaincode.
-   *  Will fail if any step in connecting to the chaincode fails
+  /*  Simple Test to check for an available connection to our network.
    */
   test("Check network connection") {
 

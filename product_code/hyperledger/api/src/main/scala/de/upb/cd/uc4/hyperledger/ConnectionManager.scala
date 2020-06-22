@@ -1,8 +1,9 @@
-package de.upb.cs.uc4.hyperledger
+package de.upb.cd.uc4.hyperledger
 
-import org.hyperledger.fabric.gateway.{Contract, Gateway, Network, Wallet, Wallets}
 import java.nio.file.{Path, Paths}
+
 import org.hyperledger.fabric.gateway.Gateway.Builder
+import org.hyperledger.fabric.gateway._
 
 object ConnectionManager{
 
@@ -10,6 +11,8 @@ object ConnectionManager{
   val chaincode_name = "mycc"
   val client_name = "cli"
   val connection_profile_path = Paths.get("connection_profile.yaml")
+
+  def createConnection() : ChaincodeConnection = new ChaincodeConnection(ConnectionManager.initializeConnection())
 
   @throws[Exception]
   def initializeConnection() : (Gateway, Contract) = { // Load a file system based wallet for managing identities.
