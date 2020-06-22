@@ -6,7 +6,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.course.impl.actor.CourseBehaviour
 import de.upb.cs.uc4.course.impl.commands.{CreateCourse, DeleteCourse, GetCourse, UpdateCourse}
-import de.upb.cs.uc4.course.model.Course
+import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
 import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -19,10 +19,10 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
     """) with AnyWordSpecLike with Matchers {
 
   //Test courses
-  val course0: Course = Course("18", "Course 0", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
-  val course1: Course = Course("17", "Course 1", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
-  val course2: Course = Course("16", "Course 1", "Lecture", "Today", "Tomorrow", 8, "12", 60, 20, "german", "A test")
-  val course3: Course = Course("18", "Course 3", "Lecture", "Today", "Tomorrow", 8, "11", 60, 20, "german", "A test")
+  val course0: Course = Course("18", "Course 0", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
+  val course1: Course = Course("17", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
+  val course2: Course = Course("16", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "12", 60, 20, CourseLanguage.German, "A test")
+  val course3: Course = Course("18", "Course 3", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
 
   "CourseState" should {
 
