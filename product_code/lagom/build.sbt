@@ -2,7 +2,7 @@ import scala.concurrent.duration._
 import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
-version in ThisBuild := "0.0.2"
+version in ThisBuild := "v0.2.0"
 lagomCassandraMaxBootWaitingTime in ThisBuild := 60.seconds
 lagomServiceEnableSsl in ThisBuild := true
 
