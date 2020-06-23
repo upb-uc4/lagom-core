@@ -124,8 +124,8 @@ trait UserService extends Service {
         restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _),
         restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
         restCall(Method.DELETE, pathPrefix + "/lecturers/:username", deleteLecturer _),
-        restCall(Method.PUT, pathPrefix + "/lectures/:username", updateLecture _),
-        restCall(Method.OPTIONS, pathPrefix + "/lectures/:username", allowedGetPutDelete _),
+        restCall(Method.PUT, pathPrefix + "/lecturers/:username", updateLecture _),
+        restCall(Method.OPTIONS, pathPrefix + "/lecturers/:username", allowedGetPutDelete _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/admins", getAllAdmins _),
