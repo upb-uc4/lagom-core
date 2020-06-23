@@ -3,7 +3,8 @@ package de.upb.cs.uc4.user.api
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import de.upb.cs.uc4.user.model.GetAllUsersResponse
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole}
+import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
 
 
@@ -75,13 +76,16 @@ trait UserService extends Service {
   /** Update an existing admin */
   def updateAdmin(): ServiceCall[Admin, Done]
 
+  // ROLE
+  def getRole(username: String): ServiceCall[NotUsed, JsonRole]
+
   // OPTIONS
 
   /** Allows GET, PUT, DELETE */
-  def allowedMethods: ServiceCall[NotUsed, Done]
+  def allowedGetPutDelete: ServiceCall[NotUsed, Done]
 
   /** Allows GET, POST */
-  def allowedGetPostMethods: ServiceCall[NotUsed, Done]
+  def allowedGetPost: ServiceCall[NotUsed, Done]
 
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
@@ -97,29 +101,32 @@ trait UserService extends Service {
       restCall(Method.OPTIONS, pathPrefix, allowedGet _),
       restCall(Method.OPTIONS, pathPrefix + "/:username", allowedDelete _),
 
+      restCall(Method.GET, pathPrefix + "/:username/role", getRole _),
+      restCall(Method.OPTIONS, pathPrefix + "/:username/role", allowedGetPost _),
+
       restCall(Method.GET, pathPrefix + "/students", getAllStudents _),
       restCall(Method.POST, pathPrefix + "/students", addStudent _),
       restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
       restCall(Method.DELETE, pathPrefix + "/students/:username", deleteStudent _),
       restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _),
-      restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedMethods _),
-      restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPostMethods _),
+      restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPutDelete _),
+      restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPost _),
 
       restCall(Method.GET, pathPrefix + "/lecturers", getAllLecturers _),
       restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _),
       restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
       restCall(Method.DELETE, pathPrefix + "/lecturers/:username", deleteLecturer _),
       restCall(Method.PUT, pathPrefix + "/lectures/:username", updateLecture _),
-      restCall(Method.OPTIONS, pathPrefix + "/lectures/:username", allowedMethods _),
-      restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPostMethods _),
+      restCall(Method.OPTIONS, pathPrefix + "/lectures/:username", allowedGetPutDelete _),
+      restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
 
       restCall(Method.GET, pathPrefix + "/admins", getAllAdmins _),
       restCall(Method.POST, pathPrefix + "/admins", addAdmin _),
       restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
       restCall(Method.DELETE, pathPrefix + "/admins/:username", deleteAdmin _),
       restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _),
-      restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedMethods _),
-      restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPostMethods _),
+      restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPutDelete _),
+      restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _),
     ).withAutoAcl(true)
   }
 }

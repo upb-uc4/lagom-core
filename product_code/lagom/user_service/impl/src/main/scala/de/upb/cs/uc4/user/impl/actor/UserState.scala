@@ -3,14 +3,14 @@ package de.upb.cs.uc4.user.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
+import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}
 import de.upb.cs.uc4.user.impl.UserApplication
-import de.upb.cs.uc4.user.impl.commands.UserCommand
-import de.upb.cs.uc4.user.impl.events.UserEvent
-import de.upb.cs.uc4.user.model.user.Student
+import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateUser, UserCommand}
+import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate, UserEvent}
 import play.api.libs.json.{Format, Json}
 
-/** The current state of a Course */
-case class UserState(optStudent: Option[Student]) {
+/** The current state of a User */
+case class UserState(optUser: Option[User]) {
 
   /** Functions as a CommandHandler
     *
@@ -18,6 +18,29 @@ case class UserState(optStudent: Option[Student]) {
     */
   def applyCommand(cmd: UserCommand): ReplyEffect[UserEvent, UserState] =
     cmd match {
+      case GetUser(replyTo) => Effect.reply(replyTo)(optUser)
+
+      case CreateUser(user, replyTo) =>
+        if (optUser.isEmpty) {
+          Effect.persist(OnUserCreate(user)).thenReply(replyTo) { _ => Accepted }
+        } else {
+          Effect.reply(replyTo)(Rejected("A user with the given username already exist."))
+        }
+
+      case UpdateUser(user, replyTo) =>
+        if(optUser.isDefined){
+          Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
+        } else {
+          Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))
+        }
+
+      case DeleteUser(replyTo) =>
+        if (optUser.isDefined) {
+          Effect.persist(OnUserDelete(optUser.get)).thenReply(replyTo) { _ => Accepted }
+        } else {
+          Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))
+        }
+
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -30,6 +53,9 @@ case class UserState(optStudent: Option[Student]) {
     */
   def applyEvent(evt: UserEvent): UserState =
     evt match {
+      case OnUserCreate(user) => copy(Some(user))
+      case OnUserUpdate(user) => copy(Some(user))
+      case OnUserDelete(_) => copy(None)
       case _ =>
         println("Unknown Event")
         this

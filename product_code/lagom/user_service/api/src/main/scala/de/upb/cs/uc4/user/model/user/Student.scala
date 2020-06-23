@@ -14,7 +14,7 @@ case class Student(username: String,
                    immatriculationStatus: String,
                    matriculationId: String,
                    semesterCount: Int,
-                   fieldsOfStudy: List[String]){
+                   fieldsOfStudy: List[String]) {
 
   def trim: Student = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
