@@ -44,9 +44,9 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
           result.get match {
             //Insert default users
             case None =>
-              createAccount("admin", Role.Admin)
-              createAccount("student", Role.Student)
-              createAccount("lecturer", Role.Lecturer)
+              createAccount("admin","admin", Role.Admin)
+              createAccount("student", "student", Role.Student)
+              createAccount("lecturer", "lecturer", Role.Lecturer)
             case _ =>
           }
         }
@@ -58,13 +58,13 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
     * @param name is the name and password of the user
     * @param role is the authentication role of the user
     */
-  private def createAccount(name: String, role: Role): Future[Done] = {
+  private def createAccount(name: String, password: String, role: Role): Future[Done] = {
     val salt = Random.alphanumeric.take(64).mkString
     cassandraSession.executeWrite(
       "INSERT INTO authenticationTable (name, salt, password, role) VALUES (?, ?, ?, ?);",
       Hashing.sha256(name),
       salt,
-      Hashing.sha256(salt + name),
+      Hashing.sha256(salt + password),
       role.toString
     )
   }

@@ -33,15 +33,21 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
 
   /** Create empty courses table */
   def globalPrepare(): Future[Done] = {
-    session.executeCreateTable(
+    val students = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS students ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
-    session.executeCreateTable(
+    val lecturers = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS lecturers ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
-    session.executeCreateTable(
+    val admins = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS admins ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
+
+    for{
+      _ <- students
+      _ <- lecturers
+      _ <- admins
+    } yield Done
   }
 
   /** Finishes preparation of CQL Statements */
@@ -51,7 +57,11 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     val prepAdmins = prepare("admins", insertAdminPromise, deleteAdminPromise)
 
     //Combine all Futures to one future
-    prepStudents.flatMap(_ => prepLecturers).flatMap(_ => prepAdmins)
+    for{
+      _ <- prepStudents
+      _ <- prepLecturers
+      _ <- prepAdmins
+    } yield Done
   }
 
   private def prepare(table: String, insert: Promise[PreparedStatement], delete: Promise[PreparedStatement]): Future[Done] = {
@@ -61,7 +71,10 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     val prepDelete = session.prepare(s"DELETE FROM $table WHERE username=? ;")
     delete.completeWith(prepDelete)
 
-    prepInsert.flatMap(_ => prepDelete.map(_ => Done))
+    for{
+      _ <- prepInsert
+      _ <- prepDelete
+    } yield Done
   }
 
   /** EventHandler for OnUserCreate event */

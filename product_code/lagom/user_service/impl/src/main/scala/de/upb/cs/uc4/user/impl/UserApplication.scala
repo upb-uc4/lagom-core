@@ -47,5 +47,5 @@ abstract class UserApplication(context: LagomApplicationContext)
 
 object UserApplication{
   /** Functions as offset for the database */
-  val cassandraOffset: String = "UniversityCredits4Courses"
+  val cassandraOffset: String = "UniversityCredits4Users"
 }

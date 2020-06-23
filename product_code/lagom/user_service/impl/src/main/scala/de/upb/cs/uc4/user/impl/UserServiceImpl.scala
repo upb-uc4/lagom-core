@@ -15,7 +15,8 @@ import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.readside.UserEventProcessor
-import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
+import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
+import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, Role}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,13 +35,18 @@ class UserServiceImpl(clusterSharding: ClusterSharding,
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   /** Get all users from the database */
-  override def getAllUsers: ServiceCall[NotUsed, GetAllUsersResponse] = authenticated[NotUsed, GetAllUsersResponse](Role.Admin) { _ =>
-    for{
-      students <- getAllStudents.invoke()
-      lecturers <- getAllLecturers.invoke()
-      admins <- getAllAdmins.invoke()
-    } yield GetAllUsersResponse(students, lecturers, admins)
-  }
+  override def getAllUsers: ServiceCall[NotUsed, GetAllUsersResponse] =
+    authenticated[NotUsed, GetAllUsersResponse](Role.Admin) {
+      ServerServiceCall { (header, notUsed) =>
+        for {
+          students <- getAllStudents.invokeWithHeaders(header, notUsed)
+          lecturers <- getAllLecturers.invokeWithHeaders(header, notUsed)
+          admins <- getAllAdmins.invokeWithHeaders(header, notUsed)
+        } yield
+          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))) ,
+            GetAllUsersResponse(students._2, lecturers._2, admins._2))
+      }
+    }
 
   /** Delete a users from the database */
   override def deleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(Role.Admin) {
@@ -58,13 +64,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** Get all students from the database */
-  override def getAllStudents: ServiceCall[NotUsed, Seq[Student]] = authenticated[NotUsed, Seq[Student]](Role.Admin) { _ =>
+  override def getAllStudents: ServerServiceCall[NotUsed, Seq[Student]] = authenticated[NotUsed, Seq[Student]](Role.Admin) { _ =>
     getAll("students").map(_.map(_.student))
   }
 
   /** Add a new student to the database */
-  override def addStudent(): ServiceCall[Student, Done] = ServerServiceCall { (header, user) =>
-    addUser().invokeWithHeaders(header, User(user))
+  override def addStudent(): ServiceCall[PostMessageStudent, Done] = ServerServiceCall { (header, user) =>
+    addUser(user.authUser).invokeWithHeaders(header, User(user.student))
   }
 
   /** Get a specific student */
@@ -88,13 +94,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** Get all lecturers from the database */
-  override def getAllLecturers: ServiceCall[NotUsed, Seq[Lecturer]] = authenticated[NotUsed, Seq[Lecturer]](Role.Admin) { _ =>
+  override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] = authenticated[NotUsed, Seq[Lecturer]](Role.Admin) { _ =>
     getAll("admins").map(_.map(_.lecturer))
   }
 
   /** Add a new lecturer to the database */
-  override def addLecturer(): ServiceCall[Lecturer, Done] = ServerServiceCall { (header, user) =>
-    addUser().invokeWithHeaders(header, User(user))
+  override def addLecturer(): ServiceCall[PostMessageLecturer, Done] = ServerServiceCall { (header, user) =>
+    addUser(user.authUser).invokeWithHeaders(header, User(user.lecturer))
   }
 
   /** Get a specific lecturer */
@@ -117,13 +123,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** Get all admins from the database */
-  override def getAllAdmins: ServiceCall[NotUsed, Seq[Admin]] = authenticated[NotUsed, Seq[Admin]](Role.Admin) { _ =>
+  override def getAllAdmins: ServerServiceCall[NotUsed, Seq[Admin]] = authenticated[NotUsed, Seq[Admin]](Role.Admin) { _ =>
     getAll("admins").map(_.map(_.admin))
   }
 
   /** Add a new admin to the database */
-  override def addAdmin(): ServiceCall[Admin, Done] = ServerServiceCall { (header, user) =>
-    addUser().invokeWithHeaders(header, User(user))
+  override def addAdmin(): ServiceCall[PostMessageAdmin, Done] = ServerServiceCall { (header, user) =>
+    addUser(user.authUser).invokeWithHeaders(header, User(user.admin))
   }
 
   /** Get a specific admin */
@@ -164,11 +170,11 @@ class UserServiceImpl(clusterSharding: ClusterSharding,
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
 
-  private def addUser(): ServerServiceCall[User, Done] = authenticated(Role.Admin) {
+  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Done] = authenticated(Role.Admin) {
     ServerServiceCall { (_, user) =>
       val ref = entityRef(user.getUsername)
 
-      ref.ask[Confirmation](replyTo => CreateUser(user, replyTo))
+      ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
         .map {
           case Accepted => // Creation Successful
             (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
@@ -201,7 +207,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding,
 
   private def getAll(table: String): Future[Seq[User]] = {
     cassandraSession.selectAll(s"SELECT * FROM $table ;")
-      .map( seq => seq
+      .map(seq => seq
         .map(row => row.getString("username")) //Future[Seq[String]]
         .map(entityRef(_).ask[Option[User]](replyTo => GetUser(replyTo))) //Future[Seq[Future[Option[User]]]]
       )

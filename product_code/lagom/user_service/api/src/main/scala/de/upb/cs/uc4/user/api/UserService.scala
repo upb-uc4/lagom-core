@@ -3,9 +3,9 @@ package de.upb.cs.uc4.user.api
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole}
-import de.upb.cs.uc4.user.model.Role.Role
+import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole}
 
 
 /** The UserService interface.
@@ -31,7 +31,7 @@ trait UserService extends Service {
   def getAllStudents: ServiceCall[NotUsed, Seq[Student]]
 
   /** Add a new student to the database */
-  def addStudent(): ServiceCall[Student, Done]
+  def addStudent(): ServiceCall[PostMessageStudent, Done]
 
   /** Get a specific student */
   def getStudent(username: String): ServiceCall[NotUsed, Student]
@@ -48,7 +48,7 @@ trait UserService extends Service {
   def getAllLecturers: ServiceCall[NotUsed, Seq[Lecturer]]
 
   /** Add a new lecturer to the database */
-  def addLecturer(): ServiceCall[Lecturer, Done]
+  def addLecturer(): ServiceCall[PostMessageLecturer, Done]
 
   /** Get a specific lecturer */
   def getLecturer(username: String): ServiceCall[NotUsed, Lecturer]
@@ -65,7 +65,7 @@ trait UserService extends Service {
   def getAllAdmins: ServiceCall[NotUsed, Seq[Admin]]
 
   /** Add a new admin to the database */
-  def addAdmin(): ServiceCall[Admin, Done]
+  def addAdmin(): ServiceCall[PostMessageAdmin, Done]
 
   /** Get a specific admin */
   def getAdmin(username: String): ServiceCall[NotUsed, Admin]
