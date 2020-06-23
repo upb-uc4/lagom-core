@@ -1,11 +1,12 @@
 package de.upb.cs.uc4.user.api
 
 import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
-import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole}
+import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
 
 
 /** The UserService interface.
@@ -14,7 +15,7 @@ import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole}
   * consume the UserService.
   */
 trait UserService extends Service {
-  /** Prefix for the path for the endpoints, a name/identifier for the service*/
+  /** Prefix for the path for the endpoints, a name/identifier for the service */
   val pathPrefix = "/user-management/users"
 
   // USER
@@ -93,40 +94,57 @@ trait UserService extends Service {
   /** Allows DELETE */
   def allowedDelete: ServiceCall[NotUsed, Done]
 
+  /** Publishes every authentication change of a user */
+  def userAuthenticationTopic(): Topic[AuthenticationUser]
+
+  /** Publishes every deletion of a user */
+  def userDeletedTopic(): Topic[JsonUsername]
+
   final override def descriptor: Descriptor = {
     import Service._
-    named("user").withCalls(
-      restCall(Method.GET, pathPrefix, getAllUsers _),
-      restCall(Method.DELETE, pathPrefix + "/:username", deleteUser _),
-      restCall(Method.OPTIONS, pathPrefix, allowedGet _),
-      restCall(Method.OPTIONS, pathPrefix + "/:username", allowedDelete _),
+    named("user")
+      .withCalls(
+        restCall(Method.GET, pathPrefix, getAllUsers _),
+        restCall(Method.DELETE, pathPrefix + "/:username", deleteUser _),
+        restCall(Method.OPTIONS, pathPrefix, allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/:username", allowedDelete _),
 
-      restCall(Method.GET, pathPrefix + "/:username/role", getRole _),
-      restCall(Method.OPTIONS, pathPrefix + "/:username/role", allowedGetPost _),
+        restCall(Method.GET, pathPrefix + "/:username/role", getRole _),
+        restCall(Method.OPTIONS, pathPrefix + "/:username/role", allowedGetPost _),
 
-      restCall(Method.GET, pathPrefix + "/students", getAllStudents _),
-      restCall(Method.POST, pathPrefix + "/students", addStudent _),
-      restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
-      restCall(Method.DELETE, pathPrefix + "/students/:username", deleteStudent _),
-      restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _),
-      restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPutDelete _),
-      restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPost _),
+        restCall(Method.GET, pathPrefix + "/students", getAllStudents _),
+        restCall(Method.POST, pathPrefix + "/students", addStudent _),
+        restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
+        restCall(Method.DELETE, pathPrefix + "/students/:username", deleteStudent _),
+        restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _),
+        restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPutDelete _),
+        restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPost _),
 
-      restCall(Method.GET, pathPrefix + "/lecturers", getAllLecturers _),
-      restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _),
-      restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
-      restCall(Method.DELETE, pathPrefix + "/lecturers/:username", deleteLecturer _),
-      restCall(Method.PUT, pathPrefix + "/lectures/:username", updateLecture _),
-      restCall(Method.OPTIONS, pathPrefix + "/lectures/:username", allowedGetPutDelete _),
-      restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
+        restCall(Method.GET, pathPrefix + "/lecturers", getAllLecturers _),
+        restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _),
+        restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
+        restCall(Method.DELETE, pathPrefix + "/lecturers/:username", deleteLecturer _),
+        restCall(Method.PUT, pathPrefix + "/lectures/:username", updateLecture _),
+        restCall(Method.OPTIONS, pathPrefix + "/lectures/:username", allowedGetPutDelete _),
+        restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
 
-      restCall(Method.GET, pathPrefix + "/admins", getAllAdmins _),
-      restCall(Method.POST, pathPrefix + "/admins", addAdmin _),
-      restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
-      restCall(Method.DELETE, pathPrefix + "/admins/:username", deleteAdmin _),
-      restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _),
-      restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPutDelete _),
-      restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _),
-    ).withAutoAcl(true)
+        restCall(Method.GET, pathPrefix + "/admins", getAllAdmins _),
+        restCall(Method.POST, pathPrefix + "/admins", addAdmin _),
+        restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
+        restCall(Method.DELETE, pathPrefix + "/admins/:username", deleteAdmin _),
+        restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _),
+        restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPutDelete _),
+        restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _),
+      )
+      .withAutoAcl(true)
+      .withTopics(
+        topic(UserService.AUTHENTICATION_TOPIC_NAME, userAuthenticationTopic _),
+        topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)
+      )
   }
+}
+
+object UserService {
+  val AUTHENTICATION_TOPIC_NAME = "authentication"
+  val DELETE_TOPIC_NAME = "delete"
 }

@@ -4,8 +4,10 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, MessageProtocol, NotFound, ResponseHeader}
-import com.lightbend.lagom.scaladsl.persistence.ReadSide
+import com.lightbend.lagom.scaladsl.broker.TopicProducer
+import com.lightbend.lagom.scaladsl.persistence.{PersistentEntityRegistry, ReadSide}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
@@ -14,16 +16,17 @@ import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
 import de.upb.cs.uc4.user.impl.commands._
+import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.UserEventProcessor
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, Role}
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 /** Implementation of the UserService */
-class UserServiceImpl(clusterSharding: ClusterSharding,
+class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
                       readSide: ReadSide, processor: UserEventProcessor, cassandraSession: CassandraSession)
                      (implicit ec: ExecutionContext, auth: AuthenticationService) extends UserService {
   readSide.register(processor)
@@ -95,7 +98,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding,
 
   /** Get all lecturers from the database */
   override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] = authenticated[NotUsed, Seq[Lecturer]](Role.Admin) { _ =>
-    getAll("admins").map(_.map(_.lecturer))
+    getAll("lecturers").map(_.map(_.lecturer))
   }
 
   /** Add a new lecturer to the database */
@@ -217,5 +220,23 @@ class UserServiceImpl(clusterSharding: ClusterSharding,
           .map(opt => opt.get) //Future[Seq[User]]
         )
       )
+  }
+
+  /** Publishes every authentication change of a user */
+  def userAuthenticationTopic(): Topic[AuthenticationUser] = TopicProducer.singleStreamWithOffset { fromOffset =>
+    persistentEntityRegistry
+      .eventStream(UserEvent.Tag, fromOffset)
+      .map(ev => ev.event match {
+        case OnUserCreate(_, authenticationUser) => (authenticationUser, ev.offset)
+      })
+  }
+
+  /** Publishes every deletion of a user */
+  def userDeletedTopic(): Topic[JsonUsername] = TopicProducer.singleStreamWithOffset { fromOffset =>
+    persistentEntityRegistry
+      .eventStream(UserEvent.Tag, fromOffset)
+      .map(ev => ev.event match {
+        case OnUserDelete(user) => (JsonUsername(user.getUsername), ev.offset)
+      })
   }
 }
