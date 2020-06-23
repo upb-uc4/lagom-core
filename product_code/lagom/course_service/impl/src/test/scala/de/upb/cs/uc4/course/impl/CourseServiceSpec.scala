@@ -13,7 +13,8 @@ import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationR
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
+import de.upb.cs.uc4.user.model.user.Admin
+import de.upb.cs.uc4.user.model.{JsonRole, Role}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -40,7 +41,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
           ServiceCall { _ =>  Future.successful(JsonRole(Role.Admin))}
 
         /** Sets authentication and password of a user */
-        override def set(): ServiceCall[User, Done] =
+        override def set(): ServiceCall[Admin, Done] =
           ServiceCall { _ =>  Future.successful(Done)}
 
         /** Deletes authentication and password of a user  */

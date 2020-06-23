@@ -11,7 +11,8 @@ import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationR
 import de.upb.cs.uc4.shared.Hashing
 import de.upb.cs.uc4.shared.ServiceCallFactory._
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
+import de.upb.cs.uc4.user.model.user.Admin
+import de.upb.cs.uc4.user.model.{JsonRole, Role}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -72,7 +73,7 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
   }(this, ec)
 
   /** @inheritdoc */
-  override def set(): ServiceCall[User, Done] = authenticated[User, Done](Role.Admin) { user =>
+  override def set(): ServiceCall[Admin, Done] = authenticated[Admin, Done](Role.Admin) { user =>
     val salt = Random.alphanumeric.take(64).mkString //Generates random salt with 64 characters
     cassandraSession.executeWrite(
       "INSERT INTO authenticationTable (name, salt, password, role) VALUES (?, ?, ?, ?);",

@@ -5,7 +5,8 @@ import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceAcl, ServiceCall}
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationResponse
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{JsonRole, User}
+import de.upb.cs.uc4.user.model.JsonRole
+import de.upb.cs.uc4.user.model.user.Admin
 
 /** The AuthenticationService interface.
   *
@@ -24,7 +25,7 @@ trait AuthenticationService extends Service {
   def getRole(username: String): ServiceCall[NotUsed, JsonRole]
 
   /** Sets authentication and password of a user */
-  def set(): ServiceCall[User, Done]
+  def set(): ServiceCall[Admin, Done]
 
   /** Deletes authentication and password of a user  */
   def delete(username: String): ServiceCall[NotUsed, Done]
