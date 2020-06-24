@@ -5,7 +5,7 @@ class ChaincodeQuickAccessTests extends FunSuite {
 
   test("Check listing all courses") {
     // retrieve quickAccess result
-    val result = ChaincodeQuickAccess.getCourses();
+    val result = ChaincodeQuickAccess.getAllCourses();
 
     // debug help
     println(result)
