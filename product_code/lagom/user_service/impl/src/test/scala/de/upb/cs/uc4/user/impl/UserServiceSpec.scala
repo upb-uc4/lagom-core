@@ -1,15 +1,18 @@
 package de.upb.cs.uc4.user.impl
 
-import akka.{Done, NotUsed}
+import java.util.Base64
+
+import akka.Done
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse
-import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationResponse
-import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.user.Admin
-import de.upb.cs.uc4.user.model.{JsonRole, Role}
+import de.upb.cs.uc4.user.api.UserService
+import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
+import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
+import de.upb.cs.uc4.user.model.{Address, Role}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -26,39 +29,129 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       .withCassandra()
   ) { ctx =>
     new UserApplication(ctx) with LocalServiceLocator {
-      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
-        /** Checks if the username and password pair exists */
-        override def check(username: String, password: String): ServiceCall[Seq[Role], AuthenticationResponse] =
-          ServiceCall { _ =>  Future.successful(AuthenticationResponse.Correct)}
+      override lazy val authenticationService: AuthenticationService =
+        (_: String, _: String) => ServiceCall { _ => Future.successful(AuthenticationResponse.Correct) }
+    }
+  }
+  val client: UserService = server.serviceClient.implement[UserService]
 
-        /** Gets the role of a user */
-        override def getRole(username: String): ServiceCall[NotUsed, JsonRole] =
-          ServiceCall { _ =>  Future.successful(JsonRole(Role.Admin))}
+  override protected def afterAll(): Unit = server.stop()
 
-        /** Sets authentication and password of a user */
-        override def set(): ServiceCall[Admin, Done] =
-          ServiceCall { _ =>  Future.successful(Done)}
+  def addAuthorizationHeader(): RequestHeader => RequestHeader = { header =>
+    header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString("MOCK:MOCK".getBytes()))
+  }
 
-        /** Deletes authentication and password of a user  */
-        override def delete(username: String): ServiceCall[NotUsed, Done] =
-          ServiceCall { _ =>  Future.successful(Done)}
+  //Test users
+  val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
+  val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", Role.Admin)
 
-        /** Allows GET, POST, DELETE, OPTIONS*/
-        override def options(): ServiceCall[NotUsed, Done] =
-          ServiceCall { _ =>  Future.successful(Done)}
+  val student0: Student = Student("student0", Role.Student, address, "Hans", "Wurst", "Haesslich", "hans.wurst@mail.de", "IN", "421769", 9000, List())
+  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "Graf", "Wurst", "Haesslich", "graf.wurst@mail.de", "Ich bin bloed", "Genderstudies")
+  val admin0: Admin = Admin("admin0", Role.Lecturer, address, "Dieter", "Wurst", "Haesslich", "dieter.wurst@mail.de")
+  val admin1: Admin = Admin("lecturer0", Role.Lecturer, address, "Lola", "Wurst", "Haesslich", "lola.wurst@mail.de")
 
-        /** Allows GET, OPTIONS */
-        override def optionsGet(): ServiceCall[NotUsed, Done] =
-          ServiceCall { _ =>  Future.successful(Done)}
+  /** Tests only working if the whole instance is started */
+  "UserService service" should {
 
-        /** Allows POST */
-        override def allowedMethodsPOST(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
+    "get all users with no users" in {
+      client.getAllUsers.handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+        answer.admins shouldBe empty
+        answer.lecturer shouldBe empty
+        answer.students shouldBe empty
+      }
+    }
 
-        /** Allows GET */
-        override def allowedMethodsGET(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
+    "add a student" in {
+      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(authenticationUser, student0)).map { answer =>
+        answer should ===(Done)
+      }
+    }
 
-        /** Allows DELETE */
-        override def allowedMethodsDELETE(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
+    "add a lecturer" in {
+      client.addLecturer().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageLecturer(authenticationUser, lecturer0)).map { answer =>
+        answer should ===(Done)
+      }
+    }
+
+    "add an admin" in {
+      client.addAdmin().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageAdmin(authenticationUser, admin0)).map { answer =>
+        answer should ===(Done)
+      }
+    }
+
+    "delete a non-existing user" in {
+      client.deleteUser("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+      }
+    }
+
+    "find a non-existing student" in {
+      client.getStudent("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
+        answer shouldBe a[NotFound]
+      }
+    }
+
+    "find a non-existing lecturer" in {
+      client.getLecturer("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
+        answer shouldBe a[NotFound]
+      }
+    }
+
+    "find a non-existing admin" in {
+      client.getAdmin("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
+        answer shouldBe a[NotFound]
+      }
+    }
+
+    "update a non-existing student" in {
+      client.updateStudent(student0.username).handleRequestHeader(addAuthorizationHeader())
+        .invoke(student0.copy(username = "Guten Abend")).failed.map { answer =>
+        answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+      }
+    }
+
+    "update a non-existing lecturer" in {
+      client.updateLecturer(lecturer0.username).handleRequestHeader(addAuthorizationHeader())
+        .invoke(lecturer0.copy(username = "Guten Abend")).failed.map { answer =>
+        answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+      }
+    }
+
+    "update a non-existing admin" in {
+      client.updateAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader())
+        .invoke(admin0.copy(username = "Guten Abend")).failed.map { answer =>
+        answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+      }
+    }
+
+    "add an already existing user" in {
+      client.addAdmin().handleRequestHeader(addAuthorizationHeader())
+        .invoke(PostMessageAdmin(authenticationUser, admin1)).failed.map { answer =>
+        answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+      }
+    }
+
+    "delete a user" in {
+      client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+        client.getStudent(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().failed
+      }.map { answer =>
+        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+      }
+    }
+
+    "update a user" in {
+      client.updateAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader())
+        .invoke(admin0.copy(firstName = "KLAUS")).flatMap { _ =>
+        client.getAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+      }.map { answer =>
+        answer.firstName shouldBe "KLAUS"
+      }
+    }
+
+    "get a role of a user" in {
+      client.getRole(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
+        answer.role shouldBe Role.Lecturer
       }
     }
   }

@@ -37,11 +37,8 @@ trait UserService extends Service {
   /** Get a specific student */
   def getStudent(username: String): ServiceCall[NotUsed, Student]
 
-  /** Deletes a student */
-  def deleteStudent(username: String): ServiceCall[NotUsed, Done]
-
   /** Update an existing student */
-  def updateStudent(): ServiceCall[Student, Done]
+  def updateStudent(username: String): ServiceCall[Student, Done]
 
   // LECTURER
 
@@ -54,11 +51,8 @@ trait UserService extends Service {
   /** Get a specific lecturer */
   def getLecturer(username: String): ServiceCall[NotUsed, Lecturer]
 
-  /** Deletes a lecturer */
-  def deleteLecturer(username: String): ServiceCall[NotUsed, Done]
-
   /** Update an existing lecturer */
-  def updateLecture(): ServiceCall[Lecturer, Done]
+  def updateLecturer(username: String): ServiceCall[Lecturer, Done]
 
   // ADMIN
 
@@ -71,11 +65,8 @@ trait UserService extends Service {
   /** Get a specific admin */
   def getAdmin(username: String): ServiceCall[NotUsed, Admin]
 
-  /** Deletes an admin */
-  def deleteAdmin(username: String): ServiceCall[NotUsed, Done]
-
   /** Update an existing admin */
-  def updateAdmin(): ServiceCall[Admin, Done]
+  def updateAdmin(username: String): ServiceCall[Admin, Done]
 
   // ROLE
   def getRole(username: String): ServiceCall[NotUsed, JsonRole]
@@ -115,7 +106,6 @@ trait UserService extends Service {
         restCall(Method.GET, pathPrefix + "/students", getAllStudents _),
         restCall(Method.POST, pathPrefix + "/students", addStudent _),
         restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
-        restCall(Method.DELETE, pathPrefix + "/students/:username", deleteStudent _),
         restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _),
         restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPutDelete _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPost _),
@@ -123,15 +113,13 @@ trait UserService extends Service {
         restCall(Method.GET, pathPrefix + "/lecturers", getAllLecturers _),
         restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _),
         restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
-        restCall(Method.DELETE, pathPrefix + "/lecturers/:username", deleteLecturer _),
-        restCall(Method.PUT, pathPrefix + "/lecturers/:username", updateLecture _),
+        restCall(Method.PUT, pathPrefix + "/lecturers/:username", updateLecturer _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers/:username", allowedGetPutDelete _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/admins", getAllAdmins _),
         restCall(Method.POST, pathPrefix + "/admins", addAdmin _),
         restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
-        restCall(Method.DELETE, pathPrefix + "/admins/:username", deleteAdmin _),
         restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _),
         restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPutDelete _),
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _),

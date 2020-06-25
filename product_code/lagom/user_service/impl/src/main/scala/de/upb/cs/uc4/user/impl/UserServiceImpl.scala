@@ -85,12 +85,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       })
   }
 
-
-  /** Deletes a student */
-  override def deleteStudent(username: String): ServiceCall[NotUsed, Done] = deleteUser(username)
-
   /** Update an existing student */
-  override def updateStudent(): ServiceCall[Student, Done] = authenticated[Student, Done](Role.Student, Role.Admin) {
+  override def updateStudent(username: String): ServiceCall[Student, Done] = authenticated[Student, Done](Role.Student, Role.Admin) {
     ServerServiceCall { (header, user) =>
       updateUser().invokeWithHeaders(header, User(user))
     }
@@ -115,11 +111,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       })
   }
 
-  /** Deletes a lecturer */
-  override def deleteLecturer(username: String): ServiceCall[NotUsed, Done] = deleteUser(username)
-
   /** Update an existing lecturer */
-  override def updateLecture(): ServiceCall[Lecturer, Done] = authenticated[Lecturer, Done](Role.Lecturer, Role.Admin) {
+  override def updateLecturer(username: String): ServiceCall[Lecturer, Done] = authenticated[Lecturer, Done](Role.Lecturer, Role.Admin) {
     ServerServiceCall { (header, user) =>
       updateUser().invokeWithHeaders(header, User(user))
     }
@@ -144,11 +137,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       })
   }
 
-  /** Deletes an admin */
-  override def deleteAdmin(username: String): ServiceCall[NotUsed, Done] = deleteUser(username)
-
   /** Update an existing admin */
-  override def updateAdmin(): ServiceCall[Admin, Done] = authenticated[Admin, Done](Role.Admin) {
+  override def updateAdmin(username: String): ServiceCall[Admin, Done] = authenticated[Admin, Done](Role.Admin) {
     ServerServiceCall { (header, user) =>
       updateUser().invokeWithHeaders(header, User(user))
     }
