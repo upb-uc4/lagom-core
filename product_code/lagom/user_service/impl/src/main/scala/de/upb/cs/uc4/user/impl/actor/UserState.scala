@@ -86,6 +86,11 @@ case class UserState(optUser: Option[User]) {
     // More REGEXes need to be defined to check firstname etc. But it is not clear from the API
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
     val fieldsOfStudy = List("Computer Science", "Gender Studies", "Electrical Engineering")
+    
+    if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ("")){
+      "10create"
+    }
+   
     user match {
       case u if (!generalRegex.matches(user.getUsername)) =>
         "01" // username must only contain [..]
@@ -125,12 +130,7 @@ case class UserState(optUser: Option[User]) {
       case _ => "valid"
     }
 
-    if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ("")){
-      "10create"
-    }
-    else {
-      "valid"
-    }
+    
   }
 }
 
