@@ -5,7 +5,7 @@ import java.util.Base64
 import akka.Done
 import com.lightbend.lagom.scaladsl.api.transport.{Forbidden, RequestHeader}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.ServiceTest
+import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse
 import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
@@ -22,7 +22,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec with Matchers with BeforeA
     ServiceTest.defaultSetup
       .withCassandra()
   ) { ctx =>
-    new AuthenticationApplication(ctx) with LocalServiceLocator
+    new AuthenticationApplication(ctx) with LocalServiceLocator with TestTopicComponents
   }
 
   private val client: AuthenticationService = server.serviceClient.implement[AuthenticationService]
