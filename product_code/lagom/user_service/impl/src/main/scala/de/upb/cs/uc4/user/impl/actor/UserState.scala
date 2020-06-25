@@ -26,15 +26,16 @@ case class UserState(optUser: Option[User]) {
     
       val trimmedUser = user.trim
       val responseCode = validateUserSyntax(trimmedUser,Some(authenticationUser))
-    
-      if (responseCode == "valid" ) {
-        if (optUser.isEmpty) {
+      if (optUser.isEmpty){
+        if (responseCode == "valid" ) {
           Effect.persist(OnUserCreate(user, authenticationUser)).thenReply(replyTo) { _ => Accepted }
-        } else {
-          Effect.reply(replyTo)(Rejected("A user with the given username already exist."))
         }
-      } else {
-         Effect.reply(replyTo)(Rejected(responseCode))
+        else {
+          Effect.reply(replyTo)(Rejected(responseCode))
+        }
+      }
+      else {
+        Effect.reply(replyTo)(Rejected("A user with the given username already exist."))
       }
   
         
@@ -85,17 +86,17 @@ case class UserState(optUser: Option[User]) {
     val generalRegex = """[\s\S]+""".r // Allowed characters for general strings "[a-zA-Z0-9\\s]+".r TBD
     // More REGEXes need to be defined to check firstname etc. But it is not clear from the API
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
-    val fieldsOfStudy = List("Computer Science", "Gender Studies", "Electrical Engineering")
+    val fos = List("Computer Science", "Gender Studies", "Electrical Engineering")
     
     if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ("")){
-      "10create"
+      return "10create"
     }
    
     user match {
       case u if (!generalRegex.matches(user.getUsername)) =>
         "01" // username must only contain [..]
       case u if (optUser.isDefined && !optUser.get.getUsername.equals(user.getUsername)) =>
-        "10create" // username must not be changed; Only for update
+        "10update" // username must not be changed; Only for update
       case u if (optUser.isDefined && !optUser.get.role.equals(user.role)) =>
         "20update" // role must not be changed; Only for update
       case u if (!optUser.isDefined && !Role.All.contains(u.role)) =>
@@ -112,11 +113,11 @@ case class UserState(optUser: Option[User]) {
         "70" // picture invalid
       case u if (!(u.optStudent == None)) => 
         u.student match {
-          case s if(!(s.matriculationId.asInstanceOf[Int] > 0)) =>
+          case s if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.asInstanceOf[Int] > 0)) =>
             "100" // matriculation ID invalid
           case s if(!(s.semesterCount > 0)) =>
             "110" // semester count must be a positive integer
-          case s if(!s.fieldsOfStudy.forall(fieldsOfStudy.contains)) => 
+          case s if(!s.fieldsOfStudy.forall(fos.contains)) => 
             "120" // fields of study must be one of the defined fields of study
         }
       case u if (!(u.optLecturer == None)) =>
