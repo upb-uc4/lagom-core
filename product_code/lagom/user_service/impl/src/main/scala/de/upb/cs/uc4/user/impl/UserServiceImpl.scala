@@ -150,8 +150,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       getUser(username).invoke().map(user => JsonRole(user.role))
     }
 
-  /** Allows GET, PUT, DELETE */
-  override def allowedGetPutDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT, DELETE")
+  /** Allows GET, PUT */
+  override def allowedGetPut: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT")
 
   /** Allows GET, POST */
   override def allowedGetPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")

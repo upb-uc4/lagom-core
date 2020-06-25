@@ -73,8 +73,8 @@ trait UserService extends Service {
 
   // OPTIONS
 
-  /** Allows GET, PUT, DELETE */
-  def allowedGetPutDelete: ServiceCall[NotUsed, Done]
+  /** Allows GET, PUT */
+  def allowedGetPut: ServiceCall[NotUsed, Done]
 
   /** Allows GET, POST */
   def allowedGetPost: ServiceCall[NotUsed, Done]
@@ -107,21 +107,21 @@ trait UserService extends Service {
         restCall(Method.POST, pathPrefix + "/students", addStudent _),
         restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
         restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _),
-        restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPutDelete _),
+        restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/lecturers", getAllLecturers _),
         restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _),
         restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
         restCall(Method.PUT, pathPrefix + "/lecturers/:username", updateLecturer _),
-        restCall(Method.OPTIONS, pathPrefix + "/lecturers/:username", allowedGetPutDelete _),
+        restCall(Method.OPTIONS, pathPrefix + "/lecturers/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/admins", getAllAdmins _),
         restCall(Method.POST, pathPrefix + "/admins", addAdmin _),
         restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
         restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _),
-        restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPutDelete _),
+        restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _),
       )
       .withAutoAcl(true)
