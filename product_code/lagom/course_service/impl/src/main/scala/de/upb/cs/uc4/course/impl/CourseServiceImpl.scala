@@ -78,7 +78,6 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("10", "Course name must not be empty"))
       case ("11") =>
         throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("11", "Course name has invalid characters"))
-      //(ResponseHeader(400,  MessageProtocol.empty, List(("10","Course name must not be empty"))),Done)
       case ("20") =>
         throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("20", "Course type must be one of [\"Lecture\", \"Seminar\", \"ProjectGroup\"]"))
       case ("30") =>

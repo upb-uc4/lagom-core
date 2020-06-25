@@ -4,6 +4,7 @@ import de.upb.cs.uc4.user.model.Role
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
 import play.api.libs.json.{Format, Json}
+import de.upb.cs.uc4.user.model.Address
 
 /** User union to encapsulate different roles
   *
@@ -23,6 +24,54 @@ case class User(optStudent: Option[Student], optLecturer: Option[Lecturer], optA
       case Role.Student => student.username
       case Role.Lecturer => lecturer.username
       case Role.Admin => admin.username
+    }
+  }
+
+  def getAddress: Address = {
+    role match {
+      case Role.Student => student.address
+      case Role.Lecturer => lecturer.address
+      case Role.Admin => admin.address
+    }
+  }
+
+  def getFirstName: String = {
+    role match {
+      case Role.Student => student.firstName
+      case Role.Lecturer => lecturer.firstName
+      case Role.Admin => admin.firstName
+    }
+  }
+
+  def getLastName: String = {
+    role match {
+      case Role.Student => student.lastName
+      case Role.Lecturer => lecturer.lastName
+      case Role.Admin => admin.lastName
+    }
+  }
+
+  def getPicture: String = {
+    role match {
+      case Role.Student => student.picture
+      case Role.Lecturer => lecturer.picture
+      case Role.Admin => admin.picture
+    }
+  }
+
+  def getEmail: String = {
+    role match {
+      case Role.Student => student.email
+      case Role.Lecturer => lecturer.email
+      case Role.Admin => admin.email
+    }
+  }
+
+  def trim: User = {
+    role match {
+      case Role.Student => this.copy(optStudent = Some(student.trim))
+      case Role.Lecturer => this.copy(optLecturer = Some(lecturer.trim))
+      case Role.Admin => this.copy(optAdmin = Some(admin.trim))
     }
   }
 }
