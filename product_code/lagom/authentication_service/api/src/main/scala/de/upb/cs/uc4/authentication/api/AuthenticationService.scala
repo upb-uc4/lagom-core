@@ -1,9 +1,10 @@
 package de.upb.cs.uc4.authentication.api
 
+import akka.NotUsed
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationResponse
-import de.upb.cs.uc4.user.model.Role.Role
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 
 /** The AuthenticationService interface.
   *
@@ -15,12 +16,16 @@ trait AuthenticationService extends Service {
   val pathPrefix = "/authentication-management"
 
   /** Checks if the username and password pair exists */
-  def check(username: String, password: String): ServiceCall[Seq[Role], AuthenticationResponse]
+  def check(username: String, password: String): ServiceCall[Seq[AuthenticationRole], AuthenticationResponse]
+
+  /** Returns role of the given user */
+  def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole]
 
   final override def descriptor: Descriptor = {
     import Service._
     named("authentication").withCalls(
-      restCall(Method.GET, pathPrefix + "/users?username&password", check _)
+      restCall(Method.GET, pathPrefix + "/users?username&password", check _),
+      restCall(Method.GET, pathPrefix + "/role?username", getRole _)
     )
   }
 }

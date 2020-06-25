@@ -1,12 +1,14 @@
 package de.upb.cs.uc4.authentication.impl
 
+import akka.NotUsed
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.transport.NotFound
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationResponse
+import de.upb.cs.uc4.authentication.model.{AuthenticationResponse, AuthenticationRole}
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationResponse
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.Hashing
-import de.upb.cs.uc4.user.model.Role.Role
 
 import scala.concurrent.ExecutionContext
 
@@ -14,7 +16,8 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
                                (implicit ec: ExecutionContext) extends AuthenticationService {
 
   /** @inheritdoc */
-  override def check(username: String, password: String): ServiceCall[Seq[Role], AuthenticationResponse] = ServiceCall {
+  override def check(username: String, password: String): ServiceCall[Seq[AuthenticationRole], AuthenticationResponse]
+  = ServiceCall {
     roles =>
       cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
         .map {
@@ -33,5 +36,14 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
 
           case None => AuthenticationResponse.WrongUsername
         }
+  }
+
+  /** Returns role of the given user */
+  override def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole] = ServiceCall{ _ =>
+    cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
+      .map {
+        case Some(row) => AuthenticationRole.withName(row.getString("role"))
+        case None => throw NotFound("User does not exists.")
+      }
   }
 }
