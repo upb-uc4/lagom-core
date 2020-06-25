@@ -6,6 +6,8 @@ version in ThisBuild := "v0.2.0"
 lagomCassandraMaxBootWaitingTime in ThisBuild := 60.seconds
 lagomServiceEnableSsl in ThisBuild := true
 
+javaOptions in ThisBuild ++= Seq("-Xms512M -Xmx4096M -Xss2M -XX:MaxMetaspaceSize=1024M")
+
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.13.0"
 
