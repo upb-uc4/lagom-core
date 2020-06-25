@@ -172,7 +172,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Allows DELETE */
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
-
+  /** Helper method for adding a generic User, independent of the role */
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Done] = authenticated(Role.Admin) {
     ServerServiceCall { (_, user) =>
       val ref = entityRef(user.getUsername)
@@ -186,7 +186,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         }
     }
   }
-
+  /** Helper method for updating a generic User, independent of the role */
   private def updateUser(): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
     val ref = entityRef(user.getUsername)
 
@@ -198,7 +198,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
       }
   }
-
+  /** Helper method for getting a generic User, independent of the role */
   private def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ =>
     val ref = entityRef(username)
 
@@ -207,7 +207,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       case None => throw NotFound("Username was not found")
     }
   }
-
+  /** Helper method for getting all Users */
   private def getAll(table: String): Future[Seq[User]] = {
     cassandraSession.selectAll(s"SELECT * FROM $table ;")
       .map(seq => seq
@@ -216,7 +216,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       )
       .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[User]]]
         .map(seq => seq
-          .filter(opt => opt.isDefined) //Filter every not existing user
+          .filter(opt => opt.isDefined) //Get only existing users
           .map(opt => opt.get) //Future[Seq[User]]
         )
       )
