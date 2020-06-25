@@ -7,7 +7,7 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, MessageProtocol, NotFound, ResponseHeader}
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
-import com.lightbend.lagom.scaladsl.persistence.{PersistentEntityRegistry, ReadSide}
+import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry, ReadSide}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
@@ -22,6 +22,7 @@ import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, Pos
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
 
+import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
@@ -46,7 +47,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           lecturers <- getAllLecturers.invokeWithHeaders(header, notUsed)
           admins <- getAllAdmins.invokeWithHeaders(header, notUsed)
         } yield
-          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))) ,
+          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))),
             GetAllUsersResponse(students._2, lecturers._2, admins._2))
       }
     }
@@ -176,6 +177,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         }
     }
   }
+
   /** Helper method for updating a generic User, independent of the role */
   private def updateUser(): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
     val ref = entityRef(user.getUsername)
@@ -188,6 +190,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
       }
   }
+
   /** Helper method for getting a generic User, independent of the role */
   private def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ =>
     val ref = entityRef(username)
@@ -197,6 +200,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       case None => throw NotFound("Username was not found")
     }
   }
+
   /** Helper method for getting all Users */
   private def getAll(table: String): Future[Seq[User]] = {
     cassandraSession.selectAll(s"SELECT * FROM $table ;")
@@ -216,17 +220,23 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   def userAuthenticationTopic(): Topic[AuthenticationUser] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(UserEvent.Tag, fromOffset)
-      .map(ev => ev.event match {
-        case OnUserCreate(_, authenticationUser) => (authenticationUser, ev.offset)
-      })
+      .mapConcat {
+        //Filter only OnUserCreate events
+        case EventStreamElement(_, OnUserCreate(_, authenticationUser), offset) =>
+          immutable.Seq((authenticationUser, offset))
+        case _ => Nil
+      }
   }
 
   /** Publishes every deletion of a user */
   def userDeletedTopic(): Topic[JsonUsername] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(UserEvent.Tag, fromOffset)
-      .map(ev => ev.event match {
-        case OnUserDelete(user) => (JsonUsername(user.getUsername), ev.offset)
-      })
+      .mapConcat {
+        //Filter only OnUserDelete events
+        case EventStreamElement(_, OnUserDelete(user), offset) =>
+          immutable.Seq((JsonUsername(user.getUsername), offset))
+        case _ => Nil
+      }
   }
 }

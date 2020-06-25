@@ -3,16 +3,18 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 
 import akka.Done
+import akka.stream.scaladsl.Source
+import akka.stream.testkit.scaladsl.TestSink
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.ServiceTest
+import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
-import de.upb.cs.uc4.user.model.{Address, Role}
+import de.upb.cs.uc4.user.model.{Address, JsonUsername, Role}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -28,12 +30,15 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     ServiceTest.defaultSetup
       .withCassandra()
   ) { ctx =>
-    new UserApplication(ctx) with LocalServiceLocator {
-      override lazy val authenticationService: AuthenticationService =
+    new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
+      override implicit lazy val authenticationService: AuthenticationService =
         (_: String, _: String) => ServiceCall { _ => Future.successful(AuthenticationResponse.Correct) }
     }
   }
+
   val client: UserService = server.serviceClient.implement[UserService]
+  val authenticationTopic: Source[AuthenticationUser, _] = client.userAuthenticationTopic().subscribe.atMostOnceSource
+  val deletionTopic: Source[JsonUsername, _] = client.userDeletedTopic().subscribe.atMostOnceSource
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -49,6 +54,11 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "Graf", "Wurst", "Haesslich", "graf.wurst@mail.de", "Ich bin bloed", "Genderstudies")
   val admin0: Admin = Admin("admin0", Role.Lecturer, address, "Dieter", "Wurst", "Haesslich", "dieter.wurst@mail.de")
   val admin1: Admin = Admin("lecturer0", Role.Lecturer, address, "Lola", "Wurst", "Haesslich", "lola.wurst@mail.de")
+
+  val postMessage: PostMessageStudent = PostMessageStudent(
+    AuthenticationUser("Max", "Muster", Role.Student),
+    Student("maxMu", Role.Student, address, "Max", "Muster", "Haesslich", "mm@mail.de", "IN", "3", 9000, List())
+  )
 
   /** Tests only working if the whole instance is started */
   "UserService service" should {
@@ -150,9 +160,18 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "get a role of a user" in {
-      client.getRole(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
+      client.getRole(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
         answer.role shouldBe Role.Lecturer
       }
+    }
+
+    "publish new AuthenticationUser" in {
+      val subscriber = authenticationTopic
+        .runWith(TestSink.probe[AuthenticationUser](server.actorSystem))(server.materializer)
+
+      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
+
+      subscriber.request(1).expectNext should ===(authenticationUser)
     }
   }
 }
