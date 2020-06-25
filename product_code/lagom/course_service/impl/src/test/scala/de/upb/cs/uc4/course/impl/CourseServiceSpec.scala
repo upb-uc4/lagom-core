@@ -2,18 +2,15 @@ package de.upb.cs.uc4.course.impl
 
 import java.util.Base64
 
-import akka.{Done, NotUsed}
+import akka.Done
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationResponse
-import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationResponse
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
-import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -30,50 +27,18 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       .withCassandra()
   ) { ctx =>
     new CourseApplication(ctx) with LocalServiceLocator {
-      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
-        /** Checks if the username and password pair exists */
-        override def check(username: String, password: String): ServiceCall[Seq[Role], AuthenticationResponse] =
-          ServiceCall { _ =>  Future.successful(AuthenticationResponse.Correct)}
-
-        /** Gets the role of a user */
-        override def getRole(username: String): ServiceCall[NotUsed, JsonRole] =
-          ServiceCall { _ =>  Future.successful(JsonRole(Role.Admin))}
-
-        /** Sets authentication and password of a user */
-        override def set(): ServiceCall[User, Done] =
-          ServiceCall { _ =>  Future.successful(Done)}
-
-        /** Deletes authentication and password of a user  */
-        override def delete(username: String): ServiceCall[NotUsed, Done] =
-          ServiceCall { _ =>  Future.successful(Done)}
-
-        /** Allows GET, POST, DELETE, OPTIONS*/
-        override def options(): ServiceCall[NotUsed, Done] =
-          ServiceCall { _ =>  Future.successful(Done)}
-
-        /** Allows GET, OPTIONS */
-        override def optionsGet(): ServiceCall[NotUsed, Done] =
-          ServiceCall { _ =>  Future.successful(Done)}
-
-        /** Allows POST */
-        override def allowedMethodsPOST(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
-
-        /** Allows GET */
-        override def allowedMethodsGET(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
-
-        /** Allows DELETE */
-        override def allowedMethodsDELETE(): ServiceCall[NotUsed, Done] = ServiceCall { _ =>  Future.successful(Done)}
-      }
+      override lazy val authenticationService: AuthenticationService =
+        (_: String, _: String) => ServiceCall { _ => Future.successful(AuthenticationResponse.Correct) }
     }
   }
 
   val client: CourseService = server.serviceClient.implement[CourseService]
 
   //Test courses
-  val course0: Course = Course("18", "Course 0", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
-  val course1: Course = Course("17", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
-  val course2: Course = Course("16", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "12", 60, 20, CourseLanguage.German, "A test")
-  val course3: Course = Course("18", "Course 3", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
+  val course0: Course = Course("", "Course 0", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
+  val course1: Course = Course("", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
+  val course2: Course = Course("", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "12", 60, 20, CourseLanguage.German, "A test")
+  val course3: Course = Course("", "Course 3", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
 
   override protected def afterAll(): Unit = server.stop()
 
