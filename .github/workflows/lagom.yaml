@@ -24,7 +24,7 @@ jobs:
     - name: Add -J to .sbtops
       run: |
         pushd ./product_code/lagom
-        "-J-Xms512M -J-Xmx4096M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
+        echo "-J-Xms512M -J-Xmx4096M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
         popd
     
     # run sbt tests
