@@ -1,8 +1,6 @@
 name: Lagom Test Pipeline
 
 on:
-  push:
-    branches: [ feature/lagom* ]
   pull_request:
     branches: [ develop ]
 
