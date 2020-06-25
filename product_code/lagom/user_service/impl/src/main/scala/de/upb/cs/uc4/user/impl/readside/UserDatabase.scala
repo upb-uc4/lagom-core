@@ -31,7 +31,7 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
   private val deleteAdminPromise = Promise[PreparedStatement] // initialized in prepare
   private def deleteAdmin(): Future[PreparedStatement] = deleteAdminPromise.future
 
-  /** Create empty courses table */
+  /** Create empty tables for admins, users and lecturers */
   def globalPrepare(): Future[Done] = {
     val students = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS students ( " +
@@ -43,6 +43,7 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
       "CREATE TABLE IF NOT EXISTS admins ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
 
+    //This comprehension waits for every future to be completed and then yields Done
     for{
       _ <- students
       _ <- lecturers
@@ -56,7 +57,7 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     val prepLecturers = prepare("lecturers", insertLecturerPromise, deleteLecturerPromise)
     val prepAdmins = prepare("admins", insertAdminPromise, deleteAdminPromise)
 
-    //Combine all Futures to one future
+    //This comprehension waits for every future to be completed and then yields Done
     for{
       _ <- prepStudents
       _ <- prepLecturers
@@ -64,6 +65,13 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     } yield Done
   }
 
+  /** Helper method that prepares an INSERT and DELETE statement for the given table.
+    *
+    * @param table name of the table the statements should be prepared for
+    * @param insert the insert promise
+    * @param delete the delete promise
+    * @return Done when preparation of both statements is finished
+    */
   private def prepare(table: String, insert: Promise[PreparedStatement], delete: Promise[PreparedStatement]): Future[Done] = {
     val prepInsert = session.prepare(s"INSERT INTO $table (username) VALUES (?) ;")
     insert.completeWith(prepInsert)
@@ -71,6 +79,7 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     val prepDelete = session.prepare(s"DELETE FROM $table WHERE username=? ;")
     delete.completeWith(prepDelete)
 
+    //This comprehension waits for every future to be completed and then yields Done
     for{
       _ <- prepInsert
       _ <- prepDelete
@@ -101,6 +110,7 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     }
   }
 
+  /** returns helper method to bind statements */
   private def bind(user: User) : PreparedStatement => List[BoundStatement] = {
     ps =>
       val bindWriteTitle = ps.bind()
