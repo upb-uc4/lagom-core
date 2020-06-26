@@ -1,13 +1,10 @@
 package de.upb.cs.uc4.shared
 
-import java.util.Base64
-
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationResponse
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -37,17 +34,16 @@ object ServiceCallFactory {
     * @return finished [[com.lightbend.lagom.scaladsl.server.ServerServiceCall]]
     */
   @varargs
-  def authenticated[Request, Response](role: AuthenticationRole*)(serviceCall: ServerServiceCall[Request, Response])
+  def authenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: ServerServiceCall[Request, Response])
                                       (implicit auth: AuthenticationService, ec: ExecutionContext)
   : ServerServiceCall[Request, Response] = {
     ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
-      val (user, pw) = extractUserAndPassword(requestHeader)
-
-      auth.check(user, pw).invoke(role).map {
-        case AuthenticationResponse.Correct => serviceCall
-        case AuthenticationResponse.WrongUsername => throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
-        case AuthenticationResponse.WrongPassword => throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
-        case AuthenticationResponse.NotAuthorized => throw Forbidden("Not enough privileges for this call.")
+      auth.check(getJwts(requestHeader)).invoke().map{
+        case (_, role) =>
+          if(!roles.contains(role)){
+            throw Forbidden("Not authorized")
+          }
+          serviceCall
       }
     }
   }
@@ -60,46 +56,33 @@ object ServiceCallFactory {
     * @return finished [[com.lightbend.lagom.scaladsl.server.ServerServiceCall]]
     */
   @varargs
-  def identifiedAuthenticated[Request, Response](role: AuthenticationRole*)
+  def identifiedAuthenticated[Request, Response](roles: AuthenticationRole*)
                                                 (serviceCall: (String, AuthenticationRole) => ServerServiceCall[Request, Response])
                                                 (implicit auth: AuthenticationService, ec: ExecutionContext)
   : ServerServiceCall[Request, Response] = {
     ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
-      val (user, pw) = extractUserAndPassword(requestHeader)
-
-      auth.check(user, pw).invoke(role).flatMap {
-        case AuthenticationResponse.Correct => auth.getRole(user).invoke().map(role => serviceCall(user, role))
-        case AuthenticationResponse.WrongUsername => throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
-        case AuthenticationResponse.WrongPassword => throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
-        case AuthenticationResponse.NotAuthorized => throw Forbidden("Not enough privileges for this call.")
+      auth.check(getJwts(requestHeader)).invoke().map{
+        case (username, role) =>
+          if(!roles.contains(role)){
+            throw Forbidden("Not authorized")
+          }
+          serviceCall(username, role)
       }
     }
   }
 
-  def extractUserAndPassword(requestHeader: RequestHeader): (String, String) = {
-    val userPw = getUserAndPassword(requestHeader)
-
-    if (userPw.isEmpty) {
-      throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"), new ExceptionMessage("Unauthorized", "No Authorization given"))
-    } else {
-      userPw.get
-    }
-  }
-
   /**
-    * Reads username and password out of the header
+    * Reads jwts out of the header
     *
     * @param requestHeader with the an authentication header
-    * @return an Option with a String tuple
+    * @return an Option with a String
     */
-  def getUserAndPassword(requestHeader: RequestHeader): Option[(String, String)] = {
+  private def getJwts(requestHeader: RequestHeader): String = {
     requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
-      case Array("Basic", userAndPass) =>
-        new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":") match {
-          case Array(user, password) => Option(user, password)
-          case _ => None
-        }
-      case _ => None
+      case Array("Bearer", jwts) => jwts
+      case _ =>
+        throw new Forbidden(TransportErrorCode(401, 1003, "Signature Error"),
+          new ExceptionMessage("Unauthorized", "Jwts is not valid"))
     }
   }
 
