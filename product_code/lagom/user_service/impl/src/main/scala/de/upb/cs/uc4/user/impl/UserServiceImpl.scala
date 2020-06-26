@@ -189,7 +189,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         case Accepted => // Update Successful
           (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
         case Rejected("A user with the given username does not exist.") => // Already exists
-          (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
+          (ResponseHeader(404, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
         case Rejected(responseCode) => throwForbidden(responseCode)
       }
   }

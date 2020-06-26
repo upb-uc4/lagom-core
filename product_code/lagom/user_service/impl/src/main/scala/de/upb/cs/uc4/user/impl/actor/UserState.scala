@@ -42,15 +42,15 @@ case class UserState(optUser: Option[User]) {
       case UpdateUser(user, replyTo) =>
         val trimmedUser = user.trim
         val responseCode = validateUserSyntax(trimmedUser,None)
-      
-        if (responseCode == "valid" ) {
-          if(optUser.isDefined){
+
+        if (optUser.isDefined) {
+          if(responseCode == "valid"){
            Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
           } else {
-           Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))
+           Effect.reply(replyTo)(Rejected(responseCode))
           }
         } else {
-         Effect.reply(replyTo)(Rejected(responseCode))
+         Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))
       }
 
         
