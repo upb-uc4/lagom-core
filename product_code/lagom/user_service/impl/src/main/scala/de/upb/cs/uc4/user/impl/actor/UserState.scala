@@ -85,8 +85,8 @@ case class UserState(optUser: Option[User]) {
   def validateUserSyntax(user: User, authenticationUserOpt: Option[AuthenticationUser]): String = {
     val generalRegex = """[\s\S]+""".r // Allowed characters for general strings "[a-zA-Z0-9\\s]+".r TBD
     // More REGEXes need to be defined to check firstname etc. But it is not clear from the API
-    val usernameRegex = """[a-zA-Z0-9-]"""
-    val nameRegex = """[a-zA-Z]"""
+    val usernameRegex = """[a-zA-Z0-9-]+""".r
+    val nameRegex = """[a-zA-Z]+""".r
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
     val fos = List("Computer Science", "Gender Studies", "Electrical Engineering")
     
@@ -110,12 +110,13 @@ case class UserState(optUser: Option[User]) {
         "70" // picture invalid
       case u if (!(u.optStudent == None)) => 
         u.student match {
-          case s if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.asInstanceOf[Int] > 0)) =>
+          case s if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) =>
             "100" // matriculation ID invalid
           case s if(!(s.semesterCount > 0)) =>
             "110" // semester count must be a positive integer
           case s if(!s.fieldsOfStudy.forall(fos.contains)) => 
             "120" // fields of study must be one of the defined fields of study
+          case _=> "valid"
         }
       case u if (!(u.optLecturer == None)) =>
         u.lecturer match {
@@ -123,8 +124,8 @@ case class UserState(optUser: Option[User]) {
             "200" //	free text must only contain the following characters
           case l if (!generalRegex.matches(l.researchArea)) => 
             "210" // 	research area must only contain the following characters
+          case _=> "valid"
         }
-       
       case _ => "valid"
     }
 

@@ -187,7 +187,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
       .map {
         case Accepted => // Update Successful
-          (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
+          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
         case Rejected("A user with the given username does not exist.") => // Already exists
           (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
         case Rejected(responseCode) => throwForbidden(responseCode)
