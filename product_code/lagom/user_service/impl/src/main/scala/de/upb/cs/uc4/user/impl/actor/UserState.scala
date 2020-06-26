@@ -35,7 +35,7 @@ case class UserState(optUser: Option[User]) {
         }
       }
       else {
-        Effect.reply(replyTo)(Rejected("A user with the given username already exist."))
+        Effect.reply(replyTo)(Rejected("A user with the given username already exists."))
       }
   
         
@@ -85,30 +85,27 @@ case class UserState(optUser: Option[User]) {
   def validateUserSyntax(user: User, authenticationUserOpt: Option[AuthenticationUser]): String = {
     val generalRegex = """[\s\S]+""".r // Allowed characters for general strings "[a-zA-Z0-9\\s]+".r TBD
     // More REGEXes need to be defined to check firstname etc. But it is not clear from the API
+    val usernameRegex = """[a-zA-Z0-9-]"""
+    val nameRegex = """[a-zA-Z]"""
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
     val fos = List("Computer Science", "Gender Studies", "Electrical Engineering")
     
     if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ("")){
-      return "10create"
-    }
-   
+      return "10"
+    } 
     user match {
-      case u if (!generalRegex.matches(user.getUsername)) =>
+      case u if (!usernameRegex.matches(user.getUsername)) =>
         "01" // username must only contain [..]
-      case u if (optUser.isDefined && !optUser.get.getUsername.equals(user.getUsername)) =>
-        "10update" // username must not be changed; Only for update
-      case u if (optUser.isDefined && !optUser.get.role.equals(user.role)) =>
-        "20update" // role must not be changed; Only for update
       case u if (!optUser.isDefined && !Role.All.contains(u.role)) =>
-        "20create" // role must be one of [..]; Only for create
+        "20" // role must be one of [..]; Only for create
       case u if (user.getAddress.oneEmpty) => 
         "30" //	address fields must not be empty
       case u if (!mailRegex.matches(u.getEmail)) =>
-        "40" // email must be valid
-      case u if (!generalRegex.matches(user.getFirstName)) =>
-        "50" // first name must not contain XYZ
-      case u if (!generalRegex.matches(user.getLastName)) =>
-        "60" // last name must not contain XYZ
+        "40" // email format invalid
+      case u if (!nameRegex.matches(user.getFirstName)) =>
+        "50" // first name can only contain letters
+      case u if (!nameRegex.matches(user.getLastName)) =>
+        "60" // first name can only contain letters
       case u if (!generalRegex.matches(user.getPicture)) => //TODO, this does not make any sense, but pictures are not defined yet
         "70" // picture invalid
       case u if (!(u.optStudent == None)) => 

@@ -174,9 +174,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         .map {
           case Accepted => // Creation Successful
             (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
-          case Rejected("A user with the given username already exist.") => // Already exists
+          case Rejected("A user with the given username already exists.") => // Already exists
             (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username already exists."))), Done)
-          case Rejected(responseCode) => throwForbidden(responseCode,422)
+          case Rejected(responseCode) => throwForbidden(responseCode)
         }
     }
   }
@@ -190,7 +190,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
         case Rejected("A user with the given username does not exist.") => // Already exists
           (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
-        case Rejected(responseCode) => throwForbidden(responseCode,400)
+        case Rejected(responseCode) => throwForbidden(responseCode)
       }
   }
   /** Helper method for getting a generic User, independent of the role */
@@ -241,38 +241,34 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
    * @param errorCode main error code to be thrown
    * @throws Forbidden providing transport protocol error codes and a human readable error description
    */
-  def throwForbidden(code : String, errorCode: Int) = {
+  def throwForbidden(code : String) = {
     code match {
       case ("01") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("01", "Username must only contain [..]"))
-      case ("10update") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("10", "Username must not be changed"))
-      case ("10create") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("10", "Password must not be empty"))
-      case ("20update") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("20", "Role must not be changed"))
-      case ("20create") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("20", "Role must be one of [...]"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("01", "Username must only contain [..]"))
+      case ("10") =>
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("10", "Password must not be empty"))
+      case ("20") =>
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("20", "Role must be one of" + Role.All.toString()))
       case ("30") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("30", "Address fields must not be empty"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("30", "Address fields must not be empty"))
       case ("40") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("40", "Email invalid"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("40", "Email format invalid"))
       case ("50") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("50", "First name must not contain XYZ"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("50", "First name must only contain letters"))
       case ("60") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("60", "Last name must not contain XYZ"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("60", "Last name must only contain letters"))
       case ("70") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("70", "Picture Invalid"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("70", "Picture Invalid"))
       case ("100") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("100", "Student ID invalid"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("100", "Student ID invalid"))
       case ("110") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("110", "Semester count must be positive integer"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("110", "Semester count must be a positive integer"))
       case ("120") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("120", "Fields of Study must be one of [...]"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("120", "Fields of Study must be one of [...]"))
       case ("200") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("200", "Free text must only contain the following characters"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("200", "Free text must only contain the following characters"))
       case ("210") =>
-        throw new Forbidden(TransportErrorCode(errorCode, 1003, "Bad Request"), new ExceptionMessage("210", "Research area must only contain the following characters"))
+        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("210", "Research area must only contain the following characters"))
       case (s) =>
         throw new Forbidden(TransportErrorCode(500, 1003, "Server error"), new ExceptionMessage("0", s"internal server error: $s")) // default case, should not happen
     }
