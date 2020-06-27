@@ -1,9 +1,7 @@
 package de.upb.cs.uc4.chaincode;
 
-import com.google.gson.Gson;
+import com.google.gson.*;
 import de.upb.cs.uc4.chaincode.model.Course;
-import de.upb.cs.uc4.chaincode.model.CourseLanguage;
-import de.upb.cs.uc4.chaincode.model.CourseType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hyperledger.fabric.contract.Context;
@@ -14,7 +12,10 @@ import org.hyperledger.fabric.contract.annotation.Transaction;
 import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.hyperledger.fabric.shim.ledger.KeyValue;
 import org.hyperledger.fabric.shim.ledger.QueryResultsIterator;
+import org.threeten.bp.LocalDate;
+import org.threeten.bp.format.DateTimeFormatter;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 @Contract(
@@ -24,25 +25,34 @@ import java.util.ArrayList;
 public class CourseChaincode implements ContractInterface {
 
     private static Log _logger = LogFactory.getLog(CourseChaincode.class);
+    // setup gson (de-)serializer capable of (de-)serializing dates
+    private static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(
+                    LocalDate.class,
+                    new JsonDeserializer<LocalDate>() {
+                        @Override
+                        public LocalDate deserialize(
+                                JsonElement json,
+                                Type type,
+                                JsonDeserializationContext jsonDeserializationContext
+                        ) throws JsonParseException {
+                            return LocalDate.parse(json.getAsJsonPrimitive().getAsString());
+                        }
+                    })
+            .registerTypeAdapter(
+                    LocalDate.class,
+                    new JsonSerializer<LocalDate>() {
+                        @Override
+                        public JsonElement serialize(LocalDate date, Type typeOfSrc, JsonSerializationContext context) {
+                            return new JsonPrimitive("2020-06-26"); // "yyyy-mm-dd"
+                        }
+                    }
+                    )
+            .create();
 
     @Transaction()
     public void initLedger(final Context ctx) {
-        ChaincodeStub stub = ctx.getStub();
-
-        Course course = new Course(
-                "courseId",
-                "courseName",
-                CourseType.Lecture,
-                "startDate",
-                "endDate",
-                0,
-                "lecturerId",
-                0,
-                0,
-                CourseLanguage.English,
-                "courseDescription"
-        );
-        stub.putStringState(course.getCourseId(),course.toJson());
+        
     }
 
     @Transaction()
@@ -51,30 +61,27 @@ public class CourseChaincode implements ContractInterface {
 
         ChaincodeStub stub = ctx.getStub();
 
-        Gson gson = new Gson();
         Course course = gson.fromJson(jsonCourse, Course.class);
-        stub.putStringState(course.getCourseId(),course.toJson());
+        stub.putStringState(course.getCourseId(),gson.toJson(course));
     }
 
     @Transaction()
-    public Course[] getAllCourses (final Context ctx) {
+    public String getAllCourses (final Context ctx) {
         _logger.info("queryAllLectures");
         ChaincodeStub stub = ctx.getStub();
 
         QueryResultsIterator<KeyValue> results = stub.getQueryResult("{\"selector\":{\"courseId\":{\"$regex\":\".*\"}}}");
 
         ArrayList<Course> courses = new ArrayList<Course>();
-
-        Gson gson = new Gson();
         for (KeyValue result: results) {
             courses.add(gson.fromJson(result.getStringValue(), Course.class));
         }
-        return courses.toArray(new Course[courses.size()]);
+        return gson.toJson(courses.toArray(new Course[courses.size()]));
     }
 
     @Transaction()
-    public Course getCourseById (final Context ctx, final String courseId) {
-        return getCourse(ctx, courseId);
+    public String getCourseById (final Context ctx, final String courseId) {
+        return gson.toJson(getCourse(ctx, courseId));
     }
 
     @Transaction()
@@ -88,15 +95,17 @@ public class CourseChaincode implements ContractInterface {
     public void updateCourseById (
             final Context ctx,
             final String courseId,
-            final Course updatedCourse) {
+            final String jsonCourse) {
 
         ChaincodeStub stub = ctx.getStub();
-        stub.putStringState(updatedCourse.getCourseId(), updatedCourse.toJson());
+
+        stub.delState(courseId);
+        Course updatedCourse = gson.fromJson(jsonCourse, Course.class);
+        stub.putStringState(updatedCourse.getCourseId(), gson.toJson(updatedCourse));
     }
 
     private Course getCourse (final Context ctx, final String courseId) {
         ChaincodeStub stub = ctx.getStub();
-        Gson gson = new Gson();
         return gson.fromJson(stub.getStringState(courseId), Course.class);
     }
 }
