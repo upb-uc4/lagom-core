@@ -11,6 +11,9 @@ case class Address(street: String,
   def trim: Address = {
     copy(street.trim, houseNumber.trim, zipCode.trim, city.trim, country.trim)
   }
+
+  def oneEmpty: Boolean = {street == "" || houseNumber == "" || zipCode == "" || city == "" || country == ""}
+
 }
 
 object Address {
