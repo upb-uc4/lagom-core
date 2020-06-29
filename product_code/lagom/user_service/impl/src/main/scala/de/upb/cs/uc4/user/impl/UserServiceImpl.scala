@@ -176,7 +176,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
             (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
           case Rejected("A user with the given username already exists.") => // Already exists
             (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username already exists."))), Done)
-          case Rejected(responseCode) => throwForbidden(responseCode)
+          case Rejected(responseCodes) =>
+            (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)),Done)
         }
     }
   }
@@ -190,7 +191,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
         case Rejected("A user with the given username does not exist.") => // Already exists
           (ResponseHeader(404, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
-        case Rejected(responseCode) => throwForbidden(responseCode)
+        case Rejected(responseCodes) =>
+          (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)),Done)
       }
   }
   /** Helper method for getting a generic User, independent of the role */
@@ -237,40 +239,53 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
     /** Matches the user creation/update error code to the suitable response exception.
    *
-   * @param code which describes why a course cannot be created/updated
-   * @param errorCode main error code to be thrown
+   * @param codes which describe why a user cannot be created/updated
    * @throws Forbidden providing transport protocol error codes and a human readable error description
    */
-  def throwForbidden(code : String) = {
-    code match {
-      case ("01") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("01", "Username must only contain [..]"))
-      case ("10") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("10", "Password must not be empty"))
-      case ("20") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("20", "Role must be one of" + Role.All.toString()))
-      case ("30") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("30", "Address fields must not be empty"))
-      case ("40") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("40", "Email format invalid"))
-      case ("50") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("50", "First name must only contain letters"))
-      case ("60") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("60", "Last name must only contain letters"))
-      case ("70") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("70", "Picture Invalid"))
-      case ("100") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("100", "Student ID invalid"))
-      case ("110") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("110", "Semester count must be a positive integer"))
-      case ("120") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("120", "Fields of Study must be one of [...]"))
-      case ("200") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("200", "Free text must only contain the following characters"))
-      case ("210") =>
-        throw new Forbidden(TransportErrorCode(422, 1003, "Bad Request"), new ExceptionMessage("210", "Research area must only contain the following characters"))
-      case (s) =>
-        throw new Forbidden(TransportErrorCode(500, 1003, "Server error"), new ExceptionMessage("0", s"internal server error: $s")) // default case, should not happen
+  def throwForbidden(codes : String): Seq[(String, String)] = {
+    var errors = List[(String,String)]()
+    if(codes.contains("01")) {
+      errors = errors.::(("01","Username must only contain [..]"))
     }
+    if(codes.contains("10")) {
+      errors = errors.::(("10","Password must not be empty"))
+    }
+    if(codes.contains("20")) {
+      errors = errors.::(("20","Username must only contain [..]"))
+    }
+    if(codes.contains("30")) {
+      errors = errors.::(("30","Username must only contain [..]"))
+    }
+    if(codes.contains("40")) {
+      errors = errors.::(("40","Username must only contain [..]"))
+    }
+    if(codes.contains("50")) {
+      errors = errors.::(("50","Username must only contain [..]"))
+    }
+    if(codes.contains("60")) {
+      errors = errors.::(("60","Username must only contain [..]"))
+    }
+    if(codes.contains("70")) {
+      errors = errors.::(("70","Username must only contain [..]"))
+    }
+    if(codes.contains("100")) {
+      errors = errors.::(("100","Student ID invalid"))
+    }
+    if(codes.contains("110")) {
+      errors = errors.::(("110", "Semester count must be a positive integer"))
+    }
+    if(codes.contains("120")) {
+      errors = errors.::(("120", "Fields of Study must be one of [...]"))
+    }
+    if(codes.contains("200")) {
+      errors = errors.::(("200", "Free text must only contain the following characters"))
+    }
+    if(codes.contains("210")) {
+      errors = errors.::(("210", "Research area must only contain the following characters"))
+    }
+    if(errors.isEmpty) {
+      errors = List(("500","Internal Server Error")) //Base case should not occur
+    }
+    errors
   }
 }

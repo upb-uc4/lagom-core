@@ -3,6 +3,7 @@ package de.upb.cs.uc4.user.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
+import com.fasterxml.jackson.module.scala.deser.overrides.MutableList
 import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}
 import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateUser, UserCommand}
@@ -10,6 +11,8 @@ import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate,
 import play.api.libs.json.{Format, Json}
 import de.upb.cs.uc4.user.model.Role
 import de.upb.cs.uc4.user.model.user.AuthenticationUser
+
+import scala.collection.mutable
 
 /** The current state of a User */
 case class UserState(optUser: Option[User]) {
@@ -25,13 +28,13 @@ case class UserState(optUser: Option[User]) {
       case CreateUser(user, authenticationUser, replyTo) =>
     
       val trimmedUser = user.trim
-      val responseCode = validateUserSyntax(trimmedUser,Some(authenticationUser))
+      val responseCodes = validateUser(trimmedUser,Some(authenticationUser))
       if (optUser.isEmpty){
-        if (responseCode == "valid" ) {
+        if (responseCodes.isEmpty) {
           Effect.persist(OnUserCreate(user, authenticationUser)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(Rejected(responseCode))
+          Effect.reply(replyTo)(Rejected(responseCodes.mkString(";")))
         }
       }
       else {
@@ -41,13 +44,13 @@ case class UserState(optUser: Option[User]) {
         
       case UpdateUser(user, replyTo) =>
         val trimmedUser = user.trim
-        val responseCode = validateUserSyntax(trimmedUser,None)
+        val responseCodes = validateUser(trimmedUser,None)
 
         if (optUser.isDefined) {
-          if(responseCode == "valid"){
+          if(responseCodes.isEmpty){
            Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
           } else {
-           Effect.reply(replyTo)(Rejected(responseCode))
+           Effect.reply(replyTo)(Rejected(responseCodes.mkString(";")))
           }
         } else {
          Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))
@@ -81,55 +84,65 @@ case class UserState(optUser: Option[User]) {
         this
     }
 
-    
-  def validateUserSyntax(user: User, authenticationUserOpt: Option[AuthenticationUser]): String = {
+
+  def validateUser(user: User, authenticationUserOpt: Option[AuthenticationUser]): Seq[String] = {
     val generalRegex = """[\s\S]+""".r // Allowed characters for general strings "[a-zA-Z0-9\\s]+".r TBD
     // More REGEXes need to be defined to check firstname etc. But it is not clear from the API
     val usernameRegex = """[a-zA-Z0-9-]+""".r
     val nameRegex = """[a-zA-Z]+""".r
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
     val fos = List("Computer Science", "Gender Studies", "Electrical Engineering")
-    
-    if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ("")){
-      return "10"
-    } 
-    user match {
-      case u if (!usernameRegex.matches(user.getUsername)) =>
-        "01" // username must only contain [..]
-      case u if (!optUser.isDefined && !Role.All.contains(u.role)) =>
-        "20" // role must be one of [..]; Only for create
-      case u if (user.getAddress.oneEmpty) => 
-        "30" //	address fields must not be empty
-      case u if (!mailRegex.matches(u.getEmail)) =>
-        "40" // email format invalid
-      case u if (!nameRegex.matches(user.getFirstName)) =>
-        "50" // first name can only contain letters
-      case u if (!nameRegex.matches(user.getLastName)) =>
-        "60" // first name can only contain letters
-      case u if (!generalRegex.matches(user.getPicture)) => //TODO, this does not make any sense, but pictures are not defined yet
-        "70" // picture invalid
-      case u if (!(u.optStudent == None)) => 
-        u.student match {
-          case s if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) =>
-            "100" // matriculation ID invalid
-          case s if(!(s.semesterCount > 0)) =>
-            "110" // semester count must be a positive integer
-          case s if(!s.fieldsOfStudy.forall(fos.contains)) => 
-            "120" // fields of study must be one of the defined fields of study
-          case _=> "valid"
-        }
-      case u if (!(u.optLecturer == None)) =>
-        u.lecturer match {
-          case l if (!generalRegex.matches(l.freeText)) => 
-            "200" //	free text must only contain the following characters
-          case l if (!generalRegex.matches(l.researchArea)) => 
-            "210" // 	research area must only contain the following characters
-          case _=> "valid"
-        }
-      case _ => "valid"
+
+    var errorCodes= new mutable.HashSet[String]()
+
+    if (!usernameRegex.matches(user.getUsername)) {
+      errorCodes += "01" //username must only contain...
+    }
+    if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ""){
+      errorCodes += "10" //password format invalid
+    }
+    if (optUser.isEmpty && !Role.All.contains(user.role)) { //optUser check to ensure this is during creation
+      errorCodes += "20" // role invalid
+    }
+    if (user.getAddress.oneEmpty) {
+      errorCodes += "30" // address empty
+    }
+    if (!mailRegex.matches(user.getEmail)) {
+      errorCodes += "40" // email format invalid
+    }
+    if (!nameRegex.matches(user.getFirstName)) {
+      errorCodes += "50" // first name invalid
+    }
+    if (!nameRegex.matches(user.getLastName)) {
+      errorCodes += "60" // last name invalid
+    }
+    if (!generalRegex.matches(user.getPicture)) { //TODO, this does not make any sense, but pictures are not defined yet
+      errorCodes += "70" // picture invalid
     }
 
-    
+    user match {
+      case u if u.optStudent.isDefined =>
+        val s = u.student
+        if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) {
+          errorCodes += "100" // matriculationId invalid
+        }
+        if(!(s.semesterCount > 0)) {
+          errorCodes += "110" // semester count must be a positive integer
+        }
+        if(!s.fieldsOfStudy.forall(fos.contains)) {
+          errorCodes += "120" // fields of study must be one of the defined fields of study
+        }
+      case u if u.optLecturer.isDefined =>
+        val l = u.lecturer
+        if (!generalRegex.matches(l.freeText)) {
+          errorCodes +="200" //	free text must only contain the following characters
+        }
+        if (!generalRegex.matches(l.researchArea)) {
+          errorCodes +="210" // 	research area must only contain the following characters
+        }
+      case _ =>
+    }
+    errorCodes.toSeq
   }
 }
 
