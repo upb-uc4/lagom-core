@@ -12,14 +12,8 @@ case class Address(street: String,
     copy(street.trim, houseNumber.trim, zipCode.trim, city.trim, country.trim)
   }
 
-  def oneEmpty: Boolean = {
-    if(street == "" || houseNumber == "" || zipCode == "" || city == "" || country == "") {
-      true
-    }
-    else {
-      false
-    }
-  }
+  def oneEmpty: Boolean = {street == "" || houseNumber == "" || zipCode == "" || city == "" || country == ""}
+
 }
 
 object Address {

@@ -243,47 +243,48 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
    * @throws Forbidden providing transport protocol error codes and a human readable error description
    */
   def throwForbidden(codes : String): Seq[(String, String)] = {
+    val responseList = codes.split(";").toList
     var errors = List[(String,String)]()
-    if(codes.contains("01")) {
+    if(responseList.contains("01")) {
       errors = errors.::(("01","Username must only contain [..]"))
     }
-    if(codes.contains("10")) {
+    if(responseList.contains("10")) {
       errors = errors.::(("10","Password must not be empty"))
     }
-    if(codes.contains("20")) {
+    if(responseList.contains("20")) {
       errors = errors.::(("20","Username must only contain [..]"))
     }
-    if(codes.contains("30")) {
+    if(responseList.contains("30")) {
       errors = errors.::(("30","Username must only contain [..]"))
     }
-    if(codes.contains("40")) {
+    if(responseList.contains("40")) {
       errors = errors.::(("40","Username must only contain [..]"))
     }
-    if(codes.contains("50")) {
+    if(responseList.contains("50")) {
       errors = errors.::(("50","Username must only contain [..]"))
     }
-    if(codes.contains("60")) {
+    if(responseList.contains("60")) {
       errors = errors.::(("60","Username must only contain [..]"))
     }
-    if(codes.contains("70")) {
+    if(responseList.contains("70")) {
       errors = errors.::(("70","Username must only contain [..]"))
     }
-    if(codes.contains("100")) {
+    if(responseList.contains("100")) {
       errors = errors.::(("100","Student ID invalid"))
     }
-    if(codes.contains("110")) {
+    if(responseList.contains("110")) {
       errors = errors.::(("110", "Semester count must be a positive integer"))
     }
-    if(codes.contains("120")) {
+    if(responseList.contains("120")) {
       errors = errors.::(("120", "Fields of Study must be one of [...]"))
     }
-    if(codes.contains("200")) {
+    if(responseList.contains("200")) {
       errors = errors.::(("200", "Free text must only contain the following characters"))
     }
-    if(codes.contains("210")) {
+    if(responseList.contains("210")) {
       errors = errors.::(("210", "Research area must only contain the following characters"))
     }
-    if(errors.isEmpty) {
+    if(responseList.isEmpty) {
       errors = List(("500","Internal Server Error")) //Base case should not occur
     }
     errors
