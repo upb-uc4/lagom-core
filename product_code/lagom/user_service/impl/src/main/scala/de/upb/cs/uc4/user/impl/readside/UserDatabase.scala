@@ -6,6 +6,7 @@ import akka.util.Timeout
 import com.datastax.driver.core.{BoundStatement, PreparedStatement}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, EventStreamElement}
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.messages.Confirmation
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
 import de.upb.cs.uc4.user.impl.commands.{CreateUser, UserCommand}
@@ -67,17 +68,17 @@ class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(
     val students = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS students ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
-    students.onComplete(addUserOnCreation(student, AuthenticationUser("student", "student", Role.Student), "students"))
+    students.onComplete(addUserOnCreation(student, AuthenticationUser("student", "student", AuthenticationRole.Student), "students"))
 
     val lecturers = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS lecturers ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
-    lecturers.onComplete(addUserOnCreation(lecturer, AuthenticationUser("lecturer", "lecturer", Role.Lecturer), "lecturers"))
+    lecturers.onComplete(addUserOnCreation(lecturer, AuthenticationUser("lecturer", "lecturer", AuthenticationRole.Lecturer), "lecturers"))
 
     val admins = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS admins ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
-    admins.onComplete(addUserOnCreation(admin, AuthenticationUser("admin", "admin", Role.Admin), "admins"))
+    admins.onComplete(addUserOnCreation(admin, AuthenticationUser("admin", "admin", AuthenticationRole.Admin), "admins"))
 
     //This comprehension waits for every future to be completed and then yields Done
     for {
