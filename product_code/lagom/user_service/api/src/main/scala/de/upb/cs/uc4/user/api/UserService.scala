@@ -101,7 +101,7 @@ trait UserService extends Service {
         restCall(Method.OPTIONS, pathPrefix + "/:username", allowedDelete _),
 
         restCall(Method.GET, pathPrefix + "/:username/role", getRole _),
-        restCall(Method.OPTIONS, pathPrefix + "/:username/role", allowedGetPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/:username/role", allowedGet _),
 
         restCall(Method.GET, pathPrefix + "/students", getAllStudents _),
         restCall(Method.POST, pathPrefix + "/students", addStudent _),

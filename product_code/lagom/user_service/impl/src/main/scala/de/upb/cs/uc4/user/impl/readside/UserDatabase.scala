@@ -1,16 +1,25 @@
 package de.upb.cs.uc4.user.impl.readside
 
 import akka.Done
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.util.Timeout
 import com.datastax.driver.core.{BoundStatement, PreparedStatement}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, EventStreamElement}
-import de.upb.cs.uc4.user.impl.actor.User
+import de.upb.cs.uc4.shared.messages.Confirmation
+import de.upb.cs.uc4.user.impl.actor.{User, UserState}
+import de.upb.cs.uc4.user.impl.commands.{CreateUser, UserCommand}
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
-import de.upb.cs.uc4.user.model.Role
+import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
+import de.upb.cs.uc4.user.model.{Address, Role}
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Try
 
-class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
+class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext) {
+
+  implicit val timeout: Timeout = Timeout(5.seconds)
 
   //Prepared CQL Statements
   private val insertStudentPromise = Promise[PreparedStatement] // initialized in prepare
@@ -31,20 +40,47 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
   private val deleteAdminPromise = Promise[PreparedStatement] // initialized in prepare
   private def deleteAdmin(): Future[PreparedStatement] = deleteAdminPromise.future
 
+  private def entityRef(id: String): EntityRef[UserCommand] = clusterSharding.entityRefFor(UserState.typeKey, id)
+
+
+  private def addUserOnCreation(user: User, authenticationUser: AuthenticationUser, table: String): Try[_] => _ = {
+    _ => //Check if this table is empty
+
+      session.selectOne(s"SELECT * FROM $table;").onComplete(result =>
+        if (result.isSuccess) {
+          result.get match {
+            //Insert default users
+            case None =>
+              entityRef(user.getUsername).ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
+            case _ =>
+          }
+        }
+      )
+  }
+
   /** Create empty tables for admins, users and lecturers */
   def globalPrepare(): Future[Done] = {
+    val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
+    val student: User = User(Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "IN", "421769", 9000, List()))
+    val lecturer: User = User(Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "Ich bin bloed", "Genderstudies"))
+    val admin: User = User(Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de"))
     val students = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS students ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
+    students.onComplete(addUserOnCreation(student, AuthenticationUser("student", "student", Role.Student), "students"))
+
     val lecturers = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS lecturers ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
+    lecturers.onComplete(addUserOnCreation(lecturer, AuthenticationUser("lecturer", "lecturer", Role.Lecturer), "lecturers"))
+
     val admins = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS admins ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
+    admins.onComplete(addUserOnCreation(admin, AuthenticationUser("admin", "admin", Role.Admin), "admins"))
 
     //This comprehension waits for every future to be completed and then yields Done
-    for{
+    for {
       _ <- students
       _ <- lecturers
       _ <- admins
@@ -58,7 +94,7 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     val prepAdmins = prepare("admins", insertAdminPromise, deleteAdminPromise)
 
     //This comprehension waits for every future to be completed and then yields Done
-    for{
+    for {
       _ <- prepStudents
       _ <- prepLecturers
       _ <- prepAdmins
@@ -67,7 +103,7 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
 
   /** Helper method that prepares an INSERT and DELETE statement for the given table.
     *
-    * @param table name of the table the statements should be prepared for
+    * @param table  name of the table the statements should be prepared for
     * @param insert the insert promise
     * @param delete the delete promise
     * @return Done when preparation of both statements is finished
@@ -80,7 +116,7 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
     delete.completeWith(prepDelete)
 
     //This comprehension waits for every future to be completed and then yields Done
-    for{
+    for {
       _ <- prepInsert
       _ <- prepDelete
     } yield Done
@@ -111,7 +147,7 @@ class UserDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
   }
 
   /** returns helper method to bind statements */
-  private def bind(user: User) : PreparedStatement => List[BoundStatement] = {
+  private def bind(user: User): PreparedStatement => List[BoundStatement] = {
     ps =>
       val bindWriteTitle = ps.bind()
       bindWriteTitle.setString("username", user.getUsername)
