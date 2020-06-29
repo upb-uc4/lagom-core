@@ -8,10 +8,11 @@ import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.api.AuthenticationService
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.Hashing
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.{JsonUsername, Role}
-import de.upb.cs.uc4.user.model.Role.Role
+import de.upb.cs.uc4.user.model.JsonUsername
 import de.upb.cs.uc4.user.model.user.AuthenticationUser
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc.EssentialFilter
@@ -49,9 +50,9 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
           result.get match {
             //Insert default users
             case None =>
-              createAccount("admin", "admin", Role.Admin)
-              createAccount("student", "student", Role.Student)
-              createAccount("lecturer", "lecturer", Role.Lecturer)
+              createAccount("admin", "admin", AuthenticationRole.Admin)
+              createAccount("student", "student", AuthenticationRole.Student)
+              createAccount("lecturer", "lecturer", AuthenticationRole.Lecturer)
             case _ =>
           }
         }
@@ -82,7 +83,7 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
     * @param password is the password of the user
     * @param role     is the authentication role of the user
     */
-  private def createAccount(name: String, password: String, role: Role): Future[Done] = {
+  private def createAccount(name: String, password: String, role: AuthenticationRole): Future[Done] = {
     val salt = Random.alphanumeric.take(64).mkString
     cassandraSession.executeWrite(
       "INSERT INTO authenticationTable (name, salt, password, role) VALUES (?, ?, ?, ?);",
