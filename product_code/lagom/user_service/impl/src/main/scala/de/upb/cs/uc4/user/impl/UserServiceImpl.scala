@@ -11,6 +11,7 @@ import com.lightbend.lagom.scaladsl.persistence.{PersistentEntityRegistry, ReadS
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.ServiceCallFactory._
 import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 import de.upb.cs.uc4.user.api.UserService
@@ -39,20 +40,20 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Get all users from the database */
   override def getAllUsers: ServiceCall[NotUsed, GetAllUsersResponse] =
-    authenticated[NotUsed, GetAllUsersResponse](Role.Admin) {
+    authenticated[NotUsed, GetAllUsersResponse](AuthenticationRole.Admin) {
       ServerServiceCall { (header, notUsed) =>
         for {
           students <- getAllStudents.invokeWithHeaders(header, notUsed)
           lecturers <- getAllLecturers.invokeWithHeaders(header, notUsed)
           admins <- getAllAdmins.invokeWithHeaders(header, notUsed)
         } yield
-          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))) ,
+          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))),
             GetAllUsersResponse(students._2, lecturers._2, admins._2))
       }
     }
 
   /** Delete a users from the database */
-  override def deleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(Role.Admin) {
+  override def deleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, _) =>
       val ref = entityRef(username)
 
@@ -67,9 +68,10 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Get all students from the database */
-  override def getAllStudents: ServerServiceCall[NotUsed, Seq[Student]] = authenticated[NotUsed, Seq[Student]](Role.Admin) { _ =>
-    getAll("students").map(_.map(_.student))
-  }
+  override def getAllStudents: ServerServiceCall[NotUsed, Seq[Student]] =
+    authenticated[NotUsed, Seq[Student]](AuthenticationRole.Admin) { _ =>
+      getAll("students").map(_.map(_.student))
+    }
 
   /** Add a new student to the database */
   override def addStudent(): ServiceCall[PostMessageStudent, Done] = ServerServiceCall { (header, user) =>
@@ -77,25 +79,28 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Get a specific student */
-  override def getStudent(username: String): ServiceCall[NotUsed, Student] = authenticated[NotUsed, Student](Role.All: _*) {
-    _ =>
-      getUser(username).invoke().map(user => user.role match {
-        case Role.Student => user.student
-        case _ => throw BadRequest("Not a student")
-      })
-  }
+  override def getStudent(username: String): ServiceCall[NotUsed, Student] =
+    authenticated[NotUsed, Student](AuthenticationRole.All: _*) {
+      _ =>
+        getUser(username).invoke().map(user => user.role match {
+          case Role.Student => user.student
+          case _ => throw BadRequest("Not a student")
+        })
+    }
 
   /** Update an existing student */
-  override def updateStudent(username: String): ServiceCall[Student, Done] = authenticated[Student, Done](Role.Student, Role.Admin) {
-    ServerServiceCall { (header, user) =>
-      updateUser().invokeWithHeaders(header, User(user))
+  override def updateStudent(username: String): ServiceCall[Student, Done] =
+    authenticated[Student, Done](AuthenticationRole.Student, AuthenticationRole.Admin) {
+      ServerServiceCall { (header, user) =>
+        updateUser().invokeWithHeaders(header, User(user))
+      }
     }
-  }
 
   /** Get all lecturers from the database */
-  override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] = authenticated[NotUsed, Seq[Lecturer]](Role.Admin) { _ =>
-    getAll("lecturers").map(_.map(_.lecturer))
-  }
+  override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] =
+    authenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.Admin) { _ =>
+      getAll("lecturers").map(_.map(_.lecturer))
+    }
 
   /** Add a new lecturer to the database */
   override def addLecturer(): ServiceCall[PostMessageLecturer, Done] = ServerServiceCall { (header, user) =>
@@ -103,25 +108,28 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Get a specific lecturer */
-  override def getLecturer(username: String): ServiceCall[NotUsed, Lecturer] = authenticated[NotUsed, Lecturer](Role.All: _*) {
-    _ =>
-      getUser(username).invoke().map(user => user.role match {
-        case Role.Lecturer => user.lecturer
-        case _ => throw BadRequest("Not a lecturer")
-      })
-  }
+  override def getLecturer(username: String): ServiceCall[NotUsed, Lecturer] =
+    authenticated[NotUsed, Lecturer](AuthenticationRole.All: _*) {
+      _ =>
+        getUser(username).invoke().map(user => user.role match {
+          case Role.Lecturer => user.lecturer
+          case _ => throw BadRequest("Not a lecturer")
+        })
+    }
 
   /** Update an existing lecturer */
-  override def updateLecturer(username: String): ServiceCall[Lecturer, Done] = authenticated[Lecturer, Done](Role.Lecturer, Role.Admin) {
-    ServerServiceCall { (header, user) =>
-      updateUser().invokeWithHeaders(header, User(user))
+  override def updateLecturer(username: String): ServiceCall[Lecturer, Done] =
+    authenticated[Lecturer, Done](AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
+      ServerServiceCall { (header, user) =>
+        updateUser().invokeWithHeaders(header, User(user))
+      }
     }
-  }
 
   /** Get all admins from the database */
-  override def getAllAdmins: ServerServiceCall[NotUsed, Seq[Admin]] = authenticated[NotUsed, Seq[Admin]](Role.Admin) { _ =>
-    getAll("admins").map(_.map(_.admin))
-  }
+  override def getAllAdmins: ServerServiceCall[NotUsed, Seq[Admin]] =
+    authenticated[NotUsed, Seq[Admin]](AuthenticationRole.Admin) { _ =>
+      getAll("admins").map(_.map(_.admin))
+    }
 
   /** Add a new admin to the database */
   override def addAdmin(): ServiceCall[PostMessageAdmin, Done] = ServerServiceCall { (header, user) =>
@@ -129,24 +137,26 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Get a specific admin */
-  override def getAdmin(username: String): ServiceCall[NotUsed, Admin] = authenticated[NotUsed, Admin](Role.All: _*) {
-    _ =>
-      getUser(username).invoke().map(user => user.role match {
-        case Role.Admin => user.admin
-        case _ => throw BadRequest("Not an admin")
-      })
-  }
+  override def getAdmin(username: String): ServiceCall[NotUsed, Admin] =
+    authenticated[NotUsed, Admin](AuthenticationRole.All: _*) {
+      _ =>
+        getUser(username).invoke().map(user => user.role match {
+          case Role.Admin => user.admin
+          case _ => throw BadRequest("Not an admin")
+        })
+    }
 
   /** Update an existing admin */
-  override def updateAdmin(username: String): ServiceCall[Admin, Done] = authenticated[Admin, Done](Role.Admin) {
-    ServerServiceCall { (header, user) =>
-      updateUser().invokeWithHeaders(header, User(user))
+  override def updateAdmin(username: String): ServiceCall[Admin, Done] =
+    authenticated[Admin, Done](AuthenticationRole.Admin) {
+      ServerServiceCall { (header, user) =>
+        updateUser().invokeWithHeaders(header, User(user))
+      }
     }
-  }
 
   /** Get role of the user */
   override def getRole(username: String): ServiceCall[NotUsed, JsonRole] =
-    authenticated[NotUsed, JsonRole](Role.All: _*) { _ =>
+    authenticated[NotUsed, JsonRole](AuthenticationRole.All: _*) { _ =>
       getUser(username).invoke().map(user => JsonRole(user.role))
     }
 
@@ -163,19 +173,21 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
   /** Helper method for adding a generic User, independent of the role */
-  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Done] = authenticated(Role.Admin) {
-    ServerServiceCall { (_, user) =>
-      val ref = entityRef(user.getUsername)
+  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Done] =
+    authenticated(AuthenticationRole.Admin) {
+      ServerServiceCall { (_, user) =>
+        val ref = entityRef(user.getUsername)
 
-      ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
-        .map {
-          case Accepted => // Creation Successful
-            (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
-          case Rejected("A user with the given username already exist.") => // Already exists
-            (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username already exist."))), Done)
-        }
+        ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
+          .map {
+            case Accepted => // Creation Successful
+              (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
+            case Rejected("A user with the given username already exist.") => // Already exists
+              (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username already exist."))), Done)
+          }
+      }
     }
-  }
+
   /** Helper method for updating a generic User, independent of the role */
   private def updateUser(): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
     val ref = entityRef(user.getUsername)
@@ -188,6 +200,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
       }
   }
+
   /** Helper method for getting a generic User, independent of the role */
   private def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ =>
     val ref = entityRef(username)
@@ -197,6 +210,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       case None => throw NotFound("Username was not found")
     }
   }
+
   /** Helper method for getting all Users */
   private def getAll(table: String): Future[Seq[User]] = {
     cassandraSession.selectAll(s"SELECT * FROM $table ;")

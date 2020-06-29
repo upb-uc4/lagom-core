@@ -93,21 +93,21 @@ lazy val `authentication_service_api` = (project in file("authentication_service
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
-  .dependsOn(`user_service_api`)
 
 lazy val `authentication_service` = (project in file("authentication_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies ++= defaultCassandraKafkaDependencies
+    libraryDependencies ++= defaultCassandraKafkaDependencies,
   )
   .settings(dockerSettings)
-  .dependsOn(`authentication_service_api`,  `shared`)
+  .dependsOn(`authentication_service_api`, `user_service_api`, `shared`)
 
 lazy val `user_service_api` = (project in file("user_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
+  .dependsOn(`authentication_service_api`)
 
 lazy val `user_service` = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
