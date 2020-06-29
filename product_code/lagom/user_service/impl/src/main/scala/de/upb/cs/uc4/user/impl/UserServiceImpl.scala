@@ -5,10 +5,10 @@ import akka.util.Timeout
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, MessageProtocol, NotFound, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
-import com.lightbend.lagom.scaladsl.persistence.{PersistentEntityRegistry, ReadSide}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
+import com.lightbend.lagom.scaladsl.persistence.{PersistentEntityRegistry, ReadSide}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
@@ -23,11 +23,8 @@ import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, Pos
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
-import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
-import com.lightbend.lagom.scaladsl.api.transport.Forbidden
-import com.lightbend.lagom.scaladsl.api.transport.ExceptionMessage
+import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the UserService */
 class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
@@ -187,9 +184,10 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           case Rejected("A user with the given username already exists.") => // Already exists
             (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username already exists."))), Done)
           case Rejected(responseCodes) =>
-            (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)),Done)
+            (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)), Done)
         }
     }
+  }
 
   /** Helper method for updating a generic User, independent of the role */
   private def updateUser(): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
@@ -202,7 +200,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         case Rejected("A user with the given username does not exist.") => // Already exists
           (ResponseHeader(404, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
         case Rejected(responseCodes) =>
-          (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)),Done)
+          (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)), Done)
       }
   }
 
@@ -249,55 +247,55 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       })
   }
 
-    /** Matches the user creation/update error code to the suitable response exception.
-   *
-   * @param codes which describe why a user cannot be created/updated
-   * @throws Forbidden providing transport protocol error codes and a human readable error description
-   */
-  def throwForbidden(codes : String): Seq[(String, String)] = {
+  /** Matches the user creation/update error code to the suitable response exception.
+    *
+    * @param codes which describe why a user cannot be created/updated
+    * @throws Forbidden providing transport protocol error codes and a human readable error description
+    */
+  def throwForbidden(codes: String): Seq[(String, String)] = {
     val responseList = codes.split(";").toList
-    var errors = List[(String,String)]()
-    if(responseList.contains("01")) {
-      errors = errors.::(("01","Username must only contain [..]"))
+    var errors = List[(String, String)]()
+    if (responseList.contains("01")) {
+      errors ::= (("01", "Username must only contain [..]"))
     }
-    if(responseList.contains("10")) {
-      errors = errors.::(("10","Password must not be empty"))
+    if (responseList.contains("10")) {
+      errors ::= (("10", "Password must not be empty"))
     }
-    if(responseList.contains("20")) {
-      errors = errors.::(("20","Username must only contain [..]"))
+    if (responseList.contains("20")) {
+      errors ::= (("20", "Username must only contain [..]"))
     }
-    if(responseList.contains("30")) {
-      errors = errors.::(("30","Username must only contain [..]"))
+    if (responseList.contains("30")) {
+      errors ::= (("30", "Username must only contain [..]"))
     }
-    if(responseList.contains("40")) {
-      errors = errors.::(("40","Username must only contain [..]"))
+    if (responseList.contains("40")) {
+      errors ::= (("40", "Username must only contain [..]"))
     }
-    if(responseList.contains("50")) {
-      errors = errors.::(("50","Username must only contain [..]"))
+    if (responseList.contains("50")) {
+      errors ::= (("50", "Username must only contain [..]"))
     }
-    if(responseList.contains("60")) {
-      errors = errors.::(("60","Username must only contain [..]"))
+    if (responseList.contains("60")) {
+      errors ::= (("60", "Username must only contain [..]"))
     }
-    if(responseList.contains("70")) {
-      errors = errors.::(("70","Username must only contain [..]"))
+    if (responseList.contains("70")) {
+      errors ::= (("70", "Username must only contain [..]"))
     }
-    if(responseList.contains("100")) {
-      errors = errors.::(("100","Student ID invalid"))
+    if (responseList.contains("100")) {
+      errors ::= (("100", "Student ID invalid"))
     }
-    if(responseList.contains("110")) {
-      errors = errors.::(("110", "Semester count must be a positive integer"))
+    if (responseList.contains("110")) {
+      errors ::= (("110", "Semester count must be a positive integer"))
     }
-    if(responseList.contains("120")) {
-      errors = errors.::(("120", "Fields of Study must be one of [...]"))
+    if (responseList.contains("120")) {
+      errors ::= (("120", "Fields of Study must be one of [...]"))
     }
-    if(responseList.contains("200")) {
-      errors = errors.::(("200", "Free text must only contain the following characters"))
+    if (responseList.contains("200")) {
+      errors ::= (("200", "Free text must only contain the following characters"))
     }
-    if(responseList.contains("210")) {
-      errors = errors.::(("210", "Research area must only contain the following characters"))
+    if (responseList.contains("210")) {
+      errors ::= (("210", "Research area must only contain the following characters"))
     }
-    if(responseList.isEmpty) {
-      errors = List(("500","Internal Server Error")) //Base case should not occur
+    if (responseList.isEmpty) {
+      errors = List(("500", "Internal Server Error")) //Base case should not occur
     }
     errors
   }
