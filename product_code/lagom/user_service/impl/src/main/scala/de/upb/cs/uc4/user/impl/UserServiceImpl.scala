@@ -13,7 +13,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.ServiceCallFactory._
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, PossibleErrorResponse, Rejected}
+import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, DetailedError, PossibleErrorResponse, Rejected}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
 import de.upb.cs.uc4.user.impl.commands._
@@ -252,50 +252,47 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     * @param codes which describe why a user cannot be created/updated
     * @return list with Pairs of the ErrorCodes and descriptions
     */
-  def createListFromErrorCodes(codes: String): Seq[(String, String)] = {
+  def createListFromErrorCodes(codes: String): Seq[DetailedError] = {
     val responseList = codes.split(";").toList
-    var errors = List[(String, String)]()
+    var errors = List[DetailedError]()
     if (responseList.contains("01")) {
-      errors :+= (("01", "Username must only contain [..]"))
+      errors :+= (DetailedError("01", "Username must only contain [..]"))
     }
     if (responseList.contains("10")) {
-      errors :+= (("10", "Password must not be empty"))
+      errors :+= (DetailedError("10", "Password must not be empty"))
     }
     if (responseList.contains("20")) {
-      errors :+= (("20", "Username must only contain [..]"))
+      errors :+= (DetailedError("20", "Role must be one of [..]" + Role.All))
     }
     if (responseList.contains("30")) {
-      errors :+= (("30", "Username must only contain [..]"))
+      errors :+= (DetailedError("30", "Address fields must not be empty"))
     }
     if (responseList.contains("40")) {
-      errors :+= (("40", "Username must only contain [..]"))
+      errors :+= (DetailedError("40", "Email format invalid"))
     }
     if (responseList.contains("50")) {
-      errors :+= (("50", "Username must only contain [..]"))
+      errors :+= (DetailedError("50", "First name must not contain XYZ"))
     }
     if (responseList.contains("60")) {
-      errors :+= (("60", "Username must only contain [..]"))
+      errors :+= (DetailedError("60", "Last name must not contain XYZ"))
     }
     if (responseList.contains("70")) {
-      errors :+= (("70", "Username must only contain [..]"))
+      errors :+= (DetailedError("70", "Picture invalid"))
     }
     if (responseList.contains("100")) {
-      errors :+= (("100", "Student ID invalid"))
+      errors :+= (DetailedError("100", "Student ID invalid"))
     }
     if (responseList.contains("110")) {
-      errors :+= (("110", "Semester count must be a positive integer"))
+      errors :+= (DetailedError("110", "Semester count must be a positive integer"))
     }
     if (responseList.contains("120")) {
-      errors :+= (("120", "Fields of Study must be one of [...]"))
+      errors :+= (DetailedError("120", "Fields of Study must be one of [...]"))
     }
     if (responseList.contains("200")) {
-      errors :+= (("200", "Free text must only contain the following characters"))
+      errors :+= (DetailedError("200", "Free text must only contain the following characters"))
     }
     if (responseList.contains("210")) {
-      errors :+= (("210", "Research area must only contain the following characters"))
-    }
-    if (responseList.isEmpty) {
-      errors = List(("500", "Internal Server Error")) //Base case should not occur
+      errors :+= (DetailedError("210", "Research area must only contain the following characters"))
     }
     errors
   }
