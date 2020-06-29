@@ -4,6 +4,7 @@ import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
+import de.upb.cs.uc4.shared.messages.PossibleErrorResponse
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
@@ -32,13 +33,13 @@ trait UserService extends Service {
   def getAllStudents: ServiceCall[NotUsed, Seq[Student]]
 
   /** Add a new student to the database */
-  def addStudent(): ServiceCall[PostMessageStudent, Done]
+  def addStudent(): ServiceCall[PostMessageStudent, PossibleErrorResponse]
 
   /** Get a specific student */
   def getStudent(username: String): ServiceCall[NotUsed, Student]
 
   /** Update an existing student */
-  def updateStudent(username: String): ServiceCall[Student, Done]
+  def updateStudent(username: String): ServiceCall[Student, PossibleErrorResponse]
 
   // LECTURER
 
@@ -46,13 +47,13 @@ trait UserService extends Service {
   def getAllLecturers: ServiceCall[NotUsed, Seq[Lecturer]]
 
   /** Add a new lecturer to the database */
-  def addLecturer(): ServiceCall[PostMessageLecturer, Done]
+  def addLecturer(): ServiceCall[PostMessageLecturer, PossibleErrorResponse]
 
   /** Get a specific lecturer */
   def getLecturer(username: String): ServiceCall[NotUsed, Lecturer]
 
   /** Update an existing lecturer */
-  def updateLecturer(username: String): ServiceCall[Lecturer, Done]
+  def updateLecturer(username: String): ServiceCall[Lecturer, PossibleErrorResponse]
 
   // ADMIN
 
@@ -60,13 +61,13 @@ trait UserService extends Service {
   def getAllAdmins: ServiceCall[NotUsed, Seq[Admin]]
 
   /** Add a new admin to the database */
-  def addAdmin(): ServiceCall[PostMessageAdmin, Done]
+  def addAdmin(): ServiceCall[PostMessageAdmin, PossibleErrorResponse]
 
   /** Get a specific admin */
   def getAdmin(username: String): ServiceCall[NotUsed, Admin]
 
   /** Update an existing admin */
-  def updateAdmin(username: String): ServiceCall[Admin, Done]
+  def updateAdmin(username: String): ServiceCall[Admin, PossibleErrorResponse]
 
   // ROLE
   def getRole(username: String): ServiceCall[NotUsed, JsonRole]

@@ -93,56 +93,56 @@ case class UserState(optUser: Option[User]) {
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
     val fos = List("Computer Science", "Gender Studies", "Electrical Engineering")
 
-    var errorCodes= new mutable.HashSet[String]()
+    var errorCodes= List[String]()
 
     if (!usernameRegex.matches(user.getUsername)) {
-      errorCodes += "01" //username must only contain...
+      errorCodes ::= "01" //username must only contain...
     }
     if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ""){
-      errorCodes += "10" //password format invalid
+      errorCodes ::= "10" //password format invalid
     }
     if (optUser.isEmpty && !Role.All.contains(user.role)) { //optUser check to ensure this is during creation
-      errorCodes += "20" // role invalid
+      errorCodes ::= "20" // role invalid
     }
     if (user.getAddress.oneEmpty) {
-      errorCodes += "30" // address empty
+      errorCodes ::= "30" // address empty
     }
     if (!mailRegex.matches(user.getEmail)) {
-      errorCodes += "40" // email format invalid
+      errorCodes ::= "40" // email format invalid
     }
     if (!nameRegex.matches(user.getFirstName)) {
-      errorCodes += "50" // first name invalid
+      errorCodes ::= "50" // first name invalid
     }
     if (!nameRegex.matches(user.getLastName)) {
-      errorCodes += "60" // last name invalid
+      errorCodes ::= "60" // last name invalid
     }
     if (!generalRegex.matches(user.getPicture)) { //TODO, this does not make any sense, but pictures are not defined yet
-      errorCodes += "70" // picture invalid
+      errorCodes ::= "70" // picture invalid
     }
 
     user match {
       case u if u.optStudent.isDefined =>
         val s = u.student
         if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) {
-          errorCodes += "100" // matriculationId invalid
+          errorCodes ::= "100" // matriculationId invalid
         }
         if(!(s.semesterCount > 0)) {
-          errorCodes += "110" // semester count must be a positive integer
+          errorCodes ::= "110" // semester count must be a positive integer
         }
         if(!s.fieldsOfStudy.forall(fos.contains)) {
-          errorCodes += "120" // fields of study must be one of the defined fields of study
+          errorCodes ::= "120" // fields of study must be one of the defined fields of study
         }
       case u if u.optLecturer.isDefined =>
         val l = u.lecturer
         if (!generalRegex.matches(l.freeText)) {
-          errorCodes +="200" //	free text must only contain the following characters
+          errorCodes ::="200" //	free text must only contain the following characters
         }
         if (!generalRegex.matches(l.researchArea)) {
-          errorCodes +="210" // 	research area must only contain the following characters
+          errorCodes ::="210" // 	research area must only contain the following characters
         }
       case _ =>
     }
-    errorCodes.toSeq
+    errorCodes
   }
 }
 

@@ -13,7 +13,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.ServiceCallFactory._
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, PossibleErrorResponse, Rejected}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
 import de.upb.cs.uc4.user.impl.commands._
@@ -74,7 +74,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new student to the database */
-  override def addStudent(): ServiceCall[PostMessageStudent, Done] = ServerServiceCall { (header, user) =>
+  override def addStudent(): ServiceCall[PostMessageStudent, PossibleErrorResponse] = ServerServiceCall { (header, user) =>
     addUser(user.authUser).invokeWithHeaders(header, User(user.student))
   }
 
@@ -89,8 +89,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Update an existing student */
-  override def updateStudent(username: String): ServiceCall[Student, Done] =
-    authenticated[Student, Done](AuthenticationRole.Student, AuthenticationRole.Admin) {
+  override def updateStudent(username: String): ServiceCall[Student, PossibleErrorResponse] =
+    authenticated[Student, PossibleErrorResponse](AuthenticationRole.Student, AuthenticationRole.Admin) {
       ServerServiceCall { (header, user) =>
         updateUser().invokeWithHeaders(header, User(user))
       }
@@ -103,7 +103,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new lecturer to the database */
-  override def addLecturer(): ServiceCall[PostMessageLecturer, Done] = ServerServiceCall { (header, user) =>
+  override def addLecturer(): ServiceCall[PostMessageLecturer, PossibleErrorResponse] = ServerServiceCall { (header, user) =>
     addUser(user.authUser).invokeWithHeaders(header, User(user.lecturer))
   }
 
@@ -118,8 +118,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Update an existing lecturer */
-  override def updateLecturer(username: String): ServiceCall[Lecturer, Done] =
-    authenticated[Lecturer, Done](AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
+  override def updateLecturer(username: String): ServiceCall[Lecturer, PossibleErrorResponse] =
+    authenticated[Lecturer, PossibleErrorResponse](AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
       ServerServiceCall { (header, user) =>
         updateUser().invokeWithHeaders(header, User(user))
       }
@@ -132,7 +132,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new admin to the database */
-  override def addAdmin(): ServiceCall[PostMessageAdmin, Done] = ServerServiceCall { (header, user) =>
+  override def addAdmin(): ServiceCall[PostMessageAdmin, PossibleErrorResponse] = ServerServiceCall { (header, user) =>
     addUser(user.authUser).invokeWithHeaders(header, User(user.admin))
   }
 
@@ -147,8 +147,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Update an existing admin */
-  override def updateAdmin(username: String): ServiceCall[Admin, Done] =
-    authenticated[Admin, Done](AuthenticationRole.Admin) {
+  override def updateAdmin(username: String): ServiceCall[Admin, PossibleErrorResponse] =
+    authenticated[Admin, PossibleErrorResponse](AuthenticationRole.Admin) {
       ServerServiceCall { (header, user) =>
         updateUser().invokeWithHeaders(header, User(user))
       }
@@ -173,34 +173,34 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
   /** Helper method for adding a generic User, independent of the role */
-  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Done] = authenticated(AuthenticationRole.Admin) {
+  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, PossibleErrorResponse] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
       val ref = entityRef(user.getUsername)
 
       ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
         .map {
           case Accepted => // Creation Successful
-            (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
-          case Rejected("A user with the given username already exists.") => // Already exists
-            (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username already exists."))), Done)
+            (ResponseHeader(201, MessageProtocol.empty, List()), PossibleErrorResponse(Seq()))
+          case Rejected("A user with the given username already exists.") =>
+            (ResponseHeader(409, MessageProtocol.empty, List()), PossibleErrorResponse(Seq()))
           case Rejected(responseCodes) =>
-            (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)), Done)
+            (ResponseHeader(422, MessageProtocol.empty, List()), PossibleErrorResponse(createListFromErrorCodes(responseCodes)))
         }
     }
   }
 
   /** Helper method for updating a generic User, independent of the role */
-  private def updateUser(): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
+  private def updateUser(): ServerServiceCall[User, PossibleErrorResponse] = ServerServiceCall { (_, user) =>
     val ref = entityRef(user.getUsername)
 
     ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
       .map {
         case Accepted => // Update Successful
-          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
-        case Rejected("A user with the given username does not exist.") => // Already exists
-          (ResponseHeader(404, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
+          (ResponseHeader(200, MessageProtocol.empty, List()), PossibleErrorResponse(Seq()))
+        case Rejected("A user with the given username does not exist.") =>
+          (ResponseHeader(404, MessageProtocol.empty, List()), PossibleErrorResponse(Seq()))
         case Rejected(responseCodes) =>
-          (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)), Done)
+          (ResponseHeader(422, MessageProtocol.empty, List()), PossibleErrorResponse(createListFromErrorCodes(responseCodes)))
       }
   }
 
@@ -247,52 +247,52 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       })
   }
 
-  /** Matches the user creation/update error code to the suitable response exception.
+  /** Matches the user validation ErrorCodes contained in a String to a readable List.
     *
     * @param codes which describe why a user cannot be created/updated
-    * @throws Forbidden providing transport protocol error codes and a human readable error description
+    * @return list with Pairs of the ErrorCodes and descriptions
     */
-  def throwForbidden(codes: String): Seq[(String, String)] = {
+  def createListFromErrorCodes(codes: String): Seq[(String, String)] = {
     val responseList = codes.split(";").toList
     var errors = List[(String, String)]()
     if (responseList.contains("01")) {
-      errors ::= (("01", "Username must only contain [..]"))
+      errors :+= (("01", "Username must only contain [..]"))
     }
     if (responseList.contains("10")) {
-      errors ::= (("10", "Password must not be empty"))
+      errors :+= (("10", "Password must not be empty"))
     }
     if (responseList.contains("20")) {
-      errors ::= (("20", "Username must only contain [..]"))
+      errors :+= (("20", "Username must only contain [..]"))
     }
     if (responseList.contains("30")) {
-      errors ::= (("30", "Username must only contain [..]"))
+      errors :+= (("30", "Username must only contain [..]"))
     }
     if (responseList.contains("40")) {
-      errors ::= (("40", "Username must only contain [..]"))
+      errors :+= (("40", "Username must only contain [..]"))
     }
     if (responseList.contains("50")) {
-      errors ::= (("50", "Username must only contain [..]"))
+      errors :+= (("50", "Username must only contain [..]"))
     }
     if (responseList.contains("60")) {
-      errors ::= (("60", "Username must only contain [..]"))
+      errors :+= (("60", "Username must only contain [..]"))
     }
     if (responseList.contains("70")) {
-      errors ::= (("70", "Username must only contain [..]"))
+      errors :+= (("70", "Username must only contain [..]"))
     }
     if (responseList.contains("100")) {
-      errors ::= (("100", "Student ID invalid"))
+      errors :+= (("100", "Student ID invalid"))
     }
     if (responseList.contains("110")) {
-      errors ::= (("110", "Semester count must be a positive integer"))
+      errors :+= (("110", "Semester count must be a positive integer"))
     }
     if (responseList.contains("120")) {
-      errors ::= (("120", "Fields of Study must be one of [...]"))
+      errors :+= (("120", "Fields of Study must be one of [...]"))
     }
     if (responseList.contains("200")) {
-      errors ::= (("200", "Free text must only contain the following characters"))
+      errors :+= (("200", "Free text must only contain the following characters"))
     }
     if (responseList.contains("210")) {
-      errors ::= (("210", "Research area must only contain the following characters"))
+      errors :+= (("210", "Research area must only contain the following characters"))
     }
     if (responseList.isEmpty) {
       errors = List(("500", "Internal Server Error")) //Base case should not occur

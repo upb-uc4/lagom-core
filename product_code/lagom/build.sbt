@@ -107,7 +107,7 @@ lazy val `user_service_api` = (project in file("user_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
-  .dependsOn(`authentication_service_api`)
+  .dependsOn(`authentication_service_api`, `shared`)
 
 lazy val `user_service` = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
