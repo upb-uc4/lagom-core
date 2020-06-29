@@ -49,6 +49,7 @@ class AuthenticationServiceImpl @Inject()(cassandraSession: CassandraSession, co
       }
   }
 
+  /** Logs the user in */
   override def login(): ServiceCall[NotUsed, String] = ServerServiceCall { (header, _) =>
     val userPw = getUserAndPassword(header)
 
@@ -92,6 +93,7 @@ class AuthenticationServiceImpl @Inject()(cassandraSession: CassandraSession, co
 
   }
 
+  /** Logs the user out */
   override def logout(): ServiceCall[NotUsed, Done] = ???
 
   /**
