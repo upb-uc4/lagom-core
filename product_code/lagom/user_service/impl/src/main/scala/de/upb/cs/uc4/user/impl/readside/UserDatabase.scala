@@ -7,17 +7,14 @@ import com.datastax.driver.core.{BoundStatement, PreparedStatement}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, EventStreamElement}
 import de.upb.cs.uc4.shared.messages.Confirmation
-import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
-import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
-import de.upb.cs.uc4.user.model.{Address, Role}
-import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands.{CreateUser, UserCommand}
-import de.upb.cs.uc4.user.model.post.PostMessageStudent
+import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
+import de.upb.cs.uc4.user.model.{Address, Role}
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
 class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext) {
@@ -46,7 +43,6 @@ class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(
   private def entityRef(id: String): EntityRef[UserCommand] = clusterSharding.entityRefFor(UserState.typeKey, id)
 
 
-
   private def addUserOnCreation(user: User, authenticationUser: AuthenticationUser, table: String): Try[_] => _ = {
     _ => //Check if this table is empty
 
@@ -55,7 +51,7 @@ class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(
           result.get match {
             //Insert default users
             case None =>
-              entityRef(user.getUsername).ask[Confirmation](replyTo => CreateUser(user,authenticationUser,replyTo))
+              entityRef(user.getUsername).ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
             case _ =>
           }
         }
@@ -65,7 +61,7 @@ class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(
   /** Create empty tables for admins, users and lecturers */
   def globalPrepare(): Future[Done] = {
     val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
-    val student : User = User(Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "IN", "421769", 9000, List()))
+    val student: User = User(Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "IN", "421769", 9000, List()))
     val lecturer: User = User(Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "Ich bin bloed", "Genderstudies"))
     val admin: User = User(Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de"))
     val students = session.executeCreateTable(
