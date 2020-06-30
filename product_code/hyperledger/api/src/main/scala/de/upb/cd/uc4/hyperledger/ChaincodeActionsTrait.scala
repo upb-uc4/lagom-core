@@ -1,7 +1,5 @@
 package de.upb.cd.uc4.hyperledger
 
-import java.nio.charset.StandardCharsets
-
 trait ChaincodeActionsTrait {
 
   /**

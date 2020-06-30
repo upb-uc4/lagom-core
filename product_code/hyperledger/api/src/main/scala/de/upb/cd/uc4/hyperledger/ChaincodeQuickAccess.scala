@@ -1,6 +1,6 @@
 package de.upb.cd.uc4.hyperledger
 
-import scala.util.{Success, Try, Using}
+import scala.util.Using
 
 object ChaincodeQuickAccess extends ChaincodeActionsTrait {
 
