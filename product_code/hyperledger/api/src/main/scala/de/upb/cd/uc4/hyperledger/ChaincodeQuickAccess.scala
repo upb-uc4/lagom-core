@@ -2,27 +2,30 @@ package de.upb.cd.uc4.hyperledger
 
 import scala.util.{Success, Try, Using}
 
-object ChaincodeQuickAccess {
+object ChaincodeQuickAccess extends ChaincodeActionsTrait {
 
   @throws[Exception]
-  def getAllCourses() : Try[String] = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
-    return Success(chaincodeConnection.getAllCourses())
-  }
-  @throws[Exception]
-  def addCourse(jSonCourse : String) : Try[String] = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
-    return Success(chaincodeConnection.addCourse(jSonCourse))
-  }
-  @throws[Exception]
-  def getCourseById(courseId : String) : Try[String] = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
-    return Success(chaincodeConnection.getCourseById(courseId))
-  }
-  @throws[Exception]
-  def deleteCourseById(courseId : String) : Try[String] = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
-    return Success(chaincodeConnection.deleteCourseById(courseId))
-  }
-  @throws[Exception]
-  def updateCourseById(courseId : String, jSonCourse : String) : Try[String] = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
-    return Success(chaincodeConnection.updateCourseById(courseId, jSonCourse))
-  }
+  override def getAllCourses() : String = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
+    return chaincodeConnection.getAllCourses()
+  }.get
 
+  @throws[Exception]
+  override def addCourse(jSonCourse : String) : String = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
+    return chaincodeConnection.addCourse(jSonCourse)
+  }.get
+
+  @throws[Exception]
+  def getCourseById(courseId : String) : String = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
+    return chaincodeConnection.getCourseById(courseId)
+  }.get
+
+  @throws[Exception]
+  def deleteCourseById(courseId : String) : String = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
+    return chaincodeConnection.deleteCourseById(courseId)
+  }.get
+
+  @throws[Exception]
+  def updateCourseById(courseId : String, jSonCourse : String) : String = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
+    return chaincodeConnection.updateCourseById(courseId, jSonCourse)
+  }.get
 }
