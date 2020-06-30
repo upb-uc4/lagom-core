@@ -7,6 +7,7 @@ import com.lightbend.lagom.scaladsl.cluster.ClusterComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
 import com.softwaremill.macwire.wire
+import de.upb.cd.uc4.hyperledger.{ConnectionManager, ConnectionManagerTrait}
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.hyperledger.impl.actor.HyperLedgerBehaviour
 import de.upb.cs.uc4.hyperledger.impl.commands.Shutdown
@@ -19,6 +20,8 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
     with ClusterComponents
     with AhcWSComponents {
 
+  lazy val connectionManager: ConnectionManagerTrait = ConnectionManager
+
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[HyperLedgerService](wire[HyperLedgerServiceImpl])
 
@@ -29,7 +32,7 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
   // a given sharding entity typeKey.
   clusterSharding.init(
     Entity(HyperLedgerBehaviour.typeKey)(
-      _ => HyperLedgerBehaviour.create()
+      _ => HyperLedgerBehaviour.create(connectionManager)
     )
   )
 
