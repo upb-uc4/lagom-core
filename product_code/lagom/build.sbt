@@ -69,10 +69,11 @@ lazy val `hyperledger_service_api` = (project in file("hyperledger_service/api")
 lazy val `hyperledger_service` = (project in file("hyperledger_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
-    libraryDependencies ++= implDefaultDependencies
+    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies += lagomScaladslCluster
   )
   .settings(dockerSettings)
-  .dependsOn(`hyperledger_service_api`, `shared`)
+  .dependsOn(`hyperledger_api`, `hyperledger_service_api`, `shared`)
 
 lazy val `course_service_api` = (project in file("course_service/api"))
   .settings(
@@ -107,3 +108,5 @@ lazy val `user_service_api` = (project in file("user_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
+
+lazy val `hyperledger_api` = ProjectRef(file("../hyperledger/api"), "api")
