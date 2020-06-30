@@ -2,7 +2,7 @@ import scala.concurrent.duration._
 import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
-version in ThisBuild := "v0.2.0"
+version in ThisBuild := "v0.2.1"
 lagomCassandraMaxBootWaitingTime in ThisBuild := 60.seconds
 lagomServiceEnableSsl in ThisBuild := true
 
@@ -47,7 +47,8 @@ lazy val `lagom` = (project in file("."))
   .aggregate(`shared`,
     `course_service_api`, `course_service`,
     `hyperledger_service_api`, `hyperledger_service`,
-    `authentication_service_api`, `authentication_service`)
+    `authentication_service_api`, `authentication_service`,
+    `user_service_api`, `user_service`)
 
 lazy val `shared` = (project in file("shared"))
   .settings(
@@ -92,18 +93,27 @@ lazy val `authentication_service_api` = (project in file("authentication_service
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
-  .dependsOn(`user_service_api`)
 
 lazy val `authentication_service` = (project in file("authentication_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies ++= defaultCassandraKafkaDependencies,
+  )
+  .settings(dockerSettings)
+  .dependsOn(`authentication_service_api`, `user_service_api`, `shared`)
+
+lazy val `user_service_api` = (project in file("user_service/api"))
+  .settings(
+    libraryDependencies ++= apiDefaultDependencies
+  )
+  .dependsOn(`authentication_service_api`)
+
+lazy val `user_service` = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= implDefaultDependencies,
     libraryDependencies ++= defaultCassandraKafkaDependencies
   )
   .settings(dockerSettings)
-  .dependsOn(`authentication_service_api`,  `shared`)
-
-lazy val `user_service_api` = (project in file("user_service/api"))
-  .settings(
-    libraryDependencies ++= apiDefaultDependencies
-  )
+  .dependsOn(`user_service_api`, `shared`)
