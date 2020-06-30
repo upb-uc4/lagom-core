@@ -5,14 +5,15 @@ import java.nio.file.{Path, Paths}
 import org.hyperledger.fabric.gateway.Gateway.Builder
 import org.hyperledger.fabric.gateway._
 
-object ConnectionManager{
+object ConnectionManager extends ConnectionManagerTrait{
 
   val channel_name = "myc"
   val chaincode_name = "mycc"
   val client_name = "cli"
   val connection_profile_path = Paths.get("connection_profile.yaml")
+  val walletPath = Paths.get("wallet")
 
-  def createConnection() : ChaincodeConnection = new ChaincodeConnection(ConnectionManager.initializeConnection())
+  override def createConnection() : ChaincodeConnection = { new ChaincodeConnection(ConnectionManager.initializeConnection()) }
 
   @throws[Exception]
   def initializeConnection() : (Gateway, Contract) = { // Load a file system based wallet for managing identities.
@@ -47,7 +48,6 @@ object ConnectionManager{
   }
 
   def getWallet(): Wallet = {
-    val walletPath = Paths.get("wallet")
     val wallet = Wallets.newFileSystemWallet(walletPath)
     return wallet
   }

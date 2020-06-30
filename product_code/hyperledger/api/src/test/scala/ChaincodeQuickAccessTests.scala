@@ -12,7 +12,6 @@ class ChaincodeQuickAccessTests extends FunSuite {
 
     // perform tests
     assert(result != null, "result was null")
-    assert(result.isSuccess, "Query failed")
   }
 
 }
