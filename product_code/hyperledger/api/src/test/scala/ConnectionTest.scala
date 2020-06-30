@@ -1,4 +1,4 @@
-import de.upb.cd.uc4.hyperledger.ConnectionManager
+import de.upb.cs.uc4.hyperledger.ConnectionManager
 import org.scalatest.FunSuite
 
 class ConnectionTests extends FunSuite {

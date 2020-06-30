@@ -3,7 +3,7 @@ package de.upb.cs.uc4.hyperledger.impl.actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import de.upb.cd.uc4.hyperledger.{ChaincodeConnection, ConnectionManagerTrait}
+import de.upb.cs.uc4.hyperledger.{ChaincodeConnection, ConnectionManagerTrait}
 import de.upb.cs.uc4.hyperledger.impl.HyperLedgerApplication
 import de.upb.cs.uc4.hyperledger.impl.commands.{HyperLedgerCommand, Read, Shutdown, Write}
 import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}

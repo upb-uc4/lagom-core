@@ -1,5 +1,7 @@
-import de.upb.cd.uc4.hyperledger.{ChaincodeConnection, ConnectionManager}
+
+import de.upb.cs.uc4.hyperledger.{ChaincodeConnection, ConnectionManager}
 import org.scalatest.FunSuite
+
 import scala.util.{Success, Using}
 
 class ChaincodeConnectionObjectTests extends FunSuite {
