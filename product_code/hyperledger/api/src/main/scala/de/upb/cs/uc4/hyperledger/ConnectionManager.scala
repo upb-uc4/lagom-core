@@ -9,10 +9,10 @@ import org.hyperledger.fabric.gateway._
 object ConnectionManager extends ConnectionManagerTrait{
 
   val channel_name = "myc"
-  val chaincode_name = "mycc"
-  val client_name = "cli"
-  val connection_profile_path = Paths.get("connection_profile.yaml")
-  val walletPath = Paths.get("wallet")
+  private val chaincode_name = "mycc"
+  private val client_name = "cli"
+  private val connection_profile_path = Paths.get("connection_profile.yaml")
+  private val walletPath = Paths.get("wallet")
 
   override def createConnection() : ChaincodeTrait = { new ChaincodeConnection(ConnectionManager.initializeConnection()) }
 
@@ -23,7 +23,7 @@ object ConnectionManager extends ConnectionManagerTrait{
     val wallet : Wallet = ConnectionManager.getWallet()
 
     // prepare Network Builder
-    val builder : Builder = ConnectionManager.getBuilder(wallet, ConnectionManager.connection_profile_path, ConnectionManager.client_name)
+    val builder : Builder = ConnectionManager.getBuilder(wallet)
 
     val gateway : Gateway = builder.connect
     var contract : Contract = null
@@ -41,7 +41,9 @@ object ConnectionManager extends ConnectionManagerTrait{
     if(gateway != null) gateway.close()
   }
 
-  def getBuilder(wallet : Wallet, networkConfigPath : Path, name : String) : Builder = {
+  def getBuilder(wallet : Wallet,
+                 networkConfigPath : Path = ConnectionManager.connection_profile_path,
+                 name : String = ConnectionManager.client_name) : Builder = {
     // load a CCP
     val builder = Gateway.createBuilder
     builder.identity(wallet, name).networkConfig(networkConfigPath).discovery(true)
@@ -53,5 +55,5 @@ object ConnectionManager extends ConnectionManagerTrait{
     return wallet
   }
 
-  try System.setProperty("org.hyperledger.fabric.sdk.service_discovery.as_localhost", "true")
+  System.setProperty("org.hyperledger.fabric.sdk.service_discovery.as_localhost", "true")
 }

@@ -1,5 +1,8 @@
 package de.upb.cs.uc4.hyperledger.traits
 
+/**
+ * Trait to provide explicit access to chaincode transactions.
+ */
 trait ChaincodeActionsTrait {
 
   /**
