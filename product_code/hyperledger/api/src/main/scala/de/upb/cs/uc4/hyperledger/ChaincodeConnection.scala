@@ -2,9 +2,10 @@ package de.upb.cs.uc4.hyperledger
 
 import java.nio.charset.StandardCharsets
 
+import de.upb.cs.uc4.hyperledger.traits.ChaincodeTrait
 import org.hyperledger.fabric.gateway.{Contract, Gateway}
 
-class ChaincodeConnection(parameters : (Gateway, Contract)) extends AutoCloseable with ChaincodeActionsTrait {
+class ChaincodeConnection(parameters : (Gateway, Contract)) extends ChaincodeTrait {
 
   val gateway : Gateway = parameters._1
   val chaincode : Contract = parameters._2

@@ -7,10 +7,11 @@ import com.lightbend.lagom.scaladsl.cluster.ClusterComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
 import com.softwaremill.macwire.wire
-import de.upb.cs.uc4.hyperledger.{ConnectionManager, ConnectionManagerTrait}
+import de.upb.cs.uc4.hyperledger.ConnectionManager
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.hyperledger.impl.actor.HyperLedgerBehaviour
 import de.upb.cs.uc4.hyperledger.impl.commands.Shutdown
+import de.upb.cs.uc4.hyperledger.traits.ConnectionManagerTrait
 import play.api.libs.ws.ahc.AhcWSComponents
 
 import scala.concurrent.duration._

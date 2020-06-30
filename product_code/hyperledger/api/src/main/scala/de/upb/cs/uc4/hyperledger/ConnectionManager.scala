@@ -2,6 +2,7 @@ package de.upb.cs.uc4.hyperledger
 
 import java.nio.file.{Path, Paths}
 
+import de.upb.cs.uc4.hyperledger.traits.{ChaincodeTrait, ConnectionManagerTrait}
 import org.hyperledger.fabric.gateway.Gateway.Builder
 import org.hyperledger.fabric.gateway._
 
@@ -13,7 +14,7 @@ object ConnectionManager extends ConnectionManagerTrait{
   val connection_profile_path = Paths.get("connection_profile.yaml")
   val walletPath = Paths.get("wallet")
 
-  override def createConnection() : ChaincodeConnection = { new ChaincodeConnection(ConnectionManager.initializeConnection()) }
+  override def createConnection() : ChaincodeTrait = { new ChaincodeConnection(ConnectionManager.initializeConnection()) }
 
   @throws[Exception]
   def initializeConnection() : (Gateway, Contract) = { // Load a file system based wallet for managing identities.
@@ -30,7 +31,7 @@ object ConnectionManager extends ConnectionManagerTrait{
       val network : Network = gateway.getNetwork(ConnectionManager.channel_name)
       contract = network.getContract(ConnectionManager.chaincode_name)
     } catch {
-      case e => ConnectionManager.disposeGateway(gateway); throw e;
+      case e : GatewayRuntimeException => ConnectionManager.disposeGateway(gateway); throw e;
     }
 
     return (gateway, contract)

@@ -1,4 +1,4 @@
-name := "scala_app"
+name := "hyperledger_api"
 
 version := "0.1"
 

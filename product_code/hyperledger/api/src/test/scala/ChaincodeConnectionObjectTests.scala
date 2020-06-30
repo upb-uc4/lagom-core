@@ -1,5 +1,6 @@
 
-import de.upb.cs.uc4.hyperledger.{ChaincodeConnection, ConnectionManager}
+import de.upb.cs.uc4.hyperledger.ConnectionManager
+import de.upb.cs.uc4.hyperledger.traits.ChaincodeTrait
 import org.scalatest.FunSuite
 
 import scala.util.{Success, Using}
@@ -24,7 +25,7 @@ class ChaincodeConnectionObjectTests extends FunSuite {
   }
 
   test ("Check full walk-through"){
-    Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeConnection =>
+    Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
       // initial courses
       val courses = chaincodeConnection.getAllCourses()
       assert(courses != null, "Get All courses returned null")
