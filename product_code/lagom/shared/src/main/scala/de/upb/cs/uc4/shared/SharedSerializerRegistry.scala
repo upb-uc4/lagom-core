@@ -12,6 +12,7 @@ trait SharedSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[Accepted],
     JsonSerializer[Rejected],
     JsonSerializer[PossibleErrorResponse],
+    JsonSerializer[Option[PossibleErrorResponse]]
   ) ++ customSerializers
 
   /** All Service specific JsonSerializers */

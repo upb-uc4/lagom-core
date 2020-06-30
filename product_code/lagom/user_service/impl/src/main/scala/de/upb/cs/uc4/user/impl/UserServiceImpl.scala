@@ -13,7 +13,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.ServiceCallFactory._
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, DetailedError, PossibleErrorResponse, Rejected}
+import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, DetailedError, PossibleErrorResponse, Rejected,RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
 import de.upb.cs.uc4.user.impl.commands._
@@ -74,7 +74,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new student to the database */
-  override def addStudent(): ServiceCall[PostMessageStudent, PossibleErrorResponse] = ServerServiceCall { (header, user) =>
+  override def addStudent(): ServiceCall[PostMessageStudent, Option[PossibleErrorResponse]] = ServerServiceCall { (header, user) =>
     addUser(user.authUser).invokeWithHeaders(header, User(user.student))
   }
 
@@ -103,7 +103,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new lecturer to the database */
-  override def addLecturer(): ServiceCall[PostMessageLecturer, PossibleErrorResponse] = ServerServiceCall { (header, user) =>
+  override def addLecturer(): ServiceCall[PostMessageLecturer, Option[PossibleErrorResponse]] = ServerServiceCall { (header, user) =>
     addUser(user.authUser).invokeWithHeaders(header, User(user.lecturer))
   }
 
@@ -132,7 +132,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new admin to the database */
-  override def addAdmin(): ServiceCall[PostMessageAdmin, PossibleErrorResponse] = ServerServiceCall { (header, user) =>
+  override def addAdmin(): ServiceCall[PostMessageAdmin, Option[PossibleErrorResponse]] = ServerServiceCall { (header, user) =>
     addUser(user.authUser).invokeWithHeaders(header, User(user.admin))
   }
 
@@ -173,18 +173,16 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
   /** Helper method for adding a generic User, independent of the role */
-  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, PossibleErrorResponse] = authenticated(AuthenticationRole.Admin) {
+  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Option[PossibleErrorResponse]] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
       val ref = entityRef(user.getUsername)
 
       ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
         .map {
           case Accepted => // Creation Successful
-            (ResponseHeader(201, MessageProtocol.empty, List()), PossibleErrorResponse(Seq()))
-          case Rejected("A user with the given username already exists.") =>
-            (ResponseHeader(409, MessageProtocol.empty, List()), PossibleErrorResponse(Seq()))
-          case Rejected(responseCodes) =>
-            (ResponseHeader(422, MessageProtocol.empty, List()), PossibleErrorResponse(createListFromErrorCodes(responseCodes)))
+            (ResponseHeader(201, MessageProtocol.empty, List()), None)
+          case RejectedWithError(code, errorResponse) =>
+            (ResponseHeader(code, MessageProtocol.empty, List()), Some(errorResponse))
         }
     }
   }
@@ -196,11 +194,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
       .map {
         case Accepted => // Update Successful
-          (ResponseHeader(200, MessageProtocol.empty, List()), PossibleErrorResponse(Seq()))
-        case Rejected("A user with the given username does not exist.") =>
-          (ResponseHeader(404, MessageProtocol.empty, List()), PossibleErrorResponse(Seq()))
-        case Rejected(responseCodes) =>
-          (ResponseHeader(422, MessageProtocol.empty, List()), PossibleErrorResponse(createListFromErrorCodes(responseCodes)))
+          (ResponseHeader(200, MessageProtocol.empty, List()), PossibleErrorResponse("","",Seq()))
+        case RejectedWithError(code, errorResponse) =>
+          (ResponseHeader(code, MessageProtocol.empty, List()), errorResponse)
       }
   }
 
@@ -245,55 +241,5 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       .map(ev => ev.event match {
         case OnUserDelete(user) => (JsonUsername(user.getUsername), ev.offset)
       })
-  }
-
-  /** Matches the user validation ErrorCodes contained in a String to a readable List.
-    *
-    * @param codes which describe why a user cannot be created/updated
-    * @return list with Pairs of the ErrorCodes and descriptions
-    */
-  def createListFromErrorCodes(codes: String): Seq[DetailedError] = {
-    val responseList = codes.split(";").toList
-    var errors = List[DetailedError]()
-    if (responseList.contains("01")) {
-      errors :+= (DetailedError("01", "Username must only contain [..]"))
-    }
-    if (responseList.contains("10")) {
-      errors :+= (DetailedError("10", "Password must not be empty"))
-    }
-    if (responseList.contains("20")) {
-      errors :+= (DetailedError("20", "Role must be one of [..]" + Role.All))
-    }
-    if (responseList.contains("30")) {
-      errors :+= (DetailedError("30", "Address fields must not be empty"))
-    }
-    if (responseList.contains("40")) {
-      errors :+= (DetailedError("40", "Email format invalid"))
-    }
-    if (responseList.contains("50")) {
-      errors :+= (DetailedError("50", "First name must not contain XYZ"))
-    }
-    if (responseList.contains("60")) {
-      errors :+= (DetailedError("60", "Last name must not contain XYZ"))
-    }
-    if (responseList.contains("70")) {
-      errors :+= (DetailedError("70", "Picture invalid"))
-    }
-    if (responseList.contains("100")) {
-      errors :+= (DetailedError("100", "Student ID invalid"))
-    }
-    if (responseList.contains("110")) {
-      errors :+= (DetailedError("110", "Semester count must be a positive integer"))
-    }
-    if (responseList.contains("120")) {
-      errors :+= (DetailedError("120", "Fields of Study must be one of [...]"))
-    }
-    if (responseList.contains("200")) {
-      errors :+= (DetailedError("200", "Free text must only contain the following characters"))
-    }
-    if (responseList.contains("210")) {
-      errors :+= (DetailedError("210", "Research area must only contain the following characters"))
-    }
-    errors
   }
 }

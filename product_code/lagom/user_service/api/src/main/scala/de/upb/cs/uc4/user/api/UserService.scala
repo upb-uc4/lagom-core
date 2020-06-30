@@ -33,7 +33,7 @@ trait UserService extends Service {
   def getAllStudents: ServiceCall[NotUsed, Seq[Student]]
 
   /** Add a new student to the database */
-  def addStudent(): ServiceCall[PostMessageStudent, PossibleErrorResponse]
+  def addStudent(): ServiceCall[PostMessageStudent, Option[PossibleErrorResponse]]
 
   /** Get a specific student */
   def getStudent(username: String): ServiceCall[NotUsed, Student]
@@ -47,7 +47,7 @@ trait UserService extends Service {
   def getAllLecturers: ServiceCall[NotUsed, Seq[Lecturer]]
 
   /** Add a new lecturer to the database */
-  def addLecturer(): ServiceCall[PostMessageLecturer, PossibleErrorResponse]
+  def addLecturer(): ServiceCall[PostMessageLecturer, Option[PossibleErrorResponse]]
 
   /** Get a specific lecturer */
   def getLecturer(username: String): ServiceCall[NotUsed, Lecturer]
@@ -61,7 +61,7 @@ trait UserService extends Service {
   def getAllAdmins: ServiceCall[NotUsed, Seq[Admin]]
 
   /** Add a new admin to the database */
-  def addAdmin(): ServiceCall[PostMessageAdmin, PossibleErrorResponse]
+  def addAdmin(): ServiceCall[PostMessageAdmin, Option[PossibleErrorResponse]]
 
   /** Get a specific admin */
   def getAdmin(username: String): ServiceCall[NotUsed, Admin]

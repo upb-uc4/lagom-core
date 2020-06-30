@@ -11,7 +11,7 @@ import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate,
 import play.api.libs.json.{Format, Json}
 import de.upb.cs.uc4.user.model.Role
 import de.upb.cs.uc4.user.model.user.AuthenticationUser
-
+import de.upb.cs.uc4.shared.messages.{DetailedError,PossibleErrorResponse,RejectedWithError}
 import scala.collection.mutable
 
 /** The current state of a User */
@@ -27,33 +27,33 @@ case class UserState(optUser: Option[User]) {
 
       case CreateUser(user, authenticationUser, replyTo) =>
     
-      val trimmedUser = user.trim
-      val responseCodes = validateUser(trimmedUser,Some(authenticationUser))
-      if (optUser.isEmpty){
-        if (responseCodes.isEmpty) {
-          Effect.persist(OnUserCreate(user, authenticationUser)).thenReply(replyTo) { _ => Accepted }
+        val trimmedUser = user.trim
+        val validationErrors = validateUser(trimmedUser,Some(authenticationUser))
+        if (optUser.isEmpty){
+          if (validationErrors.isEmpty) {
+            Effect.persist(OnUserCreate(user, authenticationUser)).thenReply(replyTo) { _ => Accepted }
+          }
+          else {
+            Effect.reply(replyTo)(RejectedWithError(422, PossibleErrorResponse("validation error", "Your request parameters did not validate", validationErrors)))
+          }
         }
         else {
-          Effect.reply(replyTo)(Rejected(responseCodes.mkString(";")))
+          Effect.reply(replyTo)(RejectedWithError(409, PossibleErrorResponse("key value error", "Username is already taken", List(DetailedError("username", "Username already exists")))))
         }
-      }
-      else {
-        Effect.reply(replyTo)(Rejected("A user with the given username already exists."))
-      }
   
         
       case UpdateUser(user, replyTo) =>
         val trimmedUser = user.trim
-        val responseCodes = validateUser(trimmedUser,None)
+        val validationErrors = validateUser(trimmedUser,None)
 
         if (optUser.isDefined) {
-          if(responseCodes.isEmpty){
-           Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
+          if(validationErrors.isEmpty){
+            Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
           } else {
-           Effect.reply(replyTo)(Rejected(responseCodes.mkString(";")))
+            Effect.reply(replyTo)(RejectedWithError(422, PossibleErrorResponse("validation error", "Your request parameters did not validate", validationErrors)))
           }
         } else {
-         Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))
+          Effect.reply(replyTo)(RejectedWithError(404, PossibleErrorResponse("key value error", "Username not found", List(DetailedError("username", "Username does not exist")))))
       }
 
         
@@ -85,64 +85,64 @@ case class UserState(optUser: Option[User]) {
     }
 
 
-  def validateUser(user: User, authenticationUserOpt: Option[AuthenticationUser]): Seq[String] = {
-    val generalRegex = """[\s\S]+""".r // Allowed characters for general strings "[a-zA-Z0-9\\s]+".r TBD
-    // More REGEXes need to be defined to check firstname etc. But it is not clear from the API
+  def validateUser(user: User, authenticationUserOpt: Option[AuthenticationUser]): Seq[DetailedError] = {
+    val generalRegex = """[\s\S]+""".r // Allowed characters for general strings TBD
+    // TODO: More REGEXes need to be defined to check firstname etc. But it is not clear from the API
     val usernameRegex = """[a-zA-Z0-9-]+""".r
     val nameRegex = """[a-zA-Z]+""".r
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
     val fos = List("Computer Science", "Gender Studies", "Electrical Engineering")
 
-    var errorCodes= List[String]()
+    var error= List[DetailedError]()
 
     if (!usernameRegex.matches(user.getUsername)) {
-      errorCodes ::= "01" //username must only contain...
+      error :+= DetailedError("username","Username may only contain [..].") 
     }
     if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ""){
-      errorCodes ::= "10" //password format invalid
+      error :+= DetailedError("password","Password must not be empty.")
     }
     if (optUser.isEmpty && !Role.All.contains(user.role)) { //optUser check to ensure this is during creation
-      errorCodes ::= "20" // role invalid
+      error :+= (DetailedError("role", "Role must be one of [..]" + Role.All + "."))
     }
     if (user.getAddress.oneEmpty) {
-      errorCodes ::= "30" // address empty
+      error :+= (DetailedError("address", "Address fields must not be empty."))
     }
     if (!mailRegex.matches(user.getEmail)) {
-      errorCodes ::= "40" // email format invalid
+      error :+= (DetailedError("email", "Email must be in email format example@xyz.com."))
     }
     if (!nameRegex.matches(user.getFirstName)) {
-      errorCodes ::= "50" // first name invalid
+      error :+= (DetailedError("firstName", "First name must not contain XYZ."))
     }
     if (!nameRegex.matches(user.getLastName)) {
-      errorCodes ::= "60" // last name invalid
+      error :+= (DetailedError("lastName", "First name must not contain XYZ."))
     }
     if (!generalRegex.matches(user.getPicture)) { //TODO, this does not make any sense, but pictures are not defined yet
-      errorCodes ::= "70" // picture invalid
+      error :+= DetailedError("picture", "Picture is invalid.")
     }
 
     user match {
       case u if u.optStudent.isDefined =>
         val s = u.student
         if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) {
-          errorCodes ::= "100" // matriculationId invalid
+          error :+= DetailedError("matriculationId", "Student ID invalid.")
         }
         if(!(s.semesterCount > 0)) {
-          errorCodes ::= "110" // semester count must be a positive integer
+          error :+= DetailedError("semesterCount", "Semester count must be a positive integer.")
         }
         if(!s.fieldsOfStudy.forall(fos.contains)) {
-          errorCodes ::= "120" // fields of study must be one of the defined fields of study
+          error :+= DetailedError("fieldsOfStudy", "Fields of Study must be one of [..].")
         }
       case u if u.optLecturer.isDefined =>
         val l = u.lecturer
         if (!generalRegex.matches(l.freeText)) {
-          errorCodes ::="200" //	free text must only contain the following characters
+          error :+= DetailedError("freeText", "Free text must only contain the following characters: [..].")
         }
         if (!generalRegex.matches(l.researchArea)) {
-          errorCodes ::="210" // 	research area must only contain the following characters
+          error :+= DetailedError("researchArea", "Research area must only contain the following characters [..].")
         }
       case _ =>
     }
-    errorCodes
+    error.toSeq
   }
 }
 
