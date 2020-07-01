@@ -3,16 +3,13 @@ package de.upb.cs.uc4.user.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
-import com.fasterxml.jackson.module.scala.deser.overrides.MutableList
-import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}
+import de.upb.cs.uc4.shared.messages._
 import de.upb.cs.uc4.user.impl.UserApplication
-import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateUser, UserCommand}
+import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate, UserEvent}
-import play.api.libs.json.{Format, Json}
 import de.upb.cs.uc4.user.model.Role
 import de.upb.cs.uc4.user.model.user.AuthenticationUser
-import de.upb.cs.uc4.shared.messages.{DetailedError,PossibleErrorResponse,RejectedWithError}
-import scala.collection.mutable
+import play.api.libs.json.{Format, Json}
 
 /** The current state of a User */
 case class UserState(optUser: Option[User]) {

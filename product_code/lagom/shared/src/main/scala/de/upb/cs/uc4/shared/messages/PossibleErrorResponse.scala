@@ -1,7 +1,6 @@
 package de.upb.cs.uc4.shared.messages
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import play.api.libs.json.{Format, JsNull, JsObject, JsResult, JsString, JsValue, Json, Writes}
+import play.api.libs.json._
 
 case class PossibleErrorResponse(`type`: String, title: String, errors: Seq[DetailedError])
 

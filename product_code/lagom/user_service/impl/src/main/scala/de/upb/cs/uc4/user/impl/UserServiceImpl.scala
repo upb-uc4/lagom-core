@@ -12,8 +12,9 @@ import com.lightbend.lagom.scaladsl.persistence.{PersistentEntityRegistry, ReadS
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.shared.CustomException
 import de.upb.cs.uc4.shared.ServiceCallFactory._
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, DetailedError, PossibleErrorResponse, Rejected,RejectedWithError}
+import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
 import de.upb.cs.uc4.user.impl.commands._
@@ -74,7 +75,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new student to the database */
-  override def addStudent(): ServiceCall[PostMessageStudent, Option[PossibleErrorResponse]] = ServerServiceCall { (header, user) =>
+  override def addStudent(): ServiceCall[PostMessageStudent, Done] = ServerServiceCall { (header, user) =>
     addUser(user.authUser).invokeWithHeaders(header, User(user.student))
   }
 
@@ -89,8 +90,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Update an existing student */
-  override def updateStudent(username: String): ServiceCall[Student, PossibleErrorResponse] =
-    authenticated[Student, PossibleErrorResponse](AuthenticationRole.Student, AuthenticationRole.Admin) {
+  override def updateStudent(username: String): ServiceCall[Student, Done] =
+    authenticated[Student, Done](AuthenticationRole.Student, AuthenticationRole.Admin) {
       ServerServiceCall { (header, user) =>
         updateUser().invokeWithHeaders(header, User(user))
       }
@@ -103,7 +104,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new lecturer to the database */
-  override def addLecturer(): ServiceCall[PostMessageLecturer, Option[PossibleErrorResponse]] = ServerServiceCall { (header, user) =>
+  override def addLecturer(): ServiceCall[PostMessageLecturer, Done] = ServerServiceCall { (header, user) =>
     addUser(user.authUser).invokeWithHeaders(header, User(user.lecturer))
   }
 
@@ -118,8 +119,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Update an existing lecturer */
-  override def updateLecturer(username: String): ServiceCall[Lecturer, PossibleErrorResponse] =
-    authenticated[Lecturer, PossibleErrorResponse](AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
+  override def updateLecturer(username: String): ServiceCall[Lecturer, Done] =
+    authenticated[Lecturer, Done](AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
       ServerServiceCall { (header, user) =>
         updateUser().invokeWithHeaders(header, User(user))
       }
@@ -132,7 +133,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new admin to the database */
-  override def addAdmin(): ServiceCall[PostMessageAdmin, Option[PossibleErrorResponse]] = ServerServiceCall { (header, user) =>
+  override def addAdmin(): ServiceCall[PostMessageAdmin, Done] = ServerServiceCall { (header, user) =>
     addUser(user.authUser).invokeWithHeaders(header, User(user.admin))
   }
 
@@ -147,8 +148,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Update an existing admin */
-  override def updateAdmin(username: String): ServiceCall[Admin, PossibleErrorResponse] =
-    authenticated[Admin, PossibleErrorResponse](AuthenticationRole.Admin) {
+  override def updateAdmin(username: String): ServiceCall[Admin, Done] =
+    authenticated[Admin, Done](AuthenticationRole.Admin) {
       ServerServiceCall { (header, user) =>
         updateUser().invokeWithHeaders(header, User(user))
       }
@@ -173,30 +174,30 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
   /** Helper method for adding a generic User, independent of the role */
-  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Option[PossibleErrorResponse]] = authenticated(AuthenticationRole.Admin) {
+  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Done] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
       val ref = entityRef(user.getUsername)
 
       ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
         .map {
           case Accepted => // Creation Successful
-            (ResponseHeader(201, MessageProtocol.empty, List()), None)
+            (ResponseHeader(201, MessageProtocol.empty, List()), Done)
           case RejectedWithError(code, errorResponse) =>
-            (ResponseHeader(code, MessageProtocol.empty, List()), Some(errorResponse))
+            throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
         }
     }
   }
 
   /** Helper method for updating a generic User, independent of the role */
-  private def updateUser(): ServerServiceCall[User, PossibleErrorResponse] = ServerServiceCall { (_, user) =>
+  private def updateUser(): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
     val ref = entityRef(user.getUsername)
 
     ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
       .map {
         case Accepted => // Update Successful
-          (ResponseHeader(200, MessageProtocol.empty, List()), PossibleErrorResponse("","",Seq()))
+          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
         case RejectedWithError(code, errorResponse) =>
-          (ResponseHeader(code, MessageProtocol.empty, List()), errorResponse)
+          throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
       }
   }
 
