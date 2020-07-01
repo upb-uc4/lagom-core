@@ -31,11 +31,11 @@ case class UserState(optUser: Option[User]) {
             Effect.persist(OnUserCreate(user, authenticationUser)).thenReply(replyTo) { _ => Accepted }
           }
           else {
-            Effect.reply(replyTo)(RejectedWithError(422, PossibleErrorResponse("validation error", "Your request parameters did not validate", validationErrors)))
+            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(409, PossibleErrorResponse("key value error", "Username is already taken", List(DetailedError("username", "Username already exists")))))
+          Effect.reply(replyTo)(RejectedWithError(409, DetailedError("key value error", "Username is already taken", List(SimpleError("username", "Username already exists")))))
         }
   
         
@@ -47,10 +47,10 @@ case class UserState(optUser: Option[User]) {
           if(validationErrors.isEmpty){
             Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
           } else {
-            Effect.reply(replyTo)(RejectedWithError(422, PossibleErrorResponse("validation error", "Your request parameters did not validate", validationErrors)))
+            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
           }
         } else {
-          Effect.reply(replyTo)(RejectedWithError(404, PossibleErrorResponse("key value error", "Username not found", List(DetailedError("username", "Username does not exist")))))
+          Effect.reply(replyTo)(RejectedWithError(404, DetailedError("key value error", "Username not found", List(SimpleError("username", "Username does not exist")))))
       }
 
         
@@ -82,7 +82,7 @@ case class UserState(optUser: Option[User]) {
     }
 
 
-  def validateUser(user: User, authenticationUserOpt: Option[AuthenticationUser]): Seq[DetailedError] = {
+  def validateUser(user: User, authenticationUserOpt: Option[AuthenticationUser]): Seq[SimpleError] = {
     val generalRegex = """[\s\S]+""".r // Allowed characters for general strings TBD
     // TODO: More REGEXes need to be defined to check firstname etc. But it is not clear from the API
     val usernameRegex = """[a-zA-Z0-9-]+""".r
@@ -90,52 +90,52 @@ case class UserState(optUser: Option[User]) {
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
     val fos = List("Computer Science", "Gender Studies", "Electrical Engineering")
 
-    var error= List[DetailedError]()
+    var error= List[SimpleError]()
 
     if (!usernameRegex.matches(user.getUsername)) {
-      error :+= DetailedError("username","Username may only contain [..].") 
+      error :+= SimpleError("username","Username may only contain [..].")
     }
     if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ""){
-      error :+= DetailedError("password","Password must not be empty.")
+      error :+= SimpleError("password","Password must not be empty.")
     }
     if (optUser.isEmpty && !Role.All.contains(user.role)) { //optUser check to ensure this is during creation
-      error :+= (DetailedError("role", "Role must be one of [..]" + Role.All + "."))
+      error :+= (SimpleError("role", "Role must be one of [..]" + Role.All + "."))
     }
     if (user.getAddress.oneEmpty) {
-      error :+= (DetailedError("address", "Address fields must not be empty."))
+      error :+= (SimpleError("address", "Address fields must not be empty."))
     }
     if (!mailRegex.matches(user.getEmail)) {
-      error :+= (DetailedError("email", "Email must be in email format example@xyz.com."))
+      error :+= (SimpleError("email", "Email must be in email format example@xyz.com."))
     }
     if (!nameRegex.matches(user.getFirstName)) {
-      error :+= (DetailedError("firstName", "First name must not contain XYZ."))
+      error :+= (SimpleError("firstName", "First name must not contain XYZ."))
     }
     if (!nameRegex.matches(user.getLastName)) {
-      error :+= (DetailedError("lastName", "First name must not contain XYZ."))
+      error :+= (SimpleError("lastName", "First name must not contain XYZ."))
     }
     if (!generalRegex.matches(user.getPicture)) { //TODO, this does not make any sense, but pictures are not defined yet
-      error :+= DetailedError("picture", "Picture is invalid.")
+      error :+= SimpleError("picture", "Picture is invalid.")
     }
 
     user match {
       case u if u.optStudent.isDefined =>
         val s = u.student
         if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) {
-          error :+= DetailedError("matriculationId", "Student ID invalid.")
+          error :+= SimpleError("matriculationId", "Student ID invalid.")
         }
         if(!(s.semesterCount > 0)) {
-          error :+= DetailedError("semesterCount", "Semester count must be a positive integer.")
+          error :+= SimpleError("semesterCount", "Semester count must be a positive integer.")
         }
         if(!s.fieldsOfStudy.forall(fos.contains)) {
-          error :+= DetailedError("fieldsOfStudy", "Fields of Study must be one of [..].")
+          error :+= SimpleError("fieldsOfStudy", "Fields of Study must be one of [..].")
         }
       case u if u.optLecturer.isDefined =>
         val l = u.lecturer
         if (!generalRegex.matches(l.freeText)) {
-          error :+= DetailedError("freeText", "Free text must only contain the following characters: [..].")
+          error :+= SimpleError("freeText", "Free text must only contain the following characters: [..].")
         }
         if (!generalRegex.matches(l.researchArea)) {
-          error :+= DetailedError("researchArea", "Research area must only contain the following characters [..].")
+          error :+= SimpleError("researchArea", "Research area must only contain the following characters [..].")
         }
       case _ =>
     }

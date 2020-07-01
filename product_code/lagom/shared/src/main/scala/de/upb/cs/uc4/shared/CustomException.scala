@@ -1,19 +1,19 @@
 package de.upb.cs.uc4.shared
 
 import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
-import de.upb.cs.uc4.shared.messages.PossibleErrorResponse
+import de.upb.cs.uc4.shared.messages.DetailedError
 
 
-class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: PossibleErrorResponse, cause: Throwable) extends Exception(possibleErrorResponse.title, null, true, false){
+class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: DetailedError, cause: Throwable) extends Exception(possibleErrorResponse.title, null, true, true){
 
-  def this(errorCode: TransportErrorCode, possibleErrorResponse: PossibleErrorResponse) =
+  def this(errorCode: TransportErrorCode, possibleErrorResponse: DetailedError) =
     this(errorCode, possibleErrorResponse, null)
 
 
   def getErrorCode: TransportErrorCode = {
     errorCode
   }
-  def getPossibleErrorResponse: PossibleErrorResponse = {
+  def getPossibleErrorResponse: DetailedError = {
     possibleErrorResponse
   }
 }

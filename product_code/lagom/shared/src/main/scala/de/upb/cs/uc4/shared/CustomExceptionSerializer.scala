@@ -5,7 +5,7 @@ import java.io.{CharArrayWriter, PrintWriter}
 import akka.util.ByteString
 import com.lightbend.lagom.scaladsl.api.deser.{DefaultExceptionSerializer, RawExceptionMessage}
 import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, MessageProtocol, TransportErrorCode, TransportException}
-import de.upb.cs.uc4.shared.messages.PossibleErrorResponse
+import de.upb.cs.uc4.shared.messages.DetailedError
 import play.api.libs.json.{JsArray, Json}
 import play.api.{Environment, Mode}
 
@@ -28,7 +28,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     }
 
     val messageBytes = message match {
-      case per :PossibleErrorResponse =>
+      case per :DetailedError =>
 
         var arr : JsArray = Json.arr()
         for (error <- per.errors){
