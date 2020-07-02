@@ -9,7 +9,7 @@ import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.ServiceTest
+import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
@@ -33,7 +33,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     ServiceTest.defaultSetup
       .withCassandra()
   ) { ctx =>
-    new UserApplication(ctx) with LocalServiceLocator {
+    new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
       override lazy val authenticationService: AuthenticationService = new AuthenticationService {
 
         override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
