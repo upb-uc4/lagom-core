@@ -1,7 +1,8 @@
-import de.upb.cd.uc4.hyperledger.ConnectionManager
+import de.upb.cs.uc4.hyperledger.ConnectionManager
 import org.scalatest.FunSuite
+import org.scalatest.PrivateMethodTester
 
-class ConnectionTests extends FunSuite {
+class ConnectionTests extends FunSuite with PrivateMethodTester {
 
   /*  Simple Test to check for an available gateway according to the network configuration file
    */
@@ -11,7 +12,7 @@ class ConnectionTests extends FunSuite {
     assert(wallet != null, "Wallet retrieved was null.")
 
     // prepare Network Builder
-    val builder = ConnectionManager.getBuilder(wallet, ConnectionManager.connection_profile_path, ConnectionManager.client_name)
+    val builder = ConnectionManager.getBuilder(wallet)
     assert(builder != null, "Builder retrieved was null, maybe the connection profile did not match the running network.")
 
     // get gateway object
@@ -31,7 +32,7 @@ class ConnectionTests extends FunSuite {
     assert(wallet != null, "Wallet retrieved was null.")
 
     // prepare Network Builder
-    val builder = ConnectionManager.getBuilder(wallet, ConnectionManager.connection_profile_path, ConnectionManager.client_name)
+    val builder = ConnectionManager.getBuilder(wallet)
     assert(builder != null, "Builder retrieved was null, maybe the connection profile did not match the running network.")
 
     // get gateway object

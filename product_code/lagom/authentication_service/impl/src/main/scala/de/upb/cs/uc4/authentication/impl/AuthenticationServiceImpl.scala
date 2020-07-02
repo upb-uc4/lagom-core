@@ -1,123 +1,115 @@
 package de.upb.cs.uc4.authentication.impl
 
+import java.time.Clock
+import java.util.{Base64, Calendar}
+
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationResponse
-import de.upb.cs.uc4.authentication.model.AuthenticationResponse.AuthenticationResponse
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.Hashing
-import de.upb.cs.uc4.shared.ServiceCallFactory._
-import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{JsonRole, Role, User}
+import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
+import javax.inject.Inject
+import play.api.Configuration
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Random
 
-class AuthenticationServiceImpl(cassandraSession: CassandraSession)
-                               (implicit ec: ExecutionContext) extends AuthenticationService {
+class AuthenticationServiceImpl @Inject()(cassandraSession: CassandraSession, config: Configuration)
+                                         (implicit ec: ExecutionContext) extends AuthenticationService {
+
+  private implicit val clock: Clock = Clock.systemUTC
 
   /** @inheritdoc */
-  override def check(username: String, password: String): ServiceCall[Seq[Role], AuthenticationResponse] = ServiceCall {
-    roles =>
-      cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
-        .map {
-          case Some(row) =>
-            val salt = row.getString("salt")
-
-            if (row.getString("password") != Hashing.sha256(salt + password)) {
-              AuthenticationResponse.WrongPassword
-            } else {
-              if (!roles.map(_.toString).contains(row.getString("role"))) {
-                AuthenticationResponse.NotAuthorized
-              } else {
-                AuthenticationResponse.Correct
-              }
-            }
-
-          case None => AuthenticationResponse.WrongUsername
-        }
-  }
-
-  def getRole(username: String): ServerServiceCall[NotUsed, JsonRole] = authenticated[NotUsed, JsonRole](Role.Student, Role.Lecturer, Role.Admin){ServerServiceCall{
-      (requestHeader, _) =>
-        var usernameFromHeader = getUserAndPassword(requestHeader) match {
-          case Some(usernamePassword) => usernamePassword._1
-          case _ => throw new Forbidden(TransportErrorCode(500, 1003, "Internal Server Error"), new ExceptionMessage("Internal Server Error", "Failed to retrieve Username"))
-        }
-        cassandraSession.selectOne("SELECT role FROM authenticationTable WHERE name=? ;", Hashing.sha256(usernameFromHeader)).map{
-          case Some(row) => Role.withName(row.getString("role"))
-          case _ => throw new Forbidden(TransportErrorCode(500, 1003, "Internal Server Error"), new ExceptionMessage("Internal Server Error", "Failed to retrieve Username"))
-        }.flatMap{
-          case Role.Admin  =>
-            if(usernameFromHeader == username){
-              Future.successful(ResponseHeader(200, MessageProtocol.empty, List(("1","Operation Successful"))), JsonRole(Role.Admin))
-            }else{
-              cassandraSession.selectOne("SELECT role FROM authenticationTable WHERE name=? ;", Hashing.sha256(username)).map{
-                case Some(row) => (ResponseHeader(200, MessageProtocol.empty, List(("1","Operation Successful"))), JsonRole(Role.withName(row.getString("role"))))
-                case _ => throw new Forbidden(TransportErrorCode(404, 1003, "Not Found"), new ExceptionMessage("Not Found", "Username not found"))
-              }
-            }
-          case userRole =>
-            if(usernameFromHeader == username){
-              Future.successful(ResponseHeader(200, MessageProtocol.empty, List(("1","Operation Successful"))), JsonRole(userRole))
-            }
-            else {
-              throw new Forbidden(TransportErrorCode(403, 1003, "Bad Request"), new ExceptionMessage("Forbidden", "Not enough privileges for this action."))
-            }
-        }
+  override def check(jws: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall { _ =>
+    val key = config.get[String]("play.http.secret.key")
+    try {
+      val claims = Jwts.parser().setSigningKey(key).parseClaimsJws(jws).getBody
+      Future.successful(
+        claims.get("username", classOf[String]),
+        AuthenticationRole.withName(claims.get("AuthenticationRole", classOf[String]))
+      )
+    } catch {
+      case _: Exception =>
+        throw new Forbidden(TransportErrorCode(401, 1003, "Signature Error"),
+          new ExceptionMessage("Unauthorized", "Jwts is not valid"))
     }
-  }(this, ec)
 
-  /** @inheritdoc */
-  override def set(): ServiceCall[User, Done] = authenticated[User, Done](Role.Admin) { user =>
-    val salt = Random.alphanumeric.take(64).mkString //Generates random salt with 64 characters
-    cassandraSession.executeWrite(
-      "INSERT INTO authenticationTable (name, salt, password, role) VALUES (?, ?, ?, ?);",
-      Hashing.sha256(user.username),
-      salt,
-      Hashing.sha256(salt + user.password),
-      user.role.toString
-    )
-  }(this, ec)
+  }
 
-  /** @inheritdoc */
-  override def delete(username: String): ServiceCall[NotUsed, Done] = authenticated[NotUsed, Done](Role.Admin) { _ =>
-    cassandraSession.executeWrite("DELETE FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
-  }(this, ec)
-
-  /** @inheritdoc */
-  override def options(): ServiceCall[NotUsed, Done] = ServerServiceCall {
-    (_, _) =>
-      Future.successful {
-        (ResponseHeader(200, MessageProtocol.empty, List(
-          ("Allow", "POST, OPTIONS, DELETE"),
-          ("Access-Control-Allow-Methods", "POST, OPTIONS, DELETE")
-        )), Done)
+  /** Returns role of the given user */
+  override def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole] = ServiceCall { _ =>
+    cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
+      .map {
+        case Some(row) => AuthenticationRole.withName(row.getString("role"))
+        case None => throw NotFound("User does not exists.")
       }
   }
 
-  /** @inheritdoc */
-  override def optionsGet(): ServiceCall[NotUsed, Done] = ServerServiceCall {
-    (_, _) =>
-      Future.successful {
-        (ResponseHeader(200, MessageProtocol.empty, List(
-          ("Allow", "GET, OPTIONS"),
-          ("Access-Control-Allow-Methods", "GET, OPTIONS")
-        )), Done)
+  /** Logs the user in */
+  override def login(): ServiceCall[NotUsed, String] = ServerServiceCall { (header, _) =>
+    val userPw = getUserAndPassword(header)
+
+    if (userPw.isEmpty) {
+      throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
+        new ExceptionMessage("Unauthorized", "No Authorization given"))
+    }
+
+    val (user, pw) = userPw.get
+
+    cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(user))
+      .flatMap {
+        case Some(row) =>
+          val salt = row.getString("salt")
+
+          if (row.getString("password") != Hashing.sha256(salt + pw)) {
+            throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
+              new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
+          } else {
+            getRole(user).invoke().map { role =>
+              val key = config.get[String]("play.http.secret.key")
+              val now = Calendar.getInstance()
+              now.add(Calendar.MINUTE, config.get[Int]("uc4.authentication.logout"))
+              val jws =
+                Jwts.builder()
+                  .setSubject("authentication")
+                  .setExpiration(now.getTime)
+                  .claim("username", user)
+                  .claim("AuthenticationRole", role.toString)
+                  .signWith(SignatureAlgorithm.HS256, key)
+                  .compact()
+
+              (ResponseHeader(200, MessageProtocol.empty, List(("1", "Login successful"))), jws)
+            }
+          }
+
+        case None =>
+          throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
+            new ExceptionMessage("Unauthorized", "No Authorization given"))
       }
+
   }
 
-  /** Allows POST */
-  def allowedMethodsPOST(): ServiceCall[NotUsed, Done] = de.upb.cs.uc4.shared.ServiceCallFactory.allowedMethodsCustom("POST")
+  /** Logs the user out */
+  override def logout(): ServiceCall[NotUsed, Done] = ???
 
-  /** Allows GET */
-  def allowedMethodsGET(): ServiceCall[NotUsed, Done] = de.upb.cs.uc4.shared.ServiceCallFactory.allowedMethodsCustom("GET")
-
-  /** Allows DELETE */
-  def allowedMethodsDELETE(): ServiceCall[NotUsed, Done] = de.upb.cs.uc4.shared.ServiceCallFactory.allowedMethodsCustom("DELETE")
-
-
+  /**
+    * Reads username and password out of the header
+    *
+    * @param requestHeader with the an authentication header
+    * @return an Option with a String tuple
+    */
+  def getUserAndPassword(requestHeader: RequestHeader): Option[(String, String)] = {
+    requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
+      case Array("Basic", userAndPass) =>
+        new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":") match {
+          case Array(user, password) => Option(user, password)
+          case _ => None
+        }
+      case _ => None
+    }
+  }
 }
