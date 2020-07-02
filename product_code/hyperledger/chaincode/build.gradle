@@ -6,6 +6,7 @@ plugins {
     id 'java-library-distribution'
     id 'application'
     id 'com.github.johnrengelman.shadow' version '5.1.0'
+    id 'jacoco'
 }
 
 group 'org.hyperledger.fabric.samples'
@@ -17,6 +18,9 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.6'
     compile group: 'org.threeten', name: 'threetenbp', version: '1.4.4'
     compile group: 'io.swagger', name: 'swagger-annotations', version: '1.5.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.4.2'
+    testImplementation 'org.assertj:assertj-core:3.11.1'
+    testImplementation 'org.mockito:mockito-core:2.+'
 }
 
 repositories {
@@ -48,4 +52,11 @@ ext {
 
 application {
     mainClassName = javaMainClass
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }

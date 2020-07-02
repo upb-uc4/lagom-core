@@ -2,6 +2,7 @@ package de.upb.cs.uc4.chaincode;
 
 import com.google.gson.*;
 import de.upb.cs.uc4.chaincode.model.Course;
+import de.upb.cs.uc4.chaincode.model.Error;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hyperledger.fabric.contract.Context;
@@ -12,10 +13,6 @@ import org.hyperledger.fabric.contract.annotation.Transaction;
 import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.hyperledger.fabric.shim.ledger.KeyValue;
 import org.hyperledger.fabric.shim.ledger.QueryResultsIterator;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.format.DateTimeFormatter;
-
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 @Contract(
@@ -26,29 +23,7 @@ public class CourseChaincode implements ContractInterface {
 
     private static Log _logger = LogFactory.getLog(CourseChaincode.class);
     // setup gson (de-)serializer capable of (de-)serializing dates
-    private static final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(
-                    LocalDate.class,
-                    new JsonDeserializer<LocalDate>() {
-                        @Override
-                        public LocalDate deserialize(
-                                JsonElement json,
-                                Type type,
-                                JsonDeserializationContext jsonDeserializationContext
-                        ) throws JsonParseException {
-                            return LocalDate.parse(json.getAsJsonPrimitive().getAsString());
-                        }
-                    })
-            .registerTypeAdapter(
-                    LocalDate.class,
-                    new JsonSerializer<LocalDate>() {
-                        @Override
-                        public JsonElement serialize(LocalDate date, Type typeOfSrc, JsonSerializationContext context) {
-                            return new JsonPrimitive("2020-06-26"); // "yyyy-mm-dd"
-                        }
-                    }
-                    )
-            .create();
+    private static final GsonWrapper gson = new GsonWrapper();
 
     @Transaction()
     public void initLedger(final Context ctx) {
@@ -56,13 +31,19 @@ public class CourseChaincode implements ContractInterface {
     }
 
     @Transaction()
-    public void addCourse (final Context ctx, final String jsonCourse) {
+    public String addCourse (final Context ctx, final String jsonCourse) {
         _logger.info("addCourse");
 
         ChaincodeStub stub = ctx.getStub();
 
         Course course = gson.fromJson(jsonCourse, Course.class);
+
+        String error = getErrorForCourse(course);
+        if(error != null)
+            return error;
+
         stub.putStringState(course.getCourseId(),gson.toJson(course));
+        return "";
     }
 
     @Transaction()
@@ -92,20 +73,80 @@ public class CourseChaincode implements ContractInterface {
     }
 
     @Transaction()
-    public void updateCourseById (
+    public String updateCourseById (
             final Context ctx,
             final String courseId,
             final String jsonCourse) {
 
         ChaincodeStub stub = ctx.getStub();
 
-        stub.delState(courseId);
         Course updatedCourse = gson.fromJson(jsonCourse, Course.class);
+
+        if (!courseId.equals(updatedCourse.getCourseId()))
+            return gson.toJson(new Error()
+                    .name("00")
+                    .detail("Course ID and ID in path do not match"));
+
+        String error = getErrorForCourse(updatedCourse);
+        if (error != null)
+            return error;
+
+        stub.delState(courseId);
         stub.putStringState(updatedCourse.getCourseId(), gson.toJson(updatedCourse));
+        return "";
     }
 
     private Course getCourse (final Context ctx, final String courseId) {
         ChaincodeStub stub = ctx.getStub();
         return gson.fromJson(stub.getStringState(courseId), Course.class);
+    }
+
+    private String getErrorForCourse(Course course) {
+        if (course.getCourseName().equals(""))
+            return gson.toJson(new Error()
+                    .name("10")
+                    .detail("Course name must not be empty"));
+
+        if (false)
+            return gson.toJson(new Error()
+                    .name("11")
+                    .detail("Course name has invalid characters"));
+
+        if (course.getCourseType() == null)
+            return gson.toJson(new Error()
+                    .name("20")
+                    .detail("Course type must be one of [\"Lecture\", \"Seminar\", \"Project Group\"]"));
+
+        if (course.getStartDate() == null)
+            return gson.toJson(new Error()
+                    .name("30")
+                    .detail("startDate must be the following format \"yyyy-mm-dd\""));
+
+        if (course.getEndDate() == null)
+            return gson.toJson(new Error()
+                    .name("40")
+                    .detail("endDate must be the following format \"yyyy-mm-dd\""));
+
+        if (course.getEcts() == null || course.getEcts() < 1)
+            return gson.toJson(new Error()
+                    .name("50")
+                    .detail("ects must be a positive integer number"));
+
+        if (course.getLecturerId().equals(""))
+            return gson.toJson(new Error()
+                    .name("60")
+                    .detail("lecturerID unknown"));
+
+        if (course.getMaxParticipants() == null || course.getMaxParticipants() < 0)
+            return gson.toJson(new Error()
+                    .name("70")
+                    .detail("maxParticipants must be a positive integer number"));
+
+        if (course.getCourseLanguage() == null)
+            return gson.toJson(new Error()
+                    .name("80")
+                    .detail("language must be one of [\"German\", \"English\"]"));
+
+        return null;
     }
 }
