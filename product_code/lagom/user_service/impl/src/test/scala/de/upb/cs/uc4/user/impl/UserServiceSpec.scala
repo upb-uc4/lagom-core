@@ -64,10 +64,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val admin0: Admin = Admin("admin0", Role.Lecturer, address, "Dieter", "Wurst", "Haesslich", "dieter.wurst@mail.de")
   val admin1: Admin = Admin("lecturer0", Role.Lecturer, address, "Lola", "Wurst", "Haesslich", "lola.wurst@mail.de")
 
-  val postMessage: PostMessageStudent = PostMessageStudent(
-    AuthenticationUser("Max", "Muster", AuthenticationRole.Student),
-    Student("maxMu", Role.Student, address, "Max", "Muster", "Haesslich", "mm@mail.de", "IN", "3", 9000, List())
-  )
 
   /** Tests only working if the whole instance is started */
   "UserService service" should {
@@ -78,6 +74,17 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         answer.lecturer shouldBe empty
         answer.students shouldBe empty
       }
+    }
+
+    "publish new AuthenticationUser" in {
+      val authUser = authenticationTopic.runWith(TestSink.probe(server.actorSystem))(server.materializer).request(1)
+        .expectNext(FiniteDuration(2, TimeUnit.MINUTES))
+
+      Seq(
+        AuthenticationUser("admin", "admin", AuthenticationRole.Admin),
+        AuthenticationUser("lecturer", "lecturer", AuthenticationRole.Lecturer),
+        AuthenticationUser("student", "student", AuthenticationRole.Student)
+      ) should contain (authUser)
     }
 
     "add a student" in {
@@ -172,14 +179,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       client.getRole(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
         answer.role shouldBe Role.Lecturer
       }
-    }
-
-    "publish new AuthenticationUser" in {
-      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
-
-      val subscriber = authenticationTopic
-        .runWith(TestSink.probe(server.actorSystem))(server.materializer)
-      subscriber.request(1).expectNext(FiniteDuration(25, TimeUnit.SECONDS)) should ===(authenticationUser)
     }
   }
 }

@@ -237,7 +237,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       .mapConcat {
         //Filter only OnUserCreate events
         case EventStreamElement(_, OnUserCreate(_, authenticationUser), offset) =>
-          println(s"-----> ${authenticationUser.username}")
           immutable.Seq((authenticationUser, offset))
         case _ => Nil
       }
