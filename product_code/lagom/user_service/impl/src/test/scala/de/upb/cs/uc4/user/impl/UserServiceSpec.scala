@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.user.impl
 
+import java.util.Base64
+
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
@@ -43,7 +45,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   override protected def afterAll(): Unit = server.stop()
 
   def addAuthorizationHeader(): RequestHeader => RequestHeader = { header =>
-    header.withHeader("Authorization", "Bearer MOCK")
+    header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString("MOCK:MOCK".getBytes()))
   }
 
   //Test users

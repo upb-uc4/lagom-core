@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.course.impl
 
+import java.util.Base64
+
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
@@ -47,52 +49,52 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
   override protected def afterAll(): Unit = server.stop()
 
-  def addJwtsHeader(): RequestHeader => RequestHeader = { header =>
-    header.withHeader("Authorization", "Bearer MOCK")
+  def addAuthenticationHeader(): RequestHeader => RequestHeader = { header =>
+    header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString("MOCK:MOCK".getBytes()))
   }
 
   /** Tests only working if the whole instance is started */
   "CourseService service" should {
 
     "get all courses with no courses" in {
-      client.getAllCourses.handleRequestHeader(addJwtsHeader()).invoke().map { answer =>
+      client.getAllCourses.handleRequestHeader(addAuthenticationHeader()).invoke().map { answer =>
         answer shouldBe empty
       }
     }
 
     "create a course" in {
-      client.addCourse().handleRequestHeader(addJwtsHeader()).invoke(course0).map { answer =>
+      client.addCourse().handleRequestHeader(addAuthenticationHeader()).invoke(course0).map { answer =>
         answer should ===(Done)
       }
     }
 
     "create a second course" in {
-      client.addCourse().handleRequestHeader(addJwtsHeader()).invoke(course1).map { answer =>
+      client.addCourse().handleRequestHeader(addAuthenticationHeader()).invoke(course1).map { answer =>
         answer should ===(Done)
       }
     }
 
     "create a third course" in {
-      client.addCourse().handleRequestHeader(addJwtsHeader()).invoke(course2).map { answer =>
+      client.addCourse().handleRequestHeader(addAuthenticationHeader()).invoke(course2).map { answer =>
         answer should ===(Done)
       }
     }
 
     "delete a non-existing course" in {
-      client.deleteCourse("42").handleRequestHeader(addJwtsHeader()).invoke().failed.map{
+      client.deleteCourse("42").handleRequestHeader(addAuthenticationHeader()).invoke().failed.map{
         answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
     "find a non-existing course" in {
-      client.findCourseByCourseId("42").handleRequestHeader(addJwtsHeader()).invoke().failed.map{ answer =>
+      client.findCourseByCourseId("42").handleRequestHeader(addAuthenticationHeader()).invoke().failed.map{ answer =>
           answer shouldBe a [NotFound]
       }
     }
 
     "update a non-existing course" in {
-      client.updateCourse(course3.courseId).handleRequestHeader(addJwtsHeader()).invoke(course3).failed.map{
+      client.updateCourse(course3.courseId).handleRequestHeader(addAuthenticationHeader()).invoke(course3).failed.map{
         answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
