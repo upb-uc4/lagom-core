@@ -53,7 +53,8 @@ case class UserState(optUser: Option[User]) {
     */
   def applyEvent(evt: UserEvent): UserState =
     evt match {
-      case OnUserCreate(user, _) => copy(Some(user))
+      case OnUserCreate(user, _) =>
+        copy(Some(user))
       case OnUserUpdate(user) => copy(Some(user))
       case OnUserDelete(_) => copy(None)
       case _ =>

@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.user.impl
 
 import java.util.Base64
+import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.stream.scaladsl.Source
@@ -20,6 +21,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
@@ -166,12 +168,13 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "publish new AuthenticationUser" in {
+      for {
+        _ <- client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
+      } yield Done
+
       val subscriber = authenticationTopic
-        .runWith(TestSink.probe[AuthenticationUser](server.actorSystem))(server.materializer)
-
-      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
-
-      subscriber.request(1).expectNext should ===(authenticationUser)
+        .runWith(TestSink.probe(server.actorSystem))(server.materializer)
+      subscriber.request(1).expectNext(FiniteDuration(25, TimeUnit.SECONDS)) should ===(authenticationUser)
     }
   }
 }
