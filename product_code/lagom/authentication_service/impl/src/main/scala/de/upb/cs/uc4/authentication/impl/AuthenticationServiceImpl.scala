@@ -45,7 +45,7 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
     cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
       .map {
         case Some(row) => AuthenticationRole.withName(row.getString("role"))
-        case None => throw NotFound("User does not exists.")
+        case None => throw NotFound("Username does not exists.")
       }
   }
 }
