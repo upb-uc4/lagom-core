@@ -32,11 +32,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     new UserApplication(ctx) with LocalServiceLocator {
       override lazy val authenticationService: AuthenticationService = new AuthenticationService {
 
-        override def login(): ServiceCall[NotUsed, String] = ServiceCall{ _ => Future.successful("")}
-
-        override def logout(): ServiceCall[NotUsed, Done] = ServiceCall{ _ => Future.successful(Done)}
-
-        override def check(jws: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
+        override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
           ServiceCall{ _ => Future.successful("admin", AuthenticationRole.Admin)}
 
         override def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole] =
@@ -49,7 +45,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   override protected def afterAll(): Unit = server.stop()
 
   def addAuthorizationHeader(): RequestHeader => RequestHeader = { header =>
-    header.withHeader("Authorization", "Bearer MOCK")
+    header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString("MOCK:MOCK".getBytes()))
   }
 
   //Test users
