@@ -19,18 +19,18 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
   private implicit val clock: Clock = Clock.systemUTC
 
   /** @inheritdoc */
-  override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall { _ =>
-    cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(user))
+  override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall { _ =>
+    cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
       .flatMap {
         case Some(row) =>
           val salt = row.getString("salt")
 
-          if (row.getString("password") != Hashing.sha256(salt + pw)) {
+          if (row.getString("password") != Hashing.sha256(salt + password)) {
             throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
               new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
           } else {
-            getRole(user).invoke().map { role =>
-              (user, role)
+            getRole(username).invoke().map { role =>
+              (username, role)
             }
           }
 
