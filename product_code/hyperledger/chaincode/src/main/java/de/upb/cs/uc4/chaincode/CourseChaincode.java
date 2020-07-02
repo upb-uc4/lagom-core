@@ -30,6 +30,12 @@ public class CourseChaincode implements ContractInterface {
         
     }
 
+    /**
+     * Adds a course to the ledger.
+     * @param ctx
+     * @param jsonCourse json-representation of a course to be added
+     * @return Empty string on success, serialized error on failure
+     */
     @Transaction()
     public String addCourse (final Context ctx, final String jsonCourse) {
         _logger.info("addCourse");
@@ -37,6 +43,11 @@ public class CourseChaincode implements ContractInterface {
         ChaincodeStub stub = ctx.getStub();
 
         Course course = gson.fromJson(jsonCourse, Course.class);
+
+        if(!stub.getStringState(course.getCourseId()).equals(""))
+            return gson.toJson(new Error()
+                    .name("02")
+                    .detail("ID already exists"));
 
         String error = getErrorForCourse(course);
         if(error != null)
@@ -65,6 +76,11 @@ public class CourseChaincode implements ContractInterface {
         return gson.toJson(getCourse(ctx, courseId));
     }
 
+    /**
+     * Removes the course with the given courseId from the ledger.
+     * @param ctx
+     * @param courseId
+     */
     @Transaction()
     public void deleteCourseById (final Context ctx, final String courseId) {
         ChaincodeStub stub = ctx.getStub();
@@ -90,6 +106,10 @@ public class CourseChaincode implements ContractInterface {
         String error = getErrorForCourse(updatedCourse);
         if (error != null)
             return error;
+        if(stub.getStringState(courseId).equals(""))
+            return gson.toJson(new Error()
+                    .name("03")
+                    .detail("Course not found"));
 
         stub.delState(courseId);
         stub.putStringState(updatedCourse.getCourseId(), gson.toJson(updatedCourse));

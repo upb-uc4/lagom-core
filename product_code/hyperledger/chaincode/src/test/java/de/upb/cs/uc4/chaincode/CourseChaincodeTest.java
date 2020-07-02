@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.threeten.bp.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -124,6 +125,7 @@ public final class CourseChaincodeTest {
     private final class MockChaincodeStub implements ChaincodeStub {
 
         public List<MockKeyValue> putStates;
+        private int index = 0;
 
         MockChaincodeStub() {
             putStates = new ArrayList<MockKeyValue>();
@@ -131,7 +133,16 @@ public final class CourseChaincodeTest {
 
         @Override
         public void putStringState(String key, String value) {
-            putStates.add(new MockKeyValue(key, value));
+            putStates.add(index++,new MockKeyValue(key, value));
+        }
+
+        @Override
+        public String getStringState(String key) {
+            for (MockKeyValue keyValue: putStates) {
+                    if (keyValue.key.equals(key))
+                        return keyValue.value;
+            }
+            return "";
         }
 
         @Override
@@ -414,6 +425,41 @@ public final class CourseChaincodeTest {
         }
 
         @Test
+        public void addExistingCourse() {
+            CourseChaincode contract = new CourseChaincode();
+            GsonWrapper gson = new GsonWrapper();
+            Context ctx = mock(Context.class);
+            ChaincodeStub stub = mock(ChaincodeStub.class);
+            when(ctx.getStub()).thenReturn(stub);
+            when(stub.getStringState("course1")).thenReturn("{ \"courseId\": \"course1\",\n" +
+                    "  \"courseName\": \"courseName1\",\n" +
+                    "  \"courseType\": \"Lecture\",\n" +
+                    "  \"startDate\": \"2020-06-29\",\n" +
+                    "  \"endDate\": \"2020-06-29\",\n" +
+                    "  \"ects\": 3,\n" +
+                    "  \"lecturerId\": \"lecturer1\",\n" +
+                    "  \"maxParticipants\": 100,\n" +
+                    "  \"currentParticipants\": 0,\n" +
+                    "  \"courseLanguage\": \"English\",\n" +
+                    "  \"courseDescription\": \"some lecture\" }");
+            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+                    "  \"courseName\": \"courseName1\",\n" +
+                    "  \"courseType\": \"Lecture\",\n" +
+                    "  \"startDate\": \"2020-06-29\",\n" +
+                    "  \"endDate\": \"2020-06-29\",\n" +
+                    "  \"ects\": 3,\n" +
+                    "  \"lecturerId\": \"lecturer1\",\n" +
+                    "  \"maxParticipants\": 100,\n" +
+                    "  \"currentParticipants\": 0,\n" +
+                    "  \"courseLanguage\": \"English\",\n" +
+                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+            assertThat(error).isEqualTo(
+                    new Error()
+                            .name("02")
+                            .detail("ID already exists"));
+        }
+
+        @Test
         public void addEmptyNameCourse() {
             CourseChaincode contract = new CourseChaincode();
             GsonWrapper gson = new GsonWrapper();
@@ -649,7 +695,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            contract.updateCourseById(ctx, "course1",
+            stub.putStringState("course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -661,7 +707,19 @@ public final class CourseChaincodeTest {
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
                     "  \"courseDescription\": \"some lecture\" }");
-            assertThat(stub.putStates.get(0)).isEqualTo(new MockKeyValue("course1",
+            contract.updateCourseById(ctx, "course1",
+                    "{ \"courseId\": \"course1\",\n" +
+                    "  \"courseName\": \"courseName1\",\n" +
+                    "  \"courseType\": \"Lecture\",\n" +
+                    "  \"startDate\": \"2020-06-29\",\n" +
+                    "  \"endDate\": \"2020-06-29\",\n" +
+                    "  \"ects\": 3,\n" +
+                    "  \"lecturerId\": \"lecturer1\",\n" +
+                    "  \"maxParticipants\": 100,\n" +
+                    "  \"currentParticipants\": 0,\n" +
+                    "  \"courseLanguage\": \"English\",\n" +
+                    "  \"courseDescription\": \"awesome lecture\" }");
+            assertThat(stub.putStates.get(1)).isEqualTo(new MockKeyValue("course1",
                     "{ \"courseId\": \"course1\",\n" +
                             "  \"courseName\": \"courseName1\",\n" +
                             "  \"courseType\": \"Lecture\",\n" +
@@ -672,7 +730,33 @@ public final class CourseChaincodeTest {
                             "  \"maxParticipants\": 100,\n" +
                             "  \"currentParticipants\": 0,\n" +
                             "  \"courseLanguage\": \"English\",\n" +
-                            "  \"courseDescription\": \"some lecture\" }"));
+                            "  \"courseDescription\": \"awesome lecture\" }"));
+        }
+
+        @Test
+        public void updateNonExistingCourse() {
+            CourseChaincode contract = new CourseChaincode();
+            GsonWrapper gson = new GsonWrapper();
+            Context ctx = mock(Context.class);
+            ChaincodeStub stub = mock(ChaincodeStub.class);
+            when(ctx.getStub()).thenReturn(stub);
+            when(stub.getStringState("course1")).thenReturn("");
+            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+                    "{ \"courseId\": \"course1\",\n" +
+                    "  \"courseName\": \"courseName1\",\n" +
+                    "  \"courseType\": \"Lecture\",\n" +
+                    "  \"startDate\": \"2020-06-29\",\n" +
+                    "  \"endDate\": \"2020-06-29\",\n" +
+                    "  \"ects\": 3,\n" +
+                    "  \"lecturerId\": \"lecturer1\",\n" +
+                    "  \"maxParticipants\": 100,\n" +
+                    "  \"currentParticipants\": 0,\n" +
+                    "  \"courseLanguage\": \"English\",\n" +
+                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+            assertThat(error).isEqualTo(
+                    new Error()
+                            .name("03")
+                            .detail("Course not found"));
         }
 
         @Test
