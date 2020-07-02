@@ -1,7 +1,5 @@
 package de.upb.cs.uc4.user.impl
 
-import java.util.Base64
-
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
@@ -32,11 +30,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     new UserApplication(ctx) with LocalServiceLocator {
       override lazy val authenticationService: AuthenticationService = new AuthenticationService {
 
-        override def login(): ServiceCall[NotUsed, String] = ServiceCall{ _ => Future.successful("")}
-
-        override def logout(): ServiceCall[NotUsed, Done] = ServiceCall{ _ => Future.successful(Done)}
-
-        override def check(jws: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
+        override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
           ServiceCall{ _ => Future.successful("admin", AuthenticationRole.Admin)}
 
         override def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole] =
