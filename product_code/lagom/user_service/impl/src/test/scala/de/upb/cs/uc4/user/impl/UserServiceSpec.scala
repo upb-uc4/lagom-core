@@ -6,12 +6,14 @@ import java.util.concurrent.TimeUnit
 import akka.Done
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
+import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationResponse
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
@@ -32,9 +34,15 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     ServiceTest.defaultSetup
       .withCassandra()
   ) { ctx =>
-    new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-      override implicit lazy val authenticationService: AuthenticationService =
-        (_: String, _: String) => ServiceCall { _ => Future.successful(AuthenticationResponse.Correct) }
+    new UserApplication(ctx) with LocalServiceLocator {
+      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
+
+        override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
+          ServiceCall{ _ => Future.successful("admin", AuthenticationRole.Admin)}
+
+        override def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole] =
+          ServiceCall{ _ => Future.successful(AuthenticationRole.Admin)}
+      }
     }
   }
 
@@ -50,7 +58,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
   //Test users
   val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
-  val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", Role.Admin)
+  val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
 
   val student0: Student = Student("student0", Role.Student, address, "Hans", "Wurst", "Haesslich", "hans.wurst@mail.de", "IN", "421769", 9000, List())
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "Graf", "Wurst", "Haesslich", "graf.wurst@mail.de", "Ich bin bloed", "Genderstudies")
@@ -94,7 +102,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "delete a non-existing user" in {
       client.deleteUser("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
         answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+          answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
@@ -119,21 +127,21 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "update a non-existing student" in {
       client.updateStudent(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(student0.copy(username = "Guten Abend")).failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
     "update a non-existing lecturer" in {
       client.updateLecturer(lecturer0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(lecturer0.copy(username = "Guten Abend")).failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
     "update a non-existing admin" in {
       client.updateAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(admin0.copy(username = "Guten Abend")).failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 

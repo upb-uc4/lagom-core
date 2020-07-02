@@ -2,9 +2,6 @@ package de.upb.cs.uc4.authentication.impl
 
 import java.util.Base64
 
-import akka.{Done, NotUsed}
-import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
@@ -55,7 +52,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
   override protected def afterAll(): Unit = server.stop()
 
-  def addAuthorizationHeader(user: String, pw: String): RequestHeader => RequestHeader = { header =>
+  def addLoginHeader(user: String, pw: String): RequestHeader => RequestHeader = { header =>
     header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString(s"$user:$pw".getBytes()))
   }
 
@@ -63,38 +60,52 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   "AuthenticationService service" should {
 
     "have the standard admin" in {
-      client.check("admin", "admin").invoke(Seq(Role.Admin)).map { answer =>
-        answer shouldEqual AuthenticationResponse.Correct
+      client.check("admin", "admin").invoke().map{ answer =>
+        answer shouldBe a [(String, AuthenticationRole)]
       }
     }
 
     "have the standard lecturer" in {
-      client.check("lecturer", "lecturer").invoke(Seq(Role.Lecturer)).map { answer =>
-        answer shouldEqual AuthenticationResponse.Correct
+      client.check("lecturer", "lecturer").invoke().map{ answer =>
+        answer shouldBe a [(String, AuthenticationRole)]
       }
     }
 
     "have the standard student" in {
-      client.check("student", "student").invoke(Seq(Role.Student)).map { answer =>
-        answer shouldEqual AuthenticationResponse.Correct
+      client.check("student", "student").invoke().map{ answer =>
+        answer shouldBe a [(String, AuthenticationRole)]
       }
     }
 
     "detect a wrong username" in {
-      client.check("studenta", "student").invoke(Seq(Role.Student)).map { answer =>
-        answer shouldEqual AuthenticationResponse.WrongUsername
+      client.check("studenta", "student").invoke().failed.map{
+        answer => answer.asInstanceOf[TransportException].errorCode.http should ===(401)
       }
     }
 
     "detect a wrong password" in {
-      client.check("admin", "admina").invoke(Seq(Role.Student)).map { answer =>
-        answer shouldEqual AuthenticationResponse.WrongPassword
+      client.check("student", "studenta").invoke().failed.map{
+        answer => answer.asInstanceOf[TransportException].errorCode.http should ===(401)
       }
     }
 
     "detect that a user is not authorized" in {
-      client.check("student", "student").invoke(Seq(Role.Lecturer)).map { answer =>
-        answer shouldEqual AuthenticationResponse.NotAuthorized
+      val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Admin){
+         _ => Future.successful(NotUsed)
+      }(client, server.executionContext)
+
+      serviceCall.handleRequestHeader(addLoginHeader("student", "student")).invoke().failed.map{ answer =>
+        answer.asInstanceOf[TransportException].errorCode.http should ===(403)
+      }
+    }
+
+    "detect that a user is authorized" in {
+      val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Student){
+        _ => Future.successful(NotUsed)
+      }(client, server.executionContext)
+
+      serviceCall.handleRequestHeader(addLoginHeader("student", "student")).invoke().map{ answer =>
+        answer should ===(NotUsed)
       }
     }
 
