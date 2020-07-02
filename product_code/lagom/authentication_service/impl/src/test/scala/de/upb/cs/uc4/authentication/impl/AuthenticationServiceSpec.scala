@@ -117,7 +117,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     "add a new user over the topic" in {
       authenticationStub.send(new AuthenticationUser("Ben", "Hermann", AuthenticationRole.Admin))
 
-      eventually(timeout(Span(5, Seconds))) {
+      eventually(timeout(Span(10, Seconds))) {
         val futureAnswer = client.check("Ben", "Hermann").invoke()
         whenReady(futureAnswer) { answer =>
           answer shouldBe a [(String, AuthenticationRole)]
@@ -128,10 +128,10 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     "remove a user over the topic" in {
       deletionStub.send(JsonUsername("admin"))
 
-      eventually(timeout(Span(5, Seconds))) {
-        val futureAnswer = client.check("admin", "admin").invoke()
+      eventually(timeout(Span(10, Seconds))) {
+        val futureAnswer = client.check("admin", "admin").invoke().failed
         whenReady(futureAnswer) { answer =>
-          answer shouldBe a [(String, AuthenticationRole)]
+          answer.asInstanceOf[TransportException].errorCode.http should ===(401)
         }
       }
     }
