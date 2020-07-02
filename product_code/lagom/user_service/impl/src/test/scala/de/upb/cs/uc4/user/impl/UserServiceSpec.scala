@@ -168,9 +168,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "publish new AuthenticationUser" in {
-      for {
-        _ <- client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
-      } yield Done
+      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
 
       val subscriber = authenticationTopic
         .runWith(TestSink.probe(server.actorSystem))(server.materializer)
