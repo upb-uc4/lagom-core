@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.shared
 
+import java.util.Base64
+
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
@@ -38,9 +40,11 @@ object ServiceCallFactory {
                                       (implicit auth: AuthenticationService, ec: ExecutionContext)
   : ServerServiceCall[Request, Response] = {
     ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
-      auth.check(getJwts(requestHeader)).invoke().map{
+      val (user, pw) = getUserAndPassword(requestHeader)
+
+      auth.check(user, pw).invoke().map {
         case (_, role) =>
-          if(!roles.contains(role)){
+          if (!roles.contains(role)) {
             throw Forbidden("Not authorized")
           }
           serviceCall
@@ -61,9 +65,11 @@ object ServiceCallFactory {
                                                 (implicit auth: AuthenticationService, ec: ExecutionContext)
   : ServerServiceCall[Request, Response] = {
     ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
-      auth.check(getJwts(requestHeader)).invoke().map{
+      val (user, pw) = getUserAndPassword(requestHeader)
+
+      auth.check(user, pw).invoke().map {
         case (username, role) =>
-          if(!roles.contains(role)){
+          if (!roles.contains(role)) {
             throw Forbidden("Not authorized")
           }
           serviceCall(username, role)
@@ -72,17 +78,26 @@ object ServiceCallFactory {
   }
 
   /**
-    * Reads jwts out of the header
+    * Reads username and password out of the header
     *
     * @param requestHeader with the an authentication header
-    * @return an Option with a String
+    * @return an Option with a String tuple
     */
-  private def getJwts(requestHeader: RequestHeader): String = {
-    requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
-      case Array("Bearer", jwts) => jwts
-      case _ =>
-        throw new Forbidden(TransportErrorCode(401, 1003, "Signature Error"),
-          new ExceptionMessage("Unauthorized", "Jwts is not valid"))
+  def getUserAndPassword(requestHeader: RequestHeader): (String, String) = {
+    val userPw = requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
+      case Array("Basic", userAndPass) =>
+        new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":") match {
+          case Array(user, password) => Option(user, password)
+          case _ => None
+        }
+      case _ => None
+    }
+
+    if (userPw.isEmpty) {
+      throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
+        new ExceptionMessage("Unauthorized", "No Authorization given"))
+    } else {
+      userPw.get
     }
   }
 
