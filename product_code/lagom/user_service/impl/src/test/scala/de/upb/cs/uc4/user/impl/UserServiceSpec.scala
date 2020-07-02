@@ -3,14 +3,13 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
-import akka.Done
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
+import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
@@ -66,7 +65,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val admin1: Admin = Admin("lecturer0", Role.Lecturer, address, "Lola", "Wurst", "Haesslich", "lola.wurst@mail.de")
 
   val postMessage: PostMessageStudent = PostMessageStudent(
-    AuthenticationUser("Max", "Muster", Role.Student),
+    AuthenticationUser("Max", "Muster", AuthenticationRole.Student),
     Student("maxMu", Role.Student, address, "Max", "Muster", "Haesslich", "mm@mail.de", "IN", "3", 9000, List())
   )
 

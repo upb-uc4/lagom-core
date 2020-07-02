@@ -2,15 +2,20 @@ package de.upb.cs.uc4.authentication.impl
 
 import java.util.Base64
 
-import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
+import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.broker.Topic
+import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, TransportException}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationResponse
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.shared.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
@@ -110,12 +115,12 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     }
 
     "add a new user over the topic" in {
-      authenticationStub.send(new AuthenticationUser("Ben", "Hermann", Role.Admin))
+      authenticationStub.send(new AuthenticationUser("Ben", "Hermann", AuthenticationRole.Admin))
 
       eventually(timeout(Span(5, Seconds))) {
-        val futureAnswer = client.check("Ben", "Hermann").invoke(Seq(Role.Admin))
+        val futureAnswer = client.check("Ben", "Hermann").invoke()
         whenReady(futureAnswer) { answer =>
-          answer shouldEqual AuthenticationResponse.Correct
+          answer shouldBe a [(String, AuthenticationRole)]
         }
       }
     }
@@ -124,9 +129,9 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       deletionStub.send(JsonUsername("admin"))
 
       eventually(timeout(Span(5, Seconds))) {
-        val futureAnswer = client.check("admin", "admin").invoke(Seq(Role.Admin))
+        val futureAnswer = client.check("admin", "admin").invoke()
         whenReady(futureAnswer) { answer =>
-          answer shouldEqual AuthenticationResponse.WrongUsername
+          answer shouldBe a [(String, AuthenticationRole)]
         }
       }
     }
