@@ -88,7 +88,8 @@ case class UserState(optUser: Option[User]) {
     val usernameRegex = """[a-zA-Z0-9-]+""".r
     val nameRegex = """[a-zA-Z]+""".r
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
-    val fos = List("Computer Science", "Gender Studies", "Electrical Engineering")
+    val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
+      "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
 
     var error= List[SimpleError]()
 
