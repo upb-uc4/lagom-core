@@ -1,5 +1,6 @@
-import scala.concurrent.duration._
 import com.typesafe.sbt.packager.docker.DockerChmodType
+
+import scala.concurrent.duration._
 
 organization in ThisBuild := "de.upb.cs.uc4"
 version in ThisBuild := "v0.2.1"

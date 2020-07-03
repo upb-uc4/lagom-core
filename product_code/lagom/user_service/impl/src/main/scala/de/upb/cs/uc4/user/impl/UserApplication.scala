@@ -1,7 +1,6 @@
 package de.upb.cs.uc4.user.impl
 
 import akka.cluster.sharding.typed.scaladsl.Entity
-import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
@@ -18,7 +17,6 @@ import play.filters.cors.CORSComponents
 abstract class UserApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
     with CassandraPersistenceComponents
-    with LagomKafkaComponents
     with CORSComponents
     with AhcWSComponents
     with AuthenticationComponent {

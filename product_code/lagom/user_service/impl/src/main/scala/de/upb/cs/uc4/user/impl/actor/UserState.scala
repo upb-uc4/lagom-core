@@ -3,14 +3,13 @@ package de.upb.cs.uc4.user.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
-import com.fasterxml.jackson.module.scala.deser.overrides.MutableList
 import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}
 import de.upb.cs.uc4.user.impl.UserApplication
-import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateUser, UserCommand}
+import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate, UserEvent}
-import play.api.libs.json.{Format, Json}
 import de.upb.cs.uc4.user.model.Role
 import de.upb.cs.uc4.user.model.user.AuthenticationUser
+import play.api.libs.json.{Format, Json}
 
 import scala.collection.mutable
 
@@ -76,7 +75,8 @@ case class UserState(optUser: Option[User]) {
     */
   def applyEvent(evt: UserEvent): UserState =
     evt match {
-      case OnUserCreate(user, _) => copy(Some(user))
+      case OnUserCreate(user, _) =>
+        copy(Some(user))
       case OnUserUpdate(user) => copy(Some(user))
       case OnUserDelete(_) => copy(None)
       case _ =>
