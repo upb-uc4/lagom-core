@@ -118,8 +118,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       authenticationStub.send(new AuthenticationUser("Ben", "Hermann", AuthenticationRole.Admin))
 
       eventually(timeout(Span(2, Minutes))) {
-        val futureAnswer = client.check("Ben", "Hermann").invoke()
-        whenReady(futureAnswer) { answer =>
+        client.check("Ben", "Hermann").invoke().map{ answer =>
           answer shouldBe a [(String, AuthenticationRole)]
         }
       }
@@ -129,9 +128,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       deletionStub.send(JsonUsername("admin"))
 
       eventually(timeout(Span(2, Minutes))) {
-        val futureAnswer = client.check("admin", "admin").invoke().failed
-        whenReady(futureAnswer) { answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+        client.check("admin", "admin").invoke().failed.map{ answer =>
+          answer.asInstanceOf[TransportException].errorCode.http should ===(401)
         }
       }
     }
