@@ -58,6 +58,14 @@ Check with:
 kubectl get pods -l="app=cassandra"
 ````
 
+#### Starting Kafka:
+````shell script
+kubectl create namespace kafka
+kubectl apply -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
+kubectl apply -f https://strimzi.io/examples/latest/kafka/kafka-persistent-single.yaml -n kafka 
+kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
+````
+
 #### Setting Role Based Access Control
 ````shell script
 kubectl apply -f .\rbac.yaml 

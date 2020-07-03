@@ -27,6 +27,8 @@ spec:
                   key: secret
             - name: CASSANDRA_SERVICE_NAME
               value: "_cql._tcp.cassandra"
+            - name: KAFKA_SERVICE_NAME
+              value: "_clients._tcp.strimzi-kafka-brokers"
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
           resources:
