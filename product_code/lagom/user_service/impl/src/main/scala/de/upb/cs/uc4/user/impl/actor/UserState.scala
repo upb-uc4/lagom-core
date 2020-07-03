@@ -3,6 +3,8 @@ package de.upb.cs.uc4.user.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
+import de.upb.cs.uc4.shared.api
+import de.upb.cs.uc4.shared.api.{DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.messages._
 import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands._
@@ -47,7 +49,7 @@ case class UserState(optUser: Option[User]) {
           if(validationErrors.isEmpty){
             Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
           } else {
-            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
+            Effect.reply(replyTo)(RejectedWithError(422, api.DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
           }
         } else {
           Effect.reply(replyTo)(RejectedWithError(404, DetailedError("key value error", "Username not found", List(SimpleError("username", "Username does not exist")))))

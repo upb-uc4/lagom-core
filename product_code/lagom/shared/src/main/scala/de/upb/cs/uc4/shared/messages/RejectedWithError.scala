@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.shared.messages
 
+import de.upb.cs.uc4.shared.api.DetailedError
 import play.api.libs.json.{Format, Json}
 
 /** RejectedWithError version of the Confirmation */

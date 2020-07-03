@@ -1,11 +1,10 @@
-package de.upb.cs.uc4.shared
+package de.upb.cs.uc4.shared.api
 
 import java.io.{CharArrayWriter, PrintWriter}
 
 import akka.util.ByteString
 import com.lightbend.lagom.scaladsl.api.deser.{DefaultExceptionSerializer, RawExceptionMessage}
 import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, MessageProtocol, TransportErrorCode, TransportException}
-import de.upb.cs.uc4.shared.messages.DetailedError
 import play.api.libs.json.{JsArray, Json}
 import play.api.{Environment, Mode}
 
