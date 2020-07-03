@@ -1,0 +1,5 @@
+.vs
+.idea
+**/project/target/*
+**/project/build.properties
+**/target
