@@ -89,19 +89,19 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
     "add a student" in {
       client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(authenticationUser, student0)).map { answer =>
-        answer shouldBe a[Done]
+        answer shouldBe ===(Done)
       }
     }
 
     "add a lecturer" in {
       client.addLecturer().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageLecturer(authenticationUser, lecturer0)).map { answer =>
-        answer shouldBe a[Done]
+        answer shouldBe ===(Done)
       }
     }
 
     "add an admin" in {
       client.addAdmin().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageAdmin(authenticationUser, admin0)).map { answer =>
-        answer shouldBe a[Done]
+        answer shouldBe ===(Done)
       }
     }
 

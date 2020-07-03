@@ -131,7 +131,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       eventually(timeout(Span(10, Seconds))) {
         val futureAnswer = client.check("admin", "admin").invoke().failed
         whenReady(futureAnswer) { answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(401)
+          answer.asInstanceOf[TransportException].errorCode.http should ===(404)
         }
       }
     }
