@@ -45,7 +45,7 @@ val defaultCassandraKafkaDependencies = Seq(
 
 // Projects
 lazy val `lagom` = (project in file("."))
-  .aggregate(`shared`,
+  .aggregate(`shared`, `shared_api`,
     `course_service_api`, `course_service`,
     `hyperledger_service_api`, `hyperledger_service`,
     `authentication_service_api`, `authentication_service`,
@@ -61,7 +61,15 @@ lazy val `shared` = (project in file("shared"))
       guava
     )
   )
-  .dependsOn(`authentication_service_api`)
+  .dependsOn(`authentication_service_api`, `shared_api`)
+
+lazy val `shared_api` = (project in file("shared_api"))
+  .settings(
+    libraryDependencies ++= Seq(
+      scalaTest
+    ),
+    libraryDependencies ++= apiDefaultDependencies
+  )
 
 lazy val `hyperledger_service_api` = (project in file("hyperledger_service/api"))
   .settings(
@@ -109,7 +117,7 @@ lazy val `user_service_api` = (project in file("user_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
-  .dependsOn(`authentication_service_api`)
+  .dependsOn(`authentication_service_api`, `shared_api`)
 
 lazy val `user_service` = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
@@ -118,6 +126,6 @@ lazy val `user_service` = (project in file("user_service/impl"))
     libraryDependencies ++= defaultCassandraKafkaDependencies,
   )
   .settings(dockerSettings)
-  .dependsOn(`user_service_api`, `shared`)
+  .dependsOn(`user_service_api`, `shared`, `shared_api`)
 
 lazy val `hyperledger_api` = ProjectRef(file("../hyperledger/api"), "api")
