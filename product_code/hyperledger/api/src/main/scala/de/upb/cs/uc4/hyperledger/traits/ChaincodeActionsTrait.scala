@@ -12,7 +12,7 @@ trait ChaincodeActionsTrait {
    * @return Success_state
    */
   @throws[Exception]
-  def addCourse(jSonCourse : String) : String
+  def addCourse(jSonCourse : String) : String = { this.submitTransaction("addCourse",jSonCourse) }
 
   /**
    * Executes the "getCourses" query.
@@ -20,7 +20,7 @@ trait ChaincodeActionsTrait {
    * @return List of courses represented by their json value.
    */
   @throws[Exception]
-  def getAllCourses() : String
+  def getAllCourses() : String = { this.evaluateTransaction("getAllCourses") }
 
   /**
    * Executes the "getCourseById" query.
@@ -29,7 +29,7 @@ trait ChaincodeActionsTrait {
    * @return JSon Course Object
    */
   @throws[Exception]
-  def getCourseById(courseId : String) : String
+  def getCourseById(courseId : String) : String = { this.evaluateTransaction("getCourseById", courseId) }
 
   /**
    * Submits the "deleteCourseById" query.
@@ -38,7 +38,7 @@ trait ChaincodeActionsTrait {
    * @return success_state
    */
   @throws[Exception]
-  def deleteCourseById(courseId : String) : String
+  def deleteCourseById(courseId : String) : String = { this.submitTransaction("deleteCourseById", courseId) }
 
   /**
    * Submits the "updateCourseById" query.
@@ -48,5 +48,25 @@ trait ChaincodeActionsTrait {
    * @return success_state
    */
   @throws[Exception]
-  def updateCourseById(courseId : String, jSonCourse : String) : String
+  def updateCourseById(courseId : String, jSonCourse : String) : String = { this.submitTransaction("updateCourseById", courseId, jSonCourse) }
+
+  /**
+   * Submits any transaction specified by transactionId.
+   * @param transactionId transactionId to submit
+   * @param params parameters to pass to the transaction
+   * @throws Exception if chaincode throws an exception.
+   * @return success_state
+   */
+  @throws[Exception]
+  def submitTransaction(transactionId : String, params : String*) : String
+
+  /**
+   * Evaluates the transaction specified by transactionId.
+   * @param transactionId transactionId to evaluate
+   * @param params parameters to pass to the transaction
+   * @throws Exception if chaincode throws an exception.
+   * @return success_state
+   */
+  @throws[Exception]
+  def evaluateTransaction(transactionId : String, params : String*) : String
 }
