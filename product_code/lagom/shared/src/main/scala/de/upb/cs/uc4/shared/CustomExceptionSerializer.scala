@@ -31,7 +31,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
       case per :DetailedError =>
 
         var arr : JsArray = Json.arr()
-        for (error <- per.invalidParams){
+        for (error <- per.errors){
           arr :+= Json.obj(
             "name" -> error.name,
             "reason" -> error.reason
@@ -40,7 +40,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
         ByteString.fromString(Json.stringify(Json.obj(
         "type" -> per.`type`,
         "title" -> per.title,
-        "errors" -> arr
+        "invalidParams" -> arr
       )))
 
       case message: ExceptionMessage => ByteString.fromString(Json.stringify(Json.obj(

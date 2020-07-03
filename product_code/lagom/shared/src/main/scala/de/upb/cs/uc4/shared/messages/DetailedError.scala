@@ -2,7 +2,7 @@ package de.upb.cs.uc4.shared.messages
 
 import play.api.libs.json._
 
-case class DetailedError(`type`: String, title: String, invalidParams: Seq[SimpleError])
+case class DetailedError(`type`: String, title: String, errors: Seq[SimpleError])
 
 object DetailedError {
   implicit val format: Format[DetailedError] = Json.format
