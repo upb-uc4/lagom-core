@@ -62,6 +62,12 @@ $ peer chaincode invoke -n mycc -c '{"Args":["transactionName","arg1","arg2","ar
 calls the ```transactionName``` transactioninside the ```mycc``` chaincode on channel ```myc``` with arguments ```arg1```,```arg2```,```arg3```.
 The chaincode does currently not need to be initialized/installed, as the development-network does that for you.
 
+**WARNING:** If you want to pass json as a string argument to a transaction, you must put a ```\"``` instead of every ```"``` in the inner json, e.g.
+
+```bash
+$ peer chaincode invoke -n mycc -c '{"Args":["transactionName","{\"attribute\": \"value\"}"]}' -C myc
+```
+
 ## Chaincode and Channel Name
 
 ```myc``` and ```mycc``` are the names given to the channel and the chaincode respectively by default.

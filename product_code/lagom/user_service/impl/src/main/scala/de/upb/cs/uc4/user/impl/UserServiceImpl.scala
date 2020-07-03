@@ -8,7 +8,7 @@ import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
-import com.lightbend.lagom.scaladsl.persistence.{PersistentEntityRegistry, ReadSide}
+import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry, ReadSide}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
@@ -24,6 +24,7 @@ import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, Pos
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -230,17 +231,23 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   def userAuthenticationTopic(): Topic[AuthenticationUser] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(UserEvent.Tag, fromOffset)
-      .map(ev => ev.event match {
-        case OnUserCreate(_, authenticationUser) => (authenticationUser, ev.offset)
-      })
+      .mapConcat {
+        //Filter only OnUserCreate events
+        case EventStreamElement(_, OnUserCreate(_, authenticationUser), offset) =>
+          immutable.Seq((authenticationUser, offset))
+        case _ => Nil
+      }
   }
 
   /** Publishes every deletion of a user */
   def userDeletedTopic(): Topic[JsonUsername] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(UserEvent.Tag, fromOffset)
-      .map(ev => ev.event match {
-        case OnUserDelete(user) => (JsonUsername(user.getUsername), ev.offset)
-      })
+      .mapConcat {
+        //Filter only OnUserDelete events
+        case EventStreamElement(_, OnUserDelete(user), offset) =>
+          immutable.Seq((JsonUsername(user.getUsername), offset))
+        case _ => Nil
+      }
   }
 }
