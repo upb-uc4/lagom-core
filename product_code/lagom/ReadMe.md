@@ -51,18 +51,14 @@ Every YAML file is in /deploy.
 ````shell script
 kubectl apply -f .\cassandra-service.yaml
 kubectl apply -f .\cassandra-statefulset.yaml  
-````
-Wait until cassandra started. 
-Check with: 
-````shell script
-kubectl get pods -l="app=cassandra"
+kubectl wait pods/cassandra-0 --for=condition=Ready --timeout=300s
 ````
 
 #### Starting Kafka:
 ````shell script
 kubectl create namespace kafka
 kubectl apply -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
-kubectl apply -f https://strimzi.io/examples/latest/kafka/kafka-persistent-single.yaml -n kafka 
+kubectl apply -f .\kafka-single.yaml -n kafka
 kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
 ````
 
