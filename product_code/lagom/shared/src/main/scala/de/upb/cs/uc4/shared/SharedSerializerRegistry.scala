@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.shared
 
 import com.lightbend.lagom.scaladsl.playjson.{JsonSerializer, JsonSerializerRegistry}
+import de.upb.cs.uc4.shared.api.{DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
 
 import scala.collection.immutable.Seq
@@ -10,7 +11,7 @@ trait SharedSerializerRegistry extends JsonSerializerRegistry {
   override def serializers: Seq[JsonSerializer[_]] = Seq(
     JsonSerializer[Confirmation],
     JsonSerializer[Accepted],
-    JsonSerializer[Rejected],
+    JsonSerializer[Rejected]
   ) ++ customSerializers
 
   /** All Service specific JsonSerializers */

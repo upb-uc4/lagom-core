@@ -36,7 +36,7 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
 
         case None =>
           throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
-            new ExceptionMessage("Unauthorized", "No Authorization given"))
+            new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
       }
   }
 
