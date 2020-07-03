@@ -19,7 +19,7 @@ import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Seconds, Span}
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
@@ -117,7 +117,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     "add a new user over the topic" in {
       authenticationStub.send(new AuthenticationUser("Ben", "Hermann", AuthenticationRole.Admin))
 
-      eventually(timeout(Span(10, Seconds))) {
+      eventually(timeout(Span(2, Minutes))) {
         val futureAnswer = client.check("Ben", "Hermann").invoke()
         whenReady(futureAnswer) { answer =>
           answer shouldBe a [(String, AuthenticationRole)]
@@ -128,7 +128,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     "remove a user over the topic" in {
       deletionStub.send(JsonUsername("admin"))
 
-      eventually(timeout(Span(10, Seconds))) {
+      eventually(timeout(Span(2, Minutes))) {
         val futureAnswer = client.check("admin", "admin").invoke().failed
         whenReady(futureAnswer) { answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(404)
