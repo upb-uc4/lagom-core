@@ -60,3 +60,4 @@ test {
         events "passed", "skipped", "failed"
     }
 }
+check.dependsOn jacocoTestCoverageVerification
