@@ -2,9 +2,6 @@
 
 source /opt/gopath/src/chaincodedev/scripts/variables.sh
 
-#perhaps wait for stuff to start?
-sleep 10s
-
 echo "############################################################################################"
 echo "#                                   SETTING UP CHANNEL                                     #"
 echo "############################################################################################"
@@ -17,10 +14,11 @@ echo "##########################################################################
 echo "#                                   CHANNEL SETUP DONE                                     #"
 echo "############################################################################################"
 
-# waiting for chaincode to be compiled and started
-echo "Start sleep"
-sleep 120s
-echo "Finish sleep"
+# wait for 'chaincode' to compile chaincode
+echo "" | nc -l -p 8080
+echo "Continuing..."
+# wait for 'chaincode' to start chaincode
+sleep 10s
 
 #/opt/gopath/src/chaincodedev
 
