@@ -16,8 +16,8 @@ import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.readside.CourseEventProcessor
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.ServiceCallFactory._
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}

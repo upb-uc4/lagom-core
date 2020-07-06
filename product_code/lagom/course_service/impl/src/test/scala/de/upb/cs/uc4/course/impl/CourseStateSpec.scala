@@ -7,7 +7,7 @@ import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.course.impl.actor.CourseBehaviour
 import de.upb.cs.uc4.course.impl.commands.{CreateCourse, DeleteCourse, GetCourse, UpdateCourse}
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

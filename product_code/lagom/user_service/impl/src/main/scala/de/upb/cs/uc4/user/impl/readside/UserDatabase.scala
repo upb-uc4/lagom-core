@@ -7,7 +7,7 @@ import com.datastax.driver.core.{BoundStatement, PreparedStatement}
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, EventStreamElement}
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.shared.messages.Confirmation
+import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
 import de.upb.cs.uc4.user.impl.commands.{CreateUser, UserCommand}
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
