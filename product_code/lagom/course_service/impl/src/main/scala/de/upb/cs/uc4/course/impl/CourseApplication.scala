@@ -9,7 +9,7 @@ import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.{CourseBehaviour, CourseState}
 import de.upb.cs.uc4.course.impl.readside.{CourseDatabase, CourseEventProcessor}
-import de.upb.cs.uc4.shared.AuthenticationComponent
+import de.upb.cs.uc4.shared.server.AuthenticationComponent
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc.EssentialFilter
 import play.filters.cors.CORSComponents

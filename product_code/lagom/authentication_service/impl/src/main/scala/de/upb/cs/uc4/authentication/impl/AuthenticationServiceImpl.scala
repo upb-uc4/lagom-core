@@ -9,7 +9,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.Hashing
+import de.upb.cs.uc4.shared.server.Hashing
 
 import scala.concurrent.ExecutionContext
 
