@@ -16,8 +16,8 @@ trait HyperLedgerService extends Service {
     import Service._
     named("hyperledger")
       .withCalls(
-        restCall(Method.GET, pathPrefix + "/courses/:key", read _),
-        restCall(Method.POST, pathPrefix + "/courses", write _),
+        restCall(Method.POST, pathPrefix + "/read/:transactionId", read _),
+        restCall(Method.POST, pathPrefix + "/write/:transactionId", write _),
       )
   }
 }
