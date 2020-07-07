@@ -62,9 +62,9 @@ class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(
   /** Create empty tables for admins, users and lecturers */
   def globalPrepare(): Future[Done] = {
     val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
-    val student: User = Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1.1.1", "IN", "421769", 9000, List())
-    val lecturer: User = Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1.1.1", "Ich bin bloed", "Genderstudies")
-    val admin: User = Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1.1.1")
+    val student: User = Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "IN", "421769", 9000, List())
+    val lecturer: User = Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Ich bin bloed", "Genderstudies")
+    val admin: User = Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1992-12-10")
     val students = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS students ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
