@@ -4,8 +4,10 @@ import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.course.model.Course
+import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
+import play.api.Environment
 
-object CourseService  {
+object CourseService {
   val TOPIC_NAME = "Courses"
 }
 
@@ -15,7 +17,7 @@ object CourseService  {
   * consume the CourseService.
   */
 trait CourseService extends Service {
-  /** Prefix for the path for the endpoints, a name/identifier for the service*/
+  /** Prefix for the path for the endpoints, a name/identifier for the service */
   val pathPrefix = "/course-management"
 
   /** Add a new course to the database */
@@ -24,7 +26,7 @@ trait CourseService extends Service {
   /** Deletes a course */
   def deleteCourse(id: String): ServiceCall[NotUsed, Done]
 
-  /**  Find courses by course ID */
+  /** Find courses by course ID */
   def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course]
 
   /** Find courses by course name */
@@ -42,10 +44,10 @@ trait CourseService extends Service {
   /** Allows GET, POST, PUT, DELETE */
   def allowedMethods: ServiceCall[NotUsed, Done]
 
-  /** Allows GET POST*/
+  /** Allows GET POST */
   def allowedMethodsGETPOST: ServiceCall[NotUsed, Done]
 
-  /** Allows GET PUT DELETE*/
+  /** Allows GET PUT DELETE */
   def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done]
 
   final override def descriptor: Descriptor = {
@@ -59,6 +61,7 @@ trait CourseService extends Service {
       restCall(Method.GET, pathPrefix + "/courses?courseName", findCoursesByCourseName _),
       restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
       restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _)
-    ).withAutoAcl(true)
+    ).withAutoAcl(true).
+      withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
   }
 }
