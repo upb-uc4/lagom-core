@@ -16,8 +16,9 @@ import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.readside.CourseEventProcessor
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.ServiceCallFactory._
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
+import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,7 +35,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def getAllCourses: ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
     cassandraSession.selectAll("SELECT id FROM courses ;")
       .map(seq => seq
@@ -49,7 +50,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       )
   }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def addCourse(): ServiceCall[Course, Done] =
     authenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer)(ServerServiceCall {
       (_, courseProposal) =>
@@ -61,46 +62,13 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
           .map {
             case Accepted => // Creation Successful
-              (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
-            case Rejected("A course with the given Id already exist.") => // Already exists
-              (ResponseHeader(409, MessageProtocol.empty, List(("1", "A course with the given Id already exist."))), Done)
-            case Rejected(rejectedMessage) => throwForbidden(rejectedMessage)
+              (ResponseHeader(201, MessageProtocol.empty, List()), Done)
+            case RejectedWithError(code, errorResponse) =>
+              throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
           }
     })
 
-  /** Matches the course creation/update error code to the suitable response exception.
-    *
-    * @param code which describes why a course cannot be created/updated
-    * @throws Forbidden providing transport protocol error codes and a human readable error description
-    */
-  private def throwForbidden(code: String) = {
-    code match {
-      case "10" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("10", "Course name must not be empty"))
-      case "11" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("11", "Course name has invalid characters"))
-      case "20" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("20", "Course type must be one of [\"Lecture\", \"Seminar\", \"ProjectGroup\"]"))
-      case "30" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("30", "startDate must be the following format \"yyyy-mm-dd\""))
-      case "40" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("40", "endDate must be the following format \"yyyy-mm-dd\""))
-      case "50" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("50", "ects must be a positive integer number"))
-      case "60" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("60", "lecturerID unknown"))
-      case "70" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("70", "maxParticipants must be a positive integer number"))
-      case "80" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("80", "\tlanguage must be one of [\"German\", \"English\"]"))
-      case "90" =>
-        throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("90", "description invalid characters"))
-      case s =>
-        throw new Forbidden(TransportErrorCode(500, 1003, "Server error"), new ExceptionMessage("0", s"internal server error: $s")) // default case, should not happen
-    }
-  }
-
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def deleteCourse(id: String): ServiceCall[NotUsed, Done] =
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
@@ -127,7 +95,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         }
     }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
@@ -135,7 +103,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
     }
   }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def findCoursesByCourseName(courseName: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall {
     (header, request) =>
       getAllCourses.invokeWithHeaders(header, request).map {
@@ -143,7 +111,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       }
   }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def findCoursesByLecturerId(id: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall {
     (header, request) =>
       getAllCourses.invokeWithHeaders(header, request).map {
@@ -151,27 +119,27 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       }
   }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def updateCourse(id: String): ServiceCall[Course, Done] =
     authenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer)(ServerServiceCall {
       (_, courseToChange) =>
         // Look up the sharded entity (aka the aggregate instance) for the given ID.
         if (id != courseToChange.courseId) {
-          throw new Forbidden(TransportErrorCode(400, 1003, "Bad Request"), new ExceptionMessage("00", "Course ID and ID in path do not match"))
+          throw new CustomException(TransportErrorCode(400, 1003, "Error"),
+            DetailedError("path parameter mismatch", List(SimpleError("courseId", "CourseId and Id in path do not match"))))
         }
         val ref = entityRef(id)
 
         ref.ask[Confirmation](replyTo => UpdateCourse(courseToChange, replyTo))
           .map {
-            case Accepted => // OK
-              (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation Successful"))), Done)
-            case Rejected("A course with the given Id does not exist.") => // Not Found
-              (ResponseHeader(404, MessageProtocol.empty, List(("1", "A course with the given Id does not exist."))), Done)
-            case Rejected(rejectedMessage) => throwForbidden(rejectedMessage)
+            case Accepted => // Update Successful
+              (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+            case RejectedWithError(code, errorResponse) =>
+              throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
           }
     })
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def allowedMethods: ServiceCall[NotUsed, Done] = ServerServiceCall {
     (_, _) =>
       Future.successful {
@@ -182,10 +150,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       }
   }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def allowedMethodsGETPOST: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT, DELETE")
 
 

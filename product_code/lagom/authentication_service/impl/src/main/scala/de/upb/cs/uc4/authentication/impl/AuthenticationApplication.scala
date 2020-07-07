@@ -10,7 +10,7 @@ import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.Hashing
+import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.JsonUsername
 import de.upb.cs.uc4.user.model.user.AuthenticationUser

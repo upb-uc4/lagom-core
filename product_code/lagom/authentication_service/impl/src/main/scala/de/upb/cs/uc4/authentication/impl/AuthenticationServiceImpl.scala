@@ -9,7 +9,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.Hashing
+import de.upb.cs.uc4.shared.server.Hashing
 
 import scala.concurrent.ExecutionContext
 
@@ -36,7 +36,7 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
 
         case None =>
           throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
-            new ExceptionMessage("Unauthorized", "No Authorization given"))
+            new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
       }
   }
 

@@ -3,6 +3,13 @@ package de.upb.cs.uc4.user.impl
 import java.util.UUID
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.persistence.typed.PersistenceId
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
+import de.upb.cs.uc4.user.impl.actor.UserBehaviour
+import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateUser}
+import de.upb.cs.uc4.user.model.{Address, Role}
+import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student, User}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -13,4 +20,94 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"
     """) with AnyWordSpecLike with Matchers {
 
+  //Test users
+  val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
+  val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
+
+  val student0: Student = Student("student0", Role.Student, address, "Hans", "Wurst", "Haesslich", "hans.wurst@mail.de", "1996-12-11", "IN", "421769", 9000, List())
+  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "Graf", "Wurst", "Haesslich", "graf.wurst@mail.de", "1996-12-11", "Ich bin bloed", "Genderstudies")
+  val admin0: Admin = Admin("admin0", Role.Admin, address, "Dieter", "Wurst", "Haesslich", "dieter.wurst@mail.de", "1996-12-11")
+  val admin1: Admin = Admin("admin0", Role.Admin, address, "Lola", "Wurst", "Haesslich", "lola.wurst@mail.de", "1996-12-11")
+  
+  "UserState" should {
+
+    "get non-existing user" in {
+      val probe = createTestProbe[Option[User]]()
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-1")))
+      ref ! GetUser(probe.ref)
+      probe.expectMessage(None)
+    }
+
+    "add a user" in  {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-2")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! CreateUser(student0, authenticationUser, probe1.ref)
+      probe1.expectMessage(Accepted)
+
+      val probe2 = createTestProbe[Option[User]]()
+      ref ! GetUser(probe2.ref)
+      probe2.expectMessage(Some(student0))
+    }
+
+    "not add an already existing user" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-3")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! CreateUser(admin0, authenticationUser, probe1.ref)
+      probe1.expectMessage(Accepted)
+
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! CreateUser(admin1, authenticationUser, probe2.ref)
+      probe2.expectMessageType[RejectedWithError]
+    }
+
+    "not update a non-existing user" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! UpdateUser(lecturer0, probe1.ref)
+      probe1.expectMessageType[RejectedWithError]
+    }
+
+    "update an existing user" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-5")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! CreateUser(admin0, authenticationUser, probe1.ref)
+      probe1.expectMessage(Accepted)
+
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! UpdateUser(admin1, probe2.ref)
+      probe2.expectMessage(Accepted)
+
+      val probe3 = createTestProbe[Option[User]]()
+      ref ! GetUser(probe3.ref)
+      probe3.expectMessage(Some(admin1))
+    }
+
+    "not delete a non-existing user" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-6")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! DeleteUser(probe1.ref)
+      probe1.expectMessageType[Rejected]
+    }
+
+    "delete an existing user" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! CreateUser(lecturer0, authenticationUser, probe1.ref)
+      probe1.expectMessage(Accepted)
+
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! DeleteUser(probe2.ref)
+      probe2.expectMessage(Accepted)
+
+      val probe3 = createTestProbe[Option[User]]()
+      ref ! GetUser(probe3.ref)
+      probe3.expectMessage(None)
+    }
+  }
 }
