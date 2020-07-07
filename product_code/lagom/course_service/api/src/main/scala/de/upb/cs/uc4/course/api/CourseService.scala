@@ -2,7 +2,7 @@ package de.upb.cs.uc4.course.api
 
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
+import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceAcl, ServiceCall}
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
 import play.api.Environment
@@ -51,6 +51,8 @@ trait CourseService extends Service {
   def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done]
 
   final override def descriptor: Descriptor = {
+    val usernameRegex = """[a-zA-Z0-9-]+""".r
+    val nameRegex = """[\s\S]*""".r
     import Service._
     named("course").withCalls(
       restCall(Method.GET, pathPrefix + "/courses", getAllCourses _),
@@ -58,11 +60,21 @@ trait CourseService extends Service {
       restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _),
       restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),
       restCall(Method.GET, pathPrefix + "/courses/:id", findCourseByCourseId _),
-      restCall(Method.GET, pathPrefix + "/courses?courseName", findCoursesByCourseName _),
-      restCall(Method.GET, pathPrefix + "/courses?lecturerId", findCoursesByLecturerId _),
+      restCall(Method.GET, pathPrefix + "/courses/search?courseName", findCoursesByCourseName _),
+      restCall(Method.GET, pathPrefix + "/courses/search?lecturerId", findCoursesByLecturerId _),
       restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
       restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _)
-    ).withAutoAcl(true).
-      withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
+    ).withAcls(
+      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/courses\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.POST, s"\\Q$pathPrefix/courses\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.PUT, s"\\Q$pathPrefix/courses/$usernameRegex\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.DELETE, s"\\Q$pathPrefix/courses/$usernameRegex\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/courses/$usernameRegex\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix//courses/search?courseName=$nameRegex\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix//courses/search?lecturerId=$usernameRegex\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/courses\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/courses/search$usernameRegex\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/courses/search$usernameRegex\\E")
+    ).withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
   }
 }
