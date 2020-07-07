@@ -19,7 +19,7 @@ echo "##########################################################################
 
 # waiting for chaincode to be compiled and started
 echo "Start sleep"
-sleep 240s
+sleep 120s
 echo "Finish sleep"
 
 #/opt/gopath/src/chaincodedev
