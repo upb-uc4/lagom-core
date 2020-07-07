@@ -12,16 +12,16 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.client.CustomException
+import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.impl.actor.{User, UserState}
+import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.UserEventProcessor
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
-import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
+import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
 
 import scala.collection.immutable
@@ -72,12 +72,12 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Get all students from the database */
   override def getAllStudents: ServerServiceCall[NotUsed, Seq[Student]] =
     authenticated[NotUsed, Seq[Student]](AuthenticationRole.Admin) { _ =>
-      getAll("students").map(_.map(_.student))
+      getAll("students").map(_.map(user => user.asInstanceOf[Student]))
     }
 
   /** Add a new student to the database */
   override def addStudent(): ServiceCall[PostMessageStudent, Done] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, User(user.student))
+    addUser(user.authUser).invokeWithHeaders(header, user.student)
   }
 
   /** Get a specific student */
@@ -85,7 +85,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     authenticated[NotUsed, Student](AuthenticationRole.All: _*) {
       _ =>
         getUser(username).invoke().map(user => user.role match {
-          case Role.Student => user.student
+          case Role.Student => user.asInstanceOf[Student]
           case _ => throw BadRequest("Not a student")
         })
     }
@@ -94,19 +94,19 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   override def updateStudent(username: String): ServiceCall[Student, Done] =
     authenticated[Student, Done](AuthenticationRole.Student, AuthenticationRole.Admin) {
       ServerServiceCall { (header, user) =>
-        updateUser().invokeWithHeaders(header, User(user))
+        updateUser().invokeWithHeaders(header, user)
       }
     }
 
   /** Get all lecturers from the database */
   override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] =
     authenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.Admin) { _ =>
-      getAll("lecturers").map(_.map(_.lecturer))
+      getAll("lecturers").map(_.map(user => user.asInstanceOf[Lecturer]))
     }
 
   /** Add a new lecturer to the database */
   override def addLecturer(): ServiceCall[PostMessageLecturer, Done] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, User(user.lecturer))
+    addUser(user.authUser).invokeWithHeaders(header, user.lecturer)
   }
 
   /** Get a specific lecturer */
@@ -114,7 +114,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     authenticated[NotUsed, Lecturer](AuthenticationRole.All: _*) {
       _ =>
         getUser(username).invoke().map(user => user.role match {
-          case Role.Lecturer => user.lecturer
+          case Role.Lecturer => user.asInstanceOf[Lecturer]
           case _ => throw BadRequest("Not a lecturer")
         })
     }
@@ -123,19 +123,19 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   override def updateLecturer(username: String): ServiceCall[Lecturer, Done] =
     authenticated[Lecturer, Done](AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
       ServerServiceCall { (header, user) =>
-        updateUser().invokeWithHeaders(header, User(user))
+        updateUser().invokeWithHeaders(header, user)
       }
     }
 
   /** Get all admins from the database */
   override def getAllAdmins: ServerServiceCall[NotUsed, Seq[Admin]] =
     authenticated[NotUsed, Seq[Admin]](AuthenticationRole.Admin) { _ =>
-      getAll("admins").map(_.map(_.admin))
+      getAll("admins").map(_.map(user => user.asInstanceOf[Admin]))
     }
 
   /** Add a new admin to the database */
   override def addAdmin(): ServiceCall[PostMessageAdmin, Done] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, User(user.admin))
+    addUser(user.authUser).invokeWithHeaders(header, user.admin)
   }
 
   /** Get a specific admin */
@@ -143,7 +143,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     authenticated[NotUsed, Admin](AuthenticationRole.All: _*) {
       _ =>
         getUser(username).invoke().map(user => user.role match {
-          case Role.Admin => user.admin
+          case Role.Admin => user.asInstanceOf[Admin]
           case _ => throw BadRequest("Not an admin")
         })
     }
@@ -152,7 +152,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   override def updateAdmin(username: String): ServiceCall[Admin, Done] =
     authenticated[Admin, Done](AuthenticationRole.Admin) {
       ServerServiceCall { (header, user) =>
-        updateUser().invokeWithHeaders(header, User(user))
+        updateUser().invokeWithHeaders(header, user)
       }
     }
 
@@ -177,7 +177,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Helper method for adding a generic User, independent of the role */
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Done] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
-      val ref = entityRef(user.getUsername)
+      val ref = entityRef(user.username)
 
       ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
         .map {
@@ -191,7 +191,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Helper method for updating a generic User, independent of the role */
   private def updateUser(): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
-    val ref = entityRef(user.getUsername)
+    val ref = entityRef(user.username)
 
     ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
       .map {
@@ -246,7 +246,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       .mapConcat {
         //Filter only OnUserDelete events
         case EventStreamElement(_, OnUserDelete(user), offset) =>
-          immutable.Seq((JsonUsername(user.getUsername), offset))
+          immutable.Seq((JsonUsername(user.username), offset))
         case _ => Nil
       }
   }

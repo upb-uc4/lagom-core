@@ -59,10 +59,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
   val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
 
-  val student0: Student = Student("student0", Role.Student, address, "Hans", "Wurst", "Haesslich", "hans.wurst@mail.de", "IN", "421769", 9000, List())
-  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "Graf", "Wurst", "Haesslich", "graf.wurst@mail.de", "Ich bin bloed", "Genderstudies")
-  val admin0: Admin = Admin("admin0", Role.Lecturer, address, "Dieter", "Wurst", "Haesslich", "dieter.wurst@mail.de")
-  val admin1: Admin = Admin("lecturer0", Role.Lecturer, address, "Lola", "Wurst", "Haesslich", "lola.wurst@mail.de")
+  val student0: Student = Student("student0", Role.Student, address, "Hans", "Wurst", "Haesslich", "hans.wurst@mail.de", "1992-12-10", "IN", "421769", 9000, List())
+  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "Graf", "Wurst", "Haesslich", "graf.wurst@mail.de", "1996-12-11", "Ich bin bloed", "Genderstudies")
+  val admin0: Admin = Admin("admin0", Role.Admin, address, "Dieter", "Wurst", "Haesslich", "dieter.wurst@mail.de", "1996-12-11")
+  val admin1: Admin = Admin("lecturer0", Role.Admin, address, "Lola", "Wurst", "Haesslich", "lola.wurst@mail.de", "1996-12-11")
 
 
   /** Tests only working if the whole instance is started */
