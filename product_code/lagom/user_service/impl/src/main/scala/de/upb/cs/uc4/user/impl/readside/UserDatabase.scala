@@ -8,10 +8,10 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, EventStreamElement}
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.server.messages.Confirmation
-import de.upb.cs.uc4.user.impl.actor.{User, UserState}
+import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands.{CreateUser, UserCommand}
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
-import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
+import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{Address, Role}
 
 import scala.concurrent.duration._
@@ -52,7 +52,7 @@ class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(
           result.get match {
             //Insert default users
             case None =>
-              entityRef(user.getUsername).ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
+              entityRef(user.username).ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
             case _ =>
           }
         }
@@ -62,9 +62,9 @@ class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(
   /** Create empty tables for admins, users and lecturers */
   def globalPrepare(): Future[Done] = {
     val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
-    val student: User = User(Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "IN", "421769", 9000, List()))
-    val lecturer: User = User(Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "Ich bin bloed", "Genderstudies"))
-    val admin: User = User(Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de"))
+    val student: User = Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1.1.1", "IN", "421769", 9000, List())
+    val lecturer: User = Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1.1.1", "Ich bin bloed", "Genderstudies")
+    val admin: User = Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1.1.1")
     val students = session.executeCreateTable(
       "CREATE TABLE IF NOT EXISTS students ( " +
         "username TEXT, PRIMARY KEY (username)) ;")
@@ -151,7 +151,7 @@ class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(
   private def bind(user: User): PreparedStatement => List[BoundStatement] = {
     ps =>
       val bindWriteTitle = ps.bind()
-      bindWriteTitle.setString("username", user.getUsername)
+      bindWriteTitle.setString("username", user.username)
       List(bindWriteTitle)
   }
 }
