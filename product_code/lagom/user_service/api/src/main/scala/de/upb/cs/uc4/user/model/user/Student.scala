@@ -11,10 +11,11 @@ case class Student(username: String,
                    lastName: String,
                    picture: String,
                    email: String,
+                   birthDate: String,
                    immatriculationStatus: String,
                    matriculationId: String,
                    semesterCount: Int,
-                   fieldsOfStudy: List[String]) {
+                   fieldsOfStudy: List[String]) extends User {
 
   def trim: Student = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,

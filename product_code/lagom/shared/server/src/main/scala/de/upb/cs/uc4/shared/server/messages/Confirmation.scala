@@ -9,16 +9,20 @@ trait Confirmation
 case object Confirmation {
   implicit val format: Format[Confirmation] = new Format[Confirmation] {
     override def reads(json: JsValue): JsResult[Confirmation] = {
-      if ((json \ "reason").isDefined)
+      if((json \ "statusCode").isDefined){
+        Json.fromJson[RejectedWithError](json)
+      } else if ((json \ "reason").isDefined) {
         Json.fromJson[Rejected](json)
-      else
+      } else {
         Json.fromJson[Accepted](json)
+      }
     }
 
     override def writes(o: Confirmation): JsValue = {
       o match {
         case acc: Accepted => Json.toJson(acc)
         case rej: Rejected => Json.toJson(rej)
+        case error: RejectedWithError => Json.toJson(error)
       }
     }
   }

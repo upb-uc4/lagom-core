@@ -10,7 +10,7 @@ import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate, UserEvent}
 import de.upb.cs.uc4.user.model.Role
-import de.upb.cs.uc4.user.model.user.AuthenticationUser
+import de.upb.cs.uc4.user.model.user.{AuthenticationUser, Lecturer, Student, User}
 import play.api.libs.json.{Format, Json}
 
 /** The current state of a User */
@@ -96,34 +96,33 @@ case class UserState(optUser: Option[User]) {
 
     var error= List[SimpleError]()
 
-    if (!usernameRegex.matches(user.getUsername)) {
+    if (!usernameRegex.matches(user.username)) {
       error :+= SimpleError("username","Username may only contain [..].")
     }
     if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ""){
       error :+= SimpleError("password","Password must not be empty.")
     }
     if (optUser.isEmpty && !Role.All.contains(user.role)) { //optUser check to ensure this is during creation
-      error :+= (SimpleError("role", "Role must be one of [..]" + Role.All + "."))
+      error :+= SimpleError("role", "Role must be one of [..]" + Role.All + ".")
     }
-    if (user.getAddress.oneEmpty) {
-      error :+= (SimpleError("address", "Address fields must not be empty."))
+    if (user.address.oneEmpty) {
+      error :+= SimpleError("address", "Address fields must not be empty.")
     }
-    if (!mailRegex.matches(user.getEmail)) {
-      error :+= (SimpleError("email", "Email must be in email format example@xyz.com."))
+    if (!mailRegex.matches(user.email)) {
+      error :+= SimpleError("email", "Email must be in email format example@xyz.com.")
     }
-    if (!nameRegex.matches(user.getFirstName)) {
-      error :+= (SimpleError("firstName", "First name must not contain XYZ."))
+    if (!nameRegex.matches(user.firstName)) {
+      error :+= SimpleError("firstName", "First name must not contain XYZ.")
     }
-    if (!nameRegex.matches(user.getLastName)) {
-      error :+= (SimpleError("lastName", "First name must not contain XYZ."))
+    if (!nameRegex.matches(user.lastName)) {
+      error :+= SimpleError("lastName", "First name must not contain XYZ.")
     }
-    if (!generalRegex.matches(user.getPicture)) { //TODO, this does not make any sense, but pictures are not defined yet
+    if (!generalRegex.matches(user.picture)) { //TODO, this does not make any sense, but pictures are not defined yet
       error :+= SimpleError("picture", "Picture is invalid.")
     }
 
     user match {
-      case u if u.optStudent.isDefined =>
-        val s = u.student
+      case s: Student =>
         if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) {
           error :+= SimpleError("matriculationId", "Student ID invalid.")
         }
@@ -133,8 +132,7 @@ case class UserState(optUser: Option[User]) {
         if(!s.fieldsOfStudy.forall(fos.contains)) {
           error :+= SimpleError("fieldsOfStudy", "Fields of Study must be one of [..].")
         }
-      case u if u.optLecturer.isDefined =>
-        val l = u.lecturer
+      case l: Lecturer =>
         if (!generalRegex.matches(l.freeText)) {
           error :+= SimpleError("freeText", "Free text must only contain the following characters: [..].")
         }
@@ -143,7 +141,7 @@ case class UserState(optUser: Option[User]) {
         }
       case _ =>
     }
-    error.toSeq
+    error
   }
 }
 
