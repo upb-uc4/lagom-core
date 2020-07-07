@@ -12,7 +12,7 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.shared.client.CustomException
+import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
@@ -49,7 +49,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           lecturers <- getAllLecturers.invokeWithHeaders(header, notUsed)
           admins <- getAllAdmins.invokeWithHeaders(header, notUsed)
         } yield
-          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))),
+          (ResponseHeader(200, MessageProtocol.empty, List()),
             GetAllUsersResponse(students._2, lecturers._2, admins._2))
       }
     }
@@ -62,9 +62,10 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
         .map {
           case Accepted => // Update Successful
-            (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
+            (ResponseHeader(200, MessageProtocol.empty, List()), Done)
           case Rejected("A user with the given username does not exist.") => // Already exists
-            (ResponseHeader(404, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
+            throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+              DetailedError("key not found", Seq[SimpleError](SimpleError("username", "A user with the given username does not exist."))))
         }
     }
   }
@@ -86,7 +87,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Student => user.asInstanceOf[Student]
-          case _ => throw BadRequest("Not a student")
+          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
+            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not a student."))))
         })
     }
 
@@ -115,7 +117,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Lecturer => user.asInstanceOf[Lecturer]
-          case _ => throw BadRequest("Not a lecturer")
+          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
+            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not a lecturer."))))
         })
     }
 
@@ -144,7 +147,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Admin => user.asInstanceOf[Admin]
-          case _ => throw BadRequest("Not an admin")
+          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
+            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not an admin."))))
         })
     }
 
@@ -208,7 +212,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
     ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
       case Some(user) => user
-      case None => throw NotFound("Username was not found")
+      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+        DetailedError("key not found", Seq[SimpleError](SimpleError("username", "A user with the given username does not exist."))))
     }
   }
 

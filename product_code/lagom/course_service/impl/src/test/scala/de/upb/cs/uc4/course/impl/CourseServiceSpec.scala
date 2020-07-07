@@ -4,7 +4,7 @@ import java.util.Base64
 
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
+import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, TransportException}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
@@ -89,7 +89,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "find a non-existing course" in {
       client.findCourseByCourseId("42").handleRequestHeader(addAuthenticationHeader()).invoke().failed.map{ answer =>
-          answer shouldBe a [NotFound]
+          answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
