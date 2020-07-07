@@ -47,6 +47,7 @@ val defaultCassandraKafkaDependencies = Seq(
 lazy val lagom = (project in file("."))
   .aggregate(shared_client, shared_server,
     course_service_api, course_service,
+    hl_course_service_api, hl_course_service,
     hyperledger_service_api, hyperledger_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service)
@@ -65,10 +66,11 @@ lazy val shared_server = (project in file("shared/server"))
       lagomScaladslTestKit,
       scalaTest,
       filters,
-      guava
+      guava,
+      macwire
     )
   )
-  .dependsOn(authentication_service_api, shared_client)
+  .dependsOn(authentication_service_api, hyperledger_service_api, shared_client)
 
 lazy val hyperledger_service_api = (project in file("hyperledger_service/api"))
   .settings(
@@ -97,6 +99,20 @@ lazy val course_service = (project in file("course_service/impl"))
   )
   .settings(dockerSettings)
   .dependsOn(course_service_api, shared_server)
+
+lazy val hl_course_service_api = (project in file("hl_course_service/api"))
+  .settings(
+    libraryDependencies ++= apiDefaultDependencies
+  )
+  .dependsOn(course_service_api)
+
+lazy val hl_course_service = (project in file("hl_course_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= implDefaultDependencies
+  )
+  .settings(dockerSettings)
+  .dependsOn(hl_course_service_api, shared_server)
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
   .settings(

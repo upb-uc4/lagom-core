@@ -13,7 +13,7 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
-import de.upb.cs.uc4.course.impl.commands._
+import de.upb.cs.uc4.course.impl.commands.{CourseCommand, CreateCourse, DeleteCourse, GetCourse, UpdateCourse}
 import de.upb.cs.uc4.course.impl.readside.CourseEventProcessor
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._

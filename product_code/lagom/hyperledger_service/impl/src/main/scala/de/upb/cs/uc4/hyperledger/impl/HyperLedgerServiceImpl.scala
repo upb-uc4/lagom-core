@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.hyperledger.impl
 
+import akka.Done
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
-import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, NotFound}
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
@@ -21,15 +21,15 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  override def write(): ServiceCall[String, Done] = ServiceCall{ json =>
-    entityRef.ask[Confirmation](replyTo => Write(json, replyTo)).map{
+  override def write(transactionId: String): ServiceCall[Seq[String], Done] = ServiceCall{ params =>
+    entityRef.ask[Confirmation](replyTo => Write(transactionId, params, replyTo)).map{
       case Accepted => Done
       case Rejected(reason) => throw BadRequest(reason)
     }
   }
 
-  override def read(key: String): ServiceCall[NotUsed, String] = ServiceCall{ _ =>
-    entityRef.ask[Option[String]](replyTo => Read(key, replyTo)).map{
+  override def read(transactionId: String): ServiceCall[Seq[String], String] = ServiceCall{ params =>
+    entityRef.ask[Option[String]](replyTo => Read(transactionId, params, replyTo)).map{
       case Some(json) => json
       case None => throw NotFound("Does not exists.")
     }

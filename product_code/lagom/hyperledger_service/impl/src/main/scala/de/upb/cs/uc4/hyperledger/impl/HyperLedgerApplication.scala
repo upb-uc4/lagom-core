@@ -39,7 +39,7 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
 
   // Closing HyperLedger connection
   CoordinatedShutdown(actorSystem)
-    .addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "shutdownConnection") { () =>
+    .addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "shutdownConnection") { () =>
       implicit val timeout: Timeout = Timeout(5.seconds)
       clusterSharding.entityRefFor(HyperLedgerBehaviour.typeKey, "hl").ask(_ => Shutdown())
     }

@@ -38,6 +38,10 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
         override def updateCourseById(courseId: String, jSonCourse: String): String = "???"
 
         override def close(): Unit = {}
+
+        override def submitTransaction(transactionId: String, params: String*): String = "???"
+
+        override def evaluateTransaction(transactionId: String, params: String*): String = "???"
       }
     }
   }
