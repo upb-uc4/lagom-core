@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.shared
+package de.upb.cs.uc4.shared.server
 
 import com.lightbend.lagom.scaladsl.api.LagomConfigComponent
 import com.lightbend.lagom.scaladsl.client.LagomServiceClientComponents

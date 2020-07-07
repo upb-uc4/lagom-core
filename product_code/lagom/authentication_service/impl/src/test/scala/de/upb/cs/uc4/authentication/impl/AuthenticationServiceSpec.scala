@@ -11,7 +11,7 @@ import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, 
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.ServiceCallFactory
+import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
@@ -19,7 +19,7 @@ import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Seconds, Span}
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
@@ -117,9 +117,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     "add a new user over the topic" in {
       authenticationStub.send(new AuthenticationUser("Ben", "Hermann", AuthenticationRole.Admin))
 
-      eventually(timeout(Span(10, Seconds))) {
-        val futureAnswer = client.check("Ben", "Hermann").invoke()
-        whenReady(futureAnswer) { answer =>
+      eventually(timeout(Span(2, Minutes))) {
+        client.check("Ben", "Hermann").invoke().map{ answer =>
           answer shouldBe a [(String, AuthenticationRole)]
         }
       }
@@ -128,9 +127,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     "remove a user over the topic" in {
       deletionStub.send(JsonUsername("admin"))
 
-      eventually(timeout(Span(10, Seconds))) {
-        val futureAnswer = client.check("admin", "admin").invoke().failed
-        whenReady(futureAnswer) { answer =>
+      eventually(timeout(Span(2, Minutes))) {
+        client.check("admin", "admin").invoke().failed.map{ answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(401)
         }
       }

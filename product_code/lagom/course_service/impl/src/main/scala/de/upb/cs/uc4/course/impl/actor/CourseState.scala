@@ -7,7 +7,7 @@ import de.upb.cs.uc4.course.impl.CourseApplication
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.events.{CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate}
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
-import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected}
 import play.api.libs.json.{Format, Json}
 
 /** The current state of a Course */

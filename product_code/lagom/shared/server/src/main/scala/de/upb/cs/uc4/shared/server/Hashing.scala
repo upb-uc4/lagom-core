@@ -1,7 +1,6 @@
-package de.upb.cs.uc4.shared
+package de.upb.cs.uc4.shared.server
 
 import java.nio.charset.Charset
-
 
 /** The Hashing object.
  *

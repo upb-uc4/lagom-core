@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.shared.messages
+package de.upb.cs.uc4.shared.server.messages
 
 import play.api.libs.json.{Format, Json}
 

@@ -12,8 +12,9 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.shared.ServiceCallFactory._
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.client.CustomException
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{User, UserState}
 import de.upb.cs.uc4.user.impl.commands._
@@ -181,11 +182,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
         .map {
           case Accepted => // Creation Successful
-            (ResponseHeader(201, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
-          case Rejected("A user with the given username already exists.") => // Already exists
-            (ResponseHeader(409, MessageProtocol.empty, List(("1", "A user with the given username already exists."))), Done)
-          case Rejected(responseCodes) =>
-            (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)), Done)
+            (ResponseHeader(201, MessageProtocol.empty, List()), Done)
+          case RejectedWithError(code, errorResponse) =>
+            throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
         }
     }
   }
@@ -197,11 +196,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
       .map {
         case Accepted => // Update Successful
-          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
-        case Rejected("A user with the given username does not exist.") => // Already exists
-          (ResponseHeader(404, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
-        case Rejected(responseCodes) =>
-          (ResponseHeader(422, MessageProtocol.empty, throwForbidden(responseCodes)), Done)
+          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+        case RejectedWithError(code, errorResponse) =>
+          throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
       }
   }
 
@@ -252,58 +249,5 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           immutable.Seq((JsonUsername(user.getUsername), offset))
         case _ => Nil
       }
-  }
-
-  /** Matches the user creation/update error code to the suitable response exception.
-    *
-    * @param codes which describe why a user cannot be created/updated
-    * @throws Forbidden providing transport protocol error codes and a human readable error description
-    */
-  def throwForbidden(codes: String): Seq[(String, String)] = {
-    val responseList = codes.split(";").toList
-    var errors = List[(String, String)]()
-    if (responseList.contains("01")) {
-      errors ::= (("01", "Username must only contain [..]"))
-    }
-    if (responseList.contains("10")) {
-      errors ::= (("10", "Password must not be empty"))
-    }
-    if (responseList.contains("20")) {
-      errors ::= (("20", "Username must only contain [..]"))
-    }
-    if (responseList.contains("30")) {
-      errors ::= (("30", "Username must only contain [..]"))
-    }
-    if (responseList.contains("40")) {
-      errors ::= (("40", "Username must only contain [..]"))
-    }
-    if (responseList.contains("50")) {
-      errors ::= (("50", "Username must only contain [..]"))
-    }
-    if (responseList.contains("60")) {
-      errors ::= (("60", "Username must only contain [..]"))
-    }
-    if (responseList.contains("70")) {
-      errors ::= (("70", "Username must only contain [..]"))
-    }
-    if (responseList.contains("100")) {
-      errors ::= (("100", "Student ID invalid"))
-    }
-    if (responseList.contains("110")) {
-      errors ::= (("110", "Semester count must be a positive integer"))
-    }
-    if (responseList.contains("120")) {
-      errors ::= (("120", "Fields of Study must be one of [...]"))
-    }
-    if (responseList.contains("200")) {
-      errors ::= (("200", "Free text must only contain the following characters"))
-    }
-    if (responseList.contains("210")) {
-      errors ::= (("210", "Research area must only contain the following characters"))
-    }
-    if (responseList.isEmpty) {
-      errors = List(("500", "Internal Server Error")) //Base case should not occur
-    }
-    errors
   }
 }

@@ -4,9 +4,11 @@ import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
+import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
+import play.api.Environment
 
 
 /** The UserService interface.
@@ -128,7 +130,7 @@ trait UserService extends Service {
       .withTopics(
         topic(UserService.AUTHENTICATION_TOPIC_NAME, userAuthenticationTopic _),
         topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)
-      )
+      ).withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
   }
 }
 

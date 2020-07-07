@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.user.impl.actor
 
-import de.upb.cs.uc4.user.model.{Address, Role}
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
+import de.upb.cs.uc4.user.model.{Address, Role}
 import play.api.libs.json.{Format, Json}
 
 /** User union to encapsulate different roles

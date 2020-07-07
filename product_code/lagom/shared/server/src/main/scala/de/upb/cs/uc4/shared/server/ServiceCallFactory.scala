@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.shared
+package de.upb.cs.uc4.shared.server
 
 import java.util.Base64
 
