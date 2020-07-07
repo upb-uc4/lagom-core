@@ -87,7 +87,7 @@ lazy val hyperledger_service = (project in file("hyperledger_service/impl"))
 lazy val course_service_api = (project in file("course_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
-  )
+  ).dependsOn(`shared_client`)
 
 lazy val course_service = (project in file("course_service/impl"))
   .enablePlugins(LagomScala)
