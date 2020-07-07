@@ -15,7 +15,7 @@ case class Admin(username: String,
 
   def trim: Admin = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim)
+      picture.trim, email.trim, birthDate.trim)
   }
 }
 

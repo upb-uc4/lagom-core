@@ -19,7 +19,7 @@ case class Student(username: String,
 
   def trim: Student = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim, immatriculationStatus.trim, matriculationId.trim)
+      picture.trim, email.trim, birthDate.trim, immatriculationStatus.trim, matriculationId.trim)
   }
 }
 
