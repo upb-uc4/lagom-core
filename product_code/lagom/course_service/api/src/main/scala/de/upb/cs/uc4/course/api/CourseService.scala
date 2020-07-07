@@ -70,8 +70,8 @@ trait CourseService extends Service {
       ServiceAcl.forMethodAndPathRegex(Method.PUT, s"\\Q$pathPrefix/courses/$usernameRegex\\E"),
       ServiceAcl.forMethodAndPathRegex(Method.DELETE, s"\\Q$pathPrefix/courses/$usernameRegex\\E"),
       ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/courses/$usernameRegex\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix//courses/search?courseName=$nameRegex\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix//courses/search?lecturerId=$usernameRegex\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/courses/search?courseName=$nameRegex\\E"),
+      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/courses/search?lecturerId=$usernameRegex\\E"),
       ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/courses\\E"),
       ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/courses/search$usernameRegex\\E"),
       ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/courses/search$usernameRegex\\E")
