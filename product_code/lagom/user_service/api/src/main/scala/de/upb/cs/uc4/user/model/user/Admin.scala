@@ -11,7 +11,7 @@ case class Admin(username: String,
                  lastName: String,
                  picture: String,
                  email: String,
-                 birthday: String) extends User {
+                 birthDate: String) extends User {
 
   def trim: Admin = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,

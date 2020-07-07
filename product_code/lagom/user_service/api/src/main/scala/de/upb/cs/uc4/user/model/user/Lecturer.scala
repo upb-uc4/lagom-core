@@ -11,7 +11,7 @@ case class Lecturer(username: String,
                     lastName: String,
                     picture: String,
                     email: String,
-                    birthday: String,
+                    birthDate: String,
                     freeText: String,
                     researchArea: String) extends User {
 

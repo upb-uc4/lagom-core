@@ -12,7 +12,7 @@ trait User {
   val lastName: String
   val picture: String
   val email: String
-  val birthday: String
+  val birthDate: String
 
 
   def trim: User
