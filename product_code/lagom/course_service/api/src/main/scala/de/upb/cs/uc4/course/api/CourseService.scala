@@ -59,6 +59,7 @@ trait CourseService extends Service {
       restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),
       restCall(Method.GET, pathPrefix + "/courses/:id", findCourseByCourseId _),
       restCall(Method.GET, pathPrefix + "/courses?courseName", findCoursesByCourseName _),
+      restCall(Method.GET, pathPrefix + "/courses?lecturerId", findCoursesByLecturerId _),
       restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
       restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _)
     ).withAutoAcl(true).
