@@ -59,7 +59,7 @@ kubectl wait pods/cassandra-0 --for=condition=Ready --timeout=300s
 kubectl create namespace kafka
 kubectl apply -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
 kubectl apply -f .\kafka-single.yaml -n kafka
-kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
+kubectl wait kafka/strimzi --for=condition=Ready --timeout=300s -n kafka
 ````
 
 #### Setting Role Based Access Control
@@ -78,4 +78,7 @@ Because we are using kubernetes in docker container, we
 need to open a tunnel to access a service.
 ````shell script
 minikube service <name>
+````
+````shell script
+kubectl port-forward --address 0.0.0.0 service/traefik 8000:8000 8080:8080 443:4443 -n default
 ````
