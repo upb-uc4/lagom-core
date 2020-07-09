@@ -9,6 +9,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.shared.client.{CustomException, DetailedError}
 import de.upb.cs.uc4.shared.server.Hashing
 
 import scala.concurrent.ExecutionContext
@@ -26,8 +27,8 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
           val salt = row.getString("salt")
 
           if (row.getString("password") != Hashing.sha256(salt + password)) {
-            throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
-              new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
+            throw new CustomException(TransportErrorCode(401, 1003, "Unauthorized"),
+              DetailedError("authorization error", Seq()))
           } else {
             getRole(username).invoke().map { role =>
               (username, role)
@@ -35,8 +36,8 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
           }
 
         case None =>
-          throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
-            new ExceptionMessage("Unauthorized", "Username and password combination does not exist"))
+          throw new CustomException(TransportErrorCode(401, 1003, "Unauthorized"),
+            DetailedError("authorization error", Seq()))
       }
   }
 
@@ -45,7 +46,8 @@ class AuthenticationServiceImpl(cassandraSession: CassandraSession)
     cassandraSession.selectOne("SELECT * FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
       .map {
         case Some(row) => AuthenticationRole.withName(row.getString("role"))
-        case None => throw NotFound("Username does not exists.")
+        case None => throw new CustomException(TransportErrorCode(401, 1003, "Unauthorized"),
+          DetailedError("authorization error", Seq()))
       }
   }
 }
