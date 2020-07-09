@@ -12,7 +12,7 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.shared.client.CustomException
+import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
@@ -92,10 +92,18 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing student */
   override def updateStudent(username: String): ServiceCall[Student, Done] =
-    authenticated[Student, Done](AuthenticationRole.Student, AuthenticationRole.Admin) {
-      ServerServiceCall { (header, user) =>
-        updateUser().invokeWithHeaders(header, user)
-      }
+    identifiedAuthenticated(AuthenticationRole.Student, AuthenticationRole.Admin) {
+      (authUsername, role)=>
+        ServerServiceCall { (header, user) =>
+          if (username != user.username.trim){
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+          }
+          if (role == AuthenticationRole.Student && authUsername != user.username.trim){
+            //TODO change to forbidden
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("Generic Error", List(SimpleError("username", "A non-admin can only update their own profile."))))
+          }
+          updateUser().invokeWithHeaders(header, user)
+        }
     }
 
   /** Get all lecturers from the database */
@@ -121,10 +129,18 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing lecturer */
   override def updateLecturer(username: String): ServiceCall[Lecturer, Done] =
-    authenticated[Lecturer, Done](AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
-      ServerServiceCall { (header, user) =>
-        updateUser().invokeWithHeaders(header, user)
-      }
+    identifiedAuthenticated(AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
+      (authUsername, role)=>
+        ServerServiceCall { (header, user) =>
+          if (username != user.username.trim){
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+          }
+          if (role == AuthenticationRole.Lecturer && authUsername != user.username.trim){
+            //TODO change to forbidden
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("Generic Error", List(SimpleError("username", "A non-admin can only update their own profile."))))
+          }
+          updateUser().invokeWithHeaders(header, user)
+        }
     }
 
   /** Get all admins from the database */
