@@ -131,21 +131,21 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "update a non-existing student" in {
-      client.updateStudent(student0.username).handleRequestHeader(addAuthorizationHeader())
+      client.updateStudent("Guten Abend").handleRequestHeader(addAuthorizationHeader())
         .invoke(student0.copy(username = "Guten Abend")).failed.map { answer =>
         answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
     "update a non-existing lecturer" in {
-      client.updateLecturer(lecturer0.username).handleRequestHeader(addAuthorizationHeader())
+      client.updateLecturer("Guten Abend").handleRequestHeader(addAuthorizationHeader())
         .invoke(lecturer0.copy(username = "Guten Abend")).failed.map { answer =>
         answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
     "update a non-existing admin" in {
-      client.updateAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader())
+      client.updateAdmin("Guten Abend").handleRequestHeader(addAuthorizationHeader())
         .invoke(admin0.copy(username = "Guten Abend")).failed.map { answer =>
         answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }

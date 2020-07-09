@@ -166,10 +166,14 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing admin */
   override def updateAdmin(username: String): ServiceCall[Admin, Done] =
-    authenticated[Admin, Done](AuthenticationRole.Admin) {
-      ServerServiceCall { (header, user) =>
-        updateUser().invokeWithHeaders(header, user)
-      }
+    identifiedAuthenticated(AuthenticationRole.Admin) {
+      (authUsername, role)=>
+        ServerServiceCall { (header, user) =>
+          if (username != user.username.trim){
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+          }
+          updateUser().invokeWithHeaders(header, user)
+        }
     }
 
   /** Get role of the user */
