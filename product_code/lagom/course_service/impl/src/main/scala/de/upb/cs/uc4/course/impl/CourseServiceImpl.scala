@@ -104,7 +104,6 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
-    println("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
       case None => throw NotFound("ID was not found")
