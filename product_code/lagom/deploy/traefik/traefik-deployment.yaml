@@ -41,8 +41,8 @@ spec:
             - --certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
           ports:
             - name: web
-              containerPort: 9000
+              containerPort: 8000
             - name: websecure
-              containerPort: 9443
+              containerPort: 4443
             - name: admin
-              containerPort: 9080
+              containerPort: 8080
