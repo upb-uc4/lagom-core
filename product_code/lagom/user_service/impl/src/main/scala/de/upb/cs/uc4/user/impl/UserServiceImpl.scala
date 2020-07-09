@@ -101,8 +101,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
             throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
           }
           if (role == AuthenticationRole.Student && authUsername != user.username.trim){
-            //TODO change to forbidden
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("Generic Error", List(SimpleError("username", "A non-admin can only update their own profile."))))
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
           updateUser().invokeWithHeaders(header, user)
         }
@@ -139,8 +138,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
             throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
           }
           if (role == AuthenticationRole.Lecturer && authUsername != user.username.trim){
-            //TODO change to forbidden
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("Generic Error", List(SimpleError("username", "A non-admin can only update their own profile."))))
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
           updateUser().invokeWithHeaders(header, user)
         }

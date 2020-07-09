@@ -56,8 +56,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       (username, role) =>
         ServerServiceCall { (_, courseProposal) =>
           if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username){
-            //TODO use correct forbidden
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("Generic Error", List(SimpleError("lecturerId", "LecturerId must be your own username."))))
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
           // Generate unique ID for the course to add
           val courseToAdd = courseProposal.copy(courseId = UUIDs.timeBased.toString)
@@ -145,8 +144,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
             courseBefore.flatMap{
               case Some(course) =>
                 if(role == AuthenticationRole.Lecturer && course.lecturerId != username){
-                  //TODO use the new (currently not merged) error codes
-                  throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("Generic Error", List()))
+                  throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
                 }
                 else{
                   ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
