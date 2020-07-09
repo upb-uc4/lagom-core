@@ -29,14 +29,8 @@ trait CourseService extends Service {
   /** Find courses by course ID */
   def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course]
 
-  /** Find courses by course name */
-  def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]]
-
-  /** Find courses by lecturer with the provided ID */
-  def findCoursesByLecturerId(id: String): ServiceCall[NotUsed, Seq[Course]]
-
-  /** Get all courses */
-  def getAllCourses: ServiceCall[NotUsed, Seq[Course]]
+  /** Get all courses, with optional query parameters */
+  def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServiceCall[NotUsed, Seq[Course]]
 
   /** Update an existing course */
   def updateCourse(id: String): ServiceCall[Course, Done]
@@ -51,30 +45,16 @@ trait CourseService extends Service {
   def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done]
 
   final override def descriptor: Descriptor = {
-    val usernameRegex = """[a-zA-Z0-9-]+""".r
-    val nameRegex = """[\s\S]*""".r
     import Service._
     named("course").withCalls(
-      restCall(Method.GET, pathPrefix + "/courses", getAllCourses _),
+      restCall(Method.GET, pathPrefix + "/courses?courseName&lecturerId", getAllCourses _),
       restCall(Method.POST, pathPrefix + "/courses", addCourse _),
       restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _),
       restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),
       restCall(Method.GET, pathPrefix + "/courses/:id", findCourseByCourseId _),
-      restCall(Method.GET, pathPrefix + "/courses/search?courseName", findCoursesByCourseName _),
-      restCall(Method.GET, pathPrefix + "/courses/search?lecturerId", findCoursesByLecturerId _),
       restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
-      restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _)
-    ).withAcls(
-      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/courses\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.POST, s"\\Q$pathPrefix/courses\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.PUT, s"\\Q$pathPrefix/courses/\\E$usernameRegex"),
-      ServiceAcl.forMethodAndPathRegex(Method.DELETE, s"\\Q$pathPrefix/courses/\\E$usernameRegex"),
-      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/courses/\\E$usernameRegex"),
-      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/courses/search?courseName=\\E$nameRegex"),
-      ServiceAcl.forMethodAndPathRegex(Method.GET, s"\\Q$pathPrefix/courses/search?lecturerId=\\E$usernameRegex"),
-      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/courses\\E"),
-      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/courses/search\\E$usernameRegex"),
-      ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, s"\\Q$pathPrefix/courses/search\\E$usernameRegex")
-    ).withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
+      restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _))
+      .withAutoAcl(true)
+      .withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
   }
 }
