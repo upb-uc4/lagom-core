@@ -23,25 +23,39 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
     new HyperLedgerApplication(ctx) with LocalServiceLocator {
       override lazy val connectionManager: ConnectionManagerTrait = () => new ChaincodeTrait {
 
-        override def addCourse(jSonCourse: String): String = Json.parse(jSonCourse).toString()
-
-        override def getAllCourses(): String = "???"
-
-        override def getCourseById(courseId: String): String = courseId match {
-          case "A" => courseA
-          case "B" =>courseB
-          case _ => throw NotFound("This course does not exist")
-        }
-
-        override def deleteCourseById(courseId: String): String = "???"
-
-        override def updateCourseById(courseId: String, jSonCourse: String): String = "???"
-
         override def close(): Unit = {}
 
-        override def submitTransaction(transactionId: String, params: String*): String = "???"
+        override def submitTransaction(transactionId: String, params: String*): String = transactionId match {
+          case "addCourse" =>
+            params.head match {
+              case `courseA` => ""
+              case `courseB` => ""
+              case `courseInvalid` => throw new Exception("""{"name":"50","detail":"ects must be a positive integer number"}""")
+            }
+          case "deleteCourseById" =>
+            params.head match {
+              case "validID" => ""
+              case "invalidID" => "null"
+            }
+          case "updateCourseById" =>
+            params.head match {
+              case "validID" => ""
+              case "invalidID" => throw new Exception("""{"name":"03","detail":"Course not found"}""")
+            }
+          case _ => "Undefined"
+        }
 
-        override def evaluateTransaction(transactionId: String, params: String*): String = "???"
+        override def evaluateTransaction(transactionId: String, params: String*): String = transactionId match {
+          case "getAllCourses" => "[]" //empty
+            //not empty = [courseA]
+          case "getCourseById" =>
+            params.head match {
+              case "A" => courseA
+              case "B" => courseB
+              case "invalidID" => "null"
+            }
+          case _ => "Undefined"
+        }
       }
     }
   }
@@ -81,31 +95,72 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       |  "courseDescription": "string"
       |}""".stripMargin
 
+  val courseInvalid: String =
+    """{
+      |  "courseId": "B",
+      |  "courseName": "B course",
+      |  "courseType": "Lecture",
+      |  "startDate": "2020-06-30",
+      |  "endDate": "2020-06-30",
+      |  "ects": 0,
+      |  "lecturerId": "string",
+      |  "maxParticipants": 120,
+      |  "currentParticipants": 0,
+      |  "courseLanguage": "German",
+      |  "courseDescription": "string"
+      |}""".stripMargin
+
   /** Tests only working if the whole instance is started */
   "HyperLedgerService service" should {
 
-    "read a course" in {
-      client.read("A").invoke().map { answer =>
-        answer should ===(courseA)
-      }
+    "read list of all courses" in {
+      client.read("getAllCourses").invoke(List()).map { answer => {
+        answer should ===("[]")
+      }}
     }
 
     "not read a non-existing course" in {
-      client.read("E").invoke().failed.map { answer =>
-        answer shouldBe a [NotFound]
+      client.read("getCourseById").invoke(List("invalidID")).map { answer =>
+        answer should ===("null")
       }
     }
 
     "write a course" in {
-      client.write().invoke(courseB).map { answer =>
+      client.write("addCourse").invoke(List(courseA)).map { answer =>
         answer should ===(Done)
       }
     }
 
-    "not write a non json" in {
-      client.write().invoke("invalid").failed.map { answer =>
-        answer shouldBe a [BadRequest]
+    "not write a ill-formatted course" in {
+      client.write("addCourse").invoke(List(courseInvalid)).failed.map { answer =>
+        answer shouldBe a [Exception]
       }
     }
+
+    "read a course" in {
+      client.read("getCourseById").invoke(List("A")).map { answer =>
+        answer should ===(courseA)
+      }
+    }
+
+    "not write a non json" in {
+      client.write("addCourse").invoke(List("invalid")).failed.map { answer =>
+        answer shouldBe a [Exception]
+      }
+    }
+
+    "delete a course" in {
+      client.write("deleteCourseById").invoke(List("validID")).map { answer =>
+        answer should ===(Done)
+      }
+    }
+
+    "not delete a non-existing course" in {
+      client.write("deleteCourseById").invoke(List("invalidID")).map { answer =>
+        answer should ===(Done)
+        //Currently HL returns "null", but Lagoms only considere Exceptions as failure
+      }
+    }
+
   }
 }
