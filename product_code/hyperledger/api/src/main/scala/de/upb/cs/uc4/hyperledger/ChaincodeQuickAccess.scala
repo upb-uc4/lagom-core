@@ -6,13 +6,15 @@ import scala.util.Using
 
 object ChaincodeQuickAccess extends ChaincodeActionsTrait {
 
+  val connectionManager = ConnectionManager()
+
   @throws[Exception]
-  override def submitTransaction(transactionId : String, params : String*) : String = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
-    return chaincodeConnection.submitTransaction(transactionId, params:_*)
+  override def internalSubmitTransaction(transactionId : String, params : String*) : Array[Byte] = Using(connectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
+    return chaincodeConnection.internalSubmitTransaction(transactionId, params:_*)
   }.get
 
   @throws[Exception]
-  override def evaluateTransaction(transactionId : String, params : String*) : String = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
-    return chaincodeConnection.evaluateTransaction(transactionId, params:_*)
+  override def internalEvaluateTransaction(transactionId : String, params : String*) : Array[Byte] = Using(connectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
+    return chaincodeConnection.internalEvaluateTransaction(transactionId, params:_*)
   }.get
 }

@@ -7,9 +7,11 @@ import scala.util.{Success, Using}
 
 class ChaincodeConnectionObjectTests extends FunSuite {
 
+  val connectionManager = ConnectionManager()
+
   test("Check command getAllCourses") {
     // setup connection
-    val chaincodeConnection = ConnectionManager.createConnection()
+    val chaincodeConnection = connectionManager.createConnection()
 
     // perform action
     try{
@@ -25,7 +27,7 @@ class ChaincodeConnectionObjectTests extends FunSuite {
   }
 
   test ("Check full walk-through"){
-    val testResult = Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
+    val testResult = Using(connectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
       // initial courses
       val courses = chaincodeConnection.getAllCourses()
       assert(courses != null, "Get All courses returned null")

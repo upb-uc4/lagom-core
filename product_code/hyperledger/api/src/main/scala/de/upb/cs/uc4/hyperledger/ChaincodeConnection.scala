@@ -12,15 +12,13 @@ protected class ChaincodeConnection(parameters : (Gateway, Contract)) extends Ch
   val chaincode : Contract = parameters._2
 
   @throws[Exception]
-  override def submitTransaction(transactionId : String, params: String*) : String = {
-    val result = chaincode.submitTransaction(transactionId, params:_*)
-    return wrapChaincodeResult(result)
+  override def internalSubmitTransaction(transactionId : String, params: String*) : Array[Byte] = {
+    chaincode.submitTransaction(transactionId, params:_*)
   }
 
   @throws[Exception]
-  override def evaluateTransaction(transactionId : String, params: String*) : String = {
-    val result = chaincode.evaluateTransaction(transactionId, params:_*)
-    return new String(result, StandardCharsets.UTF_8)
+  override def internalEvaluateTransaction(transactionId : String, params: String*) : Array[Byte] = {
+    chaincode.evaluateTransaction(transactionId, params:_*)
   }
 
   /**
@@ -28,20 +26,5 @@ protected class ChaincodeConnection(parameters : (Gateway, Contract)) extends Ch
    */
   override def close() = {
     if(gateway != null) gateway.close()
-  }
-
-  /**
-    * Wraps the chaincode query result bytes.
-    * Translates the byte-array to a string and throws an error if said string is not empty
-    * @param result inbut byte-array to translate
-    * @return result as a string
-    */
-  private def wrapChaincodeResult(result : Array[Byte]) : String = {
-    val resultString = new String(result, StandardCharsets.UTF_8)
-    if (resultString.equals("")) {
-      return resultString}
-    else {
-      throw new Exception(resultString)
-    }
   }
 }
