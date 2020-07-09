@@ -57,7 +57,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   "CourseService service" should {
 
     "get all courses with no courses" in {
-      client.getAllCourses.handleRequestHeader(addAuthenticationHeader()).invoke().map { answer =>
+      client.getAllCourses(None,None).handleRequestHeader(addAuthenticationHeader()).invoke().map { answer =>
         answer shouldBe empty
       }
     }
