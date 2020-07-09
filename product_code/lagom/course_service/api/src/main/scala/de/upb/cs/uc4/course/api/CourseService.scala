@@ -2,7 +2,7 @@ package de.upb.cs.uc4.course.api
 
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceAcl, ServiceCall}
+import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
 import play.api.Environment
