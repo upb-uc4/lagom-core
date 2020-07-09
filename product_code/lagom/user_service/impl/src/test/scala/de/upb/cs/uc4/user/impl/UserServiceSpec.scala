@@ -3,11 +3,11 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
-import akka.{Done, NotUsed}
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
+import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
+import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, TransportException}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
@@ -114,19 +114,19 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
     "find a non-existing student" in {
       client.getStudent("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer shouldBe a[NotFound]
+        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
     "find a non-existing lecturer" in {
       client.getLecturer("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer shouldBe a[NotFound]
+        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 
     "find a non-existing admin" in {
       client.getAdmin("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer shouldBe a[NotFound]
+        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
       }
     }
 

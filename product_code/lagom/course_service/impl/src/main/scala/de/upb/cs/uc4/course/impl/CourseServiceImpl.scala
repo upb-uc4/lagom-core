@@ -83,20 +83,21 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).flatMap {
             case Some(course) =>
               if (role == AuthenticationRole.Lecturer && username != course.lecturerId) {
-                throw Forbidden("Not your course")
+                throw new CustomException(TransportErrorCode(403, 1003, "Error"),
+                  DetailedError("owner mismatch", Seq[SimpleError](SimpleError("lecturerId", "Username must match course's lecturer."))))
               } else {
                 entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
                   .map {
                     case Accepted => // OK
-                      (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation Successful"))), Done)
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case Rejected(reason) => // Not Found
-                      (ResponseHeader(404, MessageProtocol.empty, List(("1", reason))), Done)
+                      throw new CustomException(TransportErrorCode(500, 1003, "Error"),
+                        DetailedError("internal server error", Seq()))
                   }
               }
             case None =>
-              Future.successful(
-                ResponseHeader(404, MessageProtocol.empty, List(("1", "A course with the given Id does not exist."))),
-                Done)
+              throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+                DetailedError("key not found", Seq[SimpleError](SimpleError("courseId", "Course id does not exist."))))
           }
         }
     }
@@ -105,7 +106,8 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
-      case None => throw NotFound("ID was not found")
+      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+        DetailedError("key not found", Seq[SimpleError](SimpleError("courseId", "Course id does not exist."))))
     }
   }
 
