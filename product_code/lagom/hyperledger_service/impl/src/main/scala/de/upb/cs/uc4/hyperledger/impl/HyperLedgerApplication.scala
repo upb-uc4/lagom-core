@@ -21,7 +21,7 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
     with ClusterComponents
     with AhcWSComponents {
 
-  lazy val connectionManager: ConnectionManagerTrait = ConnectionManager
+  lazy val connectionManager: ConnectionManagerTrait = ConnectionManager()
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[HyperLedgerService](wire[HyperLedgerServiceImpl])

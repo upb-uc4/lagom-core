@@ -12,8 +12,8 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.libs.json.Json
 
 /** Tests for the CourseService
-  * All tests need to be started in the defined order
-  */
+ * All tests need to be started in the defined order
+ */
 class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val server = ServiceTest.startServer(
@@ -25,36 +25,37 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
         override def close(): Unit = {}
 
-        override def submitTransaction(transactionId: String, params: String*): String = transactionId match {
+        override def internalSubmitTransaction(transactionId: String, params: String*): Array[Byte] = transactionId match {
           case "addCourse" =>
             params.head match {
-              case `courseA` => ""
-              case `courseB` => ""
+              case `courseA` => "".getBytes
+              case `courseB` => "".getBytes
               case `courseInvalid` => throw new Exception("""{"name":"50","detail":"ects must be a positive integer number"}""")
             }
           case "deleteCourseById" =>
             params.head match {
-              case "validID" => ""
-              case "invalidID" => "null"
+              case "A" => "".getBytes
+              case "validID" => "".getBytes
+              case "invalidID" => throw new Exception("Course not found.")
             }
           case "updateCourseById" =>
             params.head match {
-              case "validID" => ""
+              case "validID" => "".getBytes()
               case "invalidID" => throw new Exception("""{"name":"03","detail":"Course not found"}""")
             }
-          case _ => "Undefined"
+          case _ => throw new Exception("Undefined")
         }
 
-        override def evaluateTransaction(transactionId: String, params: String*): String = transactionId match {
-          case "getAllCourses" => "[]" //empty
-            //not empty = [courseA]
+        override def internalEvaluateTransaction(transactionId: String, params: String*): Array[Byte] = transactionId match {
+          case "getAllCourses" => "[]".getBytes //empty
+          //not empty = [courseA]
           case "getCourseById" =>
             params.head match {
-              case "A" => courseA
-              case "B" => courseB
-              case "invalidID" => "null"
+              case "A" => courseA.getBytes
+              case "B" => courseB.getBytes
+              case "invalidID" => throw new Exception("Course not found.")
             }
-          case _ => "Undefined"
+          case _ => throw new Exception("Undefined")
         }
       }
     }
@@ -113,15 +114,15 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
   /** Tests only working if the whole instance is started */
   "HyperLedgerService service" should {
 
-    "read list of all courses" in {
+    "read empty list of all courses" in {
       client.read("getAllCourses").invoke(List()).map { answer => {
         answer should ===("[]")
       }}
     }
 
     "not read a non-existing course" in {
-      client.read("getCourseById").invoke(List("invalidID")).map { answer =>
-        answer should ===("null")
+      client.read("getCourseById").invoke(List("invalidID")).failed.map { answer =>
+        answer shouldBe a [NotFound]
       }
     }
 
@@ -145,20 +146,19 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not write a non json" in {
       client.write("addCourse").invoke(List("invalid")).failed.map { answer =>
-        answer shouldBe a [Exception]
+        answer shouldBe a [BadRequest]
       }
     }
 
     "delete a course" in {
-      client.write("deleteCourseById").invoke(List("validID")).map { answer =>
+      client.write("deleteCourseById").invoke(List("A")).map { answer =>
         answer should ===(Done)
       }
     }
 
     "not delete a non-existing course" in {
-      client.write("deleteCourseById").invoke(List("invalidID")).map { answer =>
-        answer should ===(Done)
-        //Currently HL returns "null", but Lagoms only considere Exceptions as failure
+      client.write("deleteCourseById").invoke(List("invalidID")).failed.map { answer =>
+        answer shouldBe a [BadRequest]
       }
     }
 
