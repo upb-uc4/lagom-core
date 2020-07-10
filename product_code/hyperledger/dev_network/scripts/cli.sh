@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sleep 10s 
+
 source /opt/gopath/src/chaincodedev/scripts/variables.sh
 
 echo "############################################################################################"
