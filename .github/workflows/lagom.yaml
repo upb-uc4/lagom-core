@@ -37,7 +37,6 @@ jobs:
     
     # run sbt tests
     - name: Run tests
-      needs
       run: |
         pushd ./product_code/lagom
         echo "##########################"
