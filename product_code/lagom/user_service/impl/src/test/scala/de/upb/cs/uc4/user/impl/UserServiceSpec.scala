@@ -3,7 +3,7 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -12,12 +12,13 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{Address, JsonUsername, Role}
+import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
@@ -27,21 +28,15 @@ import scala.concurrent.duration.FiniteDuration
 /** Tests for the CourseService
   * All tests need to be started in the defined order
   */
-class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
+class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
-      .withCassandra()
+      .withJdbc()
   ) { ctx =>
     new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
-
-        override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
-          ServiceCall{ _ => Future.successful("admin", AuthenticationRole.Admin)}
-
-        override def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole] =
-          ServiceCall{ _ => Future.successful(AuthenticationRole.Admin)}
-      }
+      override lazy val authenticationService: AuthenticationService =
+        (_: String, _: String) => ServiceCall { _ => Future.successful("admin", AuthenticationRole.Admin) }
     }
   }
 
@@ -68,11 +63,14 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   /** Tests only working if the whole instance is started */
   "UserService service" should {
 
-    "get all users with no users" in {
-      client.getAllUsers.handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer.admins shouldBe empty
-        answer.lecturer shouldBe empty
-        answer.students shouldBe empty
+    "get all users with default users" in {
+      eventually(timeout(Span(2, Minutes))) {
+        client.getAllUsers.handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+
+          answer.admins should have size 1
+          answer.lecturer should have size 1
+          answer.students should have size 1
+        }
       }
     }
 
