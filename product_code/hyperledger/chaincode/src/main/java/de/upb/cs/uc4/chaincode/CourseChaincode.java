@@ -13,6 +13,9 @@ import org.hyperledger.fabric.contract.annotation.Transaction;
 import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.hyperledger.fabric.shim.ledger.KeyValue;
 import org.hyperledger.fabric.shim.ledger.QueryResultsIterator;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
+
 import java.util.ArrayList;
 
 @Contract(
