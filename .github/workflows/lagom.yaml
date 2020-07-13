@@ -25,8 +25,7 @@ jobs:
       run: |
         pushd ./product_code/lagom
         docker-compose up -d
-        chmod a+x wait_for_postgres.sh
-        ./wait_for_postgres.sh
+        sleep 30
         popd
 
     #change .sbtopts
