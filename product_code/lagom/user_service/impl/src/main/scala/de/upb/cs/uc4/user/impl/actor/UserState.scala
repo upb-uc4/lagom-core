@@ -158,7 +158,7 @@ object UserState {
     * namespaced under a typekey that specifies a name and also the type of the commands
     * that sharded actor can receive.
     */
-  val typeKey: EntityTypeKey[UserCommand] = EntityTypeKey[UserCommand](UserApplication.cassandraOffset)
+  val typeKey: EntityTypeKey[UserCommand] = EntityTypeKey[UserCommand](UserApplication.offset)
 
   /**
     * Format for the course state.

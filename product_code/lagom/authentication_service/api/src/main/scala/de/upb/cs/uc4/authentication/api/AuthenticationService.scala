@@ -17,15 +17,11 @@ trait AuthenticationService extends Service {
   /** Checks if the username and password pair exists */
   def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)]
 
-  /** Returns role of the given user */
-  def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole]
-
   final override def descriptor: Descriptor = {
     import Service._
     named("authentication")
       .withCalls(
-        restCall(Method.GET, pathPrefix + "/users?user&pw", check _),
-        restCall(Method.GET, pathPrefix + "/role/:username", getRole _)
+        restCall(Method.GET, pathPrefix + "/users?user&pw", check _)
       )
   }
 }

@@ -1,54 +1,53 @@
 package de.upb.cs.uc4.course.impl.readside
 
 import akka.Done
-import com.datastax.driver.core.{BoundStatement, PreparedStatement}
-import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
-import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, EventStreamElement}
-import de.upb.cs.uc4.course.impl.events.{CourseEvent, OnCourseCreate, OnCourseDelete}
+import de.upb.cs.uc4.course.model.Course
+import slick.dbio.Effect
+import slick.jdbc.PostgresProfile.api._
+import slick.lifted.ProvenShape
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 
-class CourseDatabase(session: CassandraSession)(implicit ec: ExecutionContext) {
+class CourseDatabase(database: Database)(implicit ec: ExecutionContext) {
 
-  //Prepared CQL Statements
-  private val insertCoursePromise                       = Promise[PreparedStatement] // initialized in prepare
-  private def insertCourse(): Future[PreparedStatement] = insertCoursePromise.future
-  private val deleteCoursePromise                       = Promise[PreparedStatement] // initialized in prepare
-  private def deleteCourse(): Future[PreparedStatement] = deleteCoursePromise.future
+  class CourseTable(tag: Tag) extends Table[String](tag, "uc4CourseTable") {
+    def id: Rep[String] = column[String]("id", O.PrimaryKey)
 
-  /** Create empty courses table */
-  def globalPrepare(): Future[Done] = {
-    session.executeCreateTable(
-      "CREATE TABLE IF NOT EXISTS courses ( " +
-        "id TEXT, PRIMARY KEY (id)) ;")
+    override def * : ProvenShape[String] = id <>
+      (id => id, (id: String) => Some(id))
   }
 
-  /** Finishes preparation of CQL Statements */
-  def prepare(tag: AggregateEventTag[CourseEvent]): Future[Done] = {
-    val prepInsert = session.prepare("INSERT INTO courses (id) VALUES (?) ;")
-    insertCoursePromise.completeWith(prepInsert)
+  val courses = TableQuery[CourseTable]
 
-    val prepDelete = session.prepare("DELETE FROM courses WHERE id=? ;")
-    deleteCoursePromise.completeWith(prepDelete)
+  def createTable(): DBIOAction[Unit, NoStream, Effect.Schema] =
+    courses.schema.createIfNotExists
 
-    prepInsert.flatMap(_ => prepDelete.map(_ => Done))
+  def getAll: Future[Seq[String]] =
+    database.run(findAllQuery)
+
+  def addCourse(course: Course): DBIO[Done] = {
+    findByCourseIdQuery(course.courseId)
+      .flatMap {
+        case None => courses += course.courseId
+        case _    => DBIO.successful(Done)
+      }
+      .map(_ => Done)
+      .transactionally
   }
 
-  /** EventHandler for OnCourseCreate event */
-  def addCourse(eventElement: EventStreamElement[OnCourseCreate]): Future[List[BoundStatement]] = {
-    insertCourse().map { ps =>
-      val bindWriteTitle = ps.bind()
-      bindWriteTitle.setString("id", eventElement.event.course.courseId)
-      List(bindWriteTitle)
-    }
+  def removeCourse(id: String): DBIO[Done] = {
+    courses
+      .filter(_.id === id)
+      .delete
+      .map(_ => Done)
+      .transactionally
   }
 
-  /** EventHandler for OnCourseDelete event */
-  def deleteCourse(eventElement: EventStreamElement[OnCourseDelete]): Future[List[BoundStatement]] = {
-    deleteCourse().map { ps =>
-      val bindWriteTitle = ps.bind()
-      bindWriteTitle.setString("id", eventElement.event.id)
-      List(bindWriteTitle)
-    }
-  }
+  private def findAllQuery: DBIO[Seq[String]] = courses.result
+
+  private def findByCourseIdQuery(courseId: String): DBIO[Option[String]] =
+    courses
+      .filter(_.id === courseId)
+      .result
+      .headOption
 }

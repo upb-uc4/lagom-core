@@ -3,155 +3,100 @@ package de.upb.cs.uc4.user.impl.readside
 import akka.Done
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
-import com.datastax.driver.core.{BoundStatement, PreparedStatement}
-import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
-import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, EventStreamElement}
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands.{CreateUser, UserCommand}
-import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
+import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{Address, Role}
+import slick.dbio.Effect
+import slick.jdbc.PostgresProfile.api._
+import slick.lifted.ProvenShape
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future}
 
-class UserDatabase(session: CassandraSession, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext) {
+class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext) {
+
+  /** Looks up the entity for the given ID */
+  private def entityRef(id: String): EntityRef[UserCommand] =
+    clusterSharding.entityRefFor(UserState.typeKey, id)
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  //Prepared CQL Statements
-  private val insertStudentPromise = Promise[PreparedStatement] // initialized in prepare
-  private def insertStudent(): Future[PreparedStatement] = insertStudentPromise.future
+  abstract class UserTable(tag: Tag, name: String) extends Table[String](tag, s"uc4${name}Table") {
+    def username: Rep[String] = column[String]("username", O.PrimaryKey)
 
-  private val deleteStudentPromise = Promise[PreparedStatement] // initialized in prepare
-  private def deleteStudent(): Future[PreparedStatement] = deleteStudentPromise.future
-
-  private val insertLecturerPromise = Promise[PreparedStatement] // initialized in prepare
-  private def insertLecturer(): Future[PreparedStatement] = insertLecturerPromise.future
-
-  private val deleteLecturerPromise = Promise[PreparedStatement] // initialized in prepare
-  private def deleteLecturer(): Future[PreparedStatement] = deleteLecturerPromise.future
-
-  private val insertAdminPromise = Promise[PreparedStatement] // initialized in prepare
-  private def insertAdmin(): Future[PreparedStatement] = insertAdminPromise.future
-
-  private val deleteAdminPromise = Promise[PreparedStatement] // initialized in prepare
-  private def deleteAdmin(): Future[PreparedStatement] = deleteAdminPromise.future
-
-  private def entityRef(id: String): EntityRef[UserCommand] = clusterSharding.entityRefFor(UserState.typeKey, id)
-
-
-  private def addUserOnCreation(user: User, authenticationUser: AuthenticationUser, table: String): Try[_] => _ = {
-    _ => //Check if this table is empty
-
-      session.selectOne(s"SELECT * FROM $table;").onComplete(result =>
-        if (result.isSuccess) {
-          result.get match {
-            //Insert default users
-            case None =>
-              entityRef(user.username).ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
-            case _ =>
-          }
-        }
-      )
+    override def * : ProvenShape[String] = username <>
+      (username => username, (username: String) => Some(username))
   }
 
-  /** Create empty tables for admins, users and lecturers */
-  def globalPrepare(): Future[Done] = {
-    val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
-    val student: User = Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "IN", "421769", 9000, List())
-    val lecturer: User = Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Ich bin bloed", "Genderstudies")
-    val admin: User = Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1992-12-10")
-    val students = session.executeCreateTable(
-      "CREATE TABLE IF NOT EXISTS students ( " +
-        "username TEXT, PRIMARY KEY (username)) ;")
-    students.onComplete(addUserOnCreation(student, AuthenticationUser("student", "student", AuthenticationRole.Student), "students"))
+  class AdminTable(tag: Tag) extends UserTable(tag, "Admin")
+  class LecturerTable(tag: Tag) extends UserTable(tag, "Lecturer")
+  class StudentTable(tag: Tag) extends UserTable(tag, "Student")
 
-    val lecturers = session.executeCreateTable(
-      "CREATE TABLE IF NOT EXISTS lecturers ( " +
-        "username TEXT, PRIMARY KEY (username)) ;")
-    lecturers.onComplete(addUserOnCreation(lecturer, AuthenticationUser("lecturer", "lecturer", AuthenticationRole.Lecturer), "lecturers"))
+  val admins = TableQuery[AdminTable]
+  val lecturers = TableQuery[LecturerTable]
+  val students = TableQuery[StudentTable]
 
-    val admins = session.executeCreateTable(
-      "CREATE TABLE IF NOT EXISTS admins ( " +
-        "username TEXT, PRIMARY KEY (username)) ;")
-    admins.onComplete(addUserOnCreation(admin, AuthenticationUser("admin", "admin", AuthenticationRole.Admin), "admins"))
+  def createTable(): DBIOAction[Unit, NoStream, Effect.Schema] = {
+    admins.schema.createIfNotExists >> //AND THEN
+    lecturers.schema.createIfNotExists >> //AND THEN
+    students.schema.createIfNotExists.andFinally(DBIO.successful{
+      //Add default users
+      val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
+      val student: User = Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "IN", "421769", 9000, List())
+      val lecturer: User = Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Ich bin bloed", "Genderstudies")
+      val admin: User = Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1992-12-10")
 
-    //This comprehension waits for every future to be completed and then yields Done
-    for {
-      _ <- students
-      _ <- lecturers
-      _ <- admins
-    } yield Done
+      addUser(student, AuthenticationUser("student", "student", AuthenticationRole.Student))
+      addUser(lecturer, AuthenticationUser("lecturer", "lecturer", AuthenticationRole.Lecturer))
+      addUser(admin, AuthenticationUser("admin", "admin", AuthenticationRole.Admin))
+    })
   }
 
-  /** Finishes preparation of CQL Statements */
-  def prepare(tag: AggregateEventTag[UserEvent]): Future[Done] = {
-    val prepStudents = prepare("students", insertStudentPromise, deleteStudentPromise)
-    val prepLecturers = prepare("lecturers", insertLecturerPromise, deleteLecturerPromise)
-    val prepAdmins = prepare("admins", insertAdminPromise, deleteAdminPromise)
-
-    //This comprehension waits for every future to be completed and then yields Done
-    for {
-      _ <- prepStudents
-      _ <- prepLecturers
-      _ <- prepAdmins
-    } yield Done
-  }
-
-  /** Helper method that prepares an INSERT and DELETE statement for the given table.
-    *
-    * @param table  name of the table the statements should be prepared for
-    * @param insert the insert promise
-    * @param delete the delete promise
-    * @return Done when preparation of both statements is finished
-    */
-  private def prepare(table: String, insert: Promise[PreparedStatement], delete: Promise[PreparedStatement]): Future[Done] = {
-    val prepInsert = session.prepare(s"INSERT INTO $table (username) VALUES (?) ;")
-    insert.completeWith(prepInsert)
-
-    val prepDelete = session.prepare(s"DELETE FROM $table WHERE username=? ;")
-    delete.completeWith(prepDelete)
-
-    //This comprehension waits for every future to be completed and then yields Done
-    for {
-      _ <- prepInsert
-      _ <- prepDelete
-    } yield Done
-  }
-
-  /** EventHandler for OnUserCreate event */
-  def addUser(eventElement: EventStreamElement[OnUserCreate]): Future[List[BoundStatement]] = {
-    eventElement.event.user.role match {
-      case Role.Student =>
-        insertStudent().map(bind(eventElement.event.user))
-      case Role.Lecturer =>
-        insertLecturer().map(bind(eventElement.event.user))
-      case Role.Admin =>
-        insertAdmin().map(bind(eventElement.event.user))
+  private def addUser(user: User, authenticationUser: AuthenticationUser) =
+    getAll(user.role).map{ result =>
+      if(result.isEmpty){
+        entityRef(user.username).ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
+      }
     }
+
+  def getAll(role: Role): Future[Seq[String]] =
+    database.run(findAllQuery(role))
+
+  def addUser(user: User): DBIO[Done] = {
+    val table = getTable(user.role)
+    findByUsernameQuery(user.username, table)
+      .flatMap {
+        case None => table += user.username
+        case _    => DBIO.successful(Done)
+      }
+      .map(_ => Done)
+      .transactionally
   }
 
-  /** EventHandler for OnUserDelete event */
-  def deleteUser(eventElement: EventStreamElement[OnUserDelete]): Future[List[BoundStatement]] = {
-    eventElement.event.user.role match {
-      case Role.Student =>
-        deleteStudent().map(bind(eventElement.event.user))
-      case Role.Lecturer =>
-        deleteLecturer().map(bind(eventElement.event.user))
-      case Role.Admin =>
-        deleteAdmin().map(bind(eventElement.event.user))
+  def removeUser(user: User): DBIO[Done] = {
+    getTable(user.role)
+      .filter(_.username === user.username)
+      .delete
+      .map(_ => Done)
+      .transactionally
+  }
+
+  private def getTable(role: Role): TableQuery[_ <: UserTable] =
+    role match {
+      case Role.Admin => admins
+      case Role.Lecturer => lecturers
+      case Role.Student => students
     }
-  }
 
-  /** returns helper method to bind statements */
-  private def bind(user: User): PreparedStatement => List[BoundStatement] = {
-    ps =>
-      val bindWriteTitle = ps.bind()
-      bindWriteTitle.setString("username", user.username)
-      List(bindWriteTitle)
-  }
+  private def findAllQuery(role: Role): DBIO[Seq[String]] = getTable(role).result
+
+  private def findByUsernameQuery(username: String, table: TableQuery[_ <: UserTable]): DBIO[Option[String]] =
+    table
+      .filter(_.username === username)
+      .result
+      .headOption
 }

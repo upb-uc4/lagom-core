@@ -1,32 +1,46 @@
 package de.upb.cs.uc4.authentication.impl
 
 import akka.Done
+import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.stream.scaladsl.Flow
+import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
-import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
+import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
+import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationBehaviour, AuthenticationState}
+import de.upb.cs.uc4.authentication.impl.commands.{DeleteAuthentication, SetAuthentication}
+import de.upb.cs.uc4.authentication.impl.readside.{AuthenticationDatabase, AuthenticationEventProcessor}
 import de.upb.cs.uc4.shared.server.Hashing
+import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.JsonUsername
 import de.upb.cs.uc4.user.model.user.AuthenticationUser
+import play.api.db.HikariCPComponents
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc.EssentialFilter
 import play.filters.cors.CORSComponents
 
 import scala.concurrent.Future
-import scala.util.Random
+import scala.concurrent.duration._
 
 abstract class AuthenticationApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
-    with CassandraPersistenceComponents
+    with SlickPersistenceComponents
+    with JdbcPersistenceComponents
+    with HikariCPComponents
     with LagomKafkaComponents
     with CORSComponents
     with AhcWSComponents {
+
+  private implicit val timeout: Timeout = Timeout(5.seconds)
+
+  // Create ReadSide
+  lazy val database: AuthenticationDatabase = wire[AuthenticationDatabase]
+  lazy val processor: AuthenticationEventProcessor = wire[AuthenticationEventProcessor]
 
   // Set HttpFilter to the default CorsFilter
   override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
@@ -37,34 +51,23 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = AuthenticationSerializerRegistry
 
-  lazy val userService: UserService = serviceClient.implement[UserService]
-
-  // Create empty user table if it doesn't exists
-  cassandraSession.executeCreateTable(
-    "CREATE TABLE IF NOT EXISTS authenticationTable ( " +
-      "name TEXT, salt TEXT, password TEXT, role TEXT, PRIMARY KEY (name));")
-    .onComplete(_ =>
-      //Check if this table is empty
-      cassandraSession.selectOne("SELECT * FROM authenticationTable;").onComplete(result =>
-        if (result.isSuccess) {
-          result.get match {
-            //Insert default users
-            case None =>
-              createAccount("admin", "admin", AuthenticationRole.Admin)
-              createAccount("student", "student", AuthenticationRole.Student)
-              createAccount("lecturer", "lecturer", AuthenticationRole.Lecturer)
-            case _ =>
-          }
-        }
-      )
+  // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
+  // a given sharding entity typeKey.
+  clusterSharding.init(
+    Entity(AuthenticationState.typeKey)(
+      entityContext => AuthenticationBehaviour.create(entityContext)
     )
+  )
+
+  lazy val userService: UserService = serviceClient.implement[UserService]
 
   userService
     .userAuthenticationTopic()
     .subscribe
     .atLeastOnce(
-      Flow.fromFunction[AuthenticationUser, Future[Done]](msg => {
-        createAccount(msg.username, msg.password, msg.role)
+      Flow.fromFunction[AuthenticationUser, Future[Done]](user => {
+        clusterSharding.entityRefFor(AuthenticationState.typeKey, Hashing.sha256(user.username))
+          .ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map(_ => Done)
       }).mapAsync(8)(done => done)
     )
 
@@ -72,35 +75,15 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
     .userDeletedTopic()
     .subscribe
     .atLeastOnce(
-      Flow.fromFunction[JsonUsername, Future[Done]](json => {
-        deleteAccount(json.username)
-      }).mapAsync(8)(done => done)
+      Flow.fromFunction[JsonUsername, Future[Done]](json =>
+        clusterSharding.entityRefFor(AuthenticationState.typeKey, Hashing.sha256(json.username))
+          .ask[Confirmation](replyTo => DeleteAuthentication(replyTo)).map(_ => Done)
+      ).mapAsync(8)(done => done)
     )
+}
 
-  /** Adds an account to the authentication database
-    *
-    * @param name     is the name of the user
-    * @param password is the password of the user
-    * @param role     is the authentication role of the user
-    */
-  private def createAccount(name: String, password: String, role: AuthenticationRole): Future[Done] = {
-    val salt = Random.alphanumeric.take(64).mkString
-    cassandraSession.executeWrite(
-      "INSERT INTO authenticationTable (name, salt, password, role) VALUES (?, ?, ?, ?);",
-      Hashing.sha256(name),
-      salt,
-      Hashing.sha256(salt + password),
-      role.toString
-    )
-  }
-
-  /** Deletes a user from the authentication database
-    *
-    * @param username is the name of the user
-    */
-  private def deleteAccount(username: String): Future[Done] = {
-    cassandraSession.executeWrite("DELETE FROM authenticationTable WHERE name=? ;", Hashing.sha256(username))
-  }
+object AuthenticationApplication {
+  val offset: String = "UC4Authentication"
 }
 
 
