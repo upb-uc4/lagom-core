@@ -29,14 +29,8 @@ trait CourseService extends Service {
   /** Find courses by course ID */
   def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course]
 
-  /** Find courses by course name */
-  def findCoursesByCourseName(name: String): ServiceCall[NotUsed, Seq[Course]]
-
-  /** Find courses by lecturer with the provided ID */
-  def findCoursesByLecturerId(id: String): ServiceCall[NotUsed, Seq[Course]]
-
-  /** Get all courses */
-  def getAllCourses: ServiceCall[NotUsed, Seq[Course]]
+  /** Get all courses, with optional query parameters */
+  def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServiceCall[NotUsed, Seq[Course]]
 
   /** Update an existing course */
   def updateCourse(id: String): ServiceCall[Course, Done]
@@ -53,15 +47,14 @@ trait CourseService extends Service {
   final override def descriptor: Descriptor = {
     import Service._
     named("course").withCalls(
-      restCall(Method.GET, pathPrefix + "/courses", getAllCourses _),
+      restCall(Method.GET, pathPrefix + "/courses?courseName&lecturerId", getAllCourses _),
       restCall(Method.POST, pathPrefix + "/courses", addCourse _),
       restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _),
       restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),
       restCall(Method.GET, pathPrefix + "/courses/:id", findCourseByCourseId _),
-      restCall(Method.GET, pathPrefix + "/courses?courseName", findCoursesByCourseName _),
       restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
-      restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _)
-    ).withAutoAcl(true).
-      withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
+      restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _))
+      .withAutoAcl(true)
+      .withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
   }
 }

@@ -36,8 +36,8 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   /** @inheritdoc */
-  override def getAllCourses: ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
-    cassandraSession.selectAll("SELECT id FROM courses ;")
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
+    var list = cassandraSession.selectAll("SELECT id FROM courses ;")
       .map(seq => seq
         .map(row => row.getString("id")) //Future[Seq[String]]
         .map(entityRef(_).ask[Option[Course]](replyTo => GetCourse(replyTo))) //Future[Seq[Future[Option[Course]]]]
@@ -48,6 +48,13 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           .map(opt => opt.get) //Future[Seq[Course]]
         )
       )
+    if(courseName.isDefined){
+      list = list.map(courseList => courseList.filter(course => course.courseName == courseName.get))
+    }
+    if(lecturerId.isDefined){
+      list = list.map(courseList => courseList.filter(course => course.lecturerId == lecturerId.get))
+    }
+    list
   }
 
   /** @inheritdoc */
@@ -103,22 +110,6 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
         DetailedError("key not found", Seq[SimpleError](SimpleError("courseId", "Course id does not exist."))))
     }
-  }
-
-  /** @inheritdoc */
-  override def findCoursesByCourseName(courseName: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall {
-    (header, request) =>
-      getAllCourses.invokeWithHeaders(header, request).map {
-        case (header, response) => (header, response.filter(course => course.courseName == courseName))
-      }
-  }
-
-  /** @inheritdoc */
-  override def findCoursesByLecturerId(id: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall {
-    (header, request) =>
-      getAllCourses.invokeWithHeaders(header, request).map {
-        case (header, response) => (header, response.filter(course => course.lecturerId == id))
-      }
   }
 
   /** @inheritdoc */
