@@ -49,13 +49,3 @@ jobs:
         echo "##########################"
         sbt compile
         popd
-		
-    # run sbt tests
-    #- name: Run tests
-    # run: |
-    #  pushd ./product_test/automatic_test/hyperledger_service_test
-    # echo "##########################"
-    #echo "#    starting test       #"
-    #echo "##########################"
-    #sbt test
-    #popd
