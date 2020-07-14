@@ -19,9 +19,7 @@ import de.upb.cs.uc4.test_resources._
 class HyperledgerServiceTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCluster()) { ctx =>
-    new HyperLedgerApplication(ctx) with LocalServiceLocator {
-      override lazy val connectionManager: ConnectionManagerTrait = ConnectionManager()
-    }
+    new HyperLedgerApplication(ctx) with LocalServiceLocator { }
   }
 
   val client: HyperLedgerService = server.serviceClient.implement[HyperLedgerService]
