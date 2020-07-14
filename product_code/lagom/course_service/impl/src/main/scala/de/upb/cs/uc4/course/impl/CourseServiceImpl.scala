@@ -3,18 +3,17 @@ package de.upb.cs.uc4.course.impl
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import akka.{Done, NotUsed}
-import com.datastax.driver.core.utils.UUIDs
+import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
-import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
-import de.upb.cs.uc4.course.impl.readside.CourseEventProcessor
+import de.upb.cs.uc4.course.impl.readside.{CourseDatabase, CourseEventProcessor}
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
@@ -25,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(clusterSharding: ClusterSharding,
-                        readSide: ReadSide, processor: CourseEventProcessor, cassandraSession: CassandraSession)
+                        readSide: ReadSide, processor: CourseEventProcessor, database: CourseDatabase)
                        (implicit ec: ExecutionContext, auth: AuthenticationService) extends CourseService {
   readSide.register(processor)
 
@@ -35,11 +34,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  /** @inheritdoc */
+  /** @inheritdoc */ 
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
-    var list = cassandraSession.selectAll("SELECT id FROM courses ;")
+    database.getAll
       .map(seq => seq
-        .map(row => row.getString("id")) //Future[Seq[String]]
         .map(entityRef(_).ask[Option[Course]](replyTo => GetCourse(replyTo))) //Future[Seq[Future[Option[Course]]]]
       )
       .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[Course]]]
@@ -48,21 +46,18 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           .map(opt => opt.get) //Future[Seq[Course]]
         )
       )
-    if(courseName.isDefined){
-      list = list.map(courseList => courseList.filter(course => course.courseName == courseName.get))
-    }
-    if(lecturerId.isDefined){
-      list = list.map(courseList => courseList.filter(course => course.lecturerId == lecturerId.get))
-    }
-    list
+      .map(seq => seq
+        .filter(course => courseName.isEmpty || course.courseName == courseName.get)
+        .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
+      )
   }
 
-  /** @inheritdoc */
+  /** @inheritdoc */ 
   override def addCourse(): ServiceCall[Course, Done] =
     authenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer)(ServerServiceCall {
       (_, courseProposal) =>
         // Generate unique ID for the course to add
-        val courseToAdd = courseProposal.copy(courseId = UUIDs.timeBased.toString)
+        val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
         // Look up the sharded entity (aka the aggregate instance) for the given ID.
         val ref = entityRef(courseToAdd.courseId)
 
@@ -75,7 +70,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           }
     })
 
-  /** @inheritdoc */
+  /** @inheritdoc */ 
   override def deleteCourse(id: String): ServiceCall[NotUsed, Done] =
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
@@ -103,7 +98,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         }
     }
 
-  /** @inheritdoc */
+  /** @inheritdoc */ 
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
@@ -112,7 +107,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
     }
   }
 
-  /** @inheritdoc */
+  /** @inheritdoc */ 
   override def updateCourse(id: String): ServiceCall[Course, Done] =
     authenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer)(ServerServiceCall {
       (_, courseToChange) =>
@@ -132,7 +127,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           }
     })
 
-  /** @inheritdoc */
+  /** @inheritdoc */ 
   override def allowedMethods: ServiceCall[NotUsed, Done] = ServerServiceCall {
     (_, _) =>
       Future.successful {
@@ -143,10 +138,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       }
   }
 
-  /** @inheritdoc */
+  /** @inheritdoc */ 
   override def allowedMethodsGETPOST: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
 
-  /** @inheritdoc */
+  /** @inheritdoc */ 
   override def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT, DELETE")
 
 

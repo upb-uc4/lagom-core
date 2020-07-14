@@ -11,7 +11,7 @@ jobs:
 
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - name: check out source repository
+    - name: Check out source repository
       uses: actions/checkout@v2
     
     # Set up JDK
@@ -20,6 +20,14 @@ jobs:
       with:
         java-version: 1.8
     
+    # Start postgresql docker
+    - name: Start Postgres
+      run: |
+        pushd ./product_code/lagom
+        docker-compose up -d
+        sleep 30
+        popd
+
     #change .sbtopts
     - name: Add -J to .sbtops
       run: |
