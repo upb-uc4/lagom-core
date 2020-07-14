@@ -6,7 +6,10 @@ import de.upb.cs.uc4.hyperledger.traits.{ChaincodeTrait, ConnectionManagerTrait}
 import org.hyperledger.fabric.gateway.Gateway.Builder
 import org.hyperledger.fabric.gateway._
 
-case class ConnectionManager(connection_profile_path : Path = Paths.get("connection_profile.yaml") , wallet_path : Path = Paths.get("wallet")) extends ConnectionManagerTrait{
+case class ConnectionManager(
+    connection_profile_path : Path = Paths.get("connection_profile.yaml"),
+    wallet_path : Path = Paths.get("wallet"))
+      extends ConnectionManagerTrait{
 
   val channel_name = "myc"
   private val chaincode_name = "mycc"
@@ -16,6 +19,7 @@ case class ConnectionManager(connection_profile_path : Path = Paths.get("connect
 
   @throws[Exception]
   def initializeConnection() : (Gateway, Contract) = { // Load a file system based wallet for managing identities.
+    println("Try to get connection with: " + connection_profile_path + "    and: " + wallet_path)
 
     // retrieve possible identities
     val wallet : Wallet = this.getWallet()
