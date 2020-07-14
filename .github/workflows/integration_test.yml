@@ -5,9 +5,12 @@ on:
     branches:
       - feature/hyperledger*
       - feature/lagom*
+      - develop
+      - master
   pull_request:
     branches: 
       - develop
+      - master
 
 jobs:
 
