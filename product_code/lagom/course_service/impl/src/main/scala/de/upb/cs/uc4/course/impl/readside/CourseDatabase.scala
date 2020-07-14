@@ -10,6 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class CourseDatabase(database: Database)(implicit ec: ExecutionContext) {
 
+  /** Table definition of a course table */
   class CourseTable(tag: Tag) extends Table[String](tag, "uc4CourseTable") {
     def id: Rep[String] = column[String]("id", O.PrimaryKey)
 
@@ -19,12 +20,18 @@ class CourseDatabase(database: Database)(implicit ec: ExecutionContext) {
 
   val courses = TableQuery[CourseTable]
 
+  /** Creates needed table */
   def createTable(): DBIOAction[Unit, NoStream, Effect.Schema] =
     courses.schema.createIfNotExists
 
+  /** Returns a Sequence of all courses */
   def getAll: Future[Seq[String]] =
     database.run(findAllQuery)
 
+  /** Adds a course to the table
+   *
+   * @param course which should get added
+   */
   def addCourse(course: Course): DBIO[Done] = {
     findByCourseIdQuery(course.courseId)
       .flatMap {
@@ -35,6 +42,10 @@ class CourseDatabase(database: Database)(implicit ec: ExecutionContext) {
       .transactionally
   }
 
+  /** Deletes a course from the table
+   *
+   * @param id of the course which should get added
+   */
   def removeCourse(id: String): DBIO[Done] = {
     courses
       .filter(_.id === id)
@@ -43,8 +54,10 @@ class CourseDatabase(database: Database)(implicit ec: ExecutionContext) {
       .transactionally
   }
 
+  /** Returns the query to get all courses */
   private def findAllQuery: DBIO[Seq[String]] = courses.result
 
+  /** Returns the query to find a course by its id */
   private def findByCourseIdQuery(courseId: String): DBIO[Option[String]] =
     courses
       .filter(_.id === courseId)

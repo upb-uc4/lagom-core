@@ -11,7 +11,7 @@ import play.api.libs.json.{Format, Json}
 
 import scala.util.Random
 
-/** The current state of a Course */
+/** The current state of an AuthenticationEntry */
 case class AuthenticationState(optEntry: Option[AuthenticationEntry]) {
 
   /** Functions as a CommandHandler
@@ -71,7 +71,7 @@ object AuthenticationState {
   val typeKey: EntityTypeKey[AuthenticationCommand] = EntityTypeKey[AuthenticationCommand](AuthenticationApplication.offset)
 
   /**
-   * Format for the course state.
+   * Format for the authentication state.
    *
    * Persisted entities get snapshotted every configured number of events. This
    * means the state gets stored to the database, so that when the aggregate gets

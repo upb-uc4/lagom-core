@@ -25,6 +25,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
+  /** Table definition of a user table */
   abstract class UserTable(tag: Tag, name: String) extends Table[String](tag, s"uc4${name}Table") {
     def username: Rep[String] = column[String]("username", O.PrimaryKey)
 
@@ -32,6 +33,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       (username => username, (username: String) => Some(username))
   }
 
+  // Specific tables
   class AdminTable(tag: Tag) extends UserTable(tag, "Admin")
   class LecturerTable(tag: Tag) extends UserTable(tag, "Lecturer")
   class StudentTable(tag: Tag) extends UserTable(tag, "Student")
@@ -40,6 +42,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
   val lecturers = TableQuery[LecturerTable]
   val students = TableQuery[StudentTable]
 
+  /** Creates all needed tables for the different roles */
   def createTable(): DBIOAction[Unit, NoStream, Effect.Schema] = {
     admins.schema.createIfNotExists >> //AND THEN
     lecturers.schema.createIfNotExists >> //AND THEN
@@ -56,6 +59,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
     })
   }
 
+  /** helper method to add a user */
   private def addUser(user: User, authenticationUser: AuthenticationUser) =
     getAll(user.role).map{ result =>
       if(result.isEmpty){
@@ -63,9 +67,18 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       }
     }
 
+  /** Returns a Sequence of all user with
+   * the specific role
+   *
+   * @param role of the users
+   */
   def getAll(role: Role): Future[Seq[String]] =
     database.run(findAllQuery(role))
 
+  /** Adds a user to the matching table
+   *
+   * @param user which should get added
+   */
   def addUser(user: User): DBIO[Done] = {
     val table = getTable(user.role)
     findByUsernameQuery(user.username, table)
@@ -77,6 +90,10 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       .transactionally
   }
 
+  /** Deletes a user from the matching table
+   *
+   * @param user which should get removed
+   */
   def removeUser(user: User): DBIO[Done] = {
     getTable(user.role)
       .filter(_.username === user.username)
@@ -85,6 +102,10 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       .transactionally
   }
 
+  /** Returns the table for the specific role
+   *
+   * @param role to specify the table
+   */
   private def getTable(role: Role): TableQuery[_ <: UserTable] =
     role match {
       case Role.Admin => admins
@@ -92,8 +113,18 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       case Role.Student => students
     }
 
+  /** Returns the query to get all User
+   * of the specific role
+   *
+   * @param role to specify
+   */
   private def findAllQuery(role: Role): DBIO[Seq[String]] = getTable(role).result
 
+  /** Returns the query to find a user by his username
+   *
+   * @param username of the user
+   * @param table on which the query is executed
+   */
   private def findByUsernameQuery(username: String, table: TableQuery[_ <: UserTable]): DBIO[Option[String]] =
     table
       .filter(_.username === username)
