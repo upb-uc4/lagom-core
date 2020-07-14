@@ -7,19 +7,19 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
-import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry, ReadSide}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.shared.client.CustomException
+import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
-import de.upb.cs.uc4.user.impl.readside.UserEventProcessor
+import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
+import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the UserService */
 class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
-                      readSide: ReadSide, processor: UserEventProcessor, cassandraSession: CassandraSession)
+                      readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase)
                      (implicit ec: ExecutionContext, auth: AuthenticationService) extends UserService {
   readSide.register(processor)
 
@@ -49,7 +49,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           lecturers <- getAllLecturers.invokeWithHeaders(header, notUsed)
           admins <- getAllAdmins.invokeWithHeaders(header, notUsed)
         } yield
-          (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))),
+          (ResponseHeader(200, MessageProtocol.empty, List()),
             GetAllUsersResponse(students._2, lecturers._2, admins._2))
       }
     }
@@ -62,9 +62,10 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
         .map {
           case Accepted => // Update Successful
-            (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation successful"))), Done)
+            (ResponseHeader(200, MessageProtocol.empty, List()), Done)
           case Rejected("A user with the given username does not exist.") => // Already exists
-            (ResponseHeader(404, MessageProtocol.empty, List(("1", "A user with the given username does not exist."))), Done)
+            throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+              DetailedError("key not found", Seq[SimpleError](SimpleError("username", "A user with the given username does not exist."))))
         }
     }
   }
@@ -72,7 +73,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Get all students from the database */
   override def getAllStudents: ServerServiceCall[NotUsed, Seq[Student]] =
     authenticated[NotUsed, Seq[Student]](AuthenticationRole.Admin) { _ =>
-      getAll("students").map(_.map(user => user.asInstanceOf[Student]))
+      getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
     }
 
   /** Add a new student to the database */
@@ -86,7 +87,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Student => user.asInstanceOf[Student]
-          case _ => throw BadRequest("Not a student")
+          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
+            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not a student."))))
         })
     }
 
@@ -101,7 +103,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Get all lecturers from the database */
   override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] =
     authenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.Admin) { _ =>
-      getAll("lecturers").map(_.map(user => user.asInstanceOf[Lecturer]))
+      getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
     }
 
   /** Add a new lecturer to the database */
@@ -115,7 +117,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Lecturer => user.asInstanceOf[Lecturer]
-          case _ => throw BadRequest("Not a lecturer")
+          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
+            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not a lecturer."))))
         })
     }
 
@@ -130,7 +133,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Get all admins from the database */
   override def getAllAdmins: ServerServiceCall[NotUsed, Seq[Admin]] =
     authenticated[NotUsed, Seq[Admin]](AuthenticationRole.Admin) { _ =>
-      getAll("admins").map(_.map(user => user.asInstanceOf[Admin]))
+      getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
     }
 
   /** Add a new admin to the database */
@@ -144,7 +147,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Admin => user.asInstanceOf[Admin]
-          case _ => throw BadRequest("Not an admin")
+          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
+            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not an admin."))))
         })
     }
 
@@ -208,15 +212,15 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
     ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
       case Some(user) => user
-      case None => throw NotFound("Username was not found")
+      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+        DetailedError("key not found", Seq[SimpleError](SimpleError("username", "A user with the given username does not exist."))))
     }
   }
 
   /** Helper method for getting all Users */
-  private def getAll(table: String): Future[Seq[User]] = {
-    cassandraSession.selectAll(s"SELECT * FROM $table ;")
+  private def getAll(role: Role): Future[Seq[User]] = {
+    database.getAll(role)
       .map(seq => seq
-        .map(row => row.getString("username")) //Future[Seq[String]]
         .map(entityRef(_).ask[Option[User]](replyTo => GetUser(replyTo))) //Future[Seq[Future[Option[User]]]]
       )
       .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[User]]]

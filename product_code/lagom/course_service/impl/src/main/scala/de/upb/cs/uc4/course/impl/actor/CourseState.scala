@@ -98,16 +98,16 @@ case class CourseState(optCourse: Option[Course]) {
       errors :+= (SimpleError("endDate", "End date must be of the following format \"yyyy-mm-dd\"."))
     }
     if (course.ects <= 0) {
-      errors :+= (SimpleError("ects", "Ects must be a positive integer"))
+      errors :+= (SimpleError("ects", "Ects must be a positive integer."))
     }
     if (course.maxParticipants <= 0) {
-      errors :+= (SimpleError("maxParticipants", "Maximum Participants must be a positive integer"))
+      errors :+= (SimpleError("maxParticipants", "Maximum Participants must be a positive integer."))
     }
     if (!CourseLanguage.All.contains(course.courseLanguage)) {
-      errors :+= (SimpleError("courseLanguage", "Course Language must be one of" + CourseLanguage.All))
+      errors :+= (SimpleError("courseLanguage", "Course Language must be one of" + CourseLanguage.All+"."))
     }
     if (!descriptionRegex.matches(course.courseDescription)) {
-      errors :+= SimpleError("courseDescription", "Description must only contain Strings")
+      errors :+= SimpleError("courseDescription", "Description must only contain Strings.")
     }
     errors
   }
@@ -141,7 +141,7 @@ object CourseState {
     * namespaced under a typekey that specifies a name and also the type of the commands
     * that sharded actor can receive.
     */
-  val typeKey: EntityTypeKey[CourseCommand] = EntityTypeKey[CourseCommand](CourseApplication.cassandraOffset)
+  val typeKey: EntityTypeKey[CourseCommand] = EntityTypeKey[CourseCommand](CourseApplication.offset)
 
   /**
     * Format for the course state.
