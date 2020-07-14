@@ -35,7 +35,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
-      .withCassandra()
+      .withJdbc()
   ) { ctx =>
     new AuthenticationApplication(ctx) with LocalServiceLocator {
       // Declaration as lazy values forces right execution order
@@ -64,24 +64,6 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   /** Tests only working if the whole instance is started */
   "AuthenticationService service" should {
 
-    "have the standard admin" in {
-      client.check("admin", "admin").invoke().map{ answer =>
-        answer shouldBe a [(String, AuthenticationRole)]
-      }
-    }
-
-    "have the standard lecturer" in {
-      client.check("lecturer", "lecturer").invoke().map{ answer =>
-        answer shouldBe a [(String, AuthenticationRole)]
-      }
-    }
-
-    "have the standard student" in {
-      client.check("student", "student").invoke().map{ answer =>
-        answer shouldBe a [(String, AuthenticationRole)]
-      }
-    }
-
     "detect a wrong username" in {
       client.check("studenta", "student").invoke().failed.map{
         answer => answer.asInstanceOf[TransportException].errorCode.http should ===(401)
@@ -94,9 +76,20 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
+
+    "add a new user over the topic" in {
+      authenticationStub.send(new AuthenticationUser("student", "student", AuthenticationRole.Student))
+
+      eventually(timeout(Span(2, Minutes))) {
+        client.check("student", "student").invoke().map{ answer =>
+          answer shouldBe a [(String, AuthenticationRole)]
+        }
+      }
+    }
+
     "detect that a user is not authorized" in {
       val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Admin){
-         _ => Future.successful(NotUsed)
+        _ => Future.successful(NotUsed)
       }(client, server.executionContext)
 
       serviceCall.handleRequestHeader(addLoginHeader("student", "student")).invoke().failed.map{ answer =>
@@ -114,25 +107,16 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "add a new user over the topic" in {
-      authenticationStub.send(new AuthenticationUser("Ben", "Hermann", AuthenticationRole.Admin))
-
-      eventually(timeout(Span(2, Minutes))) {
-        client.check("Ben", "Hermann").invoke().map{ answer =>
-          answer shouldBe a [(String, AuthenticationRole)]
-        }
-      }
-    }
-
     "remove a user over the topic" in {
-      deletionStub.send(JsonUsername("admin"))
+      deletionStub.send(JsonUsername("student"))
 
       eventually(timeout(Span(2, Minutes))) {
-        client.check("admin", "admin").invoke().failed.map{ answer =>
+        client.check("student", "student").invoke().failed.map{ answer =>
           answer.asInstanceOf[TransportException].errorCode.http should ===(401)
         }
       }
     }
+
   }
 }
 

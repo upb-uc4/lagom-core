@@ -7,7 +7,6 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
-import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry, ReadSide}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
@@ -19,7 +18,8 @@ import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
-import de.upb.cs.uc4.user.impl.readside.UserEventProcessor
+import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
+import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the UserService */
 class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
-                      readSide: ReadSide, processor: UserEventProcessor, cassandraSession: CassandraSession)
+                      readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase)
                      (implicit ec: ExecutionContext, auth: AuthenticationService) extends UserService {
   readSide.register(processor)
 
@@ -73,7 +73,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Get all students from the database */
   override def getAllStudents: ServerServiceCall[NotUsed, Seq[Student]] =
     authenticated[NotUsed, Seq[Student]](AuthenticationRole.Admin) { _ =>
-      getAll("students").map(_.map(user => user.asInstanceOf[Student]))
+      getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
     }
 
   /** Add a new student to the database */
@@ -110,7 +110,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Get all lecturers from the database */
   override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] =
     authenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.Admin) { _ =>
-      getAll("lecturers").map(_.map(user => user.asInstanceOf[Lecturer]))
+      getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
     }
 
   /** Add a new lecturer to the database */
@@ -147,7 +147,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Get all admins from the database */
   override def getAllAdmins: ServerServiceCall[NotUsed, Seq[Admin]] =
     authenticated[NotUsed, Seq[Admin]](AuthenticationRole.Admin) { _ =>
-      getAll("admins").map(_.map(user => user.asInstanceOf[Admin]))
+      getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
     }
 
   /** Add a new admin to the database */
@@ -236,10 +236,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Helper method for getting all Users */
-  private def getAll(table: String): Future[Seq[User]] = {
-    cassandraSession.selectAll(s"SELECT * FROM $table ;")
+  private def getAll(role: Role): Future[Seq[User]] = {
+    database.getAll(role)
       .map(seq => seq
-        .map(row => row.getString("username")) //Future[Seq[String]]
         .map(entityRef(_).ask[Option[User]](replyTo => GetUser(replyTo))) //Future[Seq[Future[Option[User]]]]
       )
       .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[User]]]
