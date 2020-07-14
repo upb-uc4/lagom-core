@@ -20,7 +20,7 @@ def dockerSettings = Seq(
 
 // Dependencies
 val macwire = "com.softwaremill.macwire" %% "macros" % "2.3.3" % "provided"
-val scalaTest = "org.scalatest" %% "scalatest" % "3.1.1" % Test
+val scalaTest = "org.scalatest" %% "scalatest" % "3.2.0" % Test
 val guava = "com.google.guava" % "guava" % "29.0-jre"
 val akkaDiscoveryKubernetes = "com.lightbend.akka.discovery" %% "akka-discovery-kubernetes-api" % "1.0.8"
 
@@ -42,6 +42,15 @@ val defaultCassandraKafkaDependencies = Seq(
   lagomScaladslKafkaBroker
 )
 
+/*
+val lagomServices = Seq(
+  shared_client, shared_server,
+  course_service_api, course_service,
+  hl_course_service_api, hl_course_service,
+  hyperledger_service_api, hyperledger_service,
+  authentication_service_api, authentication_service,
+  user_service_api, user_service
+)*/
 
 // Projects
 lazy val lagom = (project in file("."))
@@ -51,6 +60,14 @@ lazy val lagom = (project in file("."))
     hyperledger_service_api, hyperledger_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service)
+  .dependsOn(shared_client, shared_server,
+    course_service_api, course_service,
+    hl_course_service_api, hl_course_service,
+    hyperledger_service_api, hyperledger_service,
+    authentication_service_api, authentication_service,
+    user_service_api, user_service)
+  //.aggregate(lagomServices.asInstanceOf[Seq[ProjectReference]]: _*)
+  //.dependsOn(lagomServices.asInstanceOf[Seq[ClasspathDep[ProjectReference]]]: _*)
 
 // This project is not allowed to have lagom server dependencies
 lazy val shared_client = (project in file("shared/client"))
