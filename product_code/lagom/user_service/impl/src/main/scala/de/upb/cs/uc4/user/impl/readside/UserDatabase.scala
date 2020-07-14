@@ -59,7 +59,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
     })
   }
 
-  /** helper method to add a user */
+  /** helper method to add a user during table creation. */
   private def addUser(user: User, authenticationUser: AuthenticationUser) =
     getAll(user.role).map{ result =>
       if(result.isEmpty){
