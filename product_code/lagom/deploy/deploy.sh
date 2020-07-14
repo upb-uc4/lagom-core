@@ -8,22 +8,24 @@ kubectl apply -f traefik/traefik-deployment.yaml
 kubectl apply -f traefik/traefik-router.yaml
 
 echo "##############################"
-echo "#     Starting Cassandra     #"
+echo "#     Starting Postgres      #"
 echo "##############################"
-kubectl apply -f cassandra-service.yaml
-kubectl apply -f cassandra-statefulset.yaml
+kubectl apply -f postgres/postgres-configmap.yaml
+kubectl apply -f postgres/postgres-storage.yaml
+kubectl apply -f postgres/postgres-deployment.yaml
+kubectl apply -f postgres/postgres-service.yaml
 
 echo "##############################"
 echo "#       Starting Kafka       #"
 echo "##############################"
 kubectl create namespace kafka
-kubectl apply -f kafka.yaml  -n kafka
-kubectl apply -f kafka-single.yaml  -n kafka
+kubectl apply -f kafka/kafka.yaml  -n kafka
+kubectl apply -f kafka/kafka-single.yaml  -n kafka
 
 echo "##############################"
-echo "# Wait for Kafka & Cassandra #"
+echo "# Wait for Kafka & Postgres  #"
 echo "##############################"
-kubectl wait pods/cassandra-0 --for=condition=Ready --timeout=300s
+#kubectl wait pods/cassandra-0 --for=condition=Ready --timeout=300s
 kubectl wait kafka/strimzi --for=condition=Ready --timeout=300s  -n kafka
 
 echo "##############################"
@@ -35,11 +37,20 @@ echo "##############################"
 echo "#     Starting Services      #"
 echo "##############################"
 kubectl create secret generic user-application-secret --from-literal=secret="test"
+kubectl create secret generic postgres-user --from-literal=username="postgresadmin"
+kubectl create secret generic postgres-user --from-literal=password="admin1234"
 kubectl apply -f services/user.yaml
+
 kubectl create secret generic authentication-application-secret --from-literal=secret="test"
+kubectl create secret generic postgres-authentication --from-literal=username="postgresadmin"
+kubectl create secret generic postgres-authentication --from-literal=password="admin1234"
 kubectl apply -f services/authentication.yaml
+
 kubectl create secret generic course-application-secret --from-literal=secret="test"
+kubectl create secret generic postgres-course --from-literal=username="postgresadmin"
+kubectl create secret generic postgres-course --from-literal=password="admin1234"
 kubectl apply -f services/course.yaml
+
 kubectl create secret generic hyperledger-application-secret --from-literal=secret="test"
 kubectl apply -f services/hyperledger.yaml
 

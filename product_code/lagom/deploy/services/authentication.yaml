@@ -25,8 +25,18 @@ spec:
                 secretKeyRef:
                   name: authentication-application-secret
                   key: secret
-            - name: CASSANDRA_SERVICE_NAME
-              value: "_cql._tcp.cassandra"
+            - name: POSTGRESQL_URL
+              value: "jdbc:postgresql://postgresql/postgresdb"
+            - name: POSTGRESQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-authentication
+                  key: username
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-authentication
+                  key: password
             - name: KAFKA_SERVICE_NAME
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
