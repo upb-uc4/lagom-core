@@ -4,11 +4,13 @@ metadata:
   name: postgres
   labels:
     app: postgres
+
 spec:
-  type: NodePort
   ports:
     - name: "psql"
       protocol: "TCP"
       port: 5432
+      targetPort: 5432
+
   selector:
     app: postgres

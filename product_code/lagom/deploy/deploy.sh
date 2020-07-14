@@ -37,22 +37,19 @@ echo "##############################"
 echo "#     Starting Services      #"
 echo "##############################"
 kubectl create secret generic user-application-secret --from-literal=secret="test"
-kubectl create secret generic postgres-user --from-literal=username="postgresadmin"
-kubectl create secret generic postgres-user --from-literal=password="admin1234"
+kubectl create secret generic postgres-user --from-literal=username="postgresadmin" --from-literal=password="admin1234"
 kubectl apply -f services/user.yaml
 
 kubectl create secret generic authentication-application-secret --from-literal=secret="test"
-kubectl create secret generic postgres-authentication --from-literal=username="postgresadmin"
-kubectl create secret generic postgres-authentication --from-literal=password="admin1234"
+kubectl create secret generic postgres-authentication --from-literal=username="postgresadmin" --from-literal=password="admin1234"
 kubectl apply -f services/authentication.yaml
 
 kubectl create secret generic course-application-secret --from-literal=secret="test"
-kubectl create secret generic postgres-course --from-literal=username="postgresadmin"
-kubectl create secret generic postgres-course --from-literal=password="admin1234"
+kubectl create secret generic postgres-course --from-literal=username="postgresadmin" --from-literal=password="admin1234"
 kubectl apply -f services/course.yaml
 
 kubectl create secret generic hyperledger-application-secret --from-literal=secret="test"
-kubectl apply -f services/hyperledger.yaml
+#kubectl apply -f services/hyperledger.yaml
 
 echo "##############################"
 echo "#       Forward Ports        #"
