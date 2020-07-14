@@ -1,0 +1,61 @@
+name: IntegrationTests Single Service
+
+on:
+  push:
+    branches: [ feature/hyperledger* ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  DeployAndRunTests:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: check out source repository
+      uses: actions/checkout@v2
+    
+    # Set up JDK
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    
+    # set up Dev_network
+    - name: Set up dev_network - dockers
+      run: |
+        pushd ./product_code/hyperledger/dev_network
+        echo "##########################"
+        echo "#  start docker-compose  #"
+        echo "##########################"
+        docker-compose -f docker-compose-simple.yaml up -d
+        echo "##########################"
+        echo "# started docker-compose #"
+        echo "##########################"
+        echo "#     begin sleep        #"
+        echo "##########################"
+        sleep 180
+        echo "#    finish sleep        #"
+        echo "##########################"
+        popd
+    
+    # compile sbt tests
+    - name: compile tests
+      run: |
+        pushd ./product_test/automatic_test/hyperledger_service_test
+        echo "##########################"
+        echo "#    starting test       #"
+        echo "##########################"
+        sbt compile
+        popd
+		
+    # run sbt tests
+    #- name: Run tests
+     # run: |
+      #  pushd ./product_test/automatic_test/hyperledger_service_test
+       # echo "##########################"
+        #echo "#    starting test       #"
+        #echo "##########################"
+        #sbt test
+        #popd
