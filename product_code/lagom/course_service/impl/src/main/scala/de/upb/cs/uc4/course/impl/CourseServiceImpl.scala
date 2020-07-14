@@ -3,18 +3,17 @@ package de.upb.cs.uc4.course.impl
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import akka.{Done, NotUsed}
-import com.datastax.driver.core.utils.UUIDs
+import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
-import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraSession
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
-import de.upb.cs.uc4.course.impl.commands.{CourseCommand, CreateCourse, DeleteCourse, GetCourse, UpdateCourse}
-import de.upb.cs.uc4.course.impl.readside.CourseEventProcessor
+import de.upb.cs.uc4.course.impl.commands._
+import de.upb.cs.uc4.course.impl.readside.{CourseDatabase, CourseEventProcessor}
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
@@ -25,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(clusterSharding: ClusterSharding,
-                        readSide: ReadSide, processor: CourseEventProcessor, cassandraSession: CassandraSession)
+                        readSide: ReadSide, processor: CourseEventProcessor, database: CourseDatabase)
                        (implicit ec: ExecutionContext, auth: AuthenticationService) extends CourseService {
   readSide.register(processor)
 
@@ -36,10 +35,9 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   /** @inheritdoc */
-  override def getAllCourses: ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
-    cassandraSession.selectAll("SELECT id FROM courses ;")
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
+    database.getAll
       .map(seq => seq
-        .map(row => row.getString("id")) //Future[Seq[String]]
         .map(entityRef(_).ask[Option[Course]](replyTo => GetCourse(replyTo))) //Future[Seq[Future[Option[Course]]]]
       )
       .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[Course]]]
@@ -48,25 +46,34 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           .map(opt => opt.get) //Future[Seq[Course]]
         )
       )
+      .map(seq => seq
+        .filter(course => courseName.isEmpty || course.courseName == courseName.get)
+        .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
+      )
   }
 
   /** @inheritdoc */
   override def addCourse(): ServiceCall[Course, Done] =
-    authenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer)(ServerServiceCall {
-      (_, courseProposal) =>
-        // Generate unique ID for the course to add
-        val courseToAdd = courseProposal.copy(courseId = UUIDs.timeBased.toString)
-        // Look up the sharded entity (aka the aggregate instance) for the given ID.
-        val ref = entityRef(courseToAdd.courseId)
-
-        ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
-          .map {
-            case Accepted => // Creation Successful
-              (ResponseHeader(201, MessageProtocol.empty, List()), Done)
-            case RejectedWithError(code, errorResponse) =>
-              throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+    identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
+      (username, role) =>
+        ServerServiceCall { (_, courseProposal) =>
+          if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username){
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
-    })
+          // Generate unique ID for the course to add
+          val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
+          // Look up the sharded entity (aka the aggregate instance) for the given ID.
+          val ref = entityRef(courseToAdd.courseId)
+
+          ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
+            .map {
+              case Accepted => // Creation Successful
+                (ResponseHeader(201, MessageProtocol.empty, List()), Done)
+              case RejectedWithError(code, errorResponse) =>
+                throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+            }
+        }
+    }
 
   /** @inheritdoc */
   override def deleteCourse(id: String): ServiceCall[NotUsed, Done] =
@@ -77,20 +84,21 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).flatMap {
             case Some(course) =>
               if (role == AuthenticationRole.Lecturer && username != course.lecturerId) {
-                throw Forbidden("Not your course")
+                throw new CustomException(TransportErrorCode(403, 1003, "Error"),
+                  DetailedError("owner mismatch", Seq[SimpleError](SimpleError("lecturerId", "Username must match course's lecturer."))))
               } else {
                 entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
                   .map {
                     case Accepted => // OK
-                      (ResponseHeader(200, MessageProtocol.empty, List(("1", "Operation Successful"))), Done)
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case Rejected(reason) => // Not Found
-                      (ResponseHeader(404, MessageProtocol.empty, List(("1", reason))), Done)
+                      throw new CustomException(TransportErrorCode(500, 1003, "Error"),
+                        DetailedError("internal server error", Seq()))
                   }
               }
             case None =>
-              Future.successful(
-                ResponseHeader(404, MessageProtocol.empty, List(("1", "A course with the given Id does not exist."))),
-                Done)
+              throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+                DetailedError("key not found", Seq[SimpleError](SimpleError("courseId", "Course id does not exist."))))
           }
         }
     }
@@ -99,45 +107,44 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
-      case None => throw NotFound("ID was not found")
+      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+        DetailedError("key not found", Seq[SimpleError](SimpleError("courseId", "Course id does not exist."))))
     }
   }
 
   /** @inheritdoc */
-  override def findCoursesByCourseName(courseName: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall {
-    (header, request) =>
-      getAllCourses.invokeWithHeaders(header, request).map {
-        case (header, response) => (header, response.filter(course => course.courseName == courseName))
-      }
-  }
-
-  /** @inheritdoc */
-  override def findCoursesByLecturerId(id: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall {
-    (header, request) =>
-      getAllCourses.invokeWithHeaders(header, request).map {
-        case (header, response) => (header, response.filter(course => course.lecturerId == id))
-      }
-  }
-
-  /** @inheritdoc */
   override def updateCourse(id: String): ServiceCall[Course, Done] =
-    authenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer)(ServerServiceCall {
-      (_, courseToChange) =>
-        // Look up the sharded entity (aka the aggregate instance) for the given ID.
-        if (id != courseToChange.courseId) {
-          throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            DetailedError("path parameter mismatch", List(SimpleError("courseId", "CourseId and Id in path do not match"))))
-        }
-        val ref = entityRef(id)
+    identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
+      (username, role) =>
+        ServerServiceCall{
+          (_, updatedCourse) =>
+            // Look up the sharded entity (aka the aggregate instance) for the given ID.
+            if (id != updatedCourse.courseId) {
+              throw new CustomException(TransportErrorCode(400, 1003, "Error"),
+                DetailedError("path parameter mismatch", List(SimpleError("courseId", "CourseId and Id in path must match."))))
+            }
 
-        ref.ask[Confirmation](replyTo => UpdateCourse(courseToChange, replyTo))
-          .map {
-            case Accepted => // Update Successful
-              (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-            case RejectedWithError(code, errorResponse) =>
-              throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
-          }
-    })
+            val ref = entityRef(id)
+
+            val courseBefore = ref.ask[Option[Course]](replyTo => GetCourse(replyTo))
+            courseBefore.flatMap{
+              case Some(course) =>
+                if(role == AuthenticationRole.Lecturer && course.lecturerId != username){
+                  throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
+                }
+                else{
+                  ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
+                    .map {
+                      case Accepted => // Update Successful
+                        (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                      case RejectedWithError(code, errorResponse) =>
+                        throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                    }
+                }
+              case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"), DetailedError("key not found", List(SimpleError("courseId", "Course id does not exist."))))
+            }
+        }
+    }
 
   /** @inheritdoc */
   override def allowedMethods: ServiceCall[NotUsed, Done] = ServerServiceCall {
@@ -155,6 +162,5 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   /** @inheritdoc */
   override def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT, DELETE")
-
 
 }

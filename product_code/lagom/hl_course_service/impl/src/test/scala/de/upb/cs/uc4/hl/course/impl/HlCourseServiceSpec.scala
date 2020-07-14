@@ -35,8 +35,6 @@ class HlCourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfte
         override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
           ServiceCall { _ => Future.successful("admin", AuthenticationRole.Admin) }
 
-        override def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole] =
-          ServiceCall { _ => Future.successful(AuthenticationRole.Admin) }
       }
 
       override lazy val hyperLedgerService: HyperLedgerService = new HyperLedgerService {
@@ -92,7 +90,7 @@ class HlCourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfte
   "CourseService service" should {
 
     "get all courses with no courses" in {
-      client.getAllCourses.handleRequestHeader(addAuthenticationHeader()).invoke().map { answer =>
+      client.getAllCourses(None, None).handleRequestHeader(addAuthenticationHeader()).invoke().map { answer =>
         answer shouldBe empty
       }
     }

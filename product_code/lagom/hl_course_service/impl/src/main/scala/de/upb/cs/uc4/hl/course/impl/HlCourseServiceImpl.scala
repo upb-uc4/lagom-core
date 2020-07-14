@@ -22,7 +22,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   /** @inheritdoc */
-  override def getAllCourses: ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
     hyperLedgerSession.read[Seq[Course]]("getAllCourses")
   }
 
@@ -50,22 +50,6 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
   /** @inheritdoc */
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
     hyperLedgerSession.read[Course]("getCourseById", id)
-  }
-
-  /** @inheritdoc */
-  override def findCoursesByCourseName(courseName: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall {
-    (header, request) =>
-      getAllCourses.invokeWithHeaders(header, request).map {
-        case (header, response) => (header, response.filter(course => course.courseName == courseName))
-      }
-  }
-
-  /** @inheritdoc */
-  override def findCoursesByLecturerId(id: String): ServiceCall[NotUsed, Seq[Course]] = ServerServiceCall {
-    (header, request) =>
-      getAllCourses.invokeWithHeaders(header, request).map {
-        case (header, response) => (header, response.filter(course => course.lecturerId == id))
-      }
   }
 
   /** @inheritdoc */

@@ -4,6 +4,8 @@ import akka.NotUsed
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
+import play.api.Environment
 
 /** The AuthenticationService interface.
   *
@@ -17,15 +19,11 @@ trait AuthenticationService extends Service {
   /** Checks if the username and password pair exists */
   def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)]
 
-  /** Returns role of the given user */
-  def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole]
-
   final override def descriptor: Descriptor = {
     import Service._
     named("authentication")
       .withCalls(
-        restCall(Method.GET, pathPrefix + "/users?user&pw", check _),
-        restCall(Method.GET, pathPrefix + "/role/:username", getRole _)
-      )
+        restCall(Method.GET, pathPrefix + "/users?user&pw", check _)
+      ).withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
   }
 }
