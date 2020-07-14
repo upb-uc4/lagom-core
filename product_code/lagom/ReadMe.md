@@ -16,7 +16,7 @@ First start Postgres:
 docker-compose up
 ```
 Attention, this occupies your shell.  
-You may want to detach with 'strg + d' or with '-d' option. 
+You may want to detach with 'ctrl + d' or with '-d' option. 
 
 Use following command:
 ```shell script
