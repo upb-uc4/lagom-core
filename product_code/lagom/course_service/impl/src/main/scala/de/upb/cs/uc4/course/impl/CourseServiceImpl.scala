@@ -34,7 +34,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
     database.getAll
       .map(seq => seq
@@ -52,25 +52,30 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       )
   }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def addCourse(): ServiceCall[Course, Done] =
-    authenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer)(ServerServiceCall {
-      (_, courseProposal) =>
-        // Generate unique ID for the course to add
-        val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
-        // Look up the sharded entity (aka the aggregate instance) for the given ID.
-        val ref = entityRef(courseToAdd.courseId)
-
-        ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
-          .map {
-            case Accepted => // Creation Successful
-              (ResponseHeader(201, MessageProtocol.empty, List()), Done)
-            case RejectedWithError(code, errorResponse) =>
-              throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+    identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
+      (username, role) =>
+        ServerServiceCall { (_, courseProposal) =>
+          if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username){
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
-    })
+          // Generate unique ID for the course to add
+          val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
+          // Look up the sharded entity (aka the aggregate instance) for the given ID.
+          val ref = entityRef(courseToAdd.courseId)
 
-  /** @inheritdoc */ 
+          ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
+            .map {
+              case Accepted => // Creation Successful
+                (ResponseHeader(201, MessageProtocol.empty, List()), Done)
+              case RejectedWithError(code, errorResponse) =>
+                throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+            }
+        }
+    }
+
+  /** @inheritdoc */
   override def deleteCourse(id: String): ServiceCall[NotUsed, Done] =
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
@@ -98,7 +103,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         }
     }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
@@ -107,27 +112,41 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
     }
   }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def updateCourse(id: String): ServiceCall[Course, Done] =
-    authenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer)(ServerServiceCall {
-      (_, courseToChange) =>
-        // Look up the sharded entity (aka the aggregate instance) for the given ID.
-        if (id != courseToChange.courseId) {
-          throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            DetailedError("path parameter mismatch", List(SimpleError("courseId", "CourseId and Id in path do not match"))))
+    identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
+      (username, role) =>
+        ServerServiceCall{
+          (_, updatedCourse) =>
+            // Look up the sharded entity (aka the aggregate instance) for the given ID.
+            if (id != updatedCourse.courseId) {
+              throw new CustomException(TransportErrorCode(400, 1003, "Error"),
+                DetailedError("path parameter mismatch", List(SimpleError("courseId", "CourseId and Id in path must match."))))
+            }
+
+            val ref = entityRef(id)
+
+            val courseBefore = ref.ask[Option[Course]](replyTo => GetCourse(replyTo))
+            courseBefore.flatMap{
+              case Some(course) =>
+                if(role == AuthenticationRole.Lecturer && course.lecturerId != username){
+                  throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
+                }
+                else{
+                  ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
+                    .map {
+                      case Accepted => // Update Successful
+                        (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                      case RejectedWithError(code, errorResponse) =>
+                        throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                    }
+                }
+              case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"), DetailedError("key not found", List(SimpleError("courseId", "Course id does not exist."))))
+            }
         }
-        val ref = entityRef(id)
+    }
 
-        ref.ask[Confirmation](replyTo => UpdateCourse(courseToChange, replyTo))
-          .map {
-            case Accepted => // Update Successful
-              (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-            case RejectedWithError(code, errorResponse) =>
-              throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
-          }
-    })
-
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def allowedMethods: ServiceCall[NotUsed, Done] = ServerServiceCall {
     (_, _) =>
       Future.successful {
@@ -138,11 +157,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       }
   }
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def allowedMethodsGETPOST: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
 
-  /** @inheritdoc */ 
+  /** @inheritdoc */
   override def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT, DELETE")
-
 
 }
