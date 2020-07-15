@@ -38,6 +38,7 @@ echo "##############################"
 echo "#       Wait for Kafka       #"
 echo "##############################"
 kubectl wait kafka/strimzi --for=condition=Ready --timeout=300s  -n kafka
+sleep 60
 
 echo
 echo "##############################"
