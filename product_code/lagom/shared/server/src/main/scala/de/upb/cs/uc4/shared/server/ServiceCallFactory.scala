@@ -8,6 +8,7 @@ import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.varargs
@@ -45,7 +46,8 @@ object ServiceCallFactory {
       auth.check(user, pw).invoke().map {
         case (_, role) =>
           if (!roles.contains(role)) {
-            throw Forbidden("Not authorized")
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"),
+              DetailedError("key not found", List()))
           }
           serviceCall
       }

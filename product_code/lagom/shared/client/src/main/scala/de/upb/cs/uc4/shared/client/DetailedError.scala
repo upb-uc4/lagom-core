@@ -28,6 +28,7 @@ object DetailedError {
       //401
       case "authorization error" => "Username and password combination does not exist"
       //403
+      case "not enough privileges" => "Insufficient privileges for this action"
       case "owner mismatch" => "Only admins and the owner of the resource are allowed to modify the resource"
       //404
       case "key not found" => "Key value is not in use"
