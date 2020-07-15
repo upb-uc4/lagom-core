@@ -1,25 +1,35 @@
 package de.upb.cs.uc4.hyperledger.hyperledger_service.test
 
+import java.nio.file.Paths
+
+import scala.io.Source
 import akka.Done
 import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, NotFound}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.wordspec.{AnyWordSpec, AsyncWordSpec}
+import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.matchers.should.Matchers
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
+import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.hyperledger.ConnectionManager
 import de.upb.cs.uc4.hyperledger.traits._
 import de.upb.cs.uc4.hyperledger.impl._
 import de.upb.cs.uc4.hyperledger.api._
 import de.upb.cs.uc4.test_resources._
+import play.api.libs.json.Json
 
 /** Tests for the CourseService
  * All tests need to be started in the defined order
  */
 class HyperledgerServiceTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
-  private val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCluster()) { ctx =>
-    new HyperLedgerApplication(ctx) with LocalServiceLocator { }
+  private lazy val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCluster()) { ctx =>
+    new HyperLedgerApplication(ctx) with LocalServiceLocator {
+      override lazy val connectionManager: ConnectionManagerTrait = ConnectionManager(
+        Paths.get(getClass.getResource("/connection_profile.yaml").toURI),
+        Paths.get(getClass.getResource("/wallet/").toURI)
+      )
+    }
   }
 
   val client: HyperLedgerService = server.serviceClient.implement[HyperLedgerService]
@@ -55,7 +65,7 @@ class HyperledgerServiceTest extends AsyncWordSpec with Matchers with BeforeAndA
 
     "read a course" in {
       client.read("getCourseById").invoke(List("A")).map { answer =>
-        answer should ===(TestCourses.courseA)
+        Json.parse(answer).as[Course] should ===(Json.parse(TestCourses.courseA).as[Course])
       }
     }
 
