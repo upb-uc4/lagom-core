@@ -28,6 +28,7 @@ echo
 echo "##############################"
 echo "#        Init Postgres       #"
 echo "##############################"
+sleep 20
 ./init_postgres.sh
 
 echo
