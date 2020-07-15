@@ -4,7 +4,7 @@ import java.util.Base64
 
 import akka.Done
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, TransportException}
+import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
@@ -13,6 +13,7 @@ import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
+import de.upb.cs.uc4.shared.client.CustomException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.wordspec.AsyncWordSpec
@@ -95,7 +96,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "delete a non-existing course" in {
       client.deleteCourse("42").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
         answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
@@ -111,7 +112,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "find a non-existing course" in {
       client.findCourseByCourseId("42").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
@@ -122,9 +123,9 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "update a non-existing course" in {
-      client.updateCourse(course3.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course3).failed.map {
+      client.updateCourse("GutenMorgen").handleRequestHeader(addAuthorizationHeader()).invoke(course3.copy(courseId = "GutenMorgen")).failed.map {
         answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
