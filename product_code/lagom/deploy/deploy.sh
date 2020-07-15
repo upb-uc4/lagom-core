@@ -24,11 +24,12 @@ kubectl create namespace kafka
 kubectl apply -f kafka/kafka.yaml  -n kafka
 kubectl apply -f kafka/kafka-single.yaml  -n kafka
 
+sleep 10
 echo
 echo "##############################"
 echo "#        Init Postgres       #"
 echo "##############################"
-sleep 20
+kubectl wait deployment/postgres --for=condition=Ready --timeout=300s
 ./init_postgres.sh
 
 echo
