@@ -20,7 +20,7 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
   private def entityRef: EntityRef[HyperLedgerCommand] =
     clusterSharding.entityRefFor(HyperLedgerBehaviour.typeKey, "hl")
 
-  implicit val timeout: Timeout = Timeout(5.seconds)
+  implicit val timeout: Timeout = Timeout(60.seconds)
 
   override def write(transactionId: String): ServiceCall[Seq[String], Done] = ServiceCall{ params =>
     entityRef.ask[Confirmation](replyTo => Write(transactionId, params, replyTo)).map{

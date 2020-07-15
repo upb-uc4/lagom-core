@@ -96,6 +96,7 @@ lazy val hyperledger_service_api = (project in file("hyperledger_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
+  .dependsOn(shared_client)
 
 lazy val hyperledger_service = (project in file("hyperledger_service/impl"))
   .enablePlugins(LagomScala)

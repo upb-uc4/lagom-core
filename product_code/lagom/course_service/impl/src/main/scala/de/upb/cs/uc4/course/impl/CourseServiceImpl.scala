@@ -32,7 +32,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   private def entityRef(id: String): EntityRef[CourseCommand] =
     clusterSharding.entityRefFor(CourseState.typeKey, id)
 
-  implicit val timeout: Timeout = Timeout(5.seconds)
+  implicit val timeout: Timeout = Timeout(15.seconds)
 
   /** @inheritdoc */
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>

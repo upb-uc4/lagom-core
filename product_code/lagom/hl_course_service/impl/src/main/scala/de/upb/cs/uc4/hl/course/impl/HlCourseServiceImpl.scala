@@ -20,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
                          (implicit ec: ExecutionContext, auth: AuthenticationService) extends HlCourseService {
 
-  implicit val timeout: Timeout = Timeout(5.seconds)
+  implicit val timeout: Timeout = Timeout(60.seconds)
 
   /** @inheritdoc */
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
