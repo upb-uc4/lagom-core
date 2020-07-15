@@ -33,7 +33,7 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
   override def read(transactionId: String): ServiceCall[Seq[String], String] = ServiceCall{ params =>
     entityRef.ask[Option[String]](replyTo => Read(transactionId, params, replyTo)).map{
       case Some(json) => json
-      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"), DetailedError("key not found", List(SimpleError("courseId", "Course id does not exist."))))
+      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"), DetailedError("key not found", List()))
     }
   }
 }
