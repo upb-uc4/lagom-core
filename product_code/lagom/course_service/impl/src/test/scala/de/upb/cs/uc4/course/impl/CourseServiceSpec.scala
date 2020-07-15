@@ -88,7 +88,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "update a non-existing course" in {
-      client.updateCourse(course3.courseId).handleRequestHeader(addAuthenticationHeader()).invoke(course3).failed.map{
+      client.updateCourse("GutenMorgen").handleRequestHeader(addAuthenticationHeader()).invoke(course3.copy(courseId = "GutenMorgen")).failed.map{
         answer =>
           answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
