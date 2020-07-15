@@ -29,7 +29,7 @@ echo
 echo "##############################"
 echo "#        Init Postgres       #"
 echo "##############################"
-kubectl wait deployment/postgres --for=condition=Ready --timeout=300s
+kubectl wait svc/postgres --for=condition=Ready --timeout=300s
 ./init_postgres.sh
 
 echo
