@@ -47,7 +47,7 @@ object ServiceCallFactory {
         case (_, role) =>
           if (!roles.contains(role)) {
             throw new CustomException(TransportErrorCode(403, 1003, "Error"),
-              DetailedError("key not found", List()))
+              DetailedError("not enough privileges", List()))
           }
           serviceCall
       }
@@ -72,7 +72,8 @@ object ServiceCallFactory {
       auth.check(user, pw).invoke().map {
         case (username, role) =>
           if (!roles.contains(role)) {
-            throw Forbidden("Not authorized")
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"),
+              DetailedError("not enough privileges", List()))
           }
           serviceCall(username, role)
       }
