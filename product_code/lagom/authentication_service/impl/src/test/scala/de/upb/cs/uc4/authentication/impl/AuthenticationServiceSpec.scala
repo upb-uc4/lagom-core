@@ -5,12 +5,13 @@ import java.util.Base64
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, TransportException}
+import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.shared.client.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
@@ -66,13 +67,13 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
     "detect a wrong username" in {
       client.check("studenta", "student").invoke().failed.map{
-        answer => answer.asInstanceOf[TransportException].errorCode.http should ===(401)
+        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
       }
     }
 
     "detect a wrong password" in {
       client.check("student", "studenta").invoke().failed.map{
-        answer => answer.asInstanceOf[TransportException].errorCode.http should ===(401)
+        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
       }
     }
 
@@ -93,7 +94,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }(client, server.executionContext)
 
       serviceCall.handleRequestHeader(addLoginHeader("student", "student")).invoke().failed.map{ answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(403)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(403)
       }
     }
 
@@ -112,7 +113,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
       eventually(timeout(Span(2, Minutes))) {
         client.check("student", "student").invoke().failed.map{ answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(401)
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
         }
       }
     }

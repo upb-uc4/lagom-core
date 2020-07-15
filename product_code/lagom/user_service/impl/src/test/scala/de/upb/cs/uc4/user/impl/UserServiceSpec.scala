@@ -7,11 +7,12 @@ import akka.Done
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, TransportException}
+import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.shared.client.CustomException
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
@@ -106,53 +107,53 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "delete a non-existing user" in {
       client.deleteUser("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
         answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "find a non-existing student" in {
       client.getStudent("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "find a non-existing lecturer" in {
       client.getLecturer("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "find a non-existing admin" in {
       client.getAdmin("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "update a non-existing student" in {
       client.updateStudent("Guten Abend").handleRequestHeader(addAuthorizationHeader())
         .invoke(student0.copy(username = "Guten Abend")).failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "update a non-existing lecturer" in {
       client.updateLecturer("Guten Abend").handleRequestHeader(addAuthorizationHeader())
         .invoke(lecturer0.copy(username = "Guten Abend")).failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "update a non-existing admin" in {
       client.updateAdmin("Guten Abend").handleRequestHeader(addAuthorizationHeader())
         .invoke(admin0.copy(username = "Guten Abend")).failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "add an already existing user" in {
       client.addAdmin().handleRequestHeader(addAuthorizationHeader())
         .invoke(PostMessageAdmin(authenticationUser, admin1)).failed.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(409)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
       }
     }
 
@@ -160,7 +161,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
         client.getStudent(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().failed
       }.map { answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
