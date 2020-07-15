@@ -6,6 +6,11 @@ import de.upb.cs.uc4.hyperledger.traits.{ChaincodeTrait, ConnectionManagerTrait}
 import org.hyperledger.fabric.gateway.Gateway.Builder
 import org.hyperledger.fabric.gateway._
 
+/**
+  * Manager to engage in communication with the HyperledgerNetwork
+  * @param connection_profile_path Path to connectionProfile.yaml
+  * @param wallet_path Path to wallet dictionary containing all certificates
+  */
 case class ConnectionManager(
     connection_profile_path : Path = Paths.get("connection_profile.yaml"),
     wallet_path : Path = Paths.get("wallet"))
