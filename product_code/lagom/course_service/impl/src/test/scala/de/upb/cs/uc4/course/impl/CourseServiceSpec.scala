@@ -11,9 +11,9 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
+import de.upb.cs.uc4.shared.client.CustomException
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
-import de.upb.cs.uc4.shared.client.CustomException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Minutes, Seconds, Span}
 import org.scalatest.wordspec.AsyncWordSpec
