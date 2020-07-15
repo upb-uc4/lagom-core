@@ -30,6 +30,7 @@ echo "##############################"
 echo "#        Init Postgres       #"
 echo "##############################"
 kubectl wait --for=condition=Ready pods --all --timeout=300s
+sleep 60
 ./init_postgres.sh
 
 echo
