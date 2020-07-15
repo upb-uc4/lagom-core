@@ -52,13 +52,16 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   }
 
   //Test users
-  val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
+  val address: Address = Address("Gaenseweg", "42a", "1337", "Entenhausen", "Nimmerland")
   val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
 
-  val student0: Student = Student("student0", Role.Student, address, "Hans", "Wurst", "Haesslich", "hans.wurst@mail.de", "1992-12-10", "IN", "421769", 9000, List())
-  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "Graf", "Wurst", "Haesslich", "graf.wurst@mail.de", "1996-12-11", "Ich bin bloed", "Genderstudies")
-  val admin0: Admin = Admin("admin0", Role.Admin, address, "Dieter", "Wurst", "Haesslich", "dieter.wurst@mail.de", "1996-12-11")
-  val admin1: Admin = Admin("lecturer0", Role.Admin, address, "Lola", "Wurst", "Haesslich", "lola.wurst@mail.de", "1996-12-11")
+  val student0: Student = Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "IN", "421769", 9000, List())
+  val lecturer0: Lecturer = Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+  val admin0: Admin = Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1992-12-10")
+  val admin1: Admin = Admin("lecturer0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1996-12-11")
+
+
+
 
 
   /** Tests only working if the whole instance is started */
@@ -105,26 +108,26 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "delete a non-existing user" in {
-      client.deleteUser("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
+      client.deleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
         answer =>
           answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "find a non-existing student" in {
-      client.getStudent("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
+      client.getStudent("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
         answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "find a non-existing lecturer" in {
-      client.getLecturer("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
+      client.getLecturer("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
         answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "find a non-existing admin" in {
-      client.getAdmin("WurstAG").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
+      client.getAdmin("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
         answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
