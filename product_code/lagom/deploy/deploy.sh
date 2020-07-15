@@ -22,9 +22,9 @@ echo "#       Starting Kafka       #"
 echo "##############################"
 kubectl create namespace kafka
 kubectl apply -f kafka/kafka.yaml  -n kafka
+sleep 10
 kubectl apply -f kafka/kafka-single.yaml  -n kafka
 
-sleep 10
 echo
 echo "##############################"
 echo "#        Init Postgres       #"
