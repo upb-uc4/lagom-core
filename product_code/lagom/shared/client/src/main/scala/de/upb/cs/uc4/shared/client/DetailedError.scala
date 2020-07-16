@@ -28,14 +28,18 @@ object DetailedError {
       //401
       case "authorization error" => "Username and password combination does not exist"
       //403
+      case "not enough privileges" => "Insufficient privileges for this action"
       case "owner mismatch" => "Only admins and the owner of the resource are allowed to modify the resource"
       //404
       case "key not found" => "Key value is not in use"
       //409
       case "key duplicate" => "Key is already in use"
+      //418
+      case "teapot" => "I'm a teapot"
       //422
       case "validation error" => "Your request parameters did not validate"
-
+      //500
+      case "Undeserializable Exception" => "Internal error while deserializing Exception"
       //???
       case _ => "Server Error"
       
