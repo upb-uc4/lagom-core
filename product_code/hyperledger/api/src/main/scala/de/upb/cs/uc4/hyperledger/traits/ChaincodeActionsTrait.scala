@@ -83,6 +83,7 @@ trait ChaincodeActionsTrait {
       case "addCourse" => this.addCourse(params.apply(0))
       case "deleteCourseById" => this.deleteCourseById(params.apply(0))
       case "updateCourseById" => this.updateCourseById(params.apply(0), params.apply(1))
+      case _ => throw new Exception("Illegal transactionId:: \"" + transactionId + "\".")
     }
   }
 
@@ -98,9 +99,9 @@ trait ChaincodeActionsTrait {
     transactionId match {
       case "getCourseById" => this.getCourseById(params.apply(0))
       case "getAllCourses" => this.getAllCourses()
+      case _ => throw new Exception("Illegal transactionId:: \"" + transactionId + "\".")
     }
   }
-
 
   /**
    * Submits any transaction specified by transactionId.

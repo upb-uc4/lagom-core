@@ -2,16 +2,16 @@ package de.upb.cs.uc4.course.impl
 
 import java.util.Base64
 
-import akka.{Done, NotUsed}
+import akka.Done
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{NotFound, RequestHeader, TransportException}
+import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
+import de.upb.cs.uc4.shared.client.CustomException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -25,17 +25,11 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
-      .withCassandra()
+      .withJdbc()
   ) { ctx =>
     new CourseApplication(ctx) with LocalServiceLocator {
-      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
-
-        override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
-          ServiceCall{ _ => Future.successful("admin", AuthenticationRole.Admin)}
-
-        override def getRole(username: String): ServiceCall[NotUsed, AuthenticationRole] =
-          ServiceCall{ _ => Future.successful(AuthenticationRole.Admin)}
-      }
+      override lazy val authenticationService: AuthenticationService =
+        (_: String, _: String) => ServiceCall { _ => Future.successful("admin", AuthenticationRole.Admin) }
     }
   }
 
@@ -57,7 +51,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   "CourseService service" should {
 
     "get all courses with no courses" in {
-      client.getAllCourses.handleRequestHeader(addAuthenticationHeader()).invoke().map { answer =>
+      client.getAllCourses(None,None).handleRequestHeader(addAuthenticationHeader()).invoke().map { answer =>
         answer shouldBe empty
       }
     }
@@ -83,20 +77,20 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "delete a non-existing course" in {
       client.deleteCourse("42").handleRequestHeader(addAuthenticationHeader()).invoke().failed.map{
         answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "find a non-existing course" in {
       client.findCourseByCourseId("42").handleRequestHeader(addAuthenticationHeader()).invoke().failed.map{ answer =>
-          answer shouldBe a [NotFound]
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
     "update a non-existing course" in {
-      client.updateCourse(course3.courseId).handleRequestHeader(addAuthenticationHeader()).invoke(course3).failed.map{
+      client.updateCourse("GutenMorgen").handleRequestHeader(addAuthenticationHeader()).invoke(course3.copy(courseId = "GutenMorgen")).failed.map{
         answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(404)
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
   }

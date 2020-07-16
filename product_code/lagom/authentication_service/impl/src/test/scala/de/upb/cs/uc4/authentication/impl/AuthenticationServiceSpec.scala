@@ -5,12 +5,13 @@ import java.util.Base64
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, TransportException}
+import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.shared.client.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
@@ -35,7 +36,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
-      .withCassandra()
+      .withJdbc()
   ) { ctx =>
     new AuthenticationApplication(ctx) with LocalServiceLocator {
       // Declaration as lazy values forces right execution order
@@ -64,43 +65,36 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   /** Tests only working if the whole instance is started */
   "AuthenticationService service" should {
 
-    "have the standard admin" in {
-      client.check("admin", "admin").invoke().map{ answer =>
-        answer shouldBe a [(String, AuthenticationRole)]
-      }
-    }
-
-    "have the standard lecturer" in {
-      client.check("lecturer", "lecturer").invoke().map{ answer =>
-        answer shouldBe a [(String, AuthenticationRole)]
-      }
-    }
-
-    "have the standard student" in {
-      client.check("student", "student").invoke().map{ answer =>
-        answer shouldBe a [(String, AuthenticationRole)]
-      }
-    }
-
     "detect a wrong username" in {
       client.check("studenta", "student").invoke().failed.map{
-        answer => answer.asInstanceOf[TransportException].errorCode.http should ===(401)
+        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
       }
     }
 
     "detect a wrong password" in {
       client.check("student", "studenta").invoke().failed.map{
-        answer => answer.asInstanceOf[TransportException].errorCode.http should ===(401)
+        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+      }
+    }
+
+
+    "add a new user over the topic" in {
+      authenticationStub.send(new AuthenticationUser("student", "student", AuthenticationRole.Student))
+
+      eventually(timeout(Span(2, Minutes))) {
+        client.check("student", "student").invoke().map{ answer =>
+          answer shouldBe a [(String, AuthenticationRole)]
+        }
       }
     }
 
     "detect that a user is not authorized" in {
       val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Admin){
-         _ => Future.successful(NotUsed)
+        _ => Future.successful(NotUsed)
       }(client, server.executionContext)
 
       serviceCall.handleRequestHeader(addLoginHeader("student", "student")).invoke().failed.map{ answer =>
-        answer.asInstanceOf[TransportException].errorCode.http should ===(403)
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(403)
       }
     }
 
@@ -114,25 +108,16 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "add a new user over the topic" in {
-      authenticationStub.send(new AuthenticationUser("Ben", "Hermann", AuthenticationRole.Admin))
-
-      eventually(timeout(Span(2, Minutes))) {
-        client.check("Ben", "Hermann").invoke().map{ answer =>
-          answer shouldBe a [(String, AuthenticationRole)]
-        }
-      }
-    }
-
     "remove a user over the topic" in {
-      deletionStub.send(JsonUsername("admin"))
+      deletionStub.send(JsonUsername("student"))
 
       eventually(timeout(Span(2, Minutes))) {
-        client.check("admin", "admin").invoke().failed.map{ answer =>
-          answer.asInstanceOf[TransportException].errorCode.http should ===(401)
+        client.check("student", "student").invoke().failed.map{ answer =>
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
         }
       }
     }
+
   }
 }
 

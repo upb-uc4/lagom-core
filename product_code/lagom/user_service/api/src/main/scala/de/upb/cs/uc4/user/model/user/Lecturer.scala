@@ -17,7 +17,7 @@ case class Lecturer(username: String,
 
   def trim: Lecturer = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim, freeText.trim, researchArea.trim)
+      picture.trim, email.trim, birthDate.trim, freeText.trim, researchArea.trim)
   }
 }
 

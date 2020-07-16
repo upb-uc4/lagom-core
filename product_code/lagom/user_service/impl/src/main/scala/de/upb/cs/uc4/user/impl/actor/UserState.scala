@@ -91,6 +91,7 @@ case class UserState(optUser: Option[User]) {
     val usernameRegex = """[a-zA-Z0-9-]+""".r
     val nameRegex = """[a-zA-Z]+""".r
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
+    val dateRegex = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
     val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
       "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
 
@@ -110,6 +111,9 @@ case class UserState(optUser: Option[User]) {
     }
     if (!mailRegex.matches(user.email)) {
       error :+= SimpleError("email", "Email must be in email format example@xyz.com.")
+    }
+    if (!dateRegex.matches(user.birthDate)) {
+      error :+= SimpleError("birthDate", "Birthdate must be of the following format \"yyyy-mm-dd\".")
     }
     if (!nameRegex.matches(user.firstName)) {
       error :+= SimpleError("firstName", "First name must not contain XYZ.")
@@ -158,7 +162,7 @@ object UserState {
     * namespaced under a typekey that specifies a name and also the type of the commands
     * that sharded actor can receive.
     */
-  val typeKey: EntityTypeKey[UserCommand] = EntityTypeKey[UserCommand](UserApplication.cassandraOffset)
+  val typeKey: EntityTypeKey[UserCommand] = EntityTypeKey[UserCommand](UserApplication.offset)
 
   /**
     * Format for the course state.
