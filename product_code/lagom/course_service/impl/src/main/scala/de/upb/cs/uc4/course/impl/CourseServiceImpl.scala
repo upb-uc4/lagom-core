@@ -53,7 +53,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   }
 
   /** @inheritdoc */
-  override def addCourse(): ServiceCall[Course, Done] =
+  override def addCourse(): ServiceCall[Course, Course] =
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
         ServerServiceCall { (_, courseProposal) =>
@@ -68,7 +68,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
             .map {
               case Accepted => // Creation Successful
-                (ResponseHeader(201, MessageProtocol.empty, List()), Done)
+                (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
               case RejectedWithError(code, errorResponse) =>
                 throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
             }

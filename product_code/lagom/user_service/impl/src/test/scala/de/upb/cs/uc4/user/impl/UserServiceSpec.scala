@@ -3,7 +3,6 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
-import akka.Done
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -90,20 +89,29 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add a student" in {
-      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(authenticationUser, student0)).map { answer =>
-        answer should ===(Done)
+      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(authenticationUser, student0))
+      eventually(timeout(Span(2, Minutes))) {
+        client.getAllStudents.handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
+          answer should contain (student0)
+        }
       }
     }
 
     "add a lecturer" in {
-      client.addLecturer().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageLecturer(authenticationUser, lecturer0)).map { answer =>
-        answer should ===(Done)
+      client.addLecturer().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageLecturer(authenticationUser, lecturer0))
+      eventually(timeout(Span(2, Minutes))) {
+        client.getAllLecturers.handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
+          answer should contain (lecturer0)
+        }
       }
     }
 
     "add an admin" in {
-      client.addAdmin().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageAdmin(authenticationUser, admin0)).map { answer =>
-        answer should ===(Done)
+      client.addAdmin().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageAdmin(authenticationUser, admin0))
+      eventually(timeout(Span(2, Minutes))) {
+        client.getAllAdmins.handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
+          answer should contain (admin0)
+        }
       }
     }
 
