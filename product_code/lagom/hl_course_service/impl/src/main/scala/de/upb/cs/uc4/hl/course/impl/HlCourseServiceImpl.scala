@@ -89,7 +89,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
                   throw new CustomException(TransportErrorCode(422, 1003, "Error"),
                     DetailedError("validation error", validationErrors))
                 }
-                hyperLedgerSession.write("addCourse", updatedCourse)
+                hyperLedgerSession.write("updateCourseById", updatedCourse)
                   .map((ResponseHeader(201, MessageProtocol.empty, List()), _))
               }
             }

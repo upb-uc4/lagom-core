@@ -26,7 +26,7 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
     entityRef.ask[Confirmation](replyTo => Write(transactionId, params, replyTo)).map{
       case Accepted => Done
       case Rejected(reason) => throw new CustomException(TransportErrorCode(500, 1003, "Error"),
-        DetailedError("owner mismatch", List[SimpleError](SimpleError("HLService Exception", reason))))
+        DetailedError("hyperledger write exception", List[SimpleError](SimpleError("HLService Exception", reason))))
     }
   }
 
