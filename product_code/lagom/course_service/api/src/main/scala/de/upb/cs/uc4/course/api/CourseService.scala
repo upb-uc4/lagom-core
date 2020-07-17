@@ -21,7 +21,7 @@ trait CourseService extends Service {
   val pathPrefix = "/course-management"
 
   /** Add a new course to the database */
-  def addCourse(): ServiceCall[Course, Done]
+  def addCourse(): ServiceCall[Course, Course]
 
   /** Deletes a course */
   def deleteCourse(id: String): ServiceCall[NotUsed, Done]

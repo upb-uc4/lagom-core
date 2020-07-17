@@ -77,8 +77,12 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new student to the database */
-  override def addStudent(): ServiceCall[PostMessageStudent, Done] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.student)
+  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, user) =>
+    addUser(user.authUser).invokeWithHeaders(header, user.student).map{
+      case (header, user) =>
+        (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
+          user.asInstanceOf[Student])
+    }
   }
 
   /** Get a specific student */
@@ -97,13 +101,10 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     identifiedAuthenticated(AuthenticationRole.Student, AuthenticationRole.Admin) {
       (authUsername, role)=>
         ServerServiceCall { (header, user) =>
-          if (username != user.username.trim){
-            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
-          }
           if (role == AuthenticationRole.Student && authUsername != user.username.trim){
             throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
-          updateUser().invokeWithHeaders(header, user)
+          updateUser(username).invokeWithHeaders(header, user)
         }
     }
 
@@ -114,8 +115,12 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new lecturer to the database */
-  override def addLecturer(): ServiceCall[PostMessageLecturer, Done] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.lecturer)
+  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, user) =>
+    addUser(user.authUser).invokeWithHeaders(header, user.lecturer).map{
+      case (header, user) =>
+        (header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
+          user.asInstanceOf[Lecturer])
+    }
   }
 
   /** Get a specific lecturer */
@@ -134,13 +139,10 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     identifiedAuthenticated(AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
       (authUsername, role)=>
         ServerServiceCall { (header, user) =>
-          if (username != user.username.trim){
-            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
-          }
           if (role == AuthenticationRole.Lecturer && authUsername != user.username.trim){
             throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
-          updateUser().invokeWithHeaders(header, user)
+          updateUser(username).invokeWithHeaders(header, user)
         }
     }
 
@@ -151,8 +153,12 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new admin to the database */
-  override def addAdmin(): ServiceCall[PostMessageAdmin, Done] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.admin)
+  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, user) =>
+    addUser(user.authUser).invokeWithHeaders(header, user.admin).map{
+      case (header, user) =>
+        (header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
+          user.asInstanceOf[Admin])
+    }
   }
 
   /** Get a specific admin */
@@ -168,14 +174,10 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing admin */
   override def updateAdmin(username: String): ServiceCall[Admin, Done] =
-    identifiedAuthenticated(AuthenticationRole.Admin) {
-      (authUsername, role)=>
-        ServerServiceCall { (header, user) =>
-          if (username != user.username.trim){
-            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
-          }
-          updateUser().invokeWithHeaders(header, user)
-        }
+    authenticated(AuthenticationRole.Admin) {
+      ServerServiceCall { (header, user) =>
+        updateUser(username).invokeWithHeaders(header, user)
+      }
     }
 
   /** Get role of the user */
@@ -197,14 +199,14 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
   /** Helper method for adding a generic User, independent of the role */
-  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, Done] = authenticated(AuthenticationRole.Admin) {
+  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
       val ref = entityRef(user.username)
 
       ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
         .map {
           case Accepted => // Creation Successful
-            (ResponseHeader(201, MessageProtocol.empty, List()), Done)
+            (ResponseHeader(201, MessageProtocol.empty, List()), user)
           case RejectedWithError(code, errorResponse) =>
             throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
         }
@@ -212,7 +214,11 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Helper method for updating a generic User, independent of the role */
-  private def updateUser(): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
+  private def updateUser(username: String): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
+    if (username != user.username.trim) {
+      throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+    }
+
     val ref = entityRef(user.username)
 
     ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
