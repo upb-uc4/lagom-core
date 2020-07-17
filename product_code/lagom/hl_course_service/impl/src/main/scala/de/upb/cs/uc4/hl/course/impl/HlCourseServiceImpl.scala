@@ -42,7 +42,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
             }
             val courseToAdd = courseProposal.copy(courseId =java.util.UUID.randomUUID().toString)
             val validationErrors = validateCourseSyntax(courseToAdd)
-            if (!validationErrors.isEmpty) {
+            if (validationErrors.nonEmpty) {
               throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("validation error", validationErrors))
             }
             hyperLedgerSession.write("addCourse", courseToAdd).map((ResponseHeader(201, MessageProtocol.empty, List()), _))
@@ -85,12 +85,12 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
                   Seq[SimpleError](SimpleError("lecturerId", "Username must match course's lecturer."))))
               } else {
                 val validationErrors = validateCourseSyntax(updatedCourse)
-                if (!validationErrors.isEmpty) {
+                if (validationErrors.nonEmpty) {
                   throw new CustomException(TransportErrorCode(422, 1003, "Error"),
                     DetailedError("validation error", validationErrors))
                 }
-                hyperLedgerSession.write("updateCourseById", updatedCourse)
-                  .map((ResponseHeader(201, MessageProtocol.empty, List()), _))
+                hyperLedgerSession.write("updateCourseById", Seq(updatedCourse.courseId), Seq(updatedCourse))
+                  .map((ResponseHeader(200, MessageProtocol.empty, List()), _))
               }
             }
         }
