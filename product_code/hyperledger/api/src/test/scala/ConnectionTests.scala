@@ -1,8 +1,8 @@
 import de.upb.cs.uc4.hyperledger.ConnectionManager
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.PrivateMethodTester
+import org.scalatest.matchers.should.Matchers
 
-class ConnectionTests extends AnyWordSpec with PrivateMethodTester {
+class ConnectionTests extends AnyWordSpec with Matchers{
 
   val connectionManager = ConnectionManager()
 
@@ -12,15 +12,15 @@ class ConnectionTests extends AnyWordSpec with PrivateMethodTester {
       "provide gateway connection" in {
         // retrieve possible identities
         val wallet = connectionManager.getWallet()
-        assert(wallet != null, "Wallet retrieved was null.")
+        wallet should not be null
 
         // prepare Network Builder
         val builder = connectionManager.getBuilder(wallet)
-        assert(builder != null, "Builder retrieved was null, maybe the connection profile did not match the running network.")
+        builder should not be null
 
         // get gateway object
         val gateway = builder.connect
-        assert(gateway != null, "Gateway retrieved was null.")
+        gateway should not be null
 
         // cleanup
         connectionManager.disposeGateway(gateway)
@@ -29,20 +29,20 @@ class ConnectionTests extends AnyWordSpec with PrivateMethodTester {
       "provide network connection" in {
         // retrieve possible identities
         val wallet = connectionManager.getWallet()
-        assert(wallet != null, "Wallet retrieved was null.")
+        wallet should not be null
 
         // prepare Network Builder
         val builder = connectionManager.getBuilder(wallet)
-        assert(builder != null, "Builder retrieved was null, maybe the connection profile did not match the running network.")
+        builder should not be null
 
         // get gateway object
         val gateway = builder.connect
-        assert(gateway != null, "Gateway retrieved was null.")
+        gateway should not be null
 
         // try connecting to the network
         try{
           val network = gateway.getNetwork(connectionManager.channel_name)
-          assert(network != null, "Network retrieved was null.")
+          network should not be null
         } finally {
           connectionManager.disposeGateway(gateway)
         }
@@ -51,8 +51,8 @@ class ConnectionTests extends AnyWordSpec with PrivateMethodTester {
       "Provice chaincode connection" in {
         // test full chaincode connection
         val (gateway, chaincode) = connectionManager.initializeConnection()
-        assert(gateway != null, "Gateway retrieved was null.")
-        assert(chaincode != null, "Chaincode retrieved was null.")
+        gateway should not be null
+        chaincode should not be null
 
         // cleanup
         connectionManager.disposeGateway(gateway)

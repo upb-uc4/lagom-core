@@ -1,7 +1,8 @@
 import de.upb.cs.uc4.hyperledger.ChaincodeQuickAccess
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ChaincodeQuickAccessTests extends AnyWordSpec {
+class ChaincodeQuickAccessTests extends AnyWordSpec with Matchers {
 
   "The ChainCodeQuickAccess" when {
     "accessed" should {
@@ -13,7 +14,7 @@ class ChaincodeQuickAccessTests extends AnyWordSpec {
         println(result)
 
         // perform tests
-        assert(result != null, "result was null")
+        result should not be null
       }
     }
   }
