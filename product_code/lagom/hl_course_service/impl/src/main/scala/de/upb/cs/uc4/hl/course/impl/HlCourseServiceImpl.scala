@@ -2,6 +2,7 @@ package de.upb.cs.uc4.hl.course.impl
 
 import akka.util.Timeout
 import akka.{Done, NotUsed}
+import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
@@ -12,7 +13,6 @@ import de.upb.cs.uc4.hl.course.api.HlCourseService
 import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
-import de.upb.cs.uc4.shared.server.messages.{Accepted, RejectedWithError}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -41,7 +41,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
             if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username){
               throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
             }
-            val courseToAdd = courseProposal.copy(courseId =java.util.UUID.randomUUID().toString)
+            val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
             val validationErrors = validateCourseSyntax(courseToAdd)
             if (validationErrors.nonEmpty) {
               throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("validation error", validationErrors))
