@@ -1,11 +1,12 @@
 package de.upb.cs.uc4.hyperledger.impl
 
 import akka.Done
-import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, NotFound}
+import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, NotFound, TransportErrorCode}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.hyperledger.traits.{ChaincodeTrait, ConnectionManagerTrait}
+import de.upb.cs.uc4.shared.client.CustomException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -122,7 +123,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not read a non-existing course" in {
       client.read("getCourseById").invoke(List("invalidID")).failed.map { answer =>
-        answer shouldBe a [NotFound]
+        answer.asInstanceOf[CustomException].getErrorCode should ===(TransportErrorCode(404, 1008, "Policy Violation/Not Found"))
       }
     }
 
@@ -146,7 +147,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not write a non json" in {
       client.write("addCourse").invoke(List("invalid")).failed.map { answer =>
-        answer shouldBe a [BadRequest]
+        answer shouldBe a [Exception]
       }
     }
 
@@ -158,7 +159,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not delete a non-existing course" in {
       client.write("deleteCourseById").invoke(List("invalidID")).failed.map { answer =>
-        answer shouldBe a [BadRequest]
+        answer shouldBe a [Exception]
       }
     }
 
