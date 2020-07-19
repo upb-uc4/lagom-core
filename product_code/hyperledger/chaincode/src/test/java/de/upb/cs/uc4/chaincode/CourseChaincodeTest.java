@@ -389,6 +389,32 @@ public final class CourseChaincodeTest {
                 .courseDescription("some lecture"));
     }
 
+    @Test
+    public void deleteNonExistingCourse() {
+        CourseChaincode contract = new CourseChaincode();
+        GsonWrapper gson = new GsonWrapper();
+        Context ctx = mock(Context.class);
+        ChaincodeStub stub = mock(ChaincodeStub.class);
+        when(ctx.getStub()).thenReturn(stub);
+        when(stub.getStringState("course1")).thenReturn("{ \"courseId\": \"course1\",\n" +
+                "  \"courseName\": \"courseName1\",\n" +
+                "  \"courseType\": \"Lecture\",\n" +
+                "  \"startDate\": \"2020-06-29\",\n" +
+                "  \"endDate\": \"2020-06-29\",\n" +
+                "  \"ects\": 3,\n" +
+                "  \"lecturerId\": \"lecturer1\",\n" +
+                "  \"maxParticipants\": 100,\n" +
+                "  \"currentParticipants\": 0,\n" +
+                "  \"courseLanguage\": \"English\",\n" +
+                "  \"courseDescription\": \"some lecture\" }");
+        Course course = gson.fromJson(contract.getCourseById(ctx, "course1"), Course.class);
+        assertThat(contract.deleteCourseById(ctx, "notExisting")).isEqualTo(
+                gson.toJson(
+                        new Error()
+                                .name("03")
+                                .detail("Course not found")));
+    }
+
     @Nested
     class AddCourseTransaction {
 
@@ -715,7 +741,6 @@ public final class CourseChaincodeTest {
                             "  \"courseDescription\": \"some lecture\" }"));
         }
     }
-
 
     @Nested
     class UpdateCourseByIdTransaction {

@@ -85,10 +85,16 @@ public class CourseChaincode implements ContractInterface {
      * @param courseId
      */
     @Transaction()
-    public void deleteCourseById (final Context ctx, final String courseId) {
+    public String deleteCourseById (final Context ctx, final String courseId) {
         ChaincodeStub stub = ctx.getStub();
 
+        if(stub.getStringState(courseId) == null || stub.getStringState(courseId).equals(""))
+            return gson.toJson(new Error()
+                    .name("03")
+                    .detail("Course not found"));
+
         stub.delState(courseId);
+        return "";
     }
 
     @Transaction()
@@ -109,7 +115,7 @@ public class CourseChaincode implements ContractInterface {
         String error = getErrorForCourse(updatedCourse);
         if (error != null)
             return error;
-        if(stub.getStringState(courseId).equals(""))
+        if(stub.getStringState(courseId) == null || stub.getStringState(courseId).equals(""))
             return gson.toJson(new Error()
                     .name("03")
                     .detail("Course not found"));
