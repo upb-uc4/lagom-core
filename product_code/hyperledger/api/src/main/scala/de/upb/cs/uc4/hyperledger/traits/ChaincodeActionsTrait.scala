@@ -111,7 +111,7 @@ trait ChaincodeActionsTrait {
    * @return success_state
    */
   @throws[Exception]
-  protected def internalSubmitTransaction(transactionId : String, params : String*) : Array[Byte]
+  def internalSubmitTransaction(transactionId : String, params : String*) : Array[Byte]
 
   /**
    * Evaluates the transaction specified by transactionId.
@@ -121,7 +121,7 @@ trait ChaincodeActionsTrait {
    * @return success_state
    */
   @throws[Exception]
-  protected def internalEvaluateTransaction(transactionId : String, params : String*) : Array[Byte]
+  def internalEvaluateTransaction(transactionId : String, params : String*) : Array[Byte]
 
   /**
    * Wraps the chaincode query result bytes.
