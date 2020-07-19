@@ -45,16 +45,6 @@ val defaultPersistenceKafkaDependencies = Seq(
   lagomScaladslKafkaBroker,
 )
 
-/*
-val lagomServices = Seq(
-  shared_client, shared_server,
-  course_service_api, course_service,
-  hl_course_service_api, hl_course_service,
-  hyperledger_service_api, hyperledger_service,
-  authentication_service_api, authentication_service,
-  user_service_api, user_service
-)*/
-
 // Projects
 lazy val lagom = (project in file("."))
   .aggregate(shared_client, shared_server,
@@ -69,8 +59,6 @@ lazy val lagom = (project in file("."))
     hyperledger_service_api, hyperledger_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service)
-  //.aggregate(lagomServices.asInstanceOf[Seq[ProjectReference]]: _*)
-  //.dependsOn(lagomServices.asInstanceOf[Seq[ClasspathDep[ProjectReference]]]: _*)
 
 // This project is not allowed to have lagom server dependencies
 lazy val shared_client = (project in file("shared/client"))
@@ -133,7 +121,8 @@ lazy val hl_course_service_api = (project in file("hl_course_service/api"))
 lazy val hl_course_service = (project in file("hl_course_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
-    libraryDependencies ++= implDefaultDependencies
+    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies += uuid
   )
   .settings(dockerSettings)
   .dependsOn(hl_course_service_api, shared_server)
