@@ -97,19 +97,31 @@ class HlCourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfte
 
     "create a course" in {
       client.addCourse().handleRequestHeader(addAuthenticationHeader()).invoke(course0).map { answer =>
-        answer should ===(Done)
+        answer.courseName should ===(course0.courseName)
+        answer.courseDescription should ===(course0.courseDescription)
+        answer.courseLanguage should ===(course0.courseLanguage)
+        answer.courseType should ===(course0.courseType)
+        answer.currentParticipants should ===(course0.currentParticipants)
       }
     }
 
     "create a second course" in {
       client.addCourse().handleRequestHeader(addAuthenticationHeader()).invoke(course1).map { answer =>
-        answer should ===(Done)
+        answer.courseName should ===(course1.courseName)
+        answer.courseDescription should ===(course1.courseDescription)
+        answer.courseLanguage should ===(course1.courseLanguage)
+        answer.courseType should ===(course1.courseType)
+        answer.currentParticipants should ===(course1.currentParticipants)
       }
     }
 
     "create a third course" in {
       client.addCourse().handleRequestHeader(addAuthenticationHeader()).invoke(course2).map { answer =>
-        answer should ===(Done)
+        answer.courseName should ===(course2.courseName)
+        answer.courseDescription should ===(course2.courseDescription)
+        answer.courseLanguage should ===(course2.courseLanguage)
+        answer.courseType should ===(course2.courseType)
+        answer.currentParticipants should ===(course2.currentParticipants)
       }
     }
 
