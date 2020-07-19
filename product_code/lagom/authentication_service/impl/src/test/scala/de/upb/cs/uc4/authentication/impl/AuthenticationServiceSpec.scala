@@ -130,7 +130,7 @@ class UserServiceStub(authenticationStub: ProducerStub[AuthenticationUser],
 
   override def getAllStudents: ServiceCall[NotUsed, Seq[Student]] = ServiceCall { _ => Future.successful(Seq()) }
 
-  override def addStudent(): ServiceCall[PostMessageStudent, Done] = ServiceCall { _ => Future.successful(Done) }
+  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServiceCall { _ => Future.successful(null) }
 
   override def getStudent(username: String): ServiceCall[NotUsed, Student] = ServiceCall { _ => Future.successful(null) }
 
@@ -138,7 +138,7 @@ class UserServiceStub(authenticationStub: ProducerStub[AuthenticationUser],
 
   override def getAllLecturers: ServiceCall[NotUsed, Seq[Lecturer]] = ServiceCall { _ => Future.successful(Seq()) }
 
-  override def addLecturer(): ServiceCall[PostMessageLecturer, Done] = ServiceCall { _ => Future.successful(Done) }
+  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServiceCall { _ => Future.successful(null) }
 
   override def getLecturer(username: String): ServiceCall[NotUsed, Lecturer] = ServiceCall { _ => Future.successful(null) }
 
@@ -146,7 +146,7 @@ class UserServiceStub(authenticationStub: ProducerStub[AuthenticationUser],
 
   override def getAllAdmins: ServiceCall[NotUsed, Seq[Admin]] = ServiceCall { _ => Future.successful(Seq()) }
 
-  override def addAdmin(): ServiceCall[PostMessageAdmin, Done] = ServiceCall { _ => Future.successful(Done) }
+  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServiceCall { _ => Future.successful(null) }
 
   override def getAdmin(username: String): ServiceCall[NotUsed, Admin] = ServiceCall { _ => Future.successful(null) }
 

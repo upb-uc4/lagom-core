@@ -34,7 +34,7 @@ trait UserService extends Service {
   def getAllStudents: ServiceCall[NotUsed, Seq[Student]]
 
   /** Add a new student to the database */
-  def addStudent(): ServiceCall[PostMessageStudent, Done]
+  def addStudent(): ServiceCall[PostMessageStudent, Student]
 
   /** Get a specific student */
   def getStudent(username: String): ServiceCall[NotUsed, Student]
@@ -48,7 +48,7 @@ trait UserService extends Service {
   def getAllLecturers: ServiceCall[NotUsed, Seq[Lecturer]]
 
   /** Add a new lecturer to the database */
-  def addLecturer(): ServiceCall[PostMessageLecturer, Done]
+  def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer]
 
   /** Get a specific lecturer */
   def getLecturer(username: String): ServiceCall[NotUsed, Lecturer]
@@ -62,7 +62,7 @@ trait UserService extends Service {
   def getAllAdmins: ServiceCall[NotUsed, Seq[Admin]]
 
   /** Add a new admin to the database */
-  def addAdmin(): ServiceCall[PostMessageAdmin, Done]
+  def addAdmin(): ServiceCall[PostMessageAdmin, Admin]
 
   /** Get a specific admin */
   def getAdmin(username: String): ServiceCall[NotUsed, Admin]

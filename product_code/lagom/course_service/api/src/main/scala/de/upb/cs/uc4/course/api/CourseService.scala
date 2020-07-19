@@ -22,7 +22,7 @@ trait CourseService extends Service {
   protected val name = "course"
 
   /** Add a new course to the database */
-  def addCourse(): ServiceCall[Course, Done]
+  def addCourse(): ServiceCall[Course, Course]
 
   /** Deletes a course */
   def deleteCourse(id: String): ServiceCall[NotUsed, Done]
