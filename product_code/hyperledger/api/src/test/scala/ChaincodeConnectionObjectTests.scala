@@ -79,6 +79,7 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
         val allCoursesAfter = ChaincodeQuickAccess.getAllCourses()
         println("All Courses after test: " + allCoursesAfter)
 
+        println("TestResult : " + testResult)
         testResult should equal (Success)
       }
     }
