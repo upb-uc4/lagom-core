@@ -12,6 +12,7 @@ import de.upb.cs.uc4.hl.course.api.HlCourseService
 import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
+import de.upb.cs.uc4.shared.server.messages.{Accepted, RejectedWithError}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -32,7 +33,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
   }
 
   /** @inheritdoc */
-  override def addCourse(): ServiceCall[Course, Done] =
+  override def addCourse(): ServiceCall[Course, Course] =
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
         ServerServiceCall {
@@ -45,7 +46,10 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
             if (validationErrors.nonEmpty) {
               throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("validation error", validationErrors))
             }
-            hyperLedgerSession.write("addCourse", courseToAdd).map((ResponseHeader(201, MessageProtocol.empty, List()), _))
+            hyperLedgerSession.write("addCourse", courseToAdd).map{
+              case Done => // Creation Successful
+                (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
+            }
         }
     }
 
