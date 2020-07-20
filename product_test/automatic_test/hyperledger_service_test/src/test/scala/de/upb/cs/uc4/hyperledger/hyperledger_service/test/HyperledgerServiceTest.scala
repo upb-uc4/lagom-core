@@ -23,12 +23,7 @@ import play.api.libs.json.Json
 class HyperledgerServiceTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private lazy val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCluster()) { ctx =>
-    new HyperLedgerApplication(ctx) with LocalServiceLocator {
-      override lazy val connectionManager: ConnectionManagerTrait = ConnectionManager(
-        Paths.get(getClass.getResource("/connection_profile.yaml").toURI),
-        Paths.get(getClass.getResource("/wallet/").toURI)
-      )
-    }
+    new HyperLedgerApplication(ctx) with LocalServiceLocator { }
   }
 
   val client: HyperLedgerService = server.serviceClient.implement[HyperLedgerService]
