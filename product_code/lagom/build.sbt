@@ -1,7 +1,7 @@
 import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
-version in ThisBuild := "v0.4.0"
+version in ThisBuild := "v0.4.1"
 lagomServiceEnableSsl in ThisBuild := true
 
 // The project uses PostgreSQL
