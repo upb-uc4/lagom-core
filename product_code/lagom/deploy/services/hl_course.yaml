@@ -64,4 +64,3 @@ spec:
       targetPort: 9000
   selector:
     app: hl_course
-  type: LoadBalancer

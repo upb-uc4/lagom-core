@@ -76,4 +76,3 @@ spec:
       targetPort: 9000
   selector:
     app: authentication
-  type: LoadBalancer
