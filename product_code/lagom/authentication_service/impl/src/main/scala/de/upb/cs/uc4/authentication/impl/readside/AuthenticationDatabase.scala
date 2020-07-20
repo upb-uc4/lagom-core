@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AuthenticationDatabase(database: Database)(implicit ec: ExecutionContext) {
 
-  /** Table definition of am authentication table */
+  /** Table definition of an authentication table */
   class AuthenticationTable(tag: Tag) extends Table[String](tag, "uc4AuthenticationTable") {
     def username: Rep[String] = column[String]("username", O.PrimaryKey)
 
