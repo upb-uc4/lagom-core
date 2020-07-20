@@ -72,4 +72,4 @@ echo
 echo "##############################"
 echo "#       Forward Ports        #"
 echo "##############################"
-kubectl port-forward --address 0.0.0.0 service/traefik 9000:8000 9080:8080 9443:4443 7050:7050 7051:7051 -n default
+kubectl port-forward --address 0.0.0.0 service/traefik 9001:8000 9080:8080 9443:4443 -n default

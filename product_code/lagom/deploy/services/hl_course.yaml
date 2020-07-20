@@ -1,21 +1,21 @@
 apiVersion: "apps/v1"
 kind: Deployment
 metadata:
-  name: hl_course
+  name: hlcourse
 spec:
   replicas: 1
 
   selector:
     matchLabels:
-      app: hl_course
+      app: hlcourse
 
   template:
     metadata:
       labels:
-        app: hl_course
+        app: hlcourse
     spec:
       containers:
-        - name: hl_course
+        - name: hlcourse
           image: "uc4official/hl_course_service:latest"
           env:
             - name: JAVA_OPTS
@@ -56,12 +56,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: hl_course
+  name: hlcourse
 spec:
   ports:
     - name: http
       port: 80
       targetPort: 9000
   selector:
-    app: hl_course
+    app: hlcourse
   type: LoadBalancer

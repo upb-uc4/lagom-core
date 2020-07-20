@@ -10,5 +10,5 @@ import de.upb.cs.uc4.course.api.CourseService
 trait HlCourseService extends CourseService {
   /** Prefix for the path for the endpoints, a name/identifier for the service*/
   override val pathPrefix = "/hl-course-management"
-  override val name = "hl_course"
+  override val name = "hlcourse"
 }
