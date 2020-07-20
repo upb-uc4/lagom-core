@@ -1,29 +1,29 @@
 apiVersion: "apps/v1"
 kind: Deployment
 metadata:
-  name: hyperledger
+  name: hl_course
 spec:
   replicas: 1
 
   selector:
     matchLabels:
-      app: hyperledger
+      app: hl_course
 
   template:
     metadata:
       labels:
-        app: hyperledger
+        app: hl_course
     spec:
       containers:
-        - name: hyperledger
-          image: "uc4official/hyperledger_service:latest"
+        - name: hl_course
+          image: "uc4official/hl_course_service:latest"
           env:
             - name: JAVA_OPTS
               value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf"
             - name: APPLICATION_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: hyperledger-application-secret
+                  name: hl-course-application-secret
                   key: secret
             - name: KAFKA_SERVICE_NAME
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
@@ -56,12 +56,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: hyperledger
+  name: hl_course
 spec:
   ports:
     - name: http
       port: 80
       targetPort: 9000
   selector:
-    app: hyperledger
+    app: hl_course
   type: LoadBalancer

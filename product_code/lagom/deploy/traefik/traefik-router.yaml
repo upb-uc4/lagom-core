@@ -17,3 +17,8 @@ spec:
       services:
         - name: user
           port: 80
+    - match: PathPrefix(`/hl-course-management`)
+      kind: Rule
+      services:
+        - name: hl-course
+          port: 80
