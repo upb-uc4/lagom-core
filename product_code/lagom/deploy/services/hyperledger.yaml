@@ -61,9 +61,9 @@ spec:
   ports:
     - name: http
       port: 80
-    - name: hyperledgerOrderer
+    - name: hyperledger-orderer
       port: 7050
-    - name: hyperledgerPeer
+    - name: hyperledger-peer
       port: 7051
   selector:
     app: hyperledger
