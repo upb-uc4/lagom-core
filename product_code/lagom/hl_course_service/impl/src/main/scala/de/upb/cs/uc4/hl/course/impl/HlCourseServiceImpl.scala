@@ -42,7 +42,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
               throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
             }
             val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
-            val validationErrors = validateCourseSyntax(courseToAdd)
+            val validationErrors = courseToAdd.validateCourseSyntax
             if (validationErrors.nonEmpty) {
               throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("validation error", validationErrors))
             }
@@ -88,7 +88,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
                 throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch",
                   Seq[SimpleError](SimpleError("lecturerId", "Username must match course's lecturer."))))
               } else {
-                val validationErrors = validateCourseSyntax(updatedCourse)
+                val validationErrors = updatedCourse.validateCourseSyntax
                 if (validationErrors.nonEmpty) {
                   throw new CustomException(TransportErrorCode(422, 1003, "Error"),
                     DetailedError("validation error", validationErrors))
@@ -116,48 +116,5 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
 
   /** @inheritdoc */
   override def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT, DELETE")
-
-  /** Checks if the course attributes correspond to agreed syntax and semantics
-    *
-    * @param course which attributes shall be verified
-    * @return response-code which gives detailed description of syntax or semantics violation
-    */
-  def validateCourseSyntax(course: Course): Seq[SimpleError] = {
-
-    val nameRegex = """[\s\S]*""".r // Allowed characters for coursename "[a-zA-Z0-9\\s]+".r
-    val descriptionRegex = """[\s\S]*""".r // Allowed characters  for description
-    val dateRegex = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
-
-    var errors = List[SimpleError]()
-
-    if (course.courseName == "") {
-      errors :+= SimpleError("courseName", "Course name must not be empty.")
-    }
-    if (!(nameRegex.matches(course.courseName))) {
-      errors :+= SimpleError("courseName", "Course name must only contain [..].")
-    }
-    if (!CourseType.All.contains(course.courseType)) {
-      errors :+= (SimpleError("courseType", "Course type must be one of [Lecture, Seminar, ProjectGroup]."))
-    }
-    if (!dateRegex.matches(course.startDate)) {
-      errors :+= (SimpleError("startDate", "Start date must be of the following format \"yyyy-mm-dd\"."))
-    }
-    if (!dateRegex.matches(course.endDate)) {
-      errors :+= (SimpleError("endDate", "End date must be of the following format \"yyyy-mm-dd\"."))
-    }
-    if (course.ects <= 0) {
-      errors :+= (SimpleError("ects", "Ects must be a positive integer."))
-    }
-    if (course.maxParticipants <= 0) {
-      errors :+= (SimpleError("maxParticipants", "Maximum Participants must be a positive integer."))
-    }
-    if (!CourseLanguage.All.contains(course.courseLanguage)) {
-      errors :+= (SimpleError("courseLanguage", "Course Language must be one of" + CourseLanguage.All+"."))
-    }
-    if (!descriptionRegex.matches(course.courseDescription)) {
-      errors :+= SimpleError("courseDescription", "Description must only contain Strings.")
-    }
-    errors
-  }
 
 }

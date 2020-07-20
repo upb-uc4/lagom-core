@@ -23,7 +23,7 @@ case class CourseState(optCourse: Option[Course]) {
       case CreateCourse(courseRaw, replyTo) =>
 
         val course = courseRaw.trim
-        val validationErrors = validateCourseSyntax(course)
+        val validationErrors = course.validateCourseSyntax
         if (optCourse.isEmpty) {
           if (validationErrors.isEmpty) {
             Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
@@ -40,7 +40,7 @@ case class CourseState(optCourse: Option[Course]) {
       case UpdateCourse(courseRaw, replyTo) =>
 
         val course = courseRaw.trim
-        val validationErrors = validateCourseSyntax(course)
+        val validationErrors = course.validateCourseSyntax
         if (optCourse.isDefined) {
           if (validationErrors.isEmpty) {
             Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted }
@@ -68,50 +68,6 @@ case class CourseState(optCourse: Option[Course]) {
         println("Unknown Command")
         Effect.noReply
     }
-
-  /** Checks if the course attributes correspond to agreed syntax and semantics
-    *
-    * @param course which attributes shall be verified
-    * @return response-code which gives detailed description of syntax or semantics violation
-    */
-  def validateCourseSyntax(course: Course): Seq[SimpleError] = {
-
-    val nameRegex = """[\s\S]*""".r // Allowed characters for coursename "[a-zA-Z0-9\\s]+".r
-    val descriptionRegex = """[\s\S]*""".r // Allowed characters  for description
-    val dateRegex = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
-
-    var errors = List[SimpleError]()
-
-    if (course.courseName == "") {
-      errors :+= SimpleError("courseName", "Course name must not be empty.")
-    }
-    if (!(nameRegex.matches(course.courseName))) {
-      errors :+= SimpleError("courseName", "Course name must only contain [..].")
-    }
-    if (!CourseType.All.contains(course.courseType)) {
-      errors :+= (SimpleError("courseType", "Course type must be one of [Lecture, Seminar, ProjectGroup]."))
-    }
-    if (!dateRegex.matches(course.startDate)) {
-      errors :+= (SimpleError("startDate", "Start date must be of the following format \"yyyy-mm-dd\"."))
-    }
-    if (!dateRegex.matches(course.endDate)) {
-      errors :+= (SimpleError("endDate", "End date must be of the following format \"yyyy-mm-dd\"."))
-    }
-    if (course.ects <= 0) {
-      errors :+= (SimpleError("ects", "Ects must be a positive integer."))
-    }
-    if (course.maxParticipants <= 0) {
-      errors :+= (SimpleError("maxParticipants", "Maximum Participants must be a positive integer."))
-    }
-    if (!CourseLanguage.All.contains(course.courseLanguage)) {
-      errors :+= (SimpleError("courseLanguage", "Course Language must be one of" + CourseLanguage.All+"."))
-    }
-    if (!descriptionRegex.matches(course.courseDescription)) {
-      errors :+= SimpleError("courseDescription", "Description must only contain Strings.")
-    }
-    errors
-  }
-
 
   /** Functions as an EventHandler
     *

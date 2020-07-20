@@ -14,6 +14,7 @@ package de.upb.cs.uc4.course.model
 
 import de.upb.cs.uc4.course.model.CourseLanguage.CourseLanguage
 import de.upb.cs.uc4.course.model.CourseType.CourseType
+import de.upb.cs.uc4.shared.client.SimpleError
 import play.api.libs.json._
 
 case class Course(
@@ -44,6 +45,49 @@ case class Course(
       courseLanguage,
       courseDescription.trim
     )
+  }
+
+  /** Checks if the course attributes correspond to agreed syntax and semantics
+   *
+   * @return response-code which gives detailed description of syntax or semantics violation
+   */
+  def validateCourseSyntax: Seq[SimpleError] = {
+
+    val course = this
+    val nameRegex = """[\s\S]*""".r // Allowed characters for coursename "[a-zA-Z0-9\\s]+".r
+    val descriptionRegex = """[\s\S]*""".r // Allowed characters  for description
+    val dateRegex = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
+
+    var errors = List[SimpleError]()
+
+    if (course.courseName == "") {
+      errors :+= SimpleError("courseName", "Course name must not be empty.")
+    }
+    if (!(nameRegex.matches(course.courseName))) {
+      errors :+= SimpleError("courseName", "Course name must only contain [..].")
+    }
+    if (!CourseType.All.contains(course.courseType)) {
+      errors :+= (SimpleError("courseType", "Course type must be one of [Lecture, Seminar, ProjectGroup]."))
+    }
+    if (!dateRegex.matches(course.startDate)) {
+      errors :+= (SimpleError("startDate", "Start date must be of the following format \"yyyy-mm-dd\"."))
+    }
+    if (!dateRegex.matches(course.endDate)) {
+      errors :+= (SimpleError("endDate", "End date must be of the following format \"yyyy-mm-dd\"."))
+    }
+    if (course.ects <= 0) {
+      errors :+= (SimpleError("ects", "Ects must be a positive integer."))
+    }
+    if (course.maxParticipants <= 0) {
+      errors :+= (SimpleError("maxParticipants", "Maximum Participants must be a positive integer."))
+    }
+    if (!CourseLanguage.All.contains(course.courseLanguage)) {
+      errors :+= (SimpleError("courseLanguage", "Course Language must be one of" + CourseLanguage.All+"."))
+    }
+    if (!descriptionRegex.matches(course.courseDescription)) {
+      errors :+= SimpleError("courseDescription", "Description must only contain Strings.")
+    }
+    errors
   }
 }
 
