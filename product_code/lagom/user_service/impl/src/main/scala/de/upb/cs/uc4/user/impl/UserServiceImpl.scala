@@ -201,6 +201,12 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Helper method for adding a generic User, independent of the role */
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
+
+      if(user.username.trim.isEmpty){
+        throw new CustomException(TransportErrorCode(422, 1003, "Error"),
+          DetailedError("validation error", Seq(SimpleError("username", "Username must not be blank."))))
+      }
+
       val ref = entityRef(user.username)
 
       ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
