@@ -29,18 +29,18 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     }
 
     val messageBytes = message match {
-      case per :DetailedError =>
+      case der :DetailedError =>
 
         var arr : JsArray = Json.arr()
-        for (error <- per.errors){
+        for (error <- der.errors){
           arr :+= Json.obj(
             "name" -> error.name,
             "reason" -> error.reason
           )
         }
         ByteString.fromString(Json.stringify(Json.obj(
-        "type" -> per.`type`,
-        "title" -> per.title,
+        "type" -> der.`type`,
+        "title" -> der.title,
         "invalidParams" -> arr
       )))
 
@@ -109,10 +109,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     TransportException.fromCodeAndMessage(transportErrorCode, exceptionMessage)
   }
   /**
-   * Override this if you wish to deserialize your own custom Exceptions.
-   *
-   * The default implementation delegates to [[TransportException.fromCodeAndMessage()]], which will return a best match
-   * Lagom built-in exception.
+   * Used to deserialize our CustomExceptions.
    *
    * @param transportErrorCode The transport error code.
    * @param detailedError The detailed Error.
