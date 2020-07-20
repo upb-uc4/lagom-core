@@ -67,7 +67,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       }
     }
 
-  /** Returns a Sequence of all user with
+  /** Returns a Sequence of all users with
    * the specific role
    *
    * @param role of the users
@@ -113,7 +113,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       case Role.Student => students
     }
 
-  /** Returns the query to get all User
+  /** Returns the query to get all users
    * of the specific role
    *
    * @param role to specify
