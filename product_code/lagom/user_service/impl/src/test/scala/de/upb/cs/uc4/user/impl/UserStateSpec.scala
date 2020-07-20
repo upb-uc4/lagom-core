@@ -24,10 +24,10 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
   val address: Address = Address("Deppenstraße", "42a", "1337", "Entenhausen", "Nimmerland")
   val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
 
-  val student0: Student = Student("student0", Role.Student, address, "Hans", "Wurst", "Haesslich", "hans.wurst@mail.de", "1996-12-11", "IN", "421769", 9000, List())
-  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "Graf", "Wurst", "Haesslich", "graf.wurst@mail.de", "1996-12-11", "Ich bin bloed", "Genderstudies")
-  val admin0: Admin = Admin("admin0", Role.Admin, address, "Dieter", "Wurst", "Haesslich", "dieter.wurst@mail.de", "1996-12-11")
-  val admin1: Admin = Admin("admin0", Role.Admin, address, "Lola", "Wurst", "Haesslich", "lola.wurst@mail.de", "1996-12-11")
+  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "IN", "421769", 9000, List())
+  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+  val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "Picture", "example1@mail.de", "1992-12-11")
+  val admin1: Admin = Admin("admin0", Role.Admin, address, "firstNameDifferent", "LastNameDifferent", "Picture", "example2@mail.de", "1992-12-11")
   
   "UserState" should {
 
