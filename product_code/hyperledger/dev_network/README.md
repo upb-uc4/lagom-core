@@ -4,6 +4,15 @@
 * docker-compose
 * docker-IO
 
+### Windows Troubleshooting:
+* make sure your OS is up-to-date (e.g. build ~19041 or later; see Windows 10 Update Assistent etc.)
+* make sure your docker installation is up-to-date (e.g. version ~19.0.8 or later)
+* make sure your docker-compose installation is up-to-date (e.g. version ~1.25 or later)
+* if you get the error `shadowJar x...` during chaincode compilation, try `$ git config --global core.autocrlf false` and re-cloning the repository
+* if you get the startup orderer error: make sure "WSL2" (Windows Subsystem for Linux) is installed
+
+This seems to fix the issues for under Windows for us. Please let us know if you still run into issues.
+
 ## Starting the Network
 To start the development network simply change to the 
 

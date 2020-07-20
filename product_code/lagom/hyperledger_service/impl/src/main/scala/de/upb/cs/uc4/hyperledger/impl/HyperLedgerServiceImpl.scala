@@ -8,7 +8,7 @@ import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, NotFound}
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.hyperledger.impl.actor.HyperLedgerBehaviour
 import de.upb.cs.uc4.hyperledger.impl.commands.{HyperLedgerCommand, Read, Write}
-import de.upb.cs.uc4.shared.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._

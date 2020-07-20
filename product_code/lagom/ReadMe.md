@@ -11,6 +11,13 @@ Should look like this:
 ```
 
 #### Run
+First start Postgres:
+```shell script
+docker-compose up
+```
+Attention, this occupies your shell.  
+You may want to detach with 'ctrl + d' or with '-d' option. 
+
 Use following command:
 ```shell script
 sbt runAll
@@ -22,7 +29,6 @@ If you encounter any unexpected errors, use following command:
 ````shell script
 sbt clean
 ````
-Attention: This resets the Cassandra Database!
 
 If this doesn't help: run in circles, screaming,
 and call the (in)famous LAGOM TEAM.
@@ -46,32 +52,7 @@ sbt <name>_service/docker:publish
 minikube start --memory='10g' --cpus=4
 ```` 
 
-#### Starting Cassandra:
-Every YAML file is in /deploy.
+#### Deploy everything
 ````shell script
-kubectl apply -f .\cassandra-service.yaml
-kubectl apply -f .\cassandra-statefulset.yaml  
-````
-Wait until cassandra started. 
-Check with: 
-````shell script
-kubectl get pods -l="app=cassandra"
-````
-
-#### Setting Role Based Access Control
-````shell script
-kubectl apply -f .\rbac.yaml 
-````
-
-#### Starting the different services
-````shell script
-kubectl create secret generic <name>-application-secret --from-literal=secret="test"
-kubectl apply -f <name>.yaml
-````
-
-#### Accessing a service
-Because we are using kubernetes in docker container, we
-need to open a tunnel to access a service.
-````shell script
-minikube service <name>
-````
+./deploy/deploy.sh
+```` 

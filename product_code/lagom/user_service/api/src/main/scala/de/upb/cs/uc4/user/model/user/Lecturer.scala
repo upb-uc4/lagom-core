@@ -11,12 +11,13 @@ case class Lecturer(username: String,
                     lastName: String,
                     picture: String,
                     email: String,
+                    birthDate: String,
                     freeText: String,
-                    researchArea: String) {
+                    researchArea: String) extends User {
 
   def trim: Lecturer = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim, freeText.trim, researchArea.trim)
+      picture.trim, email.trim, birthDate.trim, freeText.trim, researchArea.trim)
   }
 }
 

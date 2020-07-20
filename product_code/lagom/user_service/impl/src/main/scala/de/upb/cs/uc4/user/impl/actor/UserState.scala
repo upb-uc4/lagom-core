@@ -3,14 +3,14 @@ package de.upb.cs.uc4.user.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
-import de.upb.cs.uc4.shared.api
-import de.upb.cs.uc4.shared.api.{DetailedError, SimpleError}
-import de.upb.cs.uc4.shared.messages._
+import de.upb.cs.uc4.shared.client
+import de.upb.cs.uc4.shared.client.{DetailedError, SimpleError}
+import de.upb.cs.uc4.shared.server.messages._
 import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate, UserEvent}
 import de.upb.cs.uc4.user.model.Role
-import de.upb.cs.uc4.user.model.user.AuthenticationUser
+import de.upb.cs.uc4.user.model.user.{AuthenticationUser, Lecturer, Student, User}
 import play.api.libs.json.{Format, Json}
 
 /** The current state of a User */
@@ -49,7 +49,7 @@ case class UserState(optUser: Option[User]) {
           if(validationErrors.isEmpty){
             Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
           } else {
-            Effect.reply(replyTo)(RejectedWithError(422, api.DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
+            Effect.reply(replyTo)(RejectedWithError(422, client.DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
           }
         } else {
           Effect.reply(replyTo)(RejectedWithError(404, DetailedError("key value error", "Username not found", List(SimpleError("username", "Username does not exist")))))
@@ -91,39 +91,42 @@ case class UserState(optUser: Option[User]) {
     val usernameRegex = """[a-zA-Z0-9-]+""".r
     val nameRegex = """[a-zA-Z]+""".r
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
+    val dateRegex = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
     val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
       "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
 
     var error= List[SimpleError]()
 
-    if (!usernameRegex.matches(user.getUsername)) {
+    if (!usernameRegex.matches(user.username)) {
       error :+= SimpleError("username","Username may only contain [..].")
     }
     if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ""){
       error :+= SimpleError("password","Password must not be empty.")
     }
     if (optUser.isEmpty && !Role.All.contains(user.role)) { //optUser check to ensure this is during creation
-      error :+= (SimpleError("role", "Role must be one of [..]" + Role.All + "."))
+      error :+= SimpleError("role", "Role must be one of [..]" + Role.All + ".")
     }
-    if (user.getAddress.oneEmpty) {
-      error :+= (SimpleError("address", "Address fields must not be empty."))
+    if (user.address.oneEmpty) {
+      error :+= SimpleError("address", "Address fields must not be empty.")
     }
-    if (!mailRegex.matches(user.getEmail)) {
-      error :+= (SimpleError("email", "Email must be in email format example@xyz.com."))
+    if (!mailRegex.matches(user.email)) {
+      error :+= SimpleError("email", "Email must be in email format example@xyz.com.")
     }
-    if (!nameRegex.matches(user.getFirstName)) {
-      error :+= (SimpleError("firstName", "First name must not contain XYZ."))
+    if (!dateRegex.matches(user.birthDate)) {
+      error :+= SimpleError("birthDate", "Birthdate must be of the following format \"yyyy-mm-dd\".")
     }
-    if (!nameRegex.matches(user.getLastName)) {
-      error :+= (SimpleError("lastName", "First name must not contain XYZ."))
+    if (!nameRegex.matches(user.firstName)) {
+      error :+= SimpleError("firstName", "First name must not contain XYZ.")
     }
-    if (!generalRegex.matches(user.getPicture)) { //TODO, this does not make any sense, but pictures are not defined yet
+    if (!nameRegex.matches(user.lastName)) {
+      error :+= SimpleError("lastName", "First name must not contain XYZ.")
+    }
+    if (!generalRegex.matches(user.picture)) { //TODO, this does not make any sense, but pictures are not defined yet
       error :+= SimpleError("picture", "Picture is invalid.")
     }
 
     user match {
-      case u if u.optStudent.isDefined =>
-        val s = u.student
+      case s: Student =>
         if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) {
           error :+= SimpleError("matriculationId", "Student ID invalid.")
         }
@@ -133,8 +136,7 @@ case class UserState(optUser: Option[User]) {
         if(!s.fieldsOfStudy.forall(fos.contains)) {
           error :+= SimpleError("fieldsOfStudy", "Fields of Study must be one of [..].")
         }
-      case u if u.optLecturer.isDefined =>
-        val l = u.lecturer
+      case l: Lecturer =>
         if (!generalRegex.matches(l.freeText)) {
           error :+= SimpleError("freeText", "Free text must only contain the following characters: [..].")
         }
@@ -143,7 +145,7 @@ case class UserState(optUser: Option[User]) {
         }
       case _ =>
     }
-    error.toSeq
+    error
   }
 }
 
@@ -160,7 +162,7 @@ object UserState {
     * namespaced under a typekey that specifies a name and also the type of the commands
     * that sharded actor can receive.
     */
-  val typeKey: EntityTypeKey[UserCommand] = EntityTypeKey[UserCommand](UserApplication.cassandraOffset)
+  val typeKey: EntityTypeKey[UserCommand] = EntityTypeKey[UserCommand](UserApplication.offset)
 
   /**
     * Format for the course state.

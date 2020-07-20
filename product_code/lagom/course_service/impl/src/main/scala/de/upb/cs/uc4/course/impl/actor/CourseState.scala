@@ -7,7 +7,8 @@ import de.upb.cs.uc4.course.impl.CourseApplication
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.events.{CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate}
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
-import de.upb.cs.uc4.shared.messages.{Accepted, Rejected}
+import de.upb.cs.uc4.shared.client.{DetailedError, SimpleError}
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected, RejectedWithError}
 import play.api.libs.json.{Format, Json}
 
 /** The current state of a Course */
@@ -22,31 +23,34 @@ case class CourseState(optCourse: Option[Course]) {
       case CreateCourse(courseRaw, replyTo) =>
 
         val course = courseRaw.trim
-        val responseCode = validateCourseSyntax(course)
-        if (responseCode == "valid") {
-          if (optCourse.isEmpty) {
+        val validationErrors = validateCourseSyntax(course)
+        if (optCourse.isEmpty) {
+          if (validationErrors.isEmpty) {
             Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
-          } else {
-            Effect.reply(replyTo)(Rejected("A course with the given Id already exist."))
           }
-        } else {
-          Effect.reply(replyTo)(Rejected(responseCode))
+          else {
+            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", validationErrors)))
+          }
+        }
+        else {
+          Effect.reply(replyTo)(RejectedWithError(409, DetailedError("key duplicate", List(SimpleError("courseId", "A course with the given Id already exist.")))))
         }
 
 
       case UpdateCourse(courseRaw, replyTo) =>
 
         val course = courseRaw.trim
-        val responseCode = validateCourseSyntax(course)
-        if (responseCode == "valid") {
-          if (optCourse.isDefined) {
+        val validationErrors = validateCourseSyntax(course)
+        if (optCourse.isDefined) {
+          if (validationErrors.isEmpty) {
             Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted }
-          } else {
-            Effect.reply(replyTo)(Rejected("A course with the given Id does not exist."))
+          }
+          else {
+            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", validationErrors)))
           }
         }
         else {
-          Effect.reply(replyTo)(Rejected(responseCode))
+          Effect.reply(replyTo)(RejectedWithError(404, DetailedError("key not found", List(SimpleError("courseId", "Course id does not exist.")))))
         }
 
 
@@ -66,39 +70,46 @@ case class CourseState(optCourse: Option[Course]) {
     }
 
   /** Checks if the course attributes correspond to agreed syntax and semantics
-   *
-   * @param course which attributes shall be verified
-   * @return response-code which gives detailed description of syntax or semantics violation
-   */
-  def validateCourseSyntax(course: Course): String = {
+    *
+    * @param course which attributes shall be verified
+    * @return response-code which gives detailed description of syntax or semantics violation
+    */
+  def validateCourseSyntax(course: Course): Seq[SimpleError] = {
+
     val nameRegex = """[\s\S]*""".r // Allowed characters for coursename "[a-zA-Z0-9\\s]+".r
     val descriptionRegex = """[\s\S]*""".r // Allowed characters  for description
     val dateRegex = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
-    course match {
 
-      case c if (c.courseName == "") =>
-        "10" // Course name must not be empty
-      case c if (!nameRegex.matches(c.courseName)) =>
-        "11" // 	Course name has invalid characters
-      case c if (!CourseType.All.contains(c.courseType)) =>
-        "20" //Course type must be one of ["Lecture", "Seminar", "ProjectGroup"]
-      //Should not happen!
-      case c if (!dateRegex.matches(c.startDate)) =>
-        "30" // 	startDate must be the following format "yyyy-mm-dd"
-      case c if (!dateRegex.matches(c.endDate)) =>
-        "40" // 	endDate must be the following format "yyyy-mm-dd"
-      case c if (c.ects <= 0) =>
-        "50" // 	ects must be a positive integer number
-      //todo "60" 	lecturerID unknown
-      case c if (c.maxParticipants <= 0) =>
-        "70" // 	maxParticipants must be a positive integer number
-      case c if (!CourseLanguage.All.contains(c.courseLanguage)) =>
-        "80" // 	language must be one of ["German", "English"]
-      case c if (!descriptionRegex.matches(c.courseDescription)) =>
-        "90" // 	description invalid characters
-      case _ => "valid"
+    var errors = List[SimpleError]()
 
+    if (course.courseName == "") {
+      errors :+= SimpleError("courseName", "Course name must not be empty.")
     }
+    if (!(nameRegex.matches(course.courseName))) {
+      errors :+= SimpleError("courseName", "Course name must only contain [..].")
+    }
+    if (!CourseType.All.contains(course.courseType)) {
+      errors :+= (SimpleError("courseType", "Course type must be one of [Lecture, Seminar, ProjectGroup]."))
+    }
+    if (!dateRegex.matches(course.startDate)) {
+      errors :+= (SimpleError("startDate", "Start date must be of the following format \"yyyy-mm-dd\"."))
+    }
+    if (!dateRegex.matches(course.endDate)) {
+      errors :+= (SimpleError("endDate", "End date must be of the following format \"yyyy-mm-dd\"."))
+    }
+    if (course.ects <= 0) {
+      errors :+= (SimpleError("ects", "Ects must be a positive integer."))
+    }
+    if (course.maxParticipants <= 0) {
+      errors :+= (SimpleError("maxParticipants", "Maximum Participants must be a positive integer."))
+    }
+    if (!CourseLanguage.All.contains(course.courseLanguage)) {
+      errors :+= (SimpleError("courseLanguage", "Course Language must be one of" + CourseLanguage.All+"."))
+    }
+    if (!descriptionRegex.matches(course.courseDescription)) {
+      errors :+= SimpleError("courseDescription", "Description must only contain Strings.")
+    }
+    errors
   }
 
 
@@ -130,7 +141,7 @@ object CourseState {
     * namespaced under a typekey that specifies a name and also the type of the commands
     * that sharded actor can receive.
     */
-  val typeKey: EntityTypeKey[CourseCommand] = EntityTypeKey[CourseCommand](CourseApplication.cassandraOffset)
+  val typeKey: EntityTypeKey[CourseCommand] = EntityTypeKey[CourseCommand](CourseApplication.offset)
 
   /**
     * Format for the course state.
