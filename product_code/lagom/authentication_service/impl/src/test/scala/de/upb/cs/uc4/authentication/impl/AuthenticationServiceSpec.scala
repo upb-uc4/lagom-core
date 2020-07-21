@@ -165,4 +165,8 @@ class UserServiceStub(authenticationStub: ProducerStub[AuthenticationUser],
   override def userAuthenticationTopic(): Topic[AuthenticationUser] = authenticationStub.topic
 
   override def userDeletedTopic(): Topic[JsonUsername] = deletionStub.topic
+
+  override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  override def allowedPost: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 }
