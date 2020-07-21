@@ -9,8 +9,7 @@ import de.upb.cs.uc4.shared.server.messages._
 import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate, UserEvent}
-import de.upb.cs.uc4.user.model.Role
-import de.upb.cs.uc4.user.model.user.{AuthenticationUser, Lecturer, Student, User}
+import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student, User}
 import play.api.libs.json.{Format, Json}
 
 /** The current state of a User */
@@ -27,10 +26,18 @@ case class UserState(optUser: Option[User]) {
       case CreateUser(user, authenticationUser, replyTo) =>
     
         val trimmedUser = user.trim
-        val validationErrors = validateUser(trimmedUser,Some(authenticationUser))
+        var validationErrors = trimmedUser.validate.map(
+          error =>
+            user match {
+              case _: Student => SimpleError("student." + error.name, error.reason)
+              case _: Lecturer => SimpleError("lecturer." + error.name, error.reason)
+              case _: Admin => SimpleError("admin." + error.name, error.reason)
+        })
+        
+        validationErrors ++= authenticationUser.validate.map(error => SimpleError("authUser." + error.name, error.reason))
         if (optUser.isEmpty){
           if (validationErrors.isEmpty) {
-            Effect.persist(OnUserCreate(user, authenticationUser)).thenReply(replyTo) { _ => Accepted }
+            Effect.persist(OnUserCreate(trimmedUser, authenticationUser)).thenReply(replyTo) { _ => Accepted }
           }
           else {
             Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
@@ -43,11 +50,11 @@ case class UserState(optUser: Option[User]) {
         
       case UpdateUser(user, replyTo) =>
         val trimmedUser = user.trim
-        val validationErrors = validateUser(trimmedUser,None)
+        val validationErrors = trimmedUser.validate
 
         if (optUser.isDefined) {
           if(validationErrors.isEmpty){
-            Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
+            Effect.persist(OnUserUpdate(trimmedUser)).thenReply(replyTo) { _ => Accepted }
           } else {
             Effect.reply(replyTo)(RejectedWithError(422, client.DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
           }
@@ -83,70 +90,6 @@ case class UserState(optUser: Option[User]) {
         println("Unknown Event")
         this
     }
-
-
-  def validateUser(user: User, authenticationUserOpt: Option[AuthenticationUser]): Seq[SimpleError] = {
-    val generalRegex = """[\s\S]+""".r // Allowed characters for general strings TBD
-    // TODO: More REGEXes need to be defined to check firstname etc. But it is not clear from the API
-    val usernameRegex = """[a-zA-Z0-9-]+""".r
-    val nameRegex = """[a-zA-Z]+""".r
-    val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
-    val dateRegex = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
-    val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
-      "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
-
-    var error= List[SimpleError]()
-
-    if (!usernameRegex.matches(user.username)) {
-      error :+= SimpleError("username","Username may only contain [..].")
-    }
-    if (authenticationUserOpt.isDefined && authenticationUserOpt.get.password.trim == ""){
-      error :+= SimpleError("password","Password must not be empty.")
-    }
-    if (optUser.isEmpty && !Role.All.contains(user.role)) { //optUser check to ensure this is during creation
-      error :+= SimpleError("role", "Role must be one of [..]" + Role.All + ".")
-    }
-    if (user.address.oneEmpty) {
-      error :+= SimpleError("address", "Address fields must not be empty.")
-    }
-    if (!mailRegex.matches(user.email)) {
-      error :+= SimpleError("email", "Email must be in email format example@xyz.com.")
-    }
-    if (!dateRegex.matches(user.birthDate)) {
-      error :+= SimpleError("birthDate", "Birthdate must be of the following format \"yyyy-mm-dd\".")
-    }
-    if (!nameRegex.matches(user.firstName)) {
-      error :+= SimpleError("firstName", "First name must not contain XYZ.")
-    }
-    if (!nameRegex.matches(user.lastName)) {
-      error :+= SimpleError("lastName", "First name must not contain XYZ.")
-    }
-    if (!generalRegex.matches(user.picture)) { //TODO, this does not make any sense, but pictures are not defined yet
-      error :+= SimpleError("picture", "Picture is invalid.")
-    }
-
-    user match {
-      case s: Student =>
-        if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) {
-          error :+= SimpleError("matriculationId", "Student ID invalid.")
-        }
-        if(!(s.semesterCount > 0)) {
-          error :+= SimpleError("semesterCount", "Semester count must be a positive integer.")
-        }
-        if(!s.fieldsOfStudy.forall(fos.contains)) {
-          error :+= SimpleError("fieldsOfStudy", "Fields of Study must be one of [..].")
-        }
-      case l: Lecturer =>
-        if (!generalRegex.matches(l.freeText)) {
-          error :+= SimpleError("freeText", "Free text must only contain the following characters: [..].")
-        }
-        if (!generalRegex.matches(l.researchArea)) {
-          error :+= SimpleError("researchArea", "Research area must only contain the following characters [..].")
-        }
-      case _ =>
-    }
-    error
-  }
 }
 
 object UserState {
