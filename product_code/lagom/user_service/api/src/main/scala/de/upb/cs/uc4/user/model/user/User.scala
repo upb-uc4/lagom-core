@@ -56,6 +56,25 @@ trait User {
     }
     errors
   }
+
+  protected def checkEditableFields (user: User): Seq[SimpleError] = {
+    var errors = List[SimpleError]()
+    
+    if (role != user.role){
+      errors :+= SimpleError("role", "Role may not be changed.")
+    }
+    if (firstName != user.firstName){
+      errors :+= SimpleError("firstName", "First name may not be changed.")
+    }
+    if (lastName != user.lastName){
+      errors :+= SimpleError("lastName", "Last name may not be changed.")
+    }
+    
+    if (birthDate != user.birthDate){
+      errors :+= SimpleError("birthDate", "Birthdate may not be changed.")
+    }
+    errors
+  }
 }
 
 object User {

@@ -78,7 +78,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new student to the database */
   override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.student).map{
+    addUser(user.authUser).invokeWithHeaders(header, user.student).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
           user.asInstanceOf[Student])
@@ -98,15 +98,10 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing student */
   override def updateStudent(username: String): ServiceCall[Student, Done] =
-    identifiedAuthenticated(AuthenticationRole.Student, AuthenticationRole.Admin) {
-      (authUsername, role)=>
-        ServerServiceCall { (header, user) =>
-          if (role == AuthenticationRole.Student && authUsername != user.username.trim){
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
-          }
-          updateUser(username).invokeWithHeaders(header, user)
-        }
+    ServerServiceCall { (header, user) =>
+      updateUser(username).invokeWithHeaders(header, user)
     }
+
 
   /** Get all lecturers from the database */
   override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] =
@@ -116,7 +111,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new lecturer to the database */
   override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.lecturer).map{
+    addUser(user.authUser).invokeWithHeaders(header, user.lecturer).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
           user.asInstanceOf[Lecturer])
@@ -136,14 +131,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing lecturer */
   override def updateLecturer(username: String): ServiceCall[Lecturer, Done] =
-    identifiedAuthenticated(AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
-      (authUsername, role)=>
-        ServerServiceCall { (header, user) =>
-          if (role == AuthenticationRole.Lecturer && authUsername != user.username.trim){
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
-          }
-          updateUser(username).invokeWithHeaders(header, user)
-        }
+    ServerServiceCall { (header, user) =>
+      updateUser(username).invokeWithHeaders(header, user)
     }
 
   /** Get all admins from the database */
@@ -154,7 +143,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new admin to the database */
   override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.admin).map{
+    addUser(user.authUser).invokeWithHeaders(header, user.admin).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
           user.asInstanceOf[Admin])
@@ -174,10 +163,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing admin */
   override def updateAdmin(username: String): ServiceCall[Admin, Done] =
-    authenticated(AuthenticationRole.Admin) {
-      ServerServiceCall { (header, user) =>
-        updateUser(username).invokeWithHeaders(header, user)
-      }
+    ServerServiceCall { (header, user) =>
+      updateUser(username).invokeWithHeaders(header, user)
     }
 
   /** Get role of the user */
@@ -202,7 +189,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
 
-      if(user.username.trim.isEmpty){
+      if (user.username.trim.isEmpty) {
         throw new CustomException(TransportErrorCode(422, 1003, "Error"),
           DetailedError("validation error", Seq(SimpleError("username", "Username must not be blank."))))
       }
@@ -220,21 +207,41 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Helper method for updating a generic User, independent of the role */
-  private def updateUser(username: String): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
-    if (username != user.username.trim) {
-      throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+  private def updateUser(username: String): ServerServiceCall[User, Done] =
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
+        ServerServiceCall { (_, user) =>
+
+          if (username != user.username.trim) {
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+          }
+
+          if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
+          }
+
+          getUser(username).invoke().map {
+            case s: Student => s.checkEditableFields(user.asInstanceOf[Student])
+            case l: Lecturer => l.checkEditableFields(user.asInstanceOf[Lecturer])
+            case _ => throw new CustomException(TransportErrorCode(500, 1003, "Error"), DetailedError("error matching user", List()))
+          }.flatMap{ editErrors =>
+            if (role != AuthenticationRole.Admin && editErrors.nonEmpty) {
+              throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("uneditable fields", editErrors))
+            } else {
+              val ref = entityRef(user.username)
+
+              ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
+                .map {
+                  case Accepted => // Update Successful
+                    (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                  case RejectedWithError(code, errorResponse) =>
+                    throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                }
+            }
+          }
+        }
     }
 
-    val ref = entityRef(user.username)
-
-    ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
-      .map {
-        case Accepted => // Update Successful
-          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-        case RejectedWithError(code, errorResponse) =>
-          throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
-      }
-  }
 
   /** Helper method for getting a generic User, independent of the role */
   private def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ =>

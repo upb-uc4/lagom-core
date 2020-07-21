@@ -34,7 +34,14 @@ case class Lecturer(username: String,
     }
     errors
   }
+  def checkEditableFields (user: Lecturer): Seq[SimpleError] = {
+
+    var errors = List[SimpleError]()
+    errors ++= super.checkEditableFields(user)
+    errors
+  }
 }
+
 
 
 object Lecturer {

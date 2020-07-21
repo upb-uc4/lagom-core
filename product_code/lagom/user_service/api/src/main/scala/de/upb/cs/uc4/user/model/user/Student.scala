@@ -40,6 +40,26 @@ case class Student(username: String,
     }
     errors
   }
+  def checkEditableFields (user: Student): Seq[SimpleError] = {
+
+    var errors = List[SimpleError]()
+   
+    errors ++= super.checkEditableFields(user)
+    
+    if (immatriculationStatus != user.immatriculationStatus){
+      errors :+= SimpleError("immatriculationStatus", "Immatriculation status may not be manually changed.")
+    }
+    if (matriculationId != user.matriculationId){
+      errors :+= SimpleError("matriculationId", "Matriculation ID may not be manually changed.")
+    }
+    if (semesterCount != user.semesterCount){
+      errors :+= SimpleError("semesterCount", "Number of semesters may not be manually changed.")
+    }
+    if (fieldsOfStudy != user.fieldsOfStudy){
+      errors :+= SimpleError("fieldsOfStudy", "Fields of study may not be manually changed.")
+    }
+    errors
+  }
 }
 
 object Student {
