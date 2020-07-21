@@ -18,7 +18,7 @@ import play.api.Environment
   */
 trait UserService extends Service {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
-  val pathPrefix = "/user-management/users"
+  val pathPrefix = "/user-management"
 
   // USER
 
@@ -98,12 +98,12 @@ trait UserService extends Service {
     named("user")
       .withCalls(
         restCall(Method.GET, pathPrefix, getAllUsers _),
-        restCall(Method.DELETE, pathPrefix + "/:username", deleteUser _),
-        restCall(Method.OPTIONS, pathPrefix, allowedGet _),
-        restCall(Method.OPTIONS, pathPrefix + "/:username", allowedDelete _),
+        restCall(Method.DELETE, pathPrefix + "/users/:username", deleteUser _),
+        restCall(Method.OPTIONS, pathPrefix + "/users", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDelete _),
 
-        restCall(Method.GET, pathPrefix + "/:username/role", getRole _),
-        restCall(Method.OPTIONS, pathPrefix + "/:username/role", allowedGet _),
+        restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
+        restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
 
         restCall(Method.GET, pathPrefix + "/students", getAllStudents _),
         restCall(Method.POST, pathPrefix + "/students", addStudent _),
