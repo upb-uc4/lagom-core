@@ -63,10 +63,13 @@ kubectl create secret generic postgres-course --from-literal=username="uc4course
 kubectl apply -f services/course.yaml
 
 kubectl create secret generic hyperledger-application-secret --from-literal=secret="test"
-#kubectl apply -f services/hyperledger.yaml
+kubectl apply -f services/hyperledger.yaml
+
+kubectl create secret generic hl-course-application-secret --from-literal=secret="test"
+kubectl apply -f services/hl_course.yaml
 
 echo
 echo "##############################"
 echo "#       Forward Ports        #"
 echo "##############################"
-kubectl port-forward --address 0.0.0.0 service/traefik 9000:8000 9080:8080 9443:4443 -n default
+kubectl port-forward --address 0.0.0.0 service/traefik 9001:8000 9080:8080 9443:4443 -n default

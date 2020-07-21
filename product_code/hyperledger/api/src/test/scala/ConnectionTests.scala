@@ -1,64 +1,62 @@
 import de.upb.cs.uc4.hyperledger.ConnectionManager
-import org.scalatest.FunSuite
-import org.scalatest.PrivateMethodTester
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 
-class ConnectionTests extends FunSuite with PrivateMethodTester {
+class ConnectionTests extends AnyWordSpec with Matchers{
 
-  /*  Simple Test to check for an available gateway according to the network configuration file
-   */
-  test("Check gateway connection") {
-    // retrieve possible identities
-    val wallet = ConnectionManager.getWallet()
-    assert(wallet != null, "Wallet retrieved was null.")
+  val connectionManager = ConnectionManager()
 
-    // prepare Network Builder
-    val builder = ConnectionManager.getBuilder(wallet)
-    assert(builder != null, "Builder retrieved was null, maybe the connection profile did not match the running network.")
+  "The connectionManager" when {
+    "connecting to Chain" should {
 
-    // get gateway object
-    val gateway = builder.connect
-    assert(gateway != null, "Gateway retrieved was null.")
+      "provide gateway connection" in {
+        // retrieve possible identities
+        val wallet = connectionManager.getWallet()
+        wallet should not be null
 
-    // cleanup
-    ConnectionManager.disposeGateway(gateway)
-  }
+        // prepare Network Builder
+        val builder = connectionManager.getBuilder(wallet)
+        builder should not be null
 
-  /*  Simple Test to check for an available connection to our network.
-   */
-  test("Check network connection") {
+        // get gateway object
+        val gateway = builder.connect
+        gateway should not be null
 
-    // retrieve possible identities
-    val wallet = ConnectionManager.getWallet()
-    assert(wallet != null, "Wallet retrieved was null.")
+        // cleanup
+        connectionManager.disposeGateway(gateway)
+      }
 
-    // prepare Network Builder
-    val builder = ConnectionManager.getBuilder(wallet)
-    assert(builder != null, "Builder retrieved was null, maybe the connection profile did not match the running network.")
+      "provide network connection" in {
+        // retrieve possible identities
+        val wallet = connectionManager.getWallet()
+        wallet should not be null
 
-    // get gateway object
-    val gateway = builder.connect
-    assert(gateway != null, "Gateway retrieved was null.")
+        // prepare Network Builder
+        val builder = connectionManager.getBuilder(wallet)
+        builder should not be null
 
-    // try connecting to the network
-    try{
-      val network = gateway.getNetwork(ConnectionManager.channel_name)
-      assert(network != null, "Network retrieved was null.")
-    } finally {
-      ConnectionManager.disposeGateway(gateway)
+        // get gateway object
+        val gateway = builder.connect
+        gateway should not be null
+
+        // try connecting to the network
+        try{
+          val network = gateway.getNetwork(connectionManager.channel_name)
+          network should not be null
+        } finally {
+          connectionManager.disposeGateway(gateway)
+        }
+      }
+
+      "Provice chaincode connection" in {
+        // test full chaincode connection
+        val (gateway, chaincode) = connectionManager.initializeConnection()
+        gateway should not be null
+        chaincode should not be null
+
+        // cleanup
+        connectionManager.disposeGateway(gateway)
+      }
     }
   }
-
-  /*  Simple Test to check for an available connection to our chaincode.
-   *  Will fail if any step in connecting to the chaincode fails
-   */
-  test("Check chaincode connection") {
-    // test full chaincode connection
-    val (gateway, chaincode) = ConnectionManager.initializeConnection()
-    assert(gateway != null, "Gateway retrieved was null.")
-    assert(chaincode != null, "Chaincode retrieved was null.")
-
-    // cleanup
-    ConnectionManager.disposeGateway(gateway)
-  }
-
 }

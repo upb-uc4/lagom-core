@@ -19,6 +19,7 @@ object CourseService {
 trait CourseService extends Service {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
   val pathPrefix = "/course-management"
+  protected val name = "course"
 
   /** Add a new course to the database */
   def addCourse(): ServiceCall[Course, Course]
@@ -46,7 +47,7 @@ trait CourseService extends Service {
 
   final override def descriptor: Descriptor = {
     import Service._
-    named("course").withCalls(
+    named(name).withCalls(
       restCall(Method.GET, pathPrefix + "/courses?courseName&lecturerId", getAllCourses _),
       restCall(Method.POST, pathPrefix + "/courses", addCourse _),
       restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _),
