@@ -22,7 +22,7 @@ case class Address(street: String,
   */
   def validate: Seq[SimpleError] = {
     val houseNumberRegex = """[1-9][0-9]{0,4}([a-z]([0-9]|-[a-z]){0,1}){0,1}""".r
-    val nameRegex = """[a-zA-Z.,-\\s]{1,50}""".r
+    val nameRegex = """[a-zA-Z.,\s-]{1,50}""".r
    
     var errors = List[SimpleError]()
     if (!nameRegex.matches(street)){
@@ -30,10 +30,11 @@ case class Address(street: String,
     }
     houseNumber match{
       case "" => SimpleError("houseNumber","House number must not be empty.")
-      case _ if(houseNumber.charAt(0) == "0") =>
+      case _ if(houseNumber.startsWith("0")) =>
         errors :+= SimpleError("houseNumber","House number must not have a leading zero.")
       case _ if(!houseNumberRegex.matches(houseNumber)) =>
         errors :+= SimpleError("houseNumber","House number must start with digits and may have trailing letters.")
+      case _ =>
     }
 
     if (!(zipCode forall Character.isDigit) || zipCode.length() != 5){
