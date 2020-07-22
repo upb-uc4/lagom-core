@@ -224,6 +224,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           getUser(username).invoke().map { 
             case s: Student => s.checkEditableFields(user.asInstanceOf[Student])
             case l: Lecturer => l.checkEditableFields(user.asInstanceOf[Lecturer])
+            case _: Admin => Seq()
             case _ => throw new CustomException(TransportErrorCode(500, 1003, "Error"), DetailedError("error matching user", List()))
           }.flatMap{ editErrors =>
             // Other users than admins can only edit specified fields
