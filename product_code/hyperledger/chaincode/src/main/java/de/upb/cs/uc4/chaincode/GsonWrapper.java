@@ -1,6 +1,8 @@
 package de.upb.cs.uc4.chaincode;
 
 import com.google.gson.*;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.format.DateTimeFormatter;
 import org.threeten.bp.format.DateTimeParseException;
@@ -48,6 +50,18 @@ public class GsonWrapper {
                             } catch (RuntimeException e) {
                                 return null;
                             }
+                        }
+                    })
+            .registerTypeAdapter(
+                    String.class,
+                    new JsonDeserializer<String>() {
+                        @Override
+                        public String deserialize(
+                                JsonElement json,
+                                Type type,
+                                JsonDeserializationContext jsonDeserializationContext
+                        ) throws JsonParseException {
+                            return Jsoup.clean(json.getAsJsonPrimitive().getAsString(), Whitelist.none());
                         }
                     })
             .create();

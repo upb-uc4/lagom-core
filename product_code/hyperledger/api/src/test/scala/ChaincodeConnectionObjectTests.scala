@@ -1,66 +1,88 @@
 
-import de.upb.cs.uc4.hyperledger.ConnectionManager
+import de.upb.cs.uc4.hyperledger.{ChaincodeQuickAccess, ConnectionManager}
 import de.upb.cs.uc4.hyperledger.traits.ChaincodeTrait
-import org.scalatest.FunSuite
+import org.scalatest.Succeeded
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import scala.util.{Success, Using}
 
-class ChaincodeConnectionObjectTests extends FunSuite {
+class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
 
-  test("Check command getAllCourses") {
-    // setup connection
-    val chaincodeConnection = ConnectionManager.createConnection()
+  val connectionManager = ConnectionManager()
 
-    // perform action
-    try{
-      //retrieve result on query
-      val courses = chaincodeConnection.getAllCourses()
+  "A ChaincodeConnection" when {
+    "initialized" should {
+      "Allow for getCALlCourses" in {
+        // setup connection
+        val chaincodeConnection = connectionManager.createConnection()
 
-      // test result
-      assert(courses != null, "courses returned was null")
-    } finally {
-      // close connection
-      chaincodeConnection.close();
+        // perform action
+        try {
+          //retrieve result on query
+          val courses = chaincodeConnection.getAllCourses()
+
+          // test result
+          courses should not be null
+        } finally {
+          // close connection
+          chaincodeConnection.close();
+        }
+      }
+
+      "Allow a full walkthrough" in {
+        val testResult = Using(connectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
+          // initial courses
+          val getAllCourses = chaincodeConnection.getAllCourses()
+          getAllCourses should not be null
+          println("Courses: " + getAllCourses)
+
+          // add new course
+          val testCourseId = "41"
+          val exampleCourseData = "{\"courseId\":\"" + testCourseId + "\",\"courseName\":\"IQC\",\"courseType\":\"Lecture\",\"startDate\":\"1998-01-01\",\"endDate\":\"1999-01-01\",\"ects\":7,\"lecturerId\":\"Mustermann\",\"maxParticipants\":80,\"currentParticipants\":20,\"courseLanguage\":\"English\",\"courseDescription\":\"Fun new course\"}"
+          val addCourseResult = chaincodeConnection.addCourse(exampleCourseData)
+          addCourseResult should not be null
+          addCourseResult should equal ("")
+          println("AddNew Result: " + addCourseResult)
+
+          // Check AddNew worked as expected READ COURSE
+          val readCourseResult = chaincodeConnection.getCourseById(testCourseId)
+          readCourseResult should not be null
+          println("newCourse read: " + readCourseResult)
+          println("example data: " + exampleCourseData)
+          readCourseResult should equal (exampleCourseData)
+
+          // delete new course
+          val deleteCourseResult = chaincodeConnection.deleteCourseById(testCourseId)
+          deleteCourseResult should not equal null
+          println("deleteCourseResult: " + deleteCourseResult)
+          try {
+            val tryGetRemovedCourse = chaincodeConnection.getCourseById(testCourseId)
+            println("removeResult: " + tryGetRemovedCourse)
+            assert(false, "The removec course did not throw an exception when trying to retrieve it.")
+          } catch {
+            case _: Throwable => println("Correctly threw an exception when getting deleted course.")
+          }
+
+          // update new course
+          // add new course
+          val testUpdateCourseId = "90"
+          val exampleCourseData2 = "{\"courseId\":\"" + testUpdateCourseId + "\",\"courseName\":\"IQC\",\"courseType\":\"Lecture\",\"startDate\":\"1998-01-01\",\"endDate\":\"1999-01-01\",\"ects\":7,\"lecturerId\":\"Mustermann\",\"maxParticipants\":80,\"currentParticipants\":20,\"courseLanguage\":\"English\",\"courseDescription\":\"Fun new course\"}"
+          val updateAddCourseResult = chaincodeConnection.addCourse(exampleCourseData2)
+          updateAddCourseResult should equal ("")
+          // update
+          val exampleCourseData3 = "{\"courseId\":\"" + testUpdateCourseId + "\",\"courseName\":\"Intro to Quantum\",\"courseType\":\"Lecture\",\"startDate\":\"1998-01-01\",\"endDate\":\"1999-01-01\",\"ects\":7,\"lecturerId\":\"Mustermann\",\"maxParticipants\":80,\"currentParticipants\":20,\"courseLanguage\":\"English\",\"courseDescription\":\"Fun new course\"}"
+          val updateCouresResult = chaincodeConnection.updateCourseById(testUpdateCourseId, exampleCourseData3)
+          updateCouresResult should not be null
+          updateCouresResult should equal ("")
+        }
+
+        val allCoursesAfter = ChaincodeQuickAccess.getAllCourses()
+        println("All Courses after test: " + allCoursesAfter)
+
+        println("TestResult : " + testResult)
+        testResult should equal (Success(Succeeded))
+      }
     }
   }
-
-  test ("Check full walk-through"){
-    Using(ConnectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
-      // initial courses
-      val courses = chaincodeConnection.getAllCourses()
-      assert(courses != null, "Get All courses returned null")
-      println("Courses: " + courses)
-
-      // get first initialCourse
-      val initialExampleCourse = chaincodeConnection.getCourseById("courseId")
-      assert(initialExampleCourse != null, "GetCourseById(courseId) returned null")
-      println("initialExampleCourse: " + initialExampleCourse)
-
-      // add new course
-      val exampleCourseData = "{\"lecturerId\":\"Mustermann\",\"courseName\":\"IQC\",\"courseType\":\"Lecture\",\"ects\":8,\"courseLanguage\":\"English\",\"endDate\":\"01.01.1999\",\"currentParticipants\":20,\"courseId\":\"42\",\"courseDescription\":\"Fun new course\",\"startDate\":\"01.01.1998\",\"maxParticipants\":80}"
-      val addResult = chaincodeConnection.addCourse(exampleCourseData)
-      assert(addResult != null, "Add newCourse returned null")
-      println("AddNew Result: " + addResult)
-
-      // Check AddNew worked as expected
-      val readNewCourse = chaincodeConnection.getCourseById("42")
-      assert(readNewCourse != null, "GetCourseById(42) returned null")
-      println("newCourse read: " + readNewCourse)
-      assert(readNewCourse.equals(exampleCourseData), "retrieved info did not match inserted data")
-
-      // delete new course
-      val deleteCourseResult = chaincodeConnection.deleteCourseById("42")
-      assert(deleteCourseResult != null, "DeleteCourseById(42) returned null")
-      println("deleteCourseResult: " + deleteCourseResult)
-      val tryGetRemovedCourse = chaincodeConnection.getCourseById("42")
-      println("removeResult: " + tryGetRemovedCourse)
-      assert(tryGetRemovedCourse == null, "tryGetRemovedCourse should return null")
-
-      // update new course
-      val updateOldCouresResult = chaincodeConnection.updateCourseById("courseId", exampleCourseData)
-      assert(updateOldCouresResult != null, "updateCouresById returned null")
-      println("updateOldCouresResult: " + updateOldCouresResult)
-    }
-  }
-
 }

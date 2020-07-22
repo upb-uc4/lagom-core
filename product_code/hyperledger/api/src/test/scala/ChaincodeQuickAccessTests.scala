@@ -1,17 +1,21 @@
 import de.upb.cs.uc4.hyperledger.ChaincodeQuickAccess
-import org.scalatest.FunSuite
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ChaincodeQuickAccessTests extends FunSuite {
+class ChaincodeQuickAccessTests extends AnyWordSpec with Matchers {
 
-  test("Check listing all courses") {
-    // retrieve quickAccess result
-    val result = ChaincodeQuickAccess.getAllCourses();
+  "The ChainCodeQuickAccess" when {
+    "accessed" should {
+      "Allow for listing all courses" in {
+        // retrieve quickAccess result
+        val result = ChaincodeQuickAccess.getAllCourses();
 
-    // debug help
-    println(result)
+        // debug help
+        println(result)
 
-    // perform tests
-    assert(result != null, "result was null")
+        // perform tests
+        result should not be null
+      }
+    }
   }
-
 }

@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.hyperledger.impl
 
+import java.nio.file.Paths
+
 import akka.actor.CoordinatedShutdown
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.util.Timeout
@@ -21,7 +23,10 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
     with ClusterComponents
     with AhcWSComponents {
 
-  lazy val connectionManager: ConnectionManagerTrait = ConnectionManager
+  lazy val connectionManager: ConnectionManagerTrait = ConnectionManager(
+    Paths.get(getClass.getResource("/connection_profile.yaml").toURI),
+    Paths.get(getClass.getResource("/wallet/").toURI)
+  )
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[HyperLedgerService](wire[HyperLedgerServiceImpl])
@@ -39,7 +44,7 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
 
   // Closing HyperLedger connection
   CoordinatedShutdown(actorSystem)
-    .addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "shutdownConnection") { () =>
+    .addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "shutdownConnection") { () =>
       implicit val timeout: Timeout = Timeout(5.seconds)
       clusterSharding.entityRefFor(HyperLedgerBehaviour.typeKey, "hl").ask(_ => Shutdown())
     }

@@ -59,7 +59,7 @@ $ docker exec -it cli bash
 which opens a shell inside the ```cli``` container, from which fabrics binaries can be used as usual, e.g.
 
 ```bash
-$ peer chaincode query -n mycc -c '{"Args":["queryAll"]}' -C myc
+$ peer chaincode query -n mycc -c '{"Args":["getAllCourses"]}' -C myc
 ```
 
 calls the ```queryAll``` transaction inside the ```mycc``` chaincode on channel ```myc```,
@@ -76,6 +76,13 @@ The chaincode does currently not need to be initialized/installed, as the develo
 ```bash
 $ peer chaincode invoke -n mycc -c '{"Args":["transactionName","{\"attribute\": \"value\"}"]}' -C myc
 ```
+
+Example chaincode invocation:
+
+```bash
+peer chaincode invoke -n mycc -c '{"Args":["addCourse","{ \"courseId\": \"course1\",\"courseName\": \"courseName1\",\"courseType\": \"Lecture\",\"startDate\": \"2020-06-29\",\"endDate\": \"2020-06-29\",\"ects\": 3,\"lecturerId\": \"lecturer1\",\"maxParticipants\": 100,\"currentParticipants\": 0,\"courseLanguage\": \"English\",\"courseDescription\": \"some lecture\" }"]}' -C myc
+```
+
 
 ## Chaincode and Channel Name
 

@@ -56,3 +56,16 @@ minikube start --memory='10g' --cpus=4
 ````shell script
 ./deploy/deploy.sh
 ```` 
+
+#### Running tests in IntelliJ
+IntelliJ expects some impressive Hardware.
+To work around that fact you can tell it to suffice on less Memory.
+Instead of starting up VMs with ~ 1.5 GB you can tell the sbt to work on a max heap size of 512 MB.
+````shell script
+File
+- Settings
+    - Build, Execution, Deployment
+      - BuildTools
+        - sbt
+          [ ] Maximum Heap Size (MB) [  512  ]
+````
