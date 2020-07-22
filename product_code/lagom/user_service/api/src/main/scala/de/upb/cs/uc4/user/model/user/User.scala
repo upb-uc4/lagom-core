@@ -84,7 +84,7 @@ trait User {
     * @param user 
     * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
     */
-  protected def checkEditableFields (user: User): Seq[SimpleError] = {
+  def checkEditableFields (user: User): Seq[SimpleError] = {
     var errors = List[SimpleError]()
     
     if (role != user.role){

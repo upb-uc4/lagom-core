@@ -221,12 +221,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           }
           
           // We need to know what role the user has, because their editable fields are different
-          getUser(username).invoke().map { 
-            case s: Student => s.checkEditableFields(user.asInstanceOf[Student])
-            case l: Lecturer => l.checkEditableFields(user.asInstanceOf[Lecturer])
-            case _: Admin => Seq()
-            case _ => throw new CustomException(TransportErrorCode(500, 1003, "Error"), DetailedError("error matching user", List()))
-          }.flatMap{ editErrors =>
+          getUser(username).invoke().map(_.checkEditableFields(user))
+            .flatMap{ editErrors =>
             // Other users than admins can only edit specified fields
             if (role != AuthenticationRole.Admin && editErrors.nonEmpty) { 
               throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("uneditable fields", editErrors))

@@ -35,20 +35,6 @@ case class Lecturer(username: String,
     }
     errors
   }
-  
-  /** 
-    * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
-    * Returns a list of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
-    * 
-    * @param user 
-    * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
-    */
-  def checkEditableFields (user: Lecturer): Seq[SimpleError] = {
-
-    var errors = List[SimpleError]()
-    errors ++= super.checkEditableFields(user)
-    errors
-  }
 }
 
 

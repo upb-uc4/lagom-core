@@ -54,7 +54,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       probe2.expectMessage(Some(student0))
     }
 
-    "not add an an already existing user" in {
+    "not add an already existing user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-3")))
 
       val probe1 = createTestProbe[Confirmation]()

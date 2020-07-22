@@ -35,7 +35,7 @@ case class Student(username: String,
     if(!(semesterCount > 0)) {
       errors :+= SimpleError("semesterCount", "Semester count must be a positive integer.")
     }
-    if(!fieldsOfStudy.forall(fos.contains)) {
+    if(!(fieldsOfStudy forall fos.contains)) {
       errors :+= SimpleError("fieldsOfStudy", "Fields of Study must be one of [..].")
     }
     errors
@@ -49,22 +49,26 @@ case class Student(username: String,
     * @param user 
     * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
     */
-  def checkEditableFields (user: Student): Seq[SimpleError] = {
-    
+  override def checkEditableFields (user: User): Seq[SimpleError] = {
+    if(user.isInstanceOf[Student]){
+      throw new Exception("Tried to parse a non-Student as Student.")
+    }
+    val student = user.asInstanceOf[Student]
+
     var errors = List[SimpleError]()
    
     errors ++= super.checkEditableFields(user)
     
-    if (immatriculationStatus != user.immatriculationStatus){
+    if (immatriculationStatus != student.immatriculationStatus){
       errors :+= SimpleError("immatriculationStatus", "Immatriculation status may not be manually changed.")
     }
-    if (matriculationId != user.matriculationId){
+    if (matriculationId != student.matriculationId){
       errors :+= SimpleError("matriculationId", "Matriculation ID may not be manually changed.")
     }
-    if (semesterCount != user.semesterCount){
+    if (semesterCount != student.semesterCount){
       errors :+= SimpleError("semesterCount", "Number of semesters may not be manually changed.")
     }
-    if (fieldsOfStudy != user.fieldsOfStudy){
+    if (fieldsOfStudy != student.fieldsOfStudy){
       errors :+= SimpleError("fieldsOfStudy", "Fields of study may not be manually changed.")
     }
     errors
