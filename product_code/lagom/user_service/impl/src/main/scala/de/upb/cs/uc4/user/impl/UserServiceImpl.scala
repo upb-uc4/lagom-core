@@ -21,7 +21,7 @@ import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.immatriculation.ImmatriculationStatus
+import de.upb.cs.uc4.user.model.immatriculation.ImmatriculationData
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
@@ -83,8 +83,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postStudent) =>
     addUser(postStudent.authUser).invokeWithHeaders(header, postStudent.student).flatMap{
       case (header, user) =>
-        session.write[ImmatriculationStatus]("addStudent", postStudent.immatriculationStatus).map{ _ =>
-          (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"), user.asInstanceOf[Student])
+        val student = user.asInstanceOf[Student]
+        session.write[ImmatriculationData]("addStudent", ImmatriculationData(student, postStudent.immatriculationStatus)).map{ _ =>
+          (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"), student)
         }
     }
   }
