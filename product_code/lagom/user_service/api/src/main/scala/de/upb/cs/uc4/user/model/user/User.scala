@@ -40,7 +40,19 @@ trait User {
     }
 
     if (!Role.All.contains(role)) { //optUser check to ensure this is during creation
-      errors :+= SimpleError("role", "Role must be one of [..]" + Role.All + ".")
+      errors :+= SimpleError("role", "Role must be one of [..]" + Role.All + ", and confirm to the type of object.")
+    }else{
+      this match {
+        case _: Student => if(role != Role.Student){
+          errors :+= SimpleError("role", "Role must be one of [..]" + Role.All + ", and confirm to the type of object.")
+        }
+        case _: Lecturer => if(role != Role.Lecturer){
+          errors :+= SimpleError("role", "Role must be one of [..]" + Role.All + ", and confirm to the type of object.")
+        }
+        case _: Admin => if(role != Role.Admin){
+          errors :+= SimpleError("role", "Role must be one of [..]" + Role.All + ", and confirm to the type of object.")
+        }
+      }
     }
 
     errors ++= address.validate.map(error => SimpleError("address." + error.name, error.reason))
@@ -82,8 +94,7 @@ trait User {
     }
     if (lastName != user.lastName){
       errors :+= SimpleError("lastName", "Last name may not be changed.")
-    }
-    
+    } 
     if (birthDate != user.birthDate){
       errors :+= SimpleError("birthDate", "Birthdate may not be changed.")
     }

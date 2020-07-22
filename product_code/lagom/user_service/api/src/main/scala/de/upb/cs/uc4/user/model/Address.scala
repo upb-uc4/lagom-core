@@ -26,7 +26,7 @@ case class Address(street: String,
    
     var errors = List[SimpleError]()
     if (!nameRegex.matches(street)){
-      errors :+= SimpleError("street", "Street must contain at least one letter.")
+      errors :+= SimpleError("street", "Street must only contain at letters and '-''.")
     }
     if (!houseNumberRegex.matches(houseNumber)){
       errors :+= SimpleError("houseNumber","House number must contain only digit and a trailing letter.")
