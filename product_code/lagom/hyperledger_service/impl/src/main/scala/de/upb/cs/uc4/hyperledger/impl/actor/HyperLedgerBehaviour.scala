@@ -8,6 +8,8 @@ import de.upb.cs.uc4.hyperledger.impl.commands.{HyperLedgerCommand, Read, Shutdo
 import de.upb.cs.uc4.hyperledger.traits.{ChaincodeTrait, ConnectionManagerTrait}
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected}
 
+import scala.util.{Failure, Success}
+
 object HyperLedgerBehaviour {
 
   def create(manager: ConnectionManagerTrait): Behavior[HyperLedgerCommand] = Behaviors.setup { _ =>
@@ -20,10 +22,10 @@ object HyperLedgerBehaviour {
           cmd match {
             case Read(transactionId, params, replyTo) =>
               try {
-                replyTo ! Some(chaincodeConnection.evaluateTransaction(transactionId, params: _*))
+                replyTo ! Success(chaincodeConnection.evaluateTransaction(transactionId, params: _*))
               } catch {
-                case _: Exception =>
-                  replyTo ! None
+                case e: Exception =>
+                  replyTo ! Failure(e)
               }
               Behaviors.same
 
@@ -32,6 +34,7 @@ object HyperLedgerBehaviour {
                 chaincodeConnection.submitTransaction(transactionId, params: _*)
                 replyTo ! Accepted
               } catch {
+                //TODO Catch HyperledgerException
                 case e: Exception =>
                   replyTo ! Rejected(e.getMessage)
               }

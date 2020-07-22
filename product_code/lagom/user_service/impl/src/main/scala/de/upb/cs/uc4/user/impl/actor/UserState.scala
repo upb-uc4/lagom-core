@@ -130,12 +130,6 @@ case class UserState(optUser: Option[User]) {
         if(!(s.matriculationId forall Character.isDigit) || !(s.matriculationId.toInt > 0)) {
           error :+= SimpleError("matriculationId", "Student ID invalid.")
         }
-        if(!(s.semesterCount > 0)) {
-          error :+= SimpleError("semesterCount", "Semester count must be a positive integer.")
-        }
-        if(!s.fieldsOfStudy.forall(fos.contains)) {
-          error :+= SimpleError("fieldsOfStudy", "Fields of Study must be one of [..].")
-        }
       case l: Lecturer =>
         if (!generalRegex.matches(l.freeText)) {
           error :+= SimpleError("freeText", "Free text must only contain the following characters: [..].")

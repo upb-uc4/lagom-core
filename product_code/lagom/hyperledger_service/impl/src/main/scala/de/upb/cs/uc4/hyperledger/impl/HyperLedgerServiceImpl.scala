@@ -13,6 +13,7 @@ import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: ExecutionContext) extends HyperLedgerService {
 
@@ -31,9 +32,9 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
   }
 
   override def read(transactionId: String): ServiceCall[Seq[String], String] = ServiceCall{ params =>
-    entityRef.ask[Option[String]](replyTo => Read(transactionId, params, replyTo)).map{
-      case Some(json) => json
-      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"), DetailedError("key not found", List()))
+    entityRef.ask[Try[String]](replyTo => Read(transactionId, params, replyTo)).map{
+      case Success(json) => json
+      case Failure(exception) => throw exception
     }
   }
 }

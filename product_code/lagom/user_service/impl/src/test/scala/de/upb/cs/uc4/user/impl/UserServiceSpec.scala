@@ -3,6 +3,7 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
+import akka.Done
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -11,8 +12,10 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.shared.client.CustomException
 import de.upb.cs.uc4.user.api.UserService
+import de.upb.cs.uc4.user.model.immatriculation.{ImmatriculationStatus, Interval}
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{Address, JsonUsername, Role}
@@ -37,6 +40,11 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
       override lazy val authenticationService: AuthenticationService =
         (_: String, _: String) => ServiceCall { _ => Future.successful("admin", AuthenticationRole.Admin) }
+
+      override lazy val hyperLedgerService: HyperLedgerService = new HyperLedgerService(){
+        override def write(transactionId: String): ServiceCall[Seq[String], Done] = ServiceCall{ _ => Future.successful(Done)}
+        override def read(transactionId: String): ServiceCall[Seq[String], String] = ServiceCall{ _ => Future.successful("")}
+      }
     }
   }
 
@@ -53,15 +61,12 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   //Test users
   val address: Address = Address("Gaenseweg", "42a", "1337", "Entenhausen", "Nimmerland")
   val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
+  val immatriculationStatus: ImmatriculationStatus = ImmatriculationStatus("CS", Seq(Interval("WS19/20", "SS20")))
 
-  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "IN", "421769", 9000, List())
+  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "421769")
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
   val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1992-12-11")
   val admin1: Admin = Admin("lecturer0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1996-12-11")
-
-
-
-
 
   /** Tests only working if the whole instance is started */
   "UserService service" should {
@@ -89,7 +94,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add a student" in {
-      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(authenticationUser, student0))
+      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(authenticationUser, student0, immatriculationStatus))
       eventually(timeout(Span(2, Minutes))) {
         client.getAllStudents.handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
           answer should contain (student0)

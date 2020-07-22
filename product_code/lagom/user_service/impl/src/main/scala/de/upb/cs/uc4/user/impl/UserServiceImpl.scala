@@ -13,6 +13,7 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
@@ -20,6 +21,7 @@ import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
 import de.upb.cs.uc4.user.model.Role.Role
+import de.upb.cs.uc4.user.model.immatriculation.ImmatriculationStatus
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
@@ -30,7 +32,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the UserService */
 class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
-                      readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase)
+                      readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase,
+                      session: HyperLedgerSession)
                      (implicit ec: ExecutionContext, auth: AuthenticationService) extends UserService {
   readSide.register(processor)
 
@@ -77,11 +80,12 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new student to the database */
-  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.student).map{
+  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postStudent) =>
+    addUser(postStudent.authUser).invokeWithHeaders(header, postStudent.student).flatMap{
       case (header, user) =>
-        (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
-          user.asInstanceOf[Student])
+        session.write[ImmatriculationStatus]("addStudent", postStudent.immatriculationStatus).map{ _ =>
+          (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"), user.asInstanceOf[Student])
+        }
     }
   }
 

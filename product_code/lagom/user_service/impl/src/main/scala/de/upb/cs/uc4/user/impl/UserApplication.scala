@@ -7,6 +7,7 @@ import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.shared.server.AuthenticationComponent
+import de.upb.cs.uc4.shared.server.hyperledger.HyperledgerComponent
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{UserBehaviour, UserState}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
