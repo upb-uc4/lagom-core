@@ -8,7 +8,7 @@ import de.upb.cs.uc4.shared.client.{DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.messages._
 import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate, UserEvent}
+import de.upb.cs.uc4.user.impl.events.{OnPasswordUpdate, OnUserCreate, OnUserDelete, OnUserUpdate, UserEvent}
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student, User}
 import play.api.libs.json.{Format, Json}
 
@@ -33,7 +33,7 @@ case class UserState(optUser: Option[User]) {
               case _: Lecturer => SimpleError("lecturer." + error.name, error.reason)
               case _: Admin => SimpleError("admin." + error.name, error.reason)
         })
-        
+
         validationErrors ++= authenticationUser.validate.map(error => SimpleError("authUser." + error.name, error.reason))
         if (optUser.isEmpty){
           if (validationErrors.isEmpty) {
@@ -62,7 +62,8 @@ case class UserState(optUser: Option[User]) {
           Effect.reply(replyTo)(RejectedWithError(404, DetailedError("key value error", "Username not found", List(SimpleError("username", "Username does not exist")))))
       }
 
-        
+      case UpdatePassword(user, replyTo) => Effect.persist(OnPasswordUpdate(user)).thenReply(replyTo) { _ => Accepted }
+
       case DeleteUser(replyTo) =>
         if (optUser.isDefined) {
           Effect.persist(OnUserDelete(optUser.get)).thenReply(replyTo) { _ => Accepted }
@@ -82,9 +83,9 @@ case class UserState(optUser: Option[User]) {
     */
   def applyEvent(evt: UserEvent): UserState =
     evt match {
-      case OnUserCreate(user, _) =>
-        copy(Some(user))
+      case OnUserCreate(user, _) => copy(Some(user))
       case OnUserUpdate(user) => copy(Some(user))
+      case OnPasswordUpdate(_) => copy()
       case OnUserDelete(_) => copy(None)
       case _ =>
         println("Unknown Event")

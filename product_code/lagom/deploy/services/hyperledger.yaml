@@ -25,8 +25,6 @@ spec:
                 secretKeyRef:
                   name: hyperledger-application-secret
                   key: secret
-            - name: CASSANDRA_SERVICE_NAME
-              value: "_cql._tcp.cassandra"
             - name: KAFKA_SERVICE_NAME
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
@@ -64,6 +62,12 @@ spec:
     - name: http
       port: 80
       targetPort: 9000
+    - name: hyperledger_orderer
+      port: 7050
+      targetPort: 7050
+    - name: hyperledger_peer
+      port: 7051
+      targetPort: 7051
   selector:
     app: hyperledger
   type: LoadBalancer

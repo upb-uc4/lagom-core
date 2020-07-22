@@ -16,11 +16,12 @@ object DetailedError {
     }
   }
 
-  def apply(`type`: String, errors: Seq[SimpleError]) = {
+  def apply(`type`: String, errors: Seq[SimpleError]): DetailedError = {
     val title = getTitle(`type`)
     new DetailedError(`type`, title, errors)
   }
-  def getTitle(`type` : String) : String = {
+
+  private def getTitle(`type` : String) : String = {
     `type` match{
       //400
       case "path parameter mismatch" => "Parameter specified in path and in object do not match"
@@ -30,7 +31,7 @@ object DetailedError {
       case "authorization error" => "Username and password combination does not exist"
       //403
       case "not enough privileges" => "Insufficient privileges for this action"
-      case "owner mismatch" => "Only admins and the owner of the resource are allowed to modify the resource"
+      case "owner mismatch" => "You are not allowed to modify the resource"
       //404
       case "key not found" => "Key value is not in use"
       //409
