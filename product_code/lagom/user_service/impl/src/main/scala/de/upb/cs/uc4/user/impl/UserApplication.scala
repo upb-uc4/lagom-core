@@ -23,7 +23,8 @@ abstract class UserApplication(context: LagomApplicationContext)
     with HikariCPComponents
     with CORSComponents
     with AhcWSComponents
-    with AuthenticationComponent {
+    with AuthenticationComponent
+    with HyperledgerComponent {
 
   // Create ReadSide
   lazy val database: UserDatabase = wire[UserDatabase]
