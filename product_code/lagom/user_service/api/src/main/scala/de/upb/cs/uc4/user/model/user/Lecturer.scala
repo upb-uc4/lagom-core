@@ -23,7 +23,7 @@ case class Lecturer(username: String,
 
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
-    val generalRegex = """[\s\S]+""".r // Allowed characters for general strings TBD
+    val generalRegex = """[\s\S]*""".r // Allowed characters for general strings TBD
 
     var errors = List[SimpleError]()
     errors ++= super.validate

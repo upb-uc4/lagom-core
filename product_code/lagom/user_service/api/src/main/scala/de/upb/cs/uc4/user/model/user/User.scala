@@ -26,7 +26,7 @@ trait User {
     */
   def validate: Seq[SimpleError] = {
     
-    val generalRegex = """[\s\S]+""".r // Allowed characters for general strings TBD
+    val generalRegex = """[\s\S]*""".r // Allowed characters for general strings TBD
     val usernameRegex = """[a-zA-Z0-9-]+""".r
     val nameRegex = """[a-zA-Z-]+""".r
     val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
