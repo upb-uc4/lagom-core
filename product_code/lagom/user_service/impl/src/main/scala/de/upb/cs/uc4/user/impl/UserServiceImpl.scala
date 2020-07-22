@@ -17,7 +17,7 @@ import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, R
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
+import de.upb.cs.uc4.user.impl.events.{OnPasswordUpdate, OnUserCreate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
@@ -68,6 +68,33 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
               DetailedError("key not found", Seq[SimpleError](SimpleError("username", "A user with the given username does not exist."))))
         }
     }
+  }
+
+  /** Changes the password of a user in the database */
+  override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] =
+    identifiedAuthenticated(AuthenticationRole.All: _*){
+      (authUsername, role)=>
+        ServerServiceCall { (_, user) =>
+          if (username != user.username.trim) {
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+          }
+          if (authUsername != user.username.trim){
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
+          }
+          if(role != user.role) {
+            //TODO : Needs to be changed with new uneditable fields
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), new DetailedError("uneditable field", "You can not manipulate this field.", List()))
+          }
+          val ref = entityRef(user.username)
+
+          ref.ask[Confirmation](replyTo => UpdatePassword(user, replyTo))
+            .map {
+              case Accepted => // Update Successful
+                (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+              case RejectedWithError(code, errorResponse) =>
+                throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+            }
+        }
   }
 
   /** Get all students from the database */
@@ -195,6 +222,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
+  /** Allows POST */
+  def allowedPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("POST")
+
   /** Allows DELETE */
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
@@ -268,6 +298,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       .mapConcat {
         //Filter only OnUserCreate events
         case EventStreamElement(_, OnUserCreate(_, authenticationUser), offset) =>
+          immutable.Seq((authenticationUser, offset))
+        case EventStreamElement(_, OnPasswordUpdate(authenticationUser), offset) =>
           immutable.Seq((authenticationUser, offset))
         case _ => Nil
       }
