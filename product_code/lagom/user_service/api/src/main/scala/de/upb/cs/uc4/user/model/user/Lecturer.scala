@@ -21,6 +21,7 @@ case class Lecturer(username: String,
       picture.trim, email.trim, birthDate.trim, freeText.trim, researchArea.trim)
   }
 
+  /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
     val generalRegex = """[\s\S]+""".r // Allowed characters for general strings TBD
 
@@ -34,6 +35,14 @@ case class Lecturer(username: String,
     }
     errors
   }
+  
+  /** 
+    * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
+    * Returns a list of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
+    * 
+    * @param user 
+    * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
+    */
   def checkEditableFields (user: Lecturer): Seq[SimpleError] = {
 
     var errors = List[SimpleError]()

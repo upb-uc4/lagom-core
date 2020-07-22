@@ -23,6 +23,7 @@ case class Student(username: String,
       picture.trim, email.trim, birthDate.trim, immatriculationStatus.trim, matriculationId.trim)
   }
 
+  /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
     val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
       "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
@@ -40,6 +41,15 @@ case class Student(username: String,
     }
     errors
   }
+
+
+  /** 
+    * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
+    * Returns a list of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
+    * 
+    * @param user 
+    * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
+    */
   def checkEditableFields (user: Student): Seq[SimpleError] = {
 
     var errors = List[SimpleError]()

@@ -13,6 +13,13 @@ case class Address(street: String,
     copy(street.trim, houseNumber.trim, zipCode.trim, city.trim, country.trim)
   }
 
+/**
+  * Validates the parameters of the Address according to syntax, charsets, etc.
+  * Returns a Sequence of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]], 
+  * that contain the errors that were encountered during validation.
+  * 
+  * @return Sequence of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
+  */
   def validate: Seq[SimpleError] = {
     val houseNumberRegex = """[0-9]+[a-z]""".r
     val nameRegex = """[a-zA-Z.-]+""".r

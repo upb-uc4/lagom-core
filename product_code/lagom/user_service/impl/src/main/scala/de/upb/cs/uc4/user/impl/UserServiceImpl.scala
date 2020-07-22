@@ -211,30 +211,32 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     identifiedAuthenticated(AuthenticationRole.All: _*) {
       (authUsername, role) =>
         ServerServiceCall { (_, user) =>
-
+          // Check, if the username in path is different than the username in the object
           if (username != user.username.trim) {
             throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
           }
-
+          // If invoked by a non-Admin, check if the manipulated object is owned by the user
           if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
             throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
-
-          getUser(username).invoke().map {
+          
+          // We need to know what role the user has, because their editable fields are different
+          getUser(username).invoke().map { 
             case s: Student => s.checkEditableFields(user.asInstanceOf[Student])
             case l: Lecturer => l.checkEditableFields(user.asInstanceOf[Lecturer])
             case _ => throw new CustomException(TransportErrorCode(500, 1003, "Error"), DetailedError("error matching user", List()))
           }.flatMap{ editErrors =>
-            if (role != AuthenticationRole.Admin && editErrors.nonEmpty) {
+            // Other users than admins can only edit specified fields
+            if (role != AuthenticationRole.Admin && editErrors.nonEmpty) { 
               throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("uneditable fields", editErrors))
             } else {
               val ref = entityRef(user.username)
 
               ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
                 .map {
-                  case Accepted => // Update Successful
+                  case Accepted => // Update successful
                     (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                  case RejectedWithError(code, errorResponse) =>
+                  case RejectedWithError(code, errorResponse) => //Update failed
                     throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
                 }
             }

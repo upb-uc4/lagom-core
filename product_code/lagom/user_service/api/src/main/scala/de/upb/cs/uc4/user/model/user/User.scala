@@ -18,6 +18,12 @@ trait User {
 
   def trim: User
 
+  /** 
+    * Validates the object by checking predefined conditions like correct charsets, syntax, etc.
+    * Returns a list of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
+    *
+    * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
+    */
   def validate: Seq[SimpleError] = {
     
     val generalRegex = """[\s\S]+""".r // Allowed characters for general strings TBD
@@ -57,6 +63,14 @@ trait User {
     errors
   }
 
+
+  /** 
+    * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
+    * Returns a list of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
+    * 
+    * @param user 
+    * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
+    */
   protected def checkEditableFields (user: User): Seq[SimpleError] = {
     var errors = List[SimpleError]()
     
