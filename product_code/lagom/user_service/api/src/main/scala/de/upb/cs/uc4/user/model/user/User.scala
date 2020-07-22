@@ -26,31 +26,32 @@ trait User {
     */
   def validate: Seq[SimpleError] = {
     
-    val generalRegex = """[\s\S]*""".r // Allowed characters for general strings TBD
-    val usernameRegex = """[a-zA-Z0-9-]+""".r
-    val nameRegex = """[a-zA-Z-]+""".r
-    val mailRegex = """[a-zA-Z0-9\Q.-_,\E]+@[a-zA-Z0-9\Q.-_,\E]+\.[a-zA-Z]+""".r
-    val dateRegex = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
-    
+    val generalRegex = """[\s\S]{0,200}""".r // Allowed characters for general strings TBD
+    val usernameRegex = """[a-zA-Z0-9-.]{4,16}""".r
+    val nameRegex = """[\s\S]{1,100}""".r
+    val mailRegex = """(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])""".r
+
+    val dateRegex = """/^(?:(?:(?:(?:(?:[1-9]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:[2468][048]|[13579][26])00))(\/|-|\.)(?:0?2\1(?:29)))|(?:(?:[1-9]\d{3})(\/|-|\.)(?:(?:(?:0?[13578]|1[02])\2(?:31))|(?:(?:0?[13-9]|1[0-2])\2(?:29|30))|(?:(?:0?[1-9])|(?:1[0-2]))\2(?:0?[1-9]|1\d|2[0-8])))))$/""".r
 
     var errors = List[SimpleError]()
 
     if (!usernameRegex.matches(username)) {
-      errors :+= SimpleError("username","Username may only contain [..].")
+      errors :+= SimpleError("username",
+        "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'.")
     }
 
     if (!Role.All.contains(role)) { //optUser check to ensure this is during creation
-      errors :+= SimpleError("role", "Role must be one of [..]" + Role.All + ", and confirm to the type of object.")
+      errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
     }else{
       this match {
         case _: Student => if(role != Role.Student){
-          errors :+= SimpleError("role", "Role must be one of [..]" + Role.All + ", and confirm to the type of object.")
+          errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
         }
         case _: Lecturer => if(role != Role.Lecturer){
-          errors :+= SimpleError("role", "Role must be one of [..]" + Role.All + ", and confirm to the type of object.")
+          errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
         }
         case _: Admin => if(role != Role.Admin){
-          errors :+= SimpleError("role", "Role must be one of [..]" + Role.All + ", and confirm to the type of object.")
+          errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
         }
       }
     }
@@ -64,10 +65,10 @@ trait User {
       errors :+= SimpleError("birthDate", "Birthdate must be of the following format \"yyyy-mm-dd\".")
     }
     if (!nameRegex.matches(firstName)) {
-      errors :+= SimpleError("firstName", "First name must only contain letters or '-'.")
+      errors :+= SimpleError("firstName", "First name must contain between 1 and 100 characters.")
     }
     if (!nameRegex.matches(lastName)) {
-      errors :+= SimpleError("lastName", "Last name must only contain letters or '-'.")
+      errors :+= SimpleError("lastName", "Last name must contain between 1 and 100 characters.")
     }
     if (!generalRegex.matches(picture)) { //TODO, this does not make any sense, but pictures are not defined yet
       errors :+= SimpleError("picture", "Picture is invalid.")

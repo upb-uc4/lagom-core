@@ -28,10 +28,9 @@ case class Student(username: String,
     val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
       "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
 
-    var errors = List[SimpleError]()
-    errors ++= super.validate
-    if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0)) {
-      errors :+= SimpleError("matriculationId", "Student ID invalid.")
+    var errors = super.validate.asInstanceOf[List[SimpleError]]
+    if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
+      errors :+= SimpleError("matriculationId", "Matriculation ID must be a number between 1 and 9999999.")
     }
     if(!(semesterCount > 0)) {
       errors :+= SimpleError("semesterCount", "Semester count must be a positive integer.")
@@ -51,7 +50,7 @@ case class Student(username: String,
     * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
     */
   def checkEditableFields (user: Student): Seq[SimpleError] = {
-
+    
     var errors = List[SimpleError]()
    
     errors ++= super.checkEditableFields(user)

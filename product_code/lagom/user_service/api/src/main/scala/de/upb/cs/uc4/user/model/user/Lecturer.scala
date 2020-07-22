@@ -23,15 +23,15 @@ case class Lecturer(username: String,
 
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
-    val generalRegex = """[\s\S]*""".r // Allowed characters for general strings TBD
+    val freeTextRegex = """[\s\S]{0,10000}""".r
+    val researchAreaRegex = """[\s\S]{0,200}""".r
 
-    var errors = List[SimpleError]()
-    errors ++= super.validate
-    if (!generalRegex.matches(freeText)) {
-      errors :+= SimpleError("freeText", "Free text must only contain the following characters: [..].")
+    var errors = super.validate.asInstanceOf[List[SimpleError]]
+    if (!freeTextRegex.matches(freeText)) {
+      errors :+= SimpleError("freeText", "Free text must contain 0 to 10000 characters.")
     }
-    if (!generalRegex.matches(researchArea)) {
-      errors :+= SimpleError("researchArea", "Research area must only contain the following characters [..].")
+    if (!researchAreaRegex.matches(researchArea)) {
+      errors :+= SimpleError("researchArea", "Research area must contain 0 to 10000 characters.")
     }
     errors
   }

@@ -21,24 +21,29 @@ case class Address(street: String,
   * @return Sequence of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
   */
   def validate: Seq[SimpleError] = {
-    val houseNumberRegex = """[0-9]+[a-z]""".r
-    val nameRegex = """[a-zA-Z.-]+""".r
+    val houseNumberRegex = """[1-9][0-9]{0,4}([a-z]([0-9]|-[a-z]){0,1}){0,1}""".r
+    val nameRegex = """[a-zA-Z.,-\\s]{1,50}""".r
    
     var errors = List[SimpleError]()
     if (!nameRegex.matches(street)){
       errors :+= SimpleError("street", "Street must only contain at letters and '-''.")
     }
-    if (!houseNumberRegex.matches(houseNumber)){
-      errors :+= SimpleError("houseNumber","House number must contain only digit and a trailing letter.")
+    houseNumber match{
+      case "" => SimpleError("houseNumber","House number must not be empty.")
+      case _ if(houseNumber.charAt(0) == "0") =>
+        errors :+= SimpleError("houseNumber","House number must not have a leading zero.")
+      case _ if(!houseNumberRegex.matches(houseNumber)) =>
+        errors :+= SimpleError("houseNumber","House number must start with digits and may have trailing letters.")
     }
+
     if (!(zipCode forall Character.isDigit) || zipCode.length() != 5){
-      errors :+= SimpleError("zipCode","Zipcode must contain exactly 5 digits.")
+      errors :+= SimpleError("zipCode","Zipcode must consist of exactly five digits.")
     }
     if (!nameRegex.matches(city)){
-      errors :+= SimpleError("city", "City name must be valid.")
+      errors :+= SimpleError("city", "City name contains illegal characters.")
     }
     if (!nameRegex.matches(country)){
-      errors :+= SimpleError("country", "Country name must be valid.")
+      errors :+= SimpleError("country", "Country name contains illegal characters.")
     }
     errors
   }
