@@ -50,7 +50,7 @@ case class Student(username: String,
     * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
     */
   override def checkEditableFields (user: User): Seq[SimpleError] = {
-    if(user.isInstanceOf[Student]){
+    if(!user.isInstanceOf[Student]){
       throw new Exception("Tried to parse a non-Student as Student.")
     }
     val student = user.asInstanceOf[Student]
