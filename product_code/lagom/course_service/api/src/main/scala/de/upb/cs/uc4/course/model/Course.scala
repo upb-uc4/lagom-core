@@ -39,7 +39,7 @@ case class Course(
    */
   def validateCourseSyntax: Seq[SimpleError] = {
 
-    val nameRegex = """[\s\S]{1,100}""".r // Allowed characters for coursename "[a-zA-Z0-9\\s]+".r
+    val nameRegex = """[\s\S]{1,100}""".r // Allowed characters for coursename: 1-100 of everything
     val descriptionRegex = """[\s\S]{0,10000}""".r // Allowed characters  for description
     val dateRegex = """^(?:(?:(?:(?:(?:[1-9]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:[2468][048]|[13579][26])00))(-)(?:0?2\1(?:29)))|(?:(?:[1-9]\d{3})(-)(?:(?:(?:0?[13578]|1[02])\2(?:31))|(?:(?:0?[13-9]|1[0-2])\2(?:29|30))|(?:(?:0?[1-9])|(?:1[0-2]))\2(?:0?[1-9]|1\d|2[0-8])))))$""".r
 
@@ -84,4 +84,3 @@ object Course {
   implicit val format: Format[Course] = Json.format
 
 }
-
