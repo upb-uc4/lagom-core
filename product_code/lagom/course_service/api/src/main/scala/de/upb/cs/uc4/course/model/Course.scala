@@ -49,7 +49,7 @@ case class Course(
 
     courseName match {
       case "" => errors :+= SimpleError("courseName", "Course name must not be empty.")
-      case _ if(!(nameRegex.matches(courseName))) => errors :+= SimpleError("courseName", "Course name must contain 1 to 100 characters.")
+      case _ if(!(nameRegex.matches(courseName))) => errors :+= SimpleError("courseName", "Course name must not contain more than 100 characters.")
       case _ =>
     }
     if (!CourseType.All.map(_.toString).contains(courseType)) {
@@ -65,10 +65,10 @@ case class Course(
       errors :+= SimpleError("ects", "ECTS must be a positive integer between 1 and 999.")
     }
     if (maxParticipants <= 0 || maxParticipants > 10000) {
-      errors :+= SimpleError("maxParticipants", "Maximum participants must be a positive integer between 1 and 9999.")
+      errors :+= SimpleError("maxParticipants", "Number of maximum participants must be a positive integer between 1 and 9999.")
     }
     if (currentParticipants < 0 || currentParticipants > maxParticipants) {
-      errors :+= SimpleError("currentParticipants", "Current participants must be a positive integer between 0 and maximum number of participants.")
+      errors :+= SimpleError("currentParticipants", "Number of current participants must be a positive integer between 0 and maximum number of participants.")
     }
     if (!CourseLanguage.All.map(_.toString).contains(courseLanguage)) {
       errors :+= SimpleError("courseLanguage", "Course Language must be one of " + CourseLanguage.All.map(_.toString).reduce((a,b) => a+", "+b) + ".")
