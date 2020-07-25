@@ -31,53 +31,47 @@ import java.io.IOException;
 
 
 
-public class Error{
-  List<String> list = invalidParams;
-  
-  public Error(InvalidParams invalidParams){
-    this.invalidParams = invalidParams;
-  }
+public class Error {
+  @SerializedName("name")
+  private String name = null;
 
-  @SerializedName("type")
-  private String type = null;
+  @SerializedName("detail")
+  private String detail = null;
 
-  @SerializedName("title")
-  private String title = null;
-
-  public Error type(String type) {
-    this.type = type;
+  public Error name(String name) {
+    this.name = name;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get name
+   * @return name
   **/
   @ApiModelProperty(value = "")
-  public String getType() {
-    return type;
+  public String getName() {
+    return name;
   }
 
-  public void setType(String type) {
-    this.type = type;
+  public void setName(String name) {
+    this.name = name;
   }
 
-  public Error title(String title) {
-    this.title = title;
+  public Error detail(String detail) {
+    this.detail = detail;
     return this;
   }
 
    /**
-   * Get title
-   * @return title
+   * Get detail
+   * @return detail
   **/
   @ApiModelProperty(value = "")
-  public String getTitle() {
-    return title;
+  public String getDetail() {
+    return detail;
   }
 
-  public void setTitle(String title) {
-    this.title = title;
+  public void setDetail(String detail) {
+    this.detail = detail;
   }
 
 
@@ -90,13 +84,13 @@ public class Error{
       return false;
     }
     Error error = (Error) o;
-    return Objects.equals(this.type, error.type) &&
-        Objects.equals(this.title, error.title);
+    return Objects.equals(this.name, error.name) &&
+        Objects.equals(this.detail, error.detail);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, title);
+    return Objects.hash(name, detail);
   }
 
 
@@ -105,8 +99,8 @@ public class Error{
     StringBuilder sb = new StringBuilder();
     sb.append("class Error {\n");
     
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    title: ").append(toIndentedString(title)).append("\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("    detail: ").append(toIndentedString(detail)).append("\n");
     sb.append("}");
     return sb.toString();
   }
