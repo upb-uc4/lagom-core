@@ -13,16 +13,11 @@
 
 package de.upb.cs.uc4.chaincode.model;
 
+import java.util.List;
 import java.util.Objects;
-import java.util.Arrays;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
+
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.io.IOException;
 
 /**
  * Error
@@ -32,17 +27,21 @@ import java.io.IOException;
 
 
 public class Error{
-  List<String> list = invalidParams;
-  
-  public Error(InvalidParams invalidParams){
-    this.invalidParams = invalidParams;
-  }
 
   @SerializedName("type")
   private String type = null;
 
   @SerializedName("title")
   private String title = null;
+
+  @SerializedName("invalidParams")
+  private List<InvalidParameter> invalidParams = null;
+
+  public Error(){}
+
+  public Error(List<InvalidParameter> invalidParams){
+    this.invalidParams = invalidParams;
+  }
 
   public Error type(String type) {
     this.type = type;
@@ -107,6 +106,7 @@ public class Error{
     
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    title: ").append(toIndentedString(title)).append("\n");
+    sb.append("    invalidParams: ").append(toIndentedString(invalidParams)).append("\n");
     sb.append("}");
     return sb.toString();
   }

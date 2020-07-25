@@ -31,14 +31,14 @@ import java.io.IOException;
 
 
 
-public class Error {
+public class Error_old {
   @SerializedName("name")
   private String name = null;
 
   @SerializedName("detail")
   private String detail = null;
 
-  public Error name(String name) {
+  public Error_old name(String name) {
     this.name = name;
     return this;
   }
@@ -56,7 +56,7 @@ public class Error {
     this.name = name;
   }
 
-  public Error detail(String detail) {
+  public Error_old detail(String detail) {
     this.detail = detail;
     return this;
   }
@@ -83,7 +83,7 @@ public class Error {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Error error = (Error) o;
+    Error_old error = (Error_old) o;
     return Objects.equals(this.name, error.name) &&
         Objects.equals(this.detail, error.detail);
   }
