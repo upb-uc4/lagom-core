@@ -2,6 +2,7 @@ package de.upb.cs.uc4.chaincode;
 
 import de.upb.cs.uc4.chaincode.model.Course;
 import de.upb.cs.uc4.chaincode.model.Error;
+import de.upb.cs.uc4.chaincode.model.InvalidParameter;
 import org.hyperledger.fabric.contract.Context;
 import org.hyperledger.fabric.protos.peer.ChaincodeEventPackage;
 import org.hyperledger.fabric.protos.peer.ProposalPackage;
@@ -411,8 +412,8 @@ public final class CourseChaincodeTest {
         assertThat(contract.deleteCourseById(ctx, "notExisting")).isEqualTo(
                 gson.toJson(
                         new Error()
-                                .name("03")
-                                .detail("Course not found")));
+                                .type("Not found")
+                                .title("The given ID does not fit any existing course.")));
     }
 
     @Nested
@@ -481,8 +482,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("02")
-                            .detail("ID already exists"));
+                            .type("Conflict")
+                            .title("There is already a course with the given courseId."));
         }
 
         @Test
@@ -505,8 +506,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("10")
-                            .detail("Course name must not be empty"));
+                            .type("10")
+                            .title("Course name must not be empty"));
         }
 
         @Test
@@ -529,8 +530,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("20")
-                            .detail("Course type must be one of [\"Lecture\", \"Seminar\", \"Project Group\"]")
+                            .type("20")
+                            .title("Course type must be one of [\"Lecture\", \"Seminar\", \"Project Group\"]")
             );
         }
 
@@ -554,8 +555,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("30")
-                            .detail("startDate must be the following format \"yyyy-mm-dd\"")
+                            .type("30")
+                            .title("startDate must be the following format \"yyyy-mm-dd\"")
             );
         }
 
@@ -578,9 +579,11 @@ public final class CourseChaincodeTest {
                     "  \"courseLanguage\": \"English\",\n" +
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
-                    new Error()
-                            .name("40")
-                            .detail("endDate must be the following format \"yyyy-mm-dd\"")
+                    new Error(new ArrayList<InvalidParameter>(){{add(new InvalidParameter()
+                            .name("EndDate")
+                            .reason("endDate must be the following format \"yyyy-mm-dd\""));}})
+                            .type("Unprocessable Entity")
+                            .title("The following parameters are invalid.")
             );
         }
 
@@ -604,8 +607,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("50")
-                            .detail("ects must be a positive integer number")
+                            .type("50")
+                            .title("ects must be a positive integer number")
             );
         }
 
@@ -629,8 +632,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("50")
-                            .detail("ects must be a positive integer number")
+                            .type("50")
+                            .title("ects must be a positive integer number")
             );
         }
 
@@ -654,8 +657,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("60")
-                            .detail("lecturerID unknown")
+                            .type("60")
+                            .title("lecturerID unknown")
             );
         }
 
@@ -679,8 +682,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("70")
-                            .detail("maxParticipants must be a positive integer number")
+                            .type("70")
+                            .title("maxParticipants must be a positive integer number")
             );
         }
 
@@ -704,8 +707,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("80")
-                            .detail("language must be one of [\"German\", \"English\"]")
+                            .type("80")
+                            .title("language must be one of [\"German\", \"English\"]")
             );
         }
 
@@ -812,8 +815,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("03")
-                            .detail("Course not found"));
+                            .type("03")
+                            .title("Course not found"));
         }
 
         @Test
@@ -837,8 +840,8 @@ public final class CourseChaincodeTest {
                             "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("00")
-                            .detail("Course ID and ID in path do not match"));
+                            .type("00")
+                            .title("Course ID and ID in path do not match"));
         }
 
         @Test
@@ -862,8 +865,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("10")
-                            .detail("Course name must not be empty"));
+                            .type("10")
+                            .title("Course name must not be empty"));
         }
 
         @Test
@@ -887,8 +890,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("20")
-                            .detail("Course type must be one of [\"Lecture\", \"Seminar\", \"Project Group\"]")
+                            .type("20")
+                            .title("Course type must be one of [\"Lecture\", \"Seminar\", \"Project Group\"]")
             );
         }
 
@@ -913,8 +916,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("30")
-                            .detail("startDate must be the following format \"yyyy-mm-dd\"")
+                            .type("30")
+                            .title("startDate must be the following format \"yyyy-mm-dd\"")
             );
         }
 
@@ -939,8 +942,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("40")
-                            .detail("endDate must be the following format \"yyyy-mm-dd\"")
+                            .type("40")
+                            .title("endDate must be the following format \"yyyy-mm-dd\"")
             );
         }
 
@@ -965,8 +968,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("50")
-                            .detail("ects must be a positive integer number")
+                            .type("50")
+                            .title("ects must be a positive integer number")
             );
         }
 
@@ -991,8 +994,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("50")
-                            .detail("ects must be a positive integer number")
+                            .type("50")
+                            .title("ects must be a positive integer number")
             );
         }
 
@@ -1017,8 +1020,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("60")
-                            .detail("lecturerID unknown")
+                            .type("60")
+                            .title("lecturerID unknown")
             );
         }
 
@@ -1043,8 +1046,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("70")
-                            .detail("maxParticipants must be a positive integer number")
+                            .type("70")
+                            .title("maxParticipants must be a positive integer number")
             );
         }
 
@@ -1069,8 +1072,8 @@ public final class CourseChaincodeTest {
                     "  \"courseDescription\": \"some lecture\" }"), Error.class);
             assertThat(error).isEqualTo(
                     new Error()
-                            .name("80")
-                            .detail("language must be one of [\"German\", \"English\"]")
+                            .type("80")
+                            .title("language must be one of [\"German\", \"English\"]")
             );
         }
     }

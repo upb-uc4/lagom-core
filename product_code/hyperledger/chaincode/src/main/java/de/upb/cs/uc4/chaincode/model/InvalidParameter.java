@@ -14,33 +14,27 @@
 package de.upb.cs.uc4.chaincode.model;
 
 import java.util.Objects;
-import java.util.Arrays;
-import com.google.gson.TypeAdapter;
-import com.google.gson.annotations.JsonAdapter;
+
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.io.IOException;
 
 /**
  * Error
  */
 @javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaClientCodegen", date = "2020-06-27T14:59:21.562+02:00")
 
-public class InvalidParams(){
+public class InvalidParameter {
     @SerializedName("name")
     private String name = null;
   
     @SerializedName("reason")
     private String reason = null;
   
-    public InvalidParams name(String name) {
+    public InvalidParameter name(String name) {
       this.name = name;
       return this;
     }
-  
+
      /**
      * Get name
      * @return name
@@ -54,7 +48,7 @@ public class InvalidParams(){
       this.name = name;
     }
   
-    public InvalidParams reason(String reason) {
+    public InvalidParameter reason(String reason) {
       this.reason = reason;
       return this;
     }
@@ -80,7 +74,7 @@ public class InvalidParams(){
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      InvalidParams inavlidParams = (InvalidParams) o;
+      InvalidParameter inavlidParams = (InvalidParameter) o;
       return Objects.equals(this.name, inavlidParams.name) &&
           Objects.equals(this.reason, inavlidParams.reason);
     }
@@ -94,8 +88,7 @@ public class InvalidParams(){
     @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
-      sb.append("class InvalidParams {\n");
-      
+      sb.append("{\n");
       sb.append("    name: ").append(toIndentedString(name)).append("\n");
       sb.append("    reason: ").append(toIndentedString(reason)).append("\n");
       sb.append("}");
