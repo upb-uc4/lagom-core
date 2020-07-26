@@ -25,6 +25,7 @@ val guava = "com.google.guava" % "guava" % "29.0-jre"
 val akkaDiscoveryKubernetes = "com.lightbend.akka.discovery" %% "akka-discovery-kubernetes-api" % "1.0.8"
 val postgresDriver = "org.postgresql" % "postgresql" % "42.2.8"
 val uuid = "com.fasterxml.uuid" % "java-uuid-generator" % "3.1.0"
+val janino = "org.codehaus.janino" % "janino" % "2.5.16"
 
 val apiDefaultDependencies = Seq(
   lagomScaladslApi
@@ -36,7 +37,8 @@ val implDefaultDependencies = Seq(
   akkaDiscoveryKubernetes,
   filters,
   macwire,
-  scalaTest
+  scalaTest,
+  janino
 )
 
 val defaultPersistenceKafkaDependencies = Seq(
@@ -64,8 +66,7 @@ lazy val lagom = (project in file("."))
 lazy val shared_client = (project in file("shared/client"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies,
-    libraryDependencies += scalaTest,
-    libraryDependencies += lagomLogback
+    libraryDependencies += scalaTest
   )
 
 lazy val shared_server = (project in file("shared/server"))
