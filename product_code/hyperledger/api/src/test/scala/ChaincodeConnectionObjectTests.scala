@@ -1,4 +1,5 @@
 
+import de.upb.cs.uc4.hyperledger.exceptions.InvalidTransactionException
 import de.upb.cs.uc4.hyperledger.traits.ChaincodeActionsTrait
 import de.upb.cs.uc4.hyperledger.{ChaincodeQuickAccess, ConnectionManager}
 import org.scalatest.Succeeded
@@ -12,8 +13,56 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
   val connectionManager = ConnectionManager()
 
   "A ChaincodeConnection" when {
-    "initialized" should {
-      "Allow for getCALlCourses" in {
+    "accessed with wrong transaction id" should {
+      "throw InvalidTrasactionException for empty transactionId " in {
+        // setup connection
+        val chaincodeConnection = connectionManager.createConnection()
+
+        // test action
+        val result = intercept[InvalidTransactionException](() -> chaincodeConnection.evaluateTransaction(""))
+
+        // close connection
+        chaincodeConnection.close()
+      }
+
+      "throw InvalidTrasactionException for wrong type of transaction (submit)" in {
+        // setup connection
+        val chaincodeConnection = connectionManager.createConnection()
+
+        // test action
+        val result = intercept[InvalidTransactionException](() -> chaincodeConnection.submitTransaction("getAllCourses"))
+
+        // close connection
+        chaincodeConnection.close()
+      }
+
+      "throw InvalidTrasactionException for wrong type of transaction (evaluate)" in {
+        // setup connection
+        val chaincodeConnection = connectionManager.createConnection()
+
+        // test action
+        val result = intercept[InvalidTransactionException](() -> chaincodeConnection.evaluateTransaction("addCourse"))
+
+        // close connection
+        chaincodeConnection.close()
+      }
+    }
+
+    "accessed with missing parameters" should {
+      "throw an unspecified exception" in {
+        // setup connection
+        val chaincodeConnection = connectionManager.createConnection()
+
+        // test action
+        val result = intercept[Exception](() -> chaincodeConnection.evaluateTransaction("addCourse"))
+
+        // close connection
+        chaincodeConnection.close()
+      }
+    }
+
+    "accessed as expected" should {
+      "allow for getAllCourses" in {
         // setup connection
         val chaincodeConnection = connectionManager.createConnection()
 
@@ -30,7 +79,7 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
         }
       }
 
-      "Allow a full walkthrough" in {
+      "allow a full walkthrough" in {
         val testResult = Using(connectionManager.createConnection()) { chaincodeConnection: ChaincodeActionsTrait =>
           // initial courses
           val getAllCourses = chaincodeConnection.getAllCourses()
