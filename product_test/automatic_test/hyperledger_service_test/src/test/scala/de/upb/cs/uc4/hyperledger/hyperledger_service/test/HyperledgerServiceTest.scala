@@ -3,6 +3,7 @@ package de.upb.cs.uc4.hyperledger.hyperledger_service.test
 import java.nio.file.Paths
 
 import akka.Done
+import com.lightbend.lagom.scaladsl.api.transport.TransportException
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.wordspec.AsyncWordSpec
@@ -11,6 +12,7 @@ import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.hyperledger.impl._
 import de.upb.cs.uc4.hyperledger.api._
+import de.upb.cs.uc4.hyperledger.exceptions.TransactionErrorException
 import de.upb.cs.uc4.shared.client.CustomException
 import de.upb.cs.uc4.test_resources._
 import play.api.libs.json.Json
@@ -39,7 +41,7 @@ class HyperledgerServiceTest extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not read a non-existing course" in {
       client.read("getCourseById").invoke(List("invalidID")).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+        answer.asInstanceOf[TransactionErrorException].getErrorCode should ===(404)
       }
     }
 
