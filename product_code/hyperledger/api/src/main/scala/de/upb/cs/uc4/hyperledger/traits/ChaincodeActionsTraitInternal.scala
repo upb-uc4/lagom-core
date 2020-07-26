@@ -57,8 +57,15 @@ protected trait ChaincodeActionsTraitInternal extends AutoCloseable {
    */
   protected def wrapTransactionResult(transactionId : String, result : Array[Byte]) : String = {
     val resultString = convertTransactionResult(result)
-    if(containsError(resultString)) throw new TransactionErrorException(transactionId, resultString)
+    if(containsError(resultString)) throw createErrorFromResult(transactionId, resultString)
     else return resultString
+  }
+
+  protected def createErrorFromResult(transactionId : String, result : String): TransactionErrorException = {
+    // TODO: extract real error
+    val errorCode = 404
+    val errorDetail = "Whatever"
+    return new TransactionErrorException(transactionId, errorCode, errorDetail)
   }
 
   /**

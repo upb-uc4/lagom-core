@@ -51,7 +51,7 @@ protected trait ChaincodeActionsTraitCourses extends ChaincodeActionsTraitIntern
     val result = wrapTransactionResult("getAllCourses", this.internalEvaluateTransaction("getAllCourses"))
 
     // check specific error
-    if (!result.startsWith("[") || !result.endsWith("]")) throw new TransactionErrorException("getAllCourses", result)
+    if (!result.startsWith("[") || !result.endsWith("]")) throw createErrorFromResult("getAllCourses", result)
     else return result
   }
 
@@ -66,7 +66,7 @@ protected trait ChaincodeActionsTraitCourses extends ChaincodeActionsTraitIntern
     val result = wrapTransactionResult("getCourseById", this.internalEvaluateTransaction("getCourseById", courseId))
 
     // check specific error
-    if (result == "null") throw new TransactionErrorException("getCourseById", result)
+    if (result == "null") throw createErrorFromResult("getCourseById", result)
     else return result
   }
 }
