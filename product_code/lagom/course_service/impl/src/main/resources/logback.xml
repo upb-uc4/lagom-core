@@ -3,6 +3,7 @@
     <conversionRule conversionWord="coloredLevel" converterClass="com.lightbend.lagom.internal.logback.ColoredLevel" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="de.upb.cs.uc4.shared.client.ConsoleFilter" />
         <encoder>
             <pattern>%date{"HH:mm:ss.SSS"} %coloredLevel %logger [%mdc] - %msg%n</pattern>
         </encoder>
