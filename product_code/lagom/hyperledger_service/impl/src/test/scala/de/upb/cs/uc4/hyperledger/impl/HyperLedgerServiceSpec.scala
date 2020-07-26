@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.hyperledger.impl
 
 import akka.Done
+import com.lightbend.lagom.scaladsl.api.transport.TransportException
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
@@ -120,7 +121,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not read a non-existing course" in {
       client.read("getCourseById").invoke(List("invalidID")).failed.map { answer =>
-        answer.asInstanceOf[Exception] should ===(new Exception("Course not found."))
+        answer.asInstanceOf[TransportException].exceptionMessage.name should ===(new Exception("Course not found.").toString)
       }
     }
 
