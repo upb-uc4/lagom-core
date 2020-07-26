@@ -3,7 +3,7 @@ name: Hyperledger Test Pipeline
 on:
   push:
     branches:
-      - **hyperledger**
+      - '**hyperledger**'
       - develop
       - master
   pull_request:

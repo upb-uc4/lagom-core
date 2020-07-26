@@ -3,8 +3,8 @@ name: IntegrationTests Single Service
 on:
   push:
     branches:
-      - **hyperledger**
-      - **lagom**
+      - '**hyperledger**'
+      - '**lagom**'
       - develop
       - master
   pull_request:
