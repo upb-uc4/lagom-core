@@ -1,12 +1,9 @@
 package de.upb.cs.uc4.hyperledger
 
-import java.nio.charset.StandardCharsets
-
-import de.upb.cs.uc4.hyperledger.traits.ChaincodeTrait
+import de.upb.cs.uc4.hyperledger.traits.ChaincodeActionsTrait
 import org.hyperledger.fabric.gateway.{Contract, Gateway}
 
-
-protected class ChaincodeConnection(parameters : (Gateway, Contract)) extends ChaincodeTrait {
+protected class ChaincodeConnection(parameters : (Gateway, Contract)) extends ChaincodeActionsTrait {
 
   val gateway : Gateway = parameters._1
   val chaincode : Contract = parameters._2

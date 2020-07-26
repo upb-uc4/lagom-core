@@ -1,6 +1,6 @@
 
+import de.upb.cs.uc4.hyperledger.traits.ChaincodeActionsTrait
 import de.upb.cs.uc4.hyperledger.{ChaincodeQuickAccess, ConnectionManager}
-import de.upb.cs.uc4.hyperledger.traits.ChaincodeTrait
 import org.scalatest.Succeeded
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -31,7 +31,7 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
       }
 
       "Allow a full walkthrough" in {
-        val testResult = Using(connectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
+        val testResult = Using(connectionManager.createConnection()) { chaincodeConnection: ChaincodeActionsTrait =>
           // initial courses
           val getAllCourses = chaincodeConnection.getAllCourses()
           getAllCourses should not be null
