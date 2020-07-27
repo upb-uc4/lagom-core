@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.hyperledger
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 
 import de.upb.cs.uc4.hyperledger.traits.{ChaincodeActionsTrait, ConnectionManagerTrait}
 import org.hyperledger.fabric.gateway.Gateway.Builder
@@ -11,10 +11,8 @@ import org.hyperledger.fabric.gateway._
   * @param connection_profile_path Path to connectionProfile.yaml
   * @param wallet_path Path to wallet dictionary containing all certificates
   */
-case class ConnectionManager(
-    connection_profile_path : Path = Paths.get("connection_profile.yaml"),
-    wallet_path : Path = Paths.get("wallet"))
-      extends ConnectionManagerTrait{
+case class ConnectionManager(connection_profile_path : Path, wallet_path : Path)
+  extends ConnectionManagerTrait{
 
   val channel_name = "myc"
   private val chaincode_name = "mycc"

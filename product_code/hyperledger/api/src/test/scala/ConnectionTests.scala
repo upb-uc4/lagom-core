@@ -1,10 +1,14 @@
+import java.nio.file.Paths
+
 import de.upb.cs.uc4.hyperledger.ConnectionManager
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 
 class ConnectionTests extends AnyWordSpec with Matchers{
 
-  val connectionManager = ConnectionManager()
+  val connectionManager = ConnectionManager(
+    Paths.get(getClass.getResource("/connection_profile.yaml").toURI),
+    Paths.get(getClass.getResource("/wallet/").toURI))
 
   "The connectionManager" when {
     "connecting to Chain" should {

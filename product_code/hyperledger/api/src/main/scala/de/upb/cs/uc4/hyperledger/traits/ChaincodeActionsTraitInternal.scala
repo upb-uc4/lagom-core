@@ -2,7 +2,7 @@ package de.upb.cs.uc4.hyperledger.traits
 
 import java.nio.charset.StandardCharsets
 
-import de.upb.cs.uc4.hyperledger.exceptions.TransactionErrorException
+import de.upb.cs.uc4.hyperledger.exceptions.{InvalidCallException, TransactionErrorException}
 
 /**
  * Trait to provide basic functionality for all chaincode transactions.
@@ -57,15 +57,21 @@ protected trait ChaincodeActionsTraitInternal extends AutoCloseable {
    */
   protected def wrapTransactionResult(transactionId : String, result : Array[Byte]) : String = {
     val resultString = convertTransactionResult(result)
-    if(containsError(resultString)) throw createErrorFromResult(transactionId, resultString)
+    if(containsError(resultString)) throw extractErrorFromResult(transactionId, resultString)
     else return resultString
   }
 
-  protected def createErrorFromResult(transactionId : String, result : String): TransactionErrorException = {
-    // TODO: extract real error
-    val errorCode = 404
-    val errorDetail = "Whatever"
-    return new TransactionErrorException(transactionId, errorCode, errorDetail)
+  protected def extractErrorFromResult(transactionId : String, result : String): TransactionErrorException = {
+    // retrieve error code
+    var id = result.substring(result.indexOf("\"name\":\"")+8)
+    id = id.substring(0, id.indexOf("\""))
+
+    // retrieve detail
+    var detail = result.substring(result.indexOf("\"detail\":\"")+10)
+    detail = detail.substring(0, detail.indexOf("\""))
+
+    // create Exception
+    TransactionErrorException(transactionId, Integer.parseInt(id), detail)
   }
 
   /**
@@ -74,7 +80,7 @@ protected trait ChaincodeActionsTraitInternal extends AutoCloseable {
    * @return true if the result contains error information
    */
   private def containsError(result : String) : Boolean = {
-    result.contains("error")
+    result.contains("{\"name\":") && result.contains("\"detail\":")
   }
 
   /**
@@ -84,5 +90,9 @@ protected trait ChaincodeActionsTraitInternal extends AutoCloseable {
    */
   private def convertTransactionResult(result : Array[Byte]) : String = {
     new String(result, StandardCharsets.UTF_8)
+  }
+
+  protected def validateParameterCount(transactionId : String, expected : Integer, params : Array[String]) = {
+    if (params.size != expected) throw InvalidCallException.CreateInvalidParameterCountException(transactionId, expected, params.size)
   }
 }
