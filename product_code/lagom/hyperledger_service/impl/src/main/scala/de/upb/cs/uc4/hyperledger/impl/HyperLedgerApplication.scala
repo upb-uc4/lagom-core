@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.hyperledger.impl
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 import akka.actor.CoordinatedShutdown
 import akka.cluster.sharding.typed.scaladsl.Entity
@@ -27,9 +27,17 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
     with AhcWSComponents {
 
   lazy val connectionManager: ConnectionManagerTrait = ConnectionManager(
-    Paths.get(getClass.getResource("/connection_profile.yaml").toURI),
-    Paths.get(getClass.getResource("/wallet/").toURI)
+    retrivePath("uc4.hyperledger.networkConfig", "/connection_profile.yaml"),
+    retrivePath("uc4.hyperledger.wallet", "/wallet/")
   )
+
+  private def retrivePath(key: String, fallback: String): Path = {
+    if (config.hasPath(key)) {
+      Paths.get(config.getString(key))
+    } else {
+      Paths.get(getClass.getResource(fallback).toURI)
+    }
+  }
 
   // Set HttpFilter to the default CorsFilter
   override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
