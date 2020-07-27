@@ -53,7 +53,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   }
 
   //Test users
-  val address: Address = Address("Gaenseweg", "42a", "1337", "Entenhausen", "Nimmerland")
+  val address: Address = Address("Gaenseweg", "42a", "13337", "Entenhausen", "Nimmerland")
   val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
   val authenticationUser2: AuthenticationUser = AuthenticationUser("admin0", "newPassword", AuthenticationRole.Admin)
 

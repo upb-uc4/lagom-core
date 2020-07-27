@@ -86,7 +86,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
       } yield new ExceptionMessage(name, detail)
       val exceptionMessage = jsonParseResult match {
         case JsSuccess(m, _) => m
-        case JsError(_)      => new ExceptionMessage("UndeserializableException", message.message.utf8String)
+        case JsError(_)      => new ExceptionMessage("Undeserializable Exception", message.message.utf8String)
       }
       fromCodeAndMessage(message.errorCode, exceptionMessage)
     }

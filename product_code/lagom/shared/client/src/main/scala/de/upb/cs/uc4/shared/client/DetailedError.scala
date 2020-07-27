@@ -26,6 +26,7 @@ object DetailedError {
       //400
       case "path parameter mismatch" => "Parameter specified in path and in object do not match"
       case "wrong object" => "Unexpected object"
+      case "uneditable fields" => "Attempted to change uneditable fields"
       //401
       case "authorization error" => "Username and password combination does not exist"
       //403
