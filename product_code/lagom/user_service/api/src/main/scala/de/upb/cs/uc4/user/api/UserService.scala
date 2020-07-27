@@ -28,6 +28,9 @@ trait UserService extends Service {
   /** Delete a users from the database */
   def deleteUser(username: String): ServiceCall[NotUsed, Done]
 
+  /** Changes the password of a user in the database */
+  def changePassword(username: String): ServiceCall[AuthenticationUser, Done]
+
   // STUDENT
 
   /** Get all students from the database */
@@ -84,6 +87,9 @@ trait UserService extends Service {
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 
+  /** Allows POST */
+  def allowedPost: ServiceCall[NotUsed, Done]
+
   /** Allows DELETE */
   def allowedDelete: ServiceCall[NotUsed, Done]
 
@@ -97,10 +103,13 @@ trait UserService extends Service {
     import Service._
     named("user")
       .withCalls(
-        restCall(Method.GET, pathPrefix, getAllUsers _),
+        restCall(Method.GET, pathPrefix + "/users", getAllUsers _),
         restCall(Method.DELETE, pathPrefix + "/users/:username", deleteUser _),
         restCall(Method.OPTIONS, pathPrefix + "/users", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDelete _),
+
+        restCall(Method.POST, pathPrefix + "/password/:username", changePassword _),
+        restCall(Method.OPTIONS, pathPrefix + "/password/:username", allowedPost _),
 
         restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
