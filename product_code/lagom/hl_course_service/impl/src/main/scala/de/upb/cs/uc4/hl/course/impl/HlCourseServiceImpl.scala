@@ -8,7 +8,7 @@ import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
+import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.hl.course.api.HlCourseService
 import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
