@@ -6,4 +6,5 @@ class InvalidTransactionException(transactionId : String) extends Exception{
     "The provided transaction: \"" + transactionId + "\" was not valid."
   }
 
+  def getTransactionId : String = transactionId
 }
