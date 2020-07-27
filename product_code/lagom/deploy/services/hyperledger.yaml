@@ -29,6 +29,10 @@ spec:
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
+            - name: HYPERLEDGER_WALLET
+              value: ""
+            - name: HYPERLEDGER_NETWORK_CONFIG
+              value: ""
           resources:
             limits:
               memory: 512Mi
