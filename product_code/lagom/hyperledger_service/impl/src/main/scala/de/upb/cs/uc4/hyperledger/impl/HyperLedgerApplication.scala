@@ -15,18 +15,24 @@ import de.upb.cs.uc4.hyperledger.impl.actor.HyperLedgerBehaviour
 import de.upb.cs.uc4.hyperledger.impl.commands.Shutdown
 import de.upb.cs.uc4.hyperledger.traits.ConnectionManagerTrait
 import play.api.libs.ws.ahc.AhcWSComponents
+import play.api.mvc.EssentialFilter
+import play.filters.cors.CORSComponents
 
 import scala.concurrent.duration._
 
 abstract class HyperLedgerApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
     with ClusterComponents
+    with CORSComponents
     with AhcWSComponents {
 
   lazy val connectionManager: ConnectionManagerTrait = ConnectionManager(
     Paths.get(getClass.getResource("/connection_profile.yaml").toURI),
     Paths.get(getClass.getResource("/wallet/").toURI)
   )
+
+  // Set HttpFilter to the default CorsFilter
+  override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[HyperLedgerService](wire[HyperLedgerServiceImpl])
