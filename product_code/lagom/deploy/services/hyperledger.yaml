@@ -62,10 +62,10 @@ spec:
     - name: http
       port: 80
       targetPort: 9000
-    - name: hyperledger_orderer
+    - name: hyperledger-orderer
       port: 7050
       targetPort: 7050
-    - name: hyperledger_peer
+    - name: hyperledger-peer
       port: 7051
       targetPort: 7051
   selector:
