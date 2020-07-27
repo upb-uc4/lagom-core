@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.user.model.user
 
-import de.upb.cs.uc4.user.model.{Address, Role}
 import de.upb.cs.uc4.user.model.Role.Role
+import de.upb.cs.uc4.user.model.{Address, Role}
 import play.api.libs.json.{Format, JsResult, JsValue, Json}
 
 trait User {

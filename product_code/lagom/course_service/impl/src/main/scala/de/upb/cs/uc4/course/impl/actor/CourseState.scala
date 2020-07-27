@@ -4,9 +4,9 @@ package de.upb.cs.uc4.course.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
 import de.upb.cs.uc4.course.impl.CourseApplication
-import de.upb.cs.uc4.course.impl.commands.{CourseCommand, CreateCourse, DeleteCourse, GetCourse, UpdateCourse}
+import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.events.{CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate}
-import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
+import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.{DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected, RejectedWithError}
 import play.api.libs.json.{Format, Json}

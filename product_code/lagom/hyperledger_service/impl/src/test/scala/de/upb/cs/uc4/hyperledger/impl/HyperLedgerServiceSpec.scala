@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.hyperledger.impl
 
 import akka.Done
-import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, NotFound, TransportErrorCode}
+import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
@@ -10,7 +10,6 @@ import de.upb.cs.uc4.shared.client.CustomException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import play.api.libs.json.Json
 
 /** Tests for the CourseService
  * All tests need to be started in the defined order

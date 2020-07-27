@@ -38,10 +38,10 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   val client: CourseService = server.serviceClient.implement[CourseService]
 
   //Test courses
-  var course0: Course = Course("", "Course 0", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
-  var course1: Course = Course("", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
-  var course2: Course = Course("", "Course 1", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "12", 60, 20, CourseLanguage.German, "A test")
-  var course3: Course = Course("", "Course 3", CourseType.Lecture, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German, "A test")
+  var course0: Course = Course("", "Course 0", CourseType.Lecture.toString, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German.toString, "A test")
+  var course1: Course = Course("", "Course 1", CourseType.Lecture.toString, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German.toString, "A test")
+  var course2: Course = Course("", "Course 1", CourseType.Lecture.toString, "2020-04-11", "2020-08-01", 8, "12", 60, 20, CourseLanguage.German.toString, "A test")
+  var course3: Course = Course("", "Course 3", CourseType.Lecture.toString, "2020-04-11", "2020-08-01", 8, "11", 60, 20, CourseLanguage.German.toString, "A test")
 
   override protected def afterAll(): Unit = server.stop()
 

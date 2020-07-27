@@ -8,8 +8,8 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.impl.actor.UserBehaviour
 import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateUser}
+import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{Address, Role}
-import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student, User}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
