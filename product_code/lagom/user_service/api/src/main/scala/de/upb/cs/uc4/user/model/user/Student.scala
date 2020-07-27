@@ -29,12 +29,6 @@ case class Student(username: String,
     if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
       errors :+= SimpleError("matriculationId", "Matriculation ID must be a number between 1 and 9999999.")
     }
-    if(!(semesterCount > 0)) {
-      errors :+= SimpleError("semesterCount", "Semester count must be a positive integer.")
-    }
-    if(!(fieldsOfStudy forall fos.contains)) {
-      errors :+= SimpleError("fieldsOfStudy", "Fields of Study must be one of [..].")
-    }
     errors
   }
 
@@ -55,18 +49,8 @@ case class Student(username: String,
     var errors = List[SimpleError]()
    
     errors ++= super.checkEditableFields(user)
-    
-    if (immatriculationStatus != student.immatriculationStatus){
-      errors :+= SimpleError("immatriculationStatus", "Immatriculation status may not be manually changed.")
-    }
     if (matriculationId != student.matriculationId){
       errors :+= SimpleError("matriculationId", "Matriculation ID may not be manually changed.")
-    }
-    if (semesterCount != student.semesterCount){
-      errors :+= SimpleError("semesterCount", "Number of semesters may not be manually changed.")
-    }
-    if (fieldsOfStudy != student.fieldsOfStudy){
-      errors :+= SimpleError("fieldsOfStudy", "Fields of study may not be manually changed.")
     }
     errors
   }
