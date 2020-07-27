@@ -1,8 +1,15 @@
 name: Lagom Test Pipeline
 
 on:
+  push:
+    branches:
+      - '**lagom**'
+      - develop
+      - master
   pull_request:
-    branches: [ develop ]
+    branches: 
+      - develop
+      - master
 
 jobs:
   RunAllTests:
