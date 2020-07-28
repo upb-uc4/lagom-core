@@ -11,7 +11,7 @@ import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationEntry, Authenticat
 import de.upb.cs.uc4.authentication.impl.commands.{AuthenticationCommand, GetAuthentication}
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.{CustomException, DetailedError}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError}
 import de.upb.cs.uc4.shared.server.Hashing
 
 import scala.concurrent.ExecutionContext
@@ -35,13 +35,13 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       case Some(entry) =>
         if (entry.password != Hashing.sha256(entry.salt + password)) {
           throw new CustomException(TransportErrorCode(401, 1003, "Unauthorized"),
-            DetailedError("authorization error", Seq()))
+            GenericError("authorization error"))
         } else {
           (username, entry.role)
         }
       case None =>
         throw new CustomException(TransportErrorCode(401, 1003, "Unauthorized"),
-          DetailedError("authorization error", Seq()))
+          GenericError("authorization error"))
     }
   }
 }
