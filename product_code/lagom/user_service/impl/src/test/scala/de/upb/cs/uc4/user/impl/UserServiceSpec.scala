@@ -3,7 +3,7 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
@@ -46,6 +46,12 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         override def immatriculateStudent(): ServiceCall[ImmatriculationData, Done] = ServiceCall { _ =>
           Future.successful(Done)
         }
+
+        override def getMatriculation(matriculationId: String): ServiceCall[NotUsed, ImmatriculationData] = ServiceCall {
+          _ => Future.successful(null)
+        }
+
+        override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
       }
     }
   }
