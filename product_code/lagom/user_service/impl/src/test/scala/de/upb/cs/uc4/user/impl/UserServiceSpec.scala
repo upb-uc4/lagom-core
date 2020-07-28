@@ -72,7 +72,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         client.getAllUsers.handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
 
           answer.admins should have size 1
-          answer.lecturer should have size 1
+          answer.lecturers should have size 1
           answer.students should have size 1
         }
       }
