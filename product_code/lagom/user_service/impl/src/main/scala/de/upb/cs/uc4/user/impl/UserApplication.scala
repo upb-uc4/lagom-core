@@ -6,8 +6,8 @@ import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
 import com.softwaremill.macwire.wire
+import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.shared.server.AuthenticationComponent
-import de.upb.cs.uc4.shared.server.hyperledger.HyperledgerComponent
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{UserBehaviour, UserState}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
@@ -24,8 +24,7 @@ abstract class UserApplication(context: LagomApplicationContext)
     with HikariCPComponents
     with CORSComponents
     with AhcWSComponents
-    with AuthenticationComponent
-    with HyperledgerComponent {
+    with AuthenticationComponent {
 
   // Create ReadSide
   lazy val database: UserDatabase = wire[UserDatabase]
@@ -39,6 +38,9 @@ abstract class UserApplication(context: LagomApplicationContext)
 
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = UserSerializerRegistry
+
+  // Bind the matriculation service
+  lazy val matriculationService: MatriculationService = serviceClient.implement[MatriculationService]
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
   // a given sharding entity typeKey.

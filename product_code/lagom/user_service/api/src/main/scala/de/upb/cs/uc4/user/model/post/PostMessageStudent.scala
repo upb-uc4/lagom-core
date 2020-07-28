@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model.post
 
-import de.upb.cs.uc4.user.model.immatriculation.ImmatriculationStatus
+import de.upb.cs.uc4.matriculation.model.ImmatriculationStatus
 import de.upb.cs.uc4.user.model.user.{AuthenticationUser, Student}
 import play.api.libs.json.{Format, Json}
 
