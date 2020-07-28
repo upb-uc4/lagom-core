@@ -1,12 +1,11 @@
 package de.upb.cs.uc4.hyperledger.impl
 
 import akka.Done
-import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
+import com.lightbend.lagom.scaladsl.api.transport.TransportException
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
-import de.upb.cs.uc4.hyperledger.traits.{ChaincodeTrait, ConnectionManagerTrait}
-import de.upb.cs.uc4.shared.client.CustomException
+import de.upb.cs.uc4.hyperledger.traits.{ChaincodeActionsTrait, ConnectionManagerTrait}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -21,7 +20,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       .withCluster()
   ) { ctx =>
     new HyperLedgerApplication(ctx) with LocalServiceLocator {
-      override lazy val connectionManager: ConnectionManagerTrait = () => new ChaincodeTrait {
+      override lazy val connectionManager: ConnectionManagerTrait = () => new ChaincodeActionsTrait {
 
         override def close(): Unit = {}
 
@@ -122,7 +121,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not read a non-existing course" in {
       client.read("getCourseById").invoke(List("invalidID")).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode should ===(TransportErrorCode(404, 1008, "Policy Violation/Not Found"))
+        answer.asInstanceOf[TransportException].exceptionMessage.name should ===(new Exception("Course not found.").toString)
       }
     }
 

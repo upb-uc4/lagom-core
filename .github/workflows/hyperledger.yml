@@ -2,9 +2,14 @@ name: Hyperledger Test Pipeline
 
 on:
   push:
-    branches: [ feature/hyperledger* ]
+    branches:
+      - '**hyperledger**'
+      - develop
+      - master
   pull_request:
-    branches: [ develop ]
+    branches: 
+      - develop
+      - master
 
 jobs:
   TestChaincode:

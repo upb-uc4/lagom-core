@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.shared.server.hyperledger
 
 import com.lightbend.lagom.scaladsl.client.ServiceClient
-import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import com.softwaremill.macwire.wire
+import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 
 import scala.concurrent.ExecutionContext
 

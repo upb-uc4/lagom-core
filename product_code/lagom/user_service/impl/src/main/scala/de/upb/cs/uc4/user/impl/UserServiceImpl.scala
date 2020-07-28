@@ -18,7 +18,7 @@ import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, R
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
+import de.upb.cs.uc4.user.impl.events.{OnPasswordUpdate, OnUserCreate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.immatriculation.ImmatriculationData
@@ -73,6 +73,33 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
   }
 
+  /** Changes the password of a user in the database */
+  override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] =
+    identifiedAuthenticated(AuthenticationRole.All: _*){
+      (authUsername, role)=>
+        ServerServiceCall { (_, user) =>
+          if (username != user.username.trim) {
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+          }
+          if (authUsername != user.username.trim){
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
+          }
+          if(role != user.role) {
+            //TODO : Needs to be changed with new uneditable fields
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), new DetailedError("uneditable field", "You can not manipulate this field.", List()))
+          }
+          val ref = entityRef(user.username)
+
+          ref.ask[Confirmation](replyTo => UpdatePassword(user, replyTo))
+            .map {
+              case Accepted => // Update Successful
+                (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+              case RejectedWithError(code, errorResponse) =>
+                throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+            }
+        }
+  }
+
   /** Get all students from the database */
   override def getAllStudents: ServerServiceCall[NotUsed, Seq[Student]] =
     authenticated[NotUsed, Seq[Student]](AuthenticationRole.Admin) { _ =>
@@ -103,15 +130,10 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing student */
   override def updateStudent(username: String): ServiceCall[Student, Done] =
-    identifiedAuthenticated(AuthenticationRole.Student, AuthenticationRole.Admin) {
-      (authUsername, role)=>
-        ServerServiceCall { (header, user) =>
-          if (role == AuthenticationRole.Student && authUsername != user.username.trim){
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
-          }
-          updateUser(username).invokeWithHeaders(header, user)
-        }
+    ServerServiceCall { (header, user) =>
+      updateUser(username).invokeWithHeaders(header, user)
     }
+
 
   /** Get all lecturers from the database */
   override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] =
@@ -121,7 +143,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new lecturer to the database */
   override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.lecturer).map{
+    addUser(user.authUser).invokeWithHeaders(header, user.lecturer).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
           user.asInstanceOf[Lecturer])
@@ -141,14 +163,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing lecturer */
   override def updateLecturer(username: String): ServiceCall[Lecturer, Done] =
-    identifiedAuthenticated(AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
-      (authUsername, role)=>
-        ServerServiceCall { (header, user) =>
-          if (role == AuthenticationRole.Lecturer && authUsername != user.username.trim){
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
-          }
-          updateUser(username).invokeWithHeaders(header, user)
-        }
+    ServerServiceCall { (header, user) =>
+      updateUser(username).invokeWithHeaders(header, user)
     }
 
   /** Get all admins from the database */
@@ -159,7 +175,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new admin to the database */
   override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.admin).map{
+    addUser(user.authUser).invokeWithHeaders(header, user.admin).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
           user.asInstanceOf[Admin])
@@ -179,10 +195,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Update an existing admin */
   override def updateAdmin(username: String): ServiceCall[Admin, Done] =
-    authenticated(AuthenticationRole.Admin) {
-      ServerServiceCall { (header, user) =>
-        updateUser(username).invokeWithHeaders(header, user)
-      }
+    ServerServiceCall { (header, user) =>
+      updateUser(username).invokeWithHeaders(header, user)
     }
 
   /** Get role of the user */
@@ -200,6 +214,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
+  /** Allows POST */
+  def allowedPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("POST")
+
   /** Allows DELETE */
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
@@ -207,7 +224,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
 
-      if(user.username.trim.isEmpty){
+      if (user.username.trim.isEmpty) {
         throw new CustomException(TransportErrorCode(422, 1003, "Error"),
           DetailedError("validation error", Seq(SimpleError("username", "Username must not be blank."))))
       }
@@ -225,21 +242,40 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Helper method for updating a generic User, independent of the role */
-  private def updateUser(username: String): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
-    if (username != user.username.trim) {
-      throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+  private def updateUser(username: String): ServerServiceCall[User, Done] =
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
+        ServerServiceCall { (_, user) =>
+          // Check, if the username in path is different than the username in the object
+          if (username != user.username.trim) {
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+          }
+          // If invoked by a non-Admin, check if the manipulated object is owned by the user
+          if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
+          }
+          
+          // We need to know what role the user has, because their editable fields are different
+          getUser(username).invoke().map(_.checkEditableFields(user))
+            .flatMap{ editErrors =>
+            // Other users than admins can only edit specified fields
+            if (role != AuthenticationRole.Admin && editErrors.nonEmpty) { 
+              throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("uneditable fields", editErrors))
+            } else {
+              val ref = entityRef(user.username)
+
+              ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
+                .map {
+                  case Accepted => // Update successful
+                    (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                  case RejectedWithError(code, errorResponse) => //Update failed
+                    throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                }
+            }
+          }
+        }
     }
 
-    val ref = entityRef(user.username)
-
-    ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
-      .map {
-        case Accepted => // Update Successful
-          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-        case RejectedWithError(code, errorResponse) =>
-          throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
-      }
-  }
 
   /** Helper method for getting a generic User, independent of the role */
   private def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ =>
@@ -273,6 +309,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       .mapConcat {
         //Filter only OnUserCreate events
         case EventStreamElement(_, OnUserCreate(_, authenticationUser), offset) =>
+          immutable.Seq((authenticationUser, offset))
+        case EventStreamElement(_, OnPasswordUpdate(authenticationUser), offset) =>
           immutable.Seq((authenticationUser, offset))
         case _ => Nil
       }

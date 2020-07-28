@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.hyperledger
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 
-import de.upb.cs.uc4.hyperledger.traits.{ChaincodeTrait, ConnectionManagerTrait}
+import de.upb.cs.uc4.hyperledger.traits.{ChaincodeActionsTrait, ConnectionManagerTrait}
 import org.hyperledger.fabric.gateway.Gateway.Builder
 import org.hyperledger.fabric.gateway._
 
@@ -11,16 +11,14 @@ import org.hyperledger.fabric.gateway._
   * @param connection_profile_path Path to connectionProfile.yaml
   * @param wallet_path Path to wallet dictionary containing all certificates
   */
-case class ConnectionManager(
-    connection_profile_path : Path = Paths.get("connection_profile.yaml"),
-    wallet_path : Path = Paths.get("wallet"))
-      extends ConnectionManagerTrait{
+case class ConnectionManager(connection_profile_path : Path, wallet_path : Path)
+  extends ConnectionManagerTrait{
 
   val channel_name = "myc"
   private val chaincode_name = "mycc"
   private val client_name = "cli"
 
-  override def createConnection() : ChaincodeTrait = { new ChaincodeConnection(this.initializeConnection()) }
+  override def createConnection() : ChaincodeActionsTrait = { new ChaincodeConnection(this.initializeConnection()) }
 
   @throws[Exception]
   def initializeConnection() : (Gateway, Contract) = { // Load a file system based wallet for managing identities.

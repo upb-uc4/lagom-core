@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.stream.scaladsl.Source
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
@@ -29,8 +30,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 /** Tests for the CourseService
-  * All tests need to be started in the defined order
-  */
+ * All tests need to be started in the defined order
+ */
 class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually {
 
   private val server = ServiceTest.startServer(
@@ -39,7 +40,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   ) { ctx =>
     new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
       override lazy val authenticationService: AuthenticationService =
-        (_: String, _: String) => ServiceCall { _ => Future.successful("admin", AuthenticationRole.Admin) }
+        (_: String, _: String) => ServiceCall { _ => Future.successful("admin0", AuthenticationRole.Admin) }
 
       override lazy val hyperLedgerService: HyperLedgerService = new HyperLedgerService(){
         override def write(transactionId: String): ServiceCall[Seq[String], Done] = ServiceCall{ _ => Future.successful(Done)}
@@ -59,14 +60,17 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   }
 
   //Test users
-  val address: Address = Address("Gaenseweg", "42a", "1337", "Entenhausen", "Nimmerland")
+  val address: Address = Address("Gaenseweg", "42a", "13337", "Entenhausen", "Nimmerland")
   val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
+  val authenticationUser2: AuthenticationUser = AuthenticationUser("admin0", "newPassword", AuthenticationRole.Admin)
   val immatriculationStatus: ImmatriculationStatus = ImmatriculationStatus("CS", Seq(Interval("WS19/20", "SS20")))
 
   val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "421769")
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
   val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1992-12-11")
   val admin1: Admin = Admin("lecturer0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1996-12-11")
+
+  val authenticationSubscriber: TestSubscriber.Probe[AuthenticationUser] = authenticationTopic.runWith(TestSink.probe(server.actorSystem))(server.materializer)
 
   /** Tests only working if the whole instance is started */
   "UserService service" should {
@@ -83,21 +87,21 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "publish new AuthenticationUser" in {
-      val authUser = authenticationTopic.runWith(TestSink.probe(server.actorSystem))(server.materializer).request(1)
-        .expectNext(FiniteDuration(2, TimeUnit.MINUTES))
+      val authUsers = authenticationSubscriber.request(3).expectNextN(3)
 
-      Seq(
+      authUsers should contain theSameElementsAs Seq(
         AuthenticationUser("admin", "admin", AuthenticationRole.Admin),
         AuthenticationUser("lecturer", "lecturer", AuthenticationRole.Lecturer),
         AuthenticationUser("student", "student", AuthenticationRole.Student)
-      ) should contain (authUser)
+      )
     }
 
     "add a student" in {
       client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(authenticationUser, student0, immatriculationStatus))
       eventually(timeout(Span(2, Minutes))) {
-        client.getAllStudents.handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
-          answer should contain (student0)
+        client.getAllStudents.handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+          answer should contain(student0)
+          authenticationSubscriber.request(1).expectNext(FiniteDuration(2, TimeUnit.MINUTES)) should ===(authenticationUser)
         }
       }
     }
@@ -105,8 +109,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "add a lecturer" in {
       client.addLecturer().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageLecturer(authenticationUser, lecturer0))
       eventually(timeout(Span(2, Minutes))) {
-        client.getAllLecturers.handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
-          answer should contain (lecturer0)
+        client.getAllLecturers.handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+          answer should contain(lecturer0)
+          authenticationSubscriber.request(1).expectNext(FiniteDuration(2, TimeUnit.MINUTES)) should ===(authenticationUser)
         }
       }
     }
@@ -114,8 +119,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "add an admin" in {
       client.addAdmin().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageAdmin(authenticationUser, admin0))
       eventually(timeout(Span(2, Minutes))) {
-        client.getAllAdmins.handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
-          answer should contain (admin0)
+        client.getAllAdmins.handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+          answer should contain(admin0)
+          authenticationSubscriber.request(1).expectNext(FiniteDuration(2, TimeUnit.MINUTES)) should ===(authenticationUser)
         }
       }
     }
@@ -193,6 +199,30 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "get a role of a user" in {
       client.getRole(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
         answer.role shouldBe Role.Lecturer
+      }
+    }
+
+    "change the password of a user" in {
+      client.changePassword(admin0.username).handleRequestHeader(addAuthorizationHeader())
+        .invoke(authenticationUser2).map { answer =>
+        answer should ===(Done)
+
+        val authUser = authenticationSubscriber.request(1).expectNext(FiniteDuration(2, TimeUnit.MINUTES))
+        authUser should ===(authenticationUser2)
+      }
+    }
+
+    "change the password of another user" in {
+      client.changePassword(authenticationUser.username).handleRequestHeader(addAuthorizationHeader())
+        .invoke(authenticationUser).failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(403)
+      }
+    }
+
+    "change the password of with wrong path parameter" in {
+      client.changePassword("test").handleRequestHeader(addAuthorizationHeader())
+        .invoke(authenticationUser2).failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(400)
       }
     }
   }

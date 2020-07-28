@@ -1,6 +1,9 @@
 
+import java.nio.file.Paths
+
+import de.upb.cs.uc4.hyperledger.exceptions.InvalidCallException
+import de.upb.cs.uc4.hyperledger.traits.ChaincodeActionsTrait
 import de.upb.cs.uc4.hyperledger.{ChaincodeQuickAccess, ConnectionManager}
-import de.upb.cs.uc4.hyperledger.traits.ChaincodeTrait
 import org.scalatest.Succeeded
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -9,11 +12,13 @@ import scala.util.{Success, Using}
 
 class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
 
-  val connectionManager = ConnectionManager()
+  val connectionManager = ConnectionManager(
+    Paths.get(getClass.getResource("/connection_profile.yaml").toURI),
+    Paths.get(getClass.getResource("/wallet/").toURI))
 
   "A ChaincodeConnection" when {
-    "initialized" should {
-      "Allow for getCALlCourses" in {
+    "accessed as expected" should {
+      "allow for getAllCourses" in {
         // setup connection
         val chaincodeConnection = connectionManager.createConnection()
 
@@ -30,8 +35,8 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
         }
       }
 
-      "Allow a full walkthrough" in {
-        val testResult = Using(connectionManager.createConnection()) { chaincodeConnection: ChaincodeTrait =>
+      "allow a full walkthrough" in {
+        val testResult = Using(connectionManager.createConnection()) { chaincodeConnection: ChaincodeActionsTrait =>
           // initial courses
           val getAllCourses = chaincodeConnection.getAllCourses()
           getAllCourses should not be null
@@ -39,8 +44,7 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
 
           // add new course
           val testCourseId = "41"
-          val exampleCourseData = "{\"courseId\":\"" + testCourseId + "\",\"courseName\":\"IQC\",\"courseType\":\"Lecture\",\"startDate\":\"1998-01-01\",\"endDate\":\"1999-01-01\",\"ects\":7,\"lecturerId\":\"Mustermann\",\"maxParticipants\":80,\"currentParticipants\":20,\"courseLanguage\":\"English\",\"courseDescription\":\"Fun new course\"}"
-          val addCourseResult = chaincodeConnection.addCourse(exampleCourseData)
+          val addCourseResult = chaincodeConnection.addCourse(TestData.exampleCourseData(testCourseId))
           addCourseResult should not be null
           addCourseResult should equal ("")
           println("AddNew Result: " + addCourseResult)
@@ -49,8 +53,8 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
           val readCourseResult = chaincodeConnection.getCourseById(testCourseId)
           readCourseResult should not be null
           println("newCourse read: " + readCourseResult)
-          println("example data: " + exampleCourseData)
-          readCourseResult should equal (exampleCourseData)
+          println("example data: " + TestData.exampleCourseData(testCourseId))
+          readCourseResult should equal (TestData.exampleCourseData(testCourseId))
 
           // delete new course
           val deleteCourseResult = chaincodeConnection.deleteCourseById(testCourseId)
@@ -67,12 +71,10 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
           // update new course
           // add new course
           val testUpdateCourseId = "90"
-          val exampleCourseData2 = "{\"courseId\":\"" + testUpdateCourseId + "\",\"courseName\":\"IQC\",\"courseType\":\"Lecture\",\"startDate\":\"1998-01-01\",\"endDate\":\"1999-01-01\",\"ects\":7,\"lecturerId\":\"Mustermann\",\"maxParticipants\":80,\"currentParticipants\":20,\"courseLanguage\":\"English\",\"courseDescription\":\"Fun new course\"}"
-          val updateAddCourseResult = chaincodeConnection.addCourse(exampleCourseData2)
+          val updateAddCourseResult = chaincodeConnection.addCourse(TestData.exampleCourseData(testUpdateCourseId))
           updateAddCourseResult should equal ("")
           // update
-          val exampleCourseData3 = "{\"courseId\":\"" + testUpdateCourseId + "\",\"courseName\":\"Intro to Quantum\",\"courseType\":\"Lecture\",\"startDate\":\"1998-01-01\",\"endDate\":\"1999-01-01\",\"ects\":7,\"lecturerId\":\"Mustermann\",\"maxParticipants\":80,\"currentParticipants\":20,\"courseLanguage\":\"English\",\"courseDescription\":\"Fun new course\"}"
-          val updateCouresResult = chaincodeConnection.updateCourseById(testUpdateCourseId, exampleCourseData3)
+          val updateCouresResult = chaincodeConnection.updateCourseById(testUpdateCourseId, TestData.exampleCourseData2(testUpdateCourseId))
           updateCouresResult should not be null
           updateCouresResult should equal ("")
         }
