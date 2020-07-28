@@ -1,7 +1,6 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
-import com.fasterxml.jackson.annotation.JsonValue
-import play.api.libs.json.{Format, JsNull, JsResult, JsValue, Json, Writes}
+import play.api.libs.json.{Format, JsResult, JsValue}
 
 trait CustomError{
   val `type`: String

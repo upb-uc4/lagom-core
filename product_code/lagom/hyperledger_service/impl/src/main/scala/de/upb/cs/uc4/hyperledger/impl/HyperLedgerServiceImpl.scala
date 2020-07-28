@@ -8,7 +8,7 @@ import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.hyperledger.impl.actor.HyperLedgerBehaviour
 import de.upb.cs.uc4.hyperledger.impl.commands.{HyperLedgerCommand, Read, Write}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError, SimpleError}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError}
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
 
 import scala.concurrent.ExecutionContext
