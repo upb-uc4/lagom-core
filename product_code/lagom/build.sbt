@@ -52,13 +52,15 @@ lazy val lagom = (project in file("."))
     hl_course_service_api, hl_course_service,
     hyperledger_service_api, hyperledger_service,
     authentication_service_api, authentication_service,
-    user_service_api, user_service)
+    user_service_api, user_service,
+    matriculation_service_api, matriculation_service)
   .dependsOn(shared_client, shared_server,
     course_service_api, course_service,
     hl_course_service_api, hl_course_service,
     hyperledger_service_api, hyperledger_service,
     authentication_service_api, authentication_service,
-    user_service_api, user_service)
+    user_service_api, user_service,
+    matriculation_service_api, matriculation_service)
 
 // This project is not allowed to have lagom server dependencies
 lazy val shared_client = (project in file("shared/client"))
@@ -155,6 +157,20 @@ lazy val user_service = (project in file("user_service/impl"))
     libraryDependencies ++= defaultPersistenceKafkaDependencies,
   )
   .settings(dockerSettings)
-  .dependsOn(user_service_api, shared_server, shared_client)
+  .dependsOn(user_service_api, shared_server)
+
+lazy val matriculation_service_api = (project in file("matriculation_service/api"))
+  .settings(
+    libraryDependencies ++= apiDefaultDependencies
+  )
+  .dependsOn(authentication_service_api, shared_client)
+
+lazy val matriculation_service = (project in file("matriculation_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= implDefaultDependencies,
+  )
+  .settings(dockerSettings)
+  .dependsOn(matriculation_service_api, shared_server)
 
 lazy val hyperledger_api = ProjectRef(file("../hyperledger/api"), "api")
