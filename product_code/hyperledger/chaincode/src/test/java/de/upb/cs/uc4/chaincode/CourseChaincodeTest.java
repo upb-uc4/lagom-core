@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.chaincode;
 
 import de.upb.cs.uc4.chaincode.model.Course;
-import de.upb.cs.uc4.chaincode.model.Error;
+import de.upb.cs.uc4.chaincode.model.DetailedError;
 import de.upb.cs.uc4.chaincode.model.InvalidParameter;
 import org.hyperledger.fabric.contract.Context;
 import org.hyperledger.fabric.protos.peer.ChaincodeEventPackage;
@@ -411,7 +411,7 @@ public final class CourseChaincodeTest {
         Course course = gson.fromJson(contract.getCourseById(ctx, "course1"), Course.class);
         assertThat(contract.deleteCourseById(ctx, "notExisting")).isEqualTo(
                 gson.toJson(
-                        new Error()
+                        new DetailedError()
                                 .type("Not found")
                                 .title("The given ID does not fit any existing course.")));
     }
@@ -469,7 +469,7 @@ public final class CourseChaincodeTest {
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
                     "  \"courseDescription\": \"some lecture\" }");
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
                     "  \"startDate\": \"2020-06-29\",\n" +
@@ -479,9 +479,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("Conflict")
                             .title("There is already a course with the given courseId."));
         }
@@ -493,7 +493,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
                     "  \"startDate\": \"2020-06-29\",\n" +
@@ -503,9 +503,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("10")
                             .title("Course name must not be empty"));
         }
@@ -517,7 +517,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"something invalid\",\n" +
                     "  \"startDate\": \"2020-06-29\",\n" +
@@ -527,9 +527,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("20")
                             .title("Course type must be one of [\"Lecture\", \"Seminar\", \"Project Group\"]")
             );
@@ -542,7 +542,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
                     "  \"startDate\": \"something invalid\",\n" +
@@ -552,9 +552,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("30")
                             .title("startDate must be the following format \"yyyy-mm-dd\"")
             );
@@ -567,7 +567,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
                     "  \"startDate\": \"2020-06-29\",\n" +
@@ -577,13 +577,14 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error(new ArrayList<InvalidParameter>(){{add(new InvalidParameter()
-                            .name("EndDate")
-                            .reason("endDate must be the following format \"yyyy-mm-dd\""));}})
+                    new DetailedError()
                             .type("Unprocessable Entity")
                             .title("The following parameters are invalid.")
+                            .invalidParams(new ArrayList<InvalidParameter>(){{add(new InvalidParameter()
+                                    .name("EndDate")
+                                    .reason("endDate must be the following format \"yyyy-mm-dd\""));}})
             );
         }
 
@@ -594,7 +595,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
                     "  \"startDate\": \"2020-06-29\",\n" +
@@ -604,9 +605,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("50")
                             .title("ects must be a positive integer number")
             );
@@ -619,7 +620,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
                     "  \"startDate\": \"2020-06-29\",\n" +
@@ -629,9 +630,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("50")
                             .title("ects must be a positive integer number")
             );
@@ -644,7 +645,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
                     "  \"startDate\": \"2020-06-29\",\n" +
@@ -654,9 +655,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("60")
                             .title("lecturerID unknown")
             );
@@ -669,7 +670,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
                     "  \"startDate\": \"2020-06-29\",\n" +
@@ -679,9 +680,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": -1,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("70")
                             .title("maxParticipants must be a positive integer number")
             );
@@ -694,7 +695,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
+            DetailedError error = gson.fromJson(contract.addCourse(ctx, "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
                     "  \"startDate\": \"2020-06-29\",\n" +
@@ -704,9 +705,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"something invalid\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("80")
                             .title("language must be one of [\"German\", \"English\"]")
             );
@@ -801,7 +802,7 @@ public final class CourseChaincodeTest {
             ChaincodeStub stub = mock(ChaincodeStub.class);
             when(ctx.getStub()).thenReturn(stub);
             when(stub.getStringState("course1")).thenReturn("");
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -812,9 +813,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("03")
                             .title("Course not found"));
         }
@@ -826,7 +827,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course2\",\n" +
                             "  \"courseName\": \"\",\n" +
                             "  \"courseType\": \"Lecture\",\n" +
@@ -837,9 +838,9 @@ public final class CourseChaincodeTest {
                             "  \"maxParticipants\": 100,\n" +
                             "  \"currentParticipants\": 0,\n" +
                             "  \"courseLanguage\": \"English\",\n" +
-                            "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                            "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("00")
                             .title("Course ID and ID in path do not match"));
         }
@@ -851,7 +852,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -862,9 +863,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("10")
                             .title("Course name must not be empty"));
         }
@@ -876,7 +877,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"something invalid\",\n" +
@@ -887,9 +888,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("20")
                             .title("Course type must be one of [\"Lecture\", \"Seminar\", \"Project Group\"]")
             );
@@ -902,7 +903,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -913,9 +914,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("30")
                             .title("startDate must be the following format \"yyyy-mm-dd\"")
             );
@@ -928,7 +929,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -939,9 +940,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("40")
                             .title("endDate must be the following format \"yyyy-mm-dd\"")
             );
@@ -954,7 +955,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -965,9 +966,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("50")
                             .title("ects must be a positive integer number")
             );
@@ -980,7 +981,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -991,9 +992,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("50")
                             .title("ects must be a positive integer number")
             );
@@ -1006,7 +1007,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -1017,9 +1018,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("60")
                             .title("lecturerID unknown")
             );
@@ -1032,7 +1033,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -1043,9 +1044,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": -1,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"English\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("70")
                             .title("maxParticipants must be a positive integer number")
             );
@@ -1058,7 +1059,7 @@ public final class CourseChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            Error error = gson.fromJson(contract.updateCourseById(ctx, "course1",
+            DetailedError error = gson.fromJson(contract.updateCourseById(ctx, "course1",
                     "{ \"courseId\": \"course1\",\n" +
                     "  \"courseName\": \"courseName1\",\n" +
                     "  \"courseType\": \"Lecture\",\n" +
@@ -1069,9 +1070,9 @@ public final class CourseChaincodeTest {
                     "  \"maxParticipants\": 100,\n" +
                     "  \"currentParticipants\": 0,\n" +
                     "  \"courseLanguage\": \"something invalid\",\n" +
-                    "  \"courseDescription\": \"some lecture\" }"), Error.class);
+                    "  \"courseDescription\": \"some lecture\" }"), DetailedError.class);
             assertThat(error).isEqualTo(
-                    new Error()
+                    new DetailedError()
                             .type("80")
                             .title("language must be one of [\"German\", \"English\"]")
             );
