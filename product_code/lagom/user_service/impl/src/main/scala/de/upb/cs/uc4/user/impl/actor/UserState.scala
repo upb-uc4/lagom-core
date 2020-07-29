@@ -3,12 +3,11 @@ package de.upb.cs.uc4.user.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
-import de.upb.cs.uc4.shared.client
-import de.upb.cs.uc4.shared.client.{DetailedError, SimpleError}
+import de.upb.cs.uc4.shared.client.exceptions.{DetailedError, GenericError, SimpleError}
 import de.upb.cs.uc4.shared.server.messages._
 import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{OnPasswordUpdate, OnUserCreate, OnUserDelete, OnUserUpdate, UserEvent}
+import de.upb.cs.uc4.user.impl.events._
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student, User}
 import play.api.libs.json.{Format, Json}
 
@@ -44,7 +43,7 @@ case class UserState(optUser: Option[User]) {
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(409, DetailedError("key value error", "Username is already taken", List(SimpleError("username", "Username already exists")))))
+          Effect.reply(replyTo)(RejectedWithError(409, GenericError("key value error", "Username is already taken")))
         }
   
         
@@ -56,10 +55,10 @@ case class UserState(optUser: Option[User]) {
           if(validationErrors.isEmpty){
             Effect.persist(OnUserUpdate(trimmedUser)).thenReply(replyTo) { _ => Accepted }
           } else {
-            Effect.reply(replyTo)(RejectedWithError(422, client.DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
+            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
           }
         } else {
-          Effect.reply(replyTo)(RejectedWithError(404, DetailedError("key value error", "Username not found", List(SimpleError("username", "Username does not exist")))))
+          Effect.reply(replyTo)(RejectedWithError(404, GenericError("key value error", "Username not found")))
       }
 
       case UpdatePassword(user, replyTo) => Effect.persist(OnPasswordUpdate(user)).thenReply(replyTo) { _ => Accepted }

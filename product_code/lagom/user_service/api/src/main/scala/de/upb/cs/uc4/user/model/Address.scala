@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model
 
-import de.upb.cs.uc4.shared.client.SimpleError
+import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{Format, Json}
 
 case class Address(street: String,
@@ -15,10 +15,10 @@ case class Address(street: String,
 
 /**
   * Validates the parameters of the Address according to syntax, charsets, etc.
-  * Returns a Sequence of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]], 
+  * Returns a Sequence of SimpleErrors[[SimpleError]],
   * that contain the errors that were encountered during validation.
   * 
-  * @return Sequence of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
+  * @return Sequence of SimpleErrors[[SimpleError]]
   */
   def validate: Seq[SimpleError] = {
     val houseNumberRegex = """[1-9][0-9]{0,4}([a-z]([0-9]|-[a-z]){0,1}){0,1}""".r

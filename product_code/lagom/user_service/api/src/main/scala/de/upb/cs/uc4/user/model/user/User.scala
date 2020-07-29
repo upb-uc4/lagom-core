@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
-import de.upb.cs.uc4.shared.client.SimpleError
+import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.{Address, Role}
 import play.api.libs.json.{Format, JsResult, JsValue, Json}
@@ -20,9 +20,9 @@ trait User {
 
   /** 
     * Validates the object by checking predefined conditions like correct charsets, syntax, etc.
-    * Returns a list of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
+    * Returns a list of SimpleErrors[[SimpleError]]
     *
-    * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
+    * @return Filled Sequence of [[SimpleError]]
     */
   def validate: Seq[SimpleError] = {
     
@@ -79,10 +79,10 @@ trait User {
 
   /** 
     * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
-    * Returns a list of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
+    * Returns a list of SimpleErrors[[SimpleError]]
     * 
     * @param user 
-    * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
+    * @return Filled Sequence of [[SimpleError]]
     */
   def checkEditableFields (user: User): Seq[SimpleError] = {
     var errors = List[SimpleError]()

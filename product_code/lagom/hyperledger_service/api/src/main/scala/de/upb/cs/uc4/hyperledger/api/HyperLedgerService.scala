@@ -3,7 +3,7 @@ package de.upb.cs.uc4.hyperledger.api
 import akka.Done
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
+import de.upb.cs.uc4.shared.client.exceptions.CustomExceptionSerializer
 import play.api.Environment
 
 trait HyperLedgerService extends Service {
