@@ -4,7 +4,7 @@ import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import de.upb.cs.uc4.shared.client.exceptions.CustomExceptionSerializer
+import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
@@ -16,9 +16,11 @@ import play.api.Environment
   * This describes everything that Lagom needs to know about how to serve and
   * consume the UserService.
   */
-trait UserService extends Service {
+trait UserService extends UC4Service {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
-  val pathPrefix = "/user-management"
+  override val pathPrefix = "/user-management"
+  /** The name of the service */
+  override val name = "user"
 
   // USER
 
@@ -101,8 +103,8 @@ trait UserService extends Service {
 
   final override def descriptor: Descriptor = {
     import Service._
-    named("user")
-      .withCalls(
+    super.descriptor
+      .addCalls(
         restCall(Method.GET, pathPrefix + "/users", getAllUsers _),
         restCall(Method.DELETE, pathPrefix + "/users/:username", deleteUser _),
         restCall(Method.OPTIONS, pathPrefix + "/users", allowedGet _),
@@ -139,7 +141,7 @@ trait UserService extends Service {
       .withTopics(
         topic(UserService.AUTHENTICATION_TOPIC_NAME, userAuthenticationTopic _),
         topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)
-      ).withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
+      )
   }
 }
 

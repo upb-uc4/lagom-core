@@ -163,4 +163,5 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   /** @inheritdoc */
   override def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT, DELETE")
 
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 }

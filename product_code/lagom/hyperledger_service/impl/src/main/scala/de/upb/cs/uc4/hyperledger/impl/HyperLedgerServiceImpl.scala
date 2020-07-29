@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.hyperledger.impl
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -9,6 +9,7 @@ import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.hyperledger.impl.actor.HyperLedgerBehaviour
 import de.upb.cs.uc4.hyperledger.impl.commands.{HyperLedgerCommand, Read, Write}
 import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError}
+import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
 
 import scala.concurrent.ExecutionContext
@@ -36,4 +37,7 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
       case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"), GenericError("key not found"))
     }
   }
+
+  /** This Methods needs to allow a GET-Method */
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCallFactory.allowedMethodsCustom("GET")
 }

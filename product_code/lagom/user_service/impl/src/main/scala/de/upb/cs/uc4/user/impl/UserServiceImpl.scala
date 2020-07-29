@@ -214,6 +214,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Allows DELETE */
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
+  /** This Methods needs to allow a GET-Method */
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
+
   /** Helper method for adding a generic User, independent of the role */
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
