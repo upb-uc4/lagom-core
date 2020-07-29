@@ -199,6 +199,7 @@ public class StudentChaincode implements ContractInterface {
 
                 for (MatriculationInterval interval: subInterval.getIntervals()) {
 
+
                     if (interval.getFirstSemester() == null || interval.getFirstSemester().equals(""))
                         list.add(new InvalidParameter()
                                 .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
@@ -209,8 +210,31 @@ public class StudentChaincode implements ContractInterface {
                                 .name("SubjectMatriculationInterval.MatriculationInterval.lastSemester")
                                 .reason("Last semester must not be empty"));
 
+                    if (semesterFormatValid(interval.getFirstSemester()) && semesterFormatValid(interval.getFirstSemester())) {
+
+                        int firstSemesterYear = Integer.parseInt(interval.getFirstSemester().substring(2));
+                        int lastSemesterYear = Integer.parseInt(interval.getLastSemester().substring(2));
+
+                        if (firstSemesterYear > lastSemesterYear){
+                            list.add(new InvalidParameter()
+                                    .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
+                                    .reason("First and last semester must be in chronological order. " +
+                                            "Last semester lays chronologically before first semester."));
+                        }
+
+                        if (firstSemesterYear == lastSemesterYear){
+
+                            if(interval.getFirstSemester().startsWith("WS") && interval.getLastSemester().startsWith("SS") )
+                                list.add(new InvalidParameter()
+                                        .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
+                                        .reason("First and last semester must be in chronological order. " +
+                                                "Last semester lays chronologically before first semester."));
+                        }
+                    }
+
+
                     if (!semesterFormatValid(interval.getFirstSemester()))
-                        list.add(new InvalidParameter()
+                            list.add(new InvalidParameter()
                                 .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
                                 .reason("First semester must be the following format \"(WS|SS)\\d{4}\", e.g. \"WS2020\""));
 

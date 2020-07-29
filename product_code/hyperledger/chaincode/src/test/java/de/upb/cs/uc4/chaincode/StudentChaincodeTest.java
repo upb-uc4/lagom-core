@@ -479,7 +479,7 @@ public final class StudentChaincodeTest {
                     "      \"intervals\": [\n" +
                     "        {\n" +
                     "          \"firstSemester\": \"WS2018\",\n" +
-                    "          \"lastSemester\": \"SS2020\"\n" +
+                    "          \"lastSemester\": \"WS2018\"\n" +
                     "        }\n" +
                     "      ]\n" +
                     "    }\n" +
@@ -497,7 +497,7 @@ public final class StudentChaincodeTest {
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WS2018\",\n" +
-                            "          \"lastSemester\": \"SS2020\"\n" +
+                            "          \"lastSemester\": \"WS2018\"\n" +
                             "        }\n" +
                             "      ]\n" +
                             "    }\n" +
@@ -1277,6 +1277,85 @@ public final class StudentChaincodeTest {
                                 add(new InvalidParameter()
                                         .name("SubjectMatriculationInterval.MatriculationInterval.lastSemester")
                                         .reason("Last semester must be the following format \"(WS|SS)\\d{4}\", e.g. \"WS2020\""));
+                            }}));
+        }
+
+        @Test
+        public void updateChronologicallyInvalidYearsStudent() {
+            StudentChaincode contract = new StudentChaincode();
+            GsonWrapper gson = new GsonWrapper();
+            Context ctx = mock(Context.class);
+            MockChaincodeStub stub = new MockChaincodeStub();
+            when(ctx.getStub()).thenReturn(stub);
+            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+                    "{\n" +
+                            "  \"matriculationId\": \"0000001\",\n" +
+                            "  \"firstName\": \"firstName1\",\n" +
+                            "  \"lastName\": \"lastName1\",\n" +
+                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"matriculationStatus\": [\n" +
+                            "    {\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
+                            "      \"intervals\": [\n" +
+                            "        {\n" +
+                            "          \"firstSemester\": \"WS2020\",\n" +
+                            "          \"lastSemester\": \"SS2018\"\n" +
+                            "        }\n" +
+                            "      ]\n" +
+                            "    }\n" +
+                            "  ]\n" +
+                            "}"),
+                    DetailedError.class);
+            assertThat(error).isEqualTo(
+                    new DetailedError()
+                            .type("Unprocessable Entity")
+                            .title("The given string does not conform to the specified json format.")
+                            .invalidParams(new ArrayList<InvalidParameter>()
+                            {{
+                                add(new InvalidParameter()
+                                        .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
+                                        .reason("First and last semester must be in chronological order. " +
+                                                "Last semester lays chronologically before first semester."));
+                            }}));
+        }
+
+
+        @Test
+        public void updateChronologicallyInvalidSemestersStudent() {
+            StudentChaincode contract = new StudentChaincode();
+            GsonWrapper gson = new GsonWrapper();
+            Context ctx = mock(Context.class);
+            MockChaincodeStub stub = new MockChaincodeStub();
+            when(ctx.getStub()).thenReturn(stub);
+            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+                    "{\n" +
+                            "  \"matriculationId\": \"0000001\",\n" +
+                            "  \"firstName\": \"firstName1\",\n" +
+                            "  \"lastName\": \"lastName1\",\n" +
+                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"matriculationStatus\": [\n" +
+                            "    {\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
+                            "      \"intervals\": [\n" +
+                            "        {\n" +
+                            "          \"firstSemester\": \"WS2020\",\n" +
+                            "          \"lastSemester\": \"SS2020\"\n" +
+                            "        }\n" +
+                            "      ]\n" +
+                            "    }\n" +
+                            "  ]\n" +
+                            "}"),
+                    DetailedError.class);
+            assertThat(error).isEqualTo(
+                    new DetailedError()
+                            .type("Unprocessable Entity")
+                            .title("The given string does not conform to the specified json format.")
+                            .invalidParams(new ArrayList<InvalidParameter>()
+                            {{
+                                add(new InvalidParameter()
+                                        .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
+                                        .reason("First and last semester must be in chronological order. " +
+                                                "Last semester lays chronologically before first semester."));
                             }}));
         }
     }
