@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.chaincode;
 
 import de.upb.cs.uc4.chaincode.model.Course;
-import de.upb.cs.uc4.chaincode.model.Error;
+import de.upb.cs.uc4.chaincode.model.DetailedError;
 import de.upb.cs.uc4.chaincode.model.InvalidParameter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,7 +50,7 @@ public class CourseChaincode implements ContractInterface {
         }
         catch(Exception e)
         {
-            return gson.toJson(new Error()
+            return gson.toJson(new DetailedError()
                     .type("Unprocessable Entity")
                     .title("The given string does not conform to the specified json format."));
         }
@@ -61,9 +61,10 @@ public class CourseChaincode implements ContractInterface {
         ArrayList<InvalidParameter> invalidParams = getErrorForCourse(course);
 
         if(!invalidParams.isEmpty()){
-            return gson.toJson(new Error(invalidParams)
+            return gson.toJson(new DetailedError()
             .type("Unprocessable Entity")
-            .title("The following parameters are invalid."));
+            .title("The following parameters are invalid.")
+            .invalidParams(invalidParams));
         }
 
         stub.putStringState(course.getCourseId(),gson.toJson(course));
@@ -99,7 +100,7 @@ public class CourseChaincode implements ContractInterface {
         ChaincodeStub stub = ctx.getStub();
 
         if(stub.getStringState(courseId) == null || stub.getStringState(courseId).equals(""))
-            return gson.toJson(new Error()
+            return gson.toJson(new DetailedError()
                     .type("Not found")
                     .title("The given ID does not fit any existing course."));
 
@@ -118,19 +119,19 @@ public class CourseChaincode implements ContractInterface {
         Course updatedCourse = gson.fromJson(jsonCourse, Course.class);
 
         if (!courseId.equals(updatedCourse.getCourseId()))
-            return gson.toJson(new Error()
+            return gson.toJson(new DetailedError()
                     .type("Not Found")
                     .title("Course ID and ID in path do not match"));
 
         ArrayList<InvalidParameter> invalidParams = getErrorForCourse(updatedCourse);
 
         if (!invalidParams.isEmpty())
-            return gson.toJson(new Error()
+            return gson.toJson(new DetailedError()
                     .type("Unprocessable Entity")
                     .title("The given string does not conform to the specified json format."));
 
         if(stub.getStringState(courseId) == null || stub.getStringState(courseId).equals(""))
-            return gson.toJson(new Error()
+            return gson.toJson(new DetailedError()
                     .type("Not Found")
                     .title("Course not found"));
 
