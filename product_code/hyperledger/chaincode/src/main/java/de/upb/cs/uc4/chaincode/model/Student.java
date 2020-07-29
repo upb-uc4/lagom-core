@@ -42,8 +42,8 @@ public class Student {
   @SerializedName("birthDate")
   private LocalDate birthDate = null;
 
-  @SerializedName("immatriculationStatus")
-  private List<SubjectMatriculationInterval> immatriculationStatus = null;
+  @SerializedName("matriculationStatus")
+  private List<SubjectMatriculationInterval> matriculationStatus = null;
 
   public Student matriculationId(String matriculationId) {
     this.matriculationId = matriculationId;
@@ -117,16 +117,16 @@ public class Student {
     this.birthDate = birthDate;
   }
 
-  public Student immatriculationStatus(List<SubjectMatriculationInterval> immatriculationStatus) {
-    this.immatriculationStatus = immatriculationStatus;
+  public Student matriculationStatus(List<SubjectMatriculationInterval> immatriculationStatus) {
+    this.matriculationStatus = immatriculationStatus;
     return this;
   }
 
   public Student addImmatriculationStatusItem(SubjectMatriculationInterval immatriculationStatusItem) {
-    if (this.immatriculationStatus == null) {
-      this.immatriculationStatus = new ArrayList<SubjectMatriculationInterval>();
+    if (this.matriculationStatus == null) {
+      this.matriculationStatus = new ArrayList<SubjectMatriculationInterval>();
     }
-    this.immatriculationStatus.add(immatriculationStatusItem);
+    this.matriculationStatus.add(immatriculationStatusItem);
     return this;
   }
 
@@ -135,12 +135,12 @@ public class Student {
    * @return immatriculationStatus
   **/
   @ApiModelProperty(value = "")
-  public List<SubjectMatriculationInterval> getImmatriculationStatus() {
-    return immatriculationStatus;
+  public List<SubjectMatriculationInterval> getMatriculationStatus() {
+    return matriculationStatus;
   }
 
-  public void setImmatriculationStatus(List<SubjectMatriculationInterval> immatriculationStatus) {
-    this.immatriculationStatus = immatriculationStatus;
+  public void setMatriculationStatus(List<SubjectMatriculationInterval> matriculationStatus) {
+    this.matriculationStatus = matriculationStatus;
   }
 
 
@@ -157,12 +157,12 @@ public class Student {
         Objects.equals(this.firstName, student.firstName) &&
         Objects.equals(this.lastName, student.lastName) &&
         Objects.equals(this.birthDate, student.birthDate) &&
-        Objects.equals(this.immatriculationStatus, student.immatriculationStatus);
+        Objects.equals(this.matriculationStatus, student.matriculationStatus);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(matriculationId, firstName, lastName, birthDate, immatriculationStatus);
+    return Objects.hash(matriculationId, firstName, lastName, birthDate, matriculationStatus);
   }
 
 
@@ -175,7 +175,7 @@ public class Student {
     sb.append("    firstName: ").append(toIndentedString(firstName)).append("\n");
     sb.append("    lastName: ").append(toIndentedString(lastName)).append("\n");
     sb.append("    birthDate: ").append(toIndentedString(birthDate)).append("\n");
-    sb.append("    immatriculationStatus: ").append(toIndentedString(immatriculationStatus)).append("\n");
+    sb.append("    immatriculationStatus: ").append(toIndentedString(matriculationStatus)).append("\n");
     sb.append("}");
     return sb.toString();
   }

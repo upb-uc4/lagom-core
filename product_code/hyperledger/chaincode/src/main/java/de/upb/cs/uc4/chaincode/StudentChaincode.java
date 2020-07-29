@@ -57,7 +57,7 @@ public class StudentChaincode implements ContractInterface {
         }
 
         String result = stub.getStringState(student.getMatriculationId());
-        if (result == null || result == "") {
+        if (result != null && result != "") {
             return gson.toJson(new DetailedError()
                     .type("Conflict")
                     .title("There is already a student for the given matriculationId."));
@@ -137,7 +137,12 @@ public class StudentChaincode implements ContractInterface {
         return "";
     }
 
-    private String getStudent (final Context ctx, final String matriculationId) {
+    @Transaction()
+    public String getStudent (final Context ctx, final String matriculationId) {
+        return getStudentByMatriculationId(ctx, matriculationId);
+    }
+
+    private String getStudentByMatriculationId (final Context ctx, final String matriculationId) {
         ChaincodeStub stub = ctx.getStub();
         Student student = gson.fromJson(stub.getStringState(matriculationId), Student.class);
 
@@ -172,21 +177,22 @@ public class StudentChaincode implements ContractInterface {
                     .name("birthDate")
                     .reason("Birth date must be the following format \"yyyy-mm-dd\""));
 
-        List<SubjectMatriculationInterval> immatriculationStatus = student.getImmatriculationStatus();
+        List<SubjectMatriculationInterval> immatriculationStatus = student.getMatriculationStatus();
 
-        if (immatriculationStatus == null)
+        if (immatriculationStatus == null || immatriculationStatus.size() == 0)
             list.add(new InvalidParameter()
-                    .name("immatriculationStatus")
-                    .reason("Immatriculation status must not be empty"));
+                    .name("matriculationStatus")
+                    .reason("Matriculation status must not be empty"));
         else {
+
             for (SubjectMatriculationInterval subInterval: immatriculationStatus) {
 
                 if (subInterval.getFieldOfStudy() == null || subInterval.getFieldOfStudy().equals(""))
                     list.add(new InvalidParameter()
-                            .name("SubjectImmatriculationInterval.fieldOfStudy")
+                            .name("SubjectMatriculationInterval.fieldOfStudy")
                             .reason("Field of study must not be empty"));
 
-                if (subInterval.getIntervals() == null)
+                if (subInterval.getIntervals() == null || subInterval.getIntervals().size() == 0)
                     list.add(new InvalidParameter()
                             .name("SubjectMatriculationInterval.intervals")
                             .reason("Intervals must not be empty"));
