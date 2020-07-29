@@ -30,9 +30,9 @@ spec:
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
             - name: HYPERLEDGER_WALLET
-              value: ""
+              value: "/opt/docker/share/hyperledger_assets/wallet/"
             - name: HYPERLEDGER_NETWORK_CONFIG
-              value: ""
+              value: "/opt/docker/share/hyperledger_assets/connection_profile.yaml"
           resources:
             limits:
               memory: 512Mi

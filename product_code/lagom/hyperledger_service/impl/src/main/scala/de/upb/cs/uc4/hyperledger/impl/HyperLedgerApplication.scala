@@ -27,11 +27,11 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
     with AhcWSComponents {
 
   lazy val connectionManager: ConnectionManagerTrait = ConnectionManager(
-    retrivePath("uc4.hyperledger.networkConfig", "/connection_profile.yaml"),
-    retrivePath("uc4.hyperledger.wallet", "/wallet/")
+    retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile.yaml"),
+    retrievePath("uc4.hyperledger.wallet", "/hyperledger_assets/wallet/")
   )
 
-  private def retrivePath(key: String, fallback: String): Path = {
+  private def retrievePath(key: String, fallback: String): Path = {
     if (config.hasPath(key)) {
       Paths.get(config.getString(key))
     } else {
