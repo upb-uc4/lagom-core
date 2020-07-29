@@ -12,7 +12,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
-import de.upb.cs.uc4.shared.client.CustomException
+import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers

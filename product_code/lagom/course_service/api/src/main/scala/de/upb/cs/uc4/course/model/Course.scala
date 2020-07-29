@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.course.model
 
-import de.upb.cs.uc4.shared.client.SimpleError
+import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json._
 
 case class Course(
