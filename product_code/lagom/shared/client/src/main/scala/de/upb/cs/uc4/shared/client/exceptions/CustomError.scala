@@ -28,7 +28,6 @@ object CustomError{
       //400
       case "path parameter mismatch" => "Parameter specified in path and in object do not match"
       case "wrong object" => "Unexpected object"
-      case "uneditable fields" => "Attempted to change uneditable fields"
       //401
       case "authorization error" => "Username and password combination does not exist"
       //403
@@ -42,10 +41,11 @@ object CustomError{
       case "teapot" => "I'm a teapot"
       //422
       case "validation error" => "Your request parameters did not validate"
+      case "uneditable fields" => "Attempted to change uneditable fields"
       //500
-      case "Undeserializable Exception" => "Internal error while deserializing Exception"
+      case "undeserializable exception" => "Internal error while deserializing Exception"
       //???
-      case _ => "Server Error"
+      case _ => "Internal Server Error"
 
     }
   }

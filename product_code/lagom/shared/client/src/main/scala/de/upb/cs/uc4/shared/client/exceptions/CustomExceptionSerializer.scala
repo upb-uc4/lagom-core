@@ -84,7 +84,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
         } yield new DetailedError(eType, title, invalidParams)
         val detailedError = jsonParseResult match {
           case JsSuccess(m, _) => m
-          case JsError(_) => GenericError("Undeserializable Exception")
+          case JsError(_) => GenericError("deserialization exception")
         }
         fromCodeAndMessageCustom(message.errorCode, detailedError)
       }else{
@@ -96,7 +96,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
         } yield new GenericError(eType, title)
         val detailedError = jsonParseResult match {
           case JsSuccess(m, _) => m
-          case JsError(_) => GenericError("Undeserializable Exception")
+          case JsError(_) => GenericError("deserialization exception")
         }
         fromCodeAndMessageCustom(message.errorCode, detailedError)
       }
@@ -111,7 +111,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
       } yield new ExceptionMessage(name, detail)
       val exceptionMessage = jsonParseResult match {
         case JsSuccess(m, _) => m
-        case JsError(_)      => new ExceptionMessage("Undeserializable Exception", message.message.utf8String)
+        case JsError(_)      => new ExceptionMessage("deserialization exception", message.message.utf8String)
       }
       fromCodeAndMessage(message.errorCode, exceptionMessage)
     }
