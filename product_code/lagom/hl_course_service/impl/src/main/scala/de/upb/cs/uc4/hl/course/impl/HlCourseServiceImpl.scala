@@ -117,4 +117,6 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
   /** @inheritdoc */
   override def allowedMethodsGETPUTDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT, DELETE")
 
+  /** This Methods needs to allow a GET-Method */
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 }

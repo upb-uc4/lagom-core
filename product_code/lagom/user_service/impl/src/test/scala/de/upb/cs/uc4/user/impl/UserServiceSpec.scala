@@ -3,7 +3,7 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
@@ -13,6 +13,7 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.client.CustomException
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
@@ -37,8 +38,13 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       .withJdbc()
   ) { ctx =>
     new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-      override lazy val authenticationService: AuthenticationService =
-        (_: String, _: String) => ServiceCall { _ => Future.successful("admin0", AuthenticationRole.Admin) }
+      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
+        override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
+          _ => Future.successful("admin", AuthenticationRole.Admin)
+        }
+
+        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+      }
     }
   }
 

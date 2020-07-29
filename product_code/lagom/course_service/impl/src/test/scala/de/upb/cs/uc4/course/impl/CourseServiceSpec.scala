@@ -2,13 +2,14 @@ package de.upb.cs.uc4.course.impl
 
 import java.util.Base64
 
-import akka.Done
+import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
 import de.upb.cs.uc4.shared.client.CustomException
@@ -30,8 +31,13 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       .withJdbc()
   ) { ctx =>
     new CourseApplication(ctx) with LocalServiceLocator {
-      override lazy val authenticationService: AuthenticationService =
-        (_: String, _: String) => ServiceCall { _ => Future.successful("admin", AuthenticationRole.Admin) }
+      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
+        override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
+          _ => Future.successful("admin", AuthenticationRole.Admin)
+        }
+
+        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+      }
     }
   }
 
@@ -77,13 +83,13 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "get all courses with matching names" in {
       client.getAllCourses(Some("Course 1"), None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer should contain only (course1, course2)
+        answer should contain only(course1, course2)
       }
     }
 
     "get all courses with matching lecturerIds" in {
       client.getAllCourses(None, Some("11")).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer should contain only (course0, course1)
+        answer should contain only(course0, course1)
       }
     }
 
@@ -117,7 +123,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "find an existing course" in {
-      client.findCourseByCourseId(course1.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map{ answer =>
+      client.findCourseByCourseId(course1.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
         answer should ===(course1)
       }
     }
@@ -131,7 +137,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "update an existing course" in {
       val course4 = course2.copy(courseDescription = "CHANGED DESCRIPTION")
-      client.updateCourse(course2.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course4).map{ answer =>
+      client.updateCourse(course2.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course4).map { answer =>
         answer should ===(Done)
       }
       eventually(timeout(Span(30, Seconds))) {

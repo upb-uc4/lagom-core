@@ -20,6 +20,7 @@ trait UC4Service extends Service {
     Future.successful(JsonVersionNumber(versionNumber))
   }
 
+  /** This Methods needs to allow a GET-Method */
   def allowVersionNumber: ServiceCall[NotUsed, Done]
 
   override def descriptor: Descriptor = {
