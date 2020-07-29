@@ -40,7 +40,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
       override lazy val authenticationService: AuthenticationService = new AuthenticationService {
         override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
-          _ => Future.successful("admin", AuthenticationRole.Admin)
+          _ => Future.successful("admin0", AuthenticationRole.Admin)
         }
 
         override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
