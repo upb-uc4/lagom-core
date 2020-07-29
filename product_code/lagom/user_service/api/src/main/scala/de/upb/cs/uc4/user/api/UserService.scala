@@ -18,7 +18,7 @@ import play.api.Environment
   */
 trait UserService extends Service {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
-  val pathPrefix = "/user-management/users"
+  val pathPrefix = "/user-management"
 
   // USER
 
@@ -27,6 +27,9 @@ trait UserService extends Service {
 
   /** Delete a users from the database */
   def deleteUser(username: String): ServiceCall[NotUsed, Done]
+
+  /** Changes the password of a user in the database */
+  def changePassword(username: String): ServiceCall[AuthenticationUser, Done]
 
   // STUDENT
 
@@ -84,6 +87,9 @@ trait UserService extends Service {
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 
+  /** Allows POST */
+  def allowedPost: ServiceCall[NotUsed, Done]
+
   /** Allows DELETE */
   def allowedDelete: ServiceCall[NotUsed, Done]
 
@@ -97,13 +103,16 @@ trait UserService extends Service {
     import Service._
     named("user")
       .withCalls(
-        restCall(Method.GET, pathPrefix, getAllUsers _),
-        restCall(Method.DELETE, pathPrefix + "/:username", deleteUser _),
-        restCall(Method.OPTIONS, pathPrefix, allowedGet _),
-        restCall(Method.OPTIONS, pathPrefix + "/:username", allowedDelete _),
+        restCall(Method.GET, pathPrefix + "/users", getAllUsers _),
+        restCall(Method.DELETE, pathPrefix + "/users/:username", deleteUser _),
+        restCall(Method.OPTIONS, pathPrefix + "/users", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDelete _),
 
-        restCall(Method.GET, pathPrefix + "/:username/role", getRole _),
-        restCall(Method.OPTIONS, pathPrefix + "/:username/role", allowedGet _),
+        restCall(Method.POST, pathPrefix + "/password/:username", changePassword _),
+        restCall(Method.OPTIONS, pathPrefix + "/password/:username", allowedPost _),
+
+        restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
+        restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
 
         restCall(Method.GET, pathPrefix + "/students", getAllStudents _),
         restCall(Method.POST, pathPrefix + "/students", addStudent _),
