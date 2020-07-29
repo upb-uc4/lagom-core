@@ -117,8 +117,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Student => user.asInstanceOf[Student]
-          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            GenericError("wrong object"))
+          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+            GenericError("key not found"))
         })
     }
 
@@ -150,8 +150,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Lecturer => user.asInstanceOf[Lecturer]
-          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            GenericError("wrong object"))
+          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+            GenericError("key not found"))
         })
     }
 
@@ -182,8 +182,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Admin => user.asInstanceOf[Admin]
-          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            GenericError("wrong object"))
+          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+            GenericError("key not found"))
         })
     }
 
