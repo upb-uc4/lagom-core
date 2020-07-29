@@ -692,8 +692,8 @@ public final class StudentChaincodeTest {
                             .invalidParams(new ArrayList<InvalidParameter>()
                             {{
                                 add(new InvalidParameter()
-                                        .name("SubjectMatriculationInterval.fieldOfStudy")
-                                        .reason("Field of study must not be empty"));
+                                        .name("matriculationStatus")
+                                        .reason("Matriculation status must not be empty"));
                             }}));
         }
 
@@ -726,8 +726,8 @@ public final class StudentChaincodeTest {
                             .invalidParams(new ArrayList<InvalidParameter>()
                             {{
                                 add(new InvalidParameter()
-                                        .name("SubjectMatriculationInterval.fieldOfStudy")
-                                        .reason("Field of study must not be empty"));
+                                        .name("SubjectMatriculationInterval.intervals")
+                                        .reason("Intervals must not be empty"));
                             }}));
         }
 
@@ -784,7 +784,7 @@ public final class StudentChaincodeTest {
                             "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WWS2018\",\n" +
@@ -802,8 +802,8 @@ public final class StudentChaincodeTest {
                             .invalidParams(new ArrayList<InvalidParameter>()
                             {{
                                 add(new InvalidParameter()
-                                        .name("SubjectMatriculationInterval.fieldOfStudy")
-                                        .reason("Field of study must not be empty"));
+                                        .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
+                                        .reason("First semester must be the following format \"(WS|SS)\\d{4}\", e.g. \"WS2020\""));
                             }}));
         }
 
@@ -822,7 +822,7 @@ public final class StudentChaincodeTest {
                             "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WS2018\",\n" +
@@ -840,8 +840,8 @@ public final class StudentChaincodeTest {
                             .invalidParams(new ArrayList<InvalidParameter>()
                             {{
                                 add(new InvalidParameter()
-                                        .name("SubjectMatriculationInterval.fieldOfStudy")
-                                        .reason("Field of study must not be empty"));
+                                        .name("SubjectMatriculationInterval.MatriculationInterval.lastSemester")
+                                        .reason("Last semester must be the following format \"(WS|SS)\\d{4}\", e.g. \"WS2020\""));
                             }}));
         }
 
@@ -860,7 +860,7 @@ public final class StudentChaincodeTest {
                             "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WS2018\",\n" +
@@ -878,7 +878,7 @@ public final class StudentChaincodeTest {
                             "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WS2018\",\n" +
@@ -909,7 +909,7 @@ public final class StudentChaincodeTest {
                             "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WS2018\",\n" +
@@ -927,7 +927,7 @@ public final class StudentChaincodeTest {
                             "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WS2018\",\n" +
@@ -945,7 +945,7 @@ public final class StudentChaincodeTest {
                             "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WS2018\",\n" +
@@ -973,7 +973,7 @@ public final class StudentChaincodeTest {
                             "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WS2018\",\n" +
@@ -1127,8 +1127,8 @@ public final class StudentChaincodeTest {
                             .invalidParams(new ArrayList<InvalidParameter>()
                             {{
                                 add(new InvalidParameter()
-                                        .name("SubjectMatriculationInterval.fieldOfStudy")
-                                        .reason("Field of study must not be empty"));
+                                        .name("matriculationStatus")
+                                        .reason("Matriculation status must not be empty"));
                             }}));
         }
 
@@ -1161,8 +1161,8 @@ public final class StudentChaincodeTest {
                             .invalidParams(new ArrayList<InvalidParameter>()
                             {{
                                 add(new InvalidParameter()
-                                        .name("SubjectMatriculationInterval.fieldOfStudy")
-                                        .reason("Field of study must not be empty"));
+                                        .name("SubjectMatriculationInterval.intervals")
+                                        .reason("Intervals must not be empty"));
                             }}));
         }
 
@@ -1215,11 +1215,11 @@ public final class StudentChaincodeTest {
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
-                            "  \"lastName\": \"\",\n" +
-                            "  \"birthDate\": \"something invalid\",\n" +
+                            "  \"lastName\": \"lastName1\",\n" +
+                            "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WWS2018\",\n" +
@@ -1237,8 +1237,8 @@ public final class StudentChaincodeTest {
                             .invalidParams(new ArrayList<InvalidParameter>()
                             {{
                                 add(new InvalidParameter()
-                                        .name("SubjectMatriculationInterval.fieldOfStudy")
-                                        .reason("Field of study must not be empty"));
+                                        .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
+                                        .reason("First semester must be the following format \"(WS|SS)\\d{4}\", e.g. \"WS2020\""));
                             }}));
         }
 
@@ -1253,11 +1253,11 @@ public final class StudentChaincodeTest {
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
-                            "  \"lastName\": \"\",\n" +
-                            "  \"birthDate\": \"something invalid\",\n" +
+                            "  \"lastName\": \"lastName1\",\n" +
+                            "  \"birthDate\": \"2020-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
-                            "      \"fieldOfStudy\": \"\",\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
                             "      \"intervals\": [\n" +
                             "        {\n" +
                             "          \"firstSemester\": \"WS2018\",\n" +
@@ -1275,8 +1275,8 @@ public final class StudentChaincodeTest {
                             .invalidParams(new ArrayList<InvalidParameter>()
                             {{
                                 add(new InvalidParameter()
-                                        .name("SubjectMatriculationInterval.fieldOfStudy")
-                                        .reason("Field of study must not be empty"));
+                                        .name("SubjectMatriculationInterval.MatriculationInterval.lastSemester")
+                                        .reason("Last semester must be the following format \"(WS|SS)\\d{4}\", e.g. \"WS2020\""));
                             }}));
         }
     }

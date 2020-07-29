@@ -167,7 +167,7 @@ public class StudentChaincode implements ContractInterface {
                     .name("firstName")
                     .reason("First name must not be empty"));
 
-        if (student.getLastName() == null || student.getFirstName().equals(""))
+        if (student.getLastName() == null || student.getLastName().equals(""))
             list.add(new InvalidParameter()
                     .name("lastName")
                     .reason("Last name must not be empty"));
@@ -209,12 +209,12 @@ public class StudentChaincode implements ContractInterface {
                                 .name("SubjectMatriculationInterval.MatriculationInterval.lastSemester")
                                 .reason("Last semester must not be empty"));
 
-                    if (semesterFormatValid(interval.getFirstSemester()))
+                    if (!semesterFormatValid(interval.getFirstSemester()))
                         list.add(new InvalidParameter()
                                 .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
                                 .reason("First semester must be the following format \"(WS|SS)\\d{4}\", e.g. \"WS2020\""));
 
-                    if (semesterFormatValid(interval.getLastSemester()))
+                    if (!semesterFormatValid(interval.getLastSemester()))
                         list.add(new InvalidParameter()
                                 .name("SubjectMatriculationInterval.MatriculationInterval.lastSemester")
                                 .reason("Last semester must be the following format \"(WS|SS)\\d{4}\", e.g. \"WS2020\""));
@@ -225,7 +225,7 @@ public class StudentChaincode implements ContractInterface {
         return list;
     }
 
-    public boolean semesterFormatValid(final String semester) {
+    public boolean semesterFormatValid(String semester) {
         Pattern pattern = Pattern.compile("^(WS|SS)\\d{4}");
         Matcher matcher = pattern.matcher(semester);
         return matcher.matches();
