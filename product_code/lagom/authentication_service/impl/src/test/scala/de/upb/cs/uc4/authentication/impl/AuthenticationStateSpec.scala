@@ -6,9 +6,8 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationBehaviour, AuthenticationEntry}
 import de.upb.cs.uc4.authentication.impl.commands.{DeleteAuthentication, GetAuthentication, SetAuthentication}
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
-import de.upb.cs.uc4.user.model.user.AuthenticationUser
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

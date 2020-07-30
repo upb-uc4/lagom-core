@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.authentication.impl.readside
 
 import akka.Done
+import de.upb.cs.uc4.authentication.model.AuthenticationUser
 import de.upb.cs.uc4.shared.server.Hashing
-import de.upb.cs.uc4.user.model.user.AuthenticationUser
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape

@@ -12,13 +12,12 @@ import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationCo
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationBehaviour, AuthenticationState}
-import de.upb.cs.uc4.authentication.impl.commands.{DeleteAuthentication, SetAuthentication}
+import de.upb.cs.uc4.authentication.impl.commands.DeleteAuthentication
 import de.upb.cs.uc4.authentication.impl.readside.{AuthenticationDatabase, AuthenticationEventProcessor}
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.JsonUsername
-import de.upb.cs.uc4.user.model.user.AuthenticationUser
 import play.api.db.HikariCPComponents
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc.EssentialFilter
@@ -60,16 +59,6 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
   )
 
   lazy val userService: UserService = serviceClient.implement[UserService]
-
-  userService
-    .userAuthenticationTopic()
-    .subscribe
-    .atLeastOnce(
-      Flow.fromFunction[AuthenticationUser, Future[Done]](user => {
-        clusterSharding.entityRefFor(AuthenticationState.typeKey, Hashing.sha256(user.username))
-          .ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map(_ => Done)
-      }).mapAsync(8)(done => done)
-    )
 
   userService
     .userDeletedTopic()

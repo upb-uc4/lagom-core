@@ -10,12 +10,11 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
-import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
+import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -31,7 +30,6 @@ import scala.concurrent.Future
 class AuthenticationServiceSpec extends AsyncWordSpec
   with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures {
 
-  private var authenticationStub: ProducerStub[AuthenticationUser] = _
   private var deletionStub: ProducerStub[JsonUsername] = _
 
   private val server = ServiceTest.startServer(
@@ -41,16 +39,13 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     new AuthenticationApplication(ctx) with LocalServiceLocator {
       // Declaration as lazy values forces right execution order
       lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
-      lazy val internAuthenticationStub: ProducerStub[AuthenticationUser] =
-        stubFactory.producer[AuthenticationUser](UserService.AUTHENTICATION_TOPIC_NAME)
       lazy val internDeletionStub: ProducerStub[JsonUsername] =
         stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
 
-      authenticationStub = internAuthenticationStub
       deletionStub = internDeletionStub
 
       // Create a userService with ProducerStub as topic
-      override lazy val userService: UserServiceStub = new UserServiceStub(internAuthenticationStub, internDeletionStub)
+      override lazy val userService: UserServiceStub = new UserServiceStub(internDeletionStub)
     }
   }
 
@@ -74,17 +69,6 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     "detect a wrong password" in {
       client.check("student", "studenta").invoke().failed.map {
         answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
-      }
-    }
-
-
-    "add a new user over the topic" in {
-      authenticationStub.send(new AuthenticationUser("student", "student", AuthenticationRole.Student))
-
-      eventually(timeout(Span(2, Minutes))) {
-        client.check("student", "student").invoke().map { answer =>
-          answer shouldBe a[(String, AuthenticationRole)]
-        }
       }
     }
 
@@ -121,8 +105,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   }
 }
 
-class UserServiceStub(authenticationStub: ProducerStub[AuthenticationUser],
-                      deletionStub: ProducerStub[JsonUsername]) extends UserService {
+class UserServiceStub(deletionStub: ProducerStub[JsonUsername]) extends UserService {
 
   override def getAllUsers: ServiceCall[NotUsed, GetAllUsersResponse] = ServiceCall { _ => Future.successful(null) }
 
@@ -162,13 +145,7 @@ class UserServiceStub(authenticationStub: ProducerStub[AuthenticationUser],
 
   override def allowedDelete: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
-  override def userAuthenticationTopic(): Topic[AuthenticationUser] = authenticationStub.topic
-
   override def userDeletedTopic(): Topic[JsonUsername] = deletionStub.topic
-
-  override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
-
-  override def allowedPost: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 }

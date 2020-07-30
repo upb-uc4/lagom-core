@@ -61,8 +61,6 @@ case class UserState(optUser: Option[User]) {
           Effect.reply(replyTo)(RejectedWithError(404, GenericError("key value error", "Username not found")))
       }
 
-      case UpdatePassword(user, replyTo) => Effect.persist(OnPasswordUpdate(user)).thenReply(replyTo) { _ => Accepted }
-
       case DeleteUser(replyTo) =>
         if (optUser.isDefined) {
           Effect.persist(OnUserDelete(optUser.get)).thenReply(replyTo) { _ => Accepted }
@@ -84,7 +82,6 @@ case class UserState(optUser: Option[User]) {
     evt match {
       case OnUserCreate(user, _) => copy(Some(user))
       case OnUserUpdate(user) => copy(Some(user))
-      case OnPasswordUpdate(_) => copy()
       case OnUserDelete(_) => copy(None)
       case _ =>
         println("Unknown Event")

@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.user.model.user
+package de.upb.cs.uc4.authentication.model
 
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
