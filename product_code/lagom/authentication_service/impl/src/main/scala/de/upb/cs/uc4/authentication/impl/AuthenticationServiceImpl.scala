@@ -53,7 +53,11 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
 
   /** Sets the authentication data of a user */
   override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { user =>
-    entityRef(Hashing.sha256(user.username)).ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map(_ => Done)
+    entityRef(Hashing.sha256(user.username)).ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map {
+      case Accepted => Done
+      case RejectedWithError(code, errorResponse) =>
+        throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+    }
   }
 
   /** Changes the password of the given user */

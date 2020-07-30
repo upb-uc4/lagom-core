@@ -199,14 +199,14 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
       val ref = entityRef(user.username)
 
-      ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
+      ref.ask[Confirmation](replyTo => CreateUser(user, replyTo))
         .flatMap {
           case Accepted => // Creation Successful
             auth.setAuthentication().invoke(authenticationUser)
               .map { _ =>
                 (ResponseHeader(201, MessageProtocol.empty, List()), user)
               }
-              //In case the password cant be saved (should never happen)
+              //In case the password cant be saved
               .recoverWith {
                 case authenticationException: Exception =>
                   ref.ask[Confirmation](replyTo => DeleteUser(replyTo))

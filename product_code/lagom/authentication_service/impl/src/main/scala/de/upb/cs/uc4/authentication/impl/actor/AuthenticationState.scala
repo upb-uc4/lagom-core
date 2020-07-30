@@ -5,8 +5,9 @@ import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
 import de.upb.cs.uc4.authentication.impl.AuthenticationApplication
 import de.upb.cs.uc4.authentication.impl.commands.{AuthenticationCommand, DeleteAuthentication, GetAuthentication, SetAuthentication}
 import de.upb.cs.uc4.authentication.impl.events.{AuthenticationEvent, OnDelete, OnSet}
+import de.upb.cs.uc4.shared.client.exceptions.{DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.Hashing
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected}
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected, RejectedWithError}
 import play.api.libs.json.{Format, Json}
 
 import scala.util.Random
@@ -20,7 +21,17 @@ case class AuthenticationState(optEntry: Option[AuthenticationEntry]) {
    */
   def applyCommand(cmd: AuthenticationCommand): ReplyEffect[AuthenticationEvent, AuthenticationState] =
     cmd match {
-      case SetAuthentication(user, replyTo) => Effect.persist(OnSet(user)).thenReply(replyTo) { _ => Accepted }
+      case SetAuthentication(user, replyTo) =>
+
+        val validationErrors = user.validate.map(error => SimpleError("authUser." + error.name, error.reason))
+
+        if (validationErrors.isEmpty) {
+          Effect.persist(OnSet(user)).thenReply(replyTo) { _ => Accepted }
+        }
+        else {
+          Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
+        }
+
       case DeleteAuthentication(replyTo) => optEntry match {
         case Some(entry) =>
           Effect.persist(OnDelete(entry.username)).thenReply(replyTo) { _ => Accepted }

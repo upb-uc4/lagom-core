@@ -22,7 +22,7 @@ case class UserState(optUser: Option[User]) {
     cmd match {
       case GetUser(replyTo) => Effect.reply(replyTo)(optUser)
 
-      case CreateUser(user, authenticationUser, replyTo) =>
+      case CreateUser(user, replyTo) =>
     
         val trimmedUser = user.trim
         var validationErrors = trimmedUser.validate.map(
@@ -33,10 +33,9 @@ case class UserState(optUser: Option[User]) {
               case _: Admin => SimpleError("admin." + error.name, error.reason)
         })
 
-        validationErrors ++= authenticationUser.validate.map(error => SimpleError("authUser." + error.name, error.reason))
         if (optUser.isEmpty){
           if (validationErrors.isEmpty) {
-            Effect.persist(OnUserCreate(trimmedUser, authenticationUser)).thenReply(replyTo) { _ => Accepted }
+            Effect.persist(OnUserCreate(trimmedUser)).thenReply(replyTo) { _ => Accepted }
           }
           else {
             Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
@@ -80,7 +79,7 @@ case class UserState(optUser: Option[User]) {
     */
   def applyEvent(evt: UserEvent): UserState =
     evt match {
-      case OnUserCreate(user, _) => copy(Some(user))
+      case OnUserCreate(user) => copy(Some(user))
       case OnUserUpdate(user) => copy(Some(user))
       case OnUserDelete(_) => copy(None)
       case _ =>
