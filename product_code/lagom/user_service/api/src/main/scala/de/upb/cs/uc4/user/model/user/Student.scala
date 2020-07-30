@@ -23,14 +23,22 @@ case class Student(username: String,
       picture.trim, email.trim, birthDate.trim, immatriculationStatus.trim, matriculationId.trim)
   }
 
+  def clean: Student = {
+    trim.copy(email = email.toLowerCase)
+  }
+
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
     val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
       "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
 
     var errors = super.validate.asInstanceOf[List[SimpleError]]
-    if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
-      errors :+= SimpleError("matriculationId", "Matriculation ID must be a number between 1 and 9999999.")
+    if(matriculationId.isEmpty) {
+      errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
+    }else{
+      if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
+        errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 1 and 9999999.")
+      }
     }
     if(!(semesterCount > 0)) {
       errors :+= SimpleError("semesterCount", "Semester count must be a positive integer.")

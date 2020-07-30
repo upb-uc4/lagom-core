@@ -21,6 +21,10 @@ case class Lecturer(username: String,
       picture.trim, email.trim, birthDate.trim, freeText.trim, researchArea.trim)
   }
 
+  def clean: Lecturer = {
+    trim.copy(email = email.toLowerCase)
+  }
+
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
     val freeTextRegex = """[\s\S]{0,10000}""".r
