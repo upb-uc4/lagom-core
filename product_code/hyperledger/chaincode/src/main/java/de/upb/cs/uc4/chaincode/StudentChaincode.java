@@ -232,6 +232,15 @@ public class StudentChaincode implements ContractInterface {
                         }
                     }
 
+                    if (semesterFormatValid(interval.getFirstSemester()) && student.getBirthDate() != null) {
+
+                        int firstSemesterYear = Integer.parseInt(interval.getFirstSemester().substring(2));
+                        if (firstSemesterYear < student.getBirthDate().getYear()) {
+                            list.add(new InvalidParameter()
+                                    .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
+                                    .reason("First semester must not be earlier than birth date."));
+                        }
+                    }
 
                     if (!semesterFormatValid(interval.getFirstSemester()))
                             list.add(new InvalidParameter()

@@ -395,7 +395,7 @@ public final class StudentChaincodeTest {
                 "  \"matriculationId\": \"0000001\",\n" +
                 "  \"firstName\": \"firstName1\",\n" +
                 "  \"lastName\": \"lastName1\",\n" +
-                "  \"birthDate\": \"2020-07-21\",\n" +
+                "  \"birthDate\": \"2000-07-21\",\n" +
                 "  \"matriculationStatus\": [\n" +
                 "    {\n" +
                 "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -414,7 +414,7 @@ public final class StudentChaincodeTest {
                 .matriculationId("0000001")
                 .firstName("firstName1")
                 .lastName("lastName1")
-                .birthDate(LocalDate.parse("2020-07-21"))
+                .birthDate(LocalDate.parse("2000-07-21"))
                 .matriculationStatus(new ArrayList<SubjectMatriculationInterval>()
                 {{
                     add(new SubjectMatriculationInterval()
@@ -439,7 +439,7 @@ public final class StudentChaincodeTest {
                 "  \"matriculationId\": \"0000001\",\n" +
                 "  \"firstName\": \"firstName1\",\n" +
                 "  \"lastName\": \"lastName1\",\n" +
-                "  \"birthDate\": \"2020-07-21\",\n" +
+                "  \"birthDate\": \"2000-07-21\",\n" +
                 "  \"matriculationStatus\": [\n" +
                 "    {\n" +
                 "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -472,7 +472,7 @@ public final class StudentChaincodeTest {
                     "  \"matriculationId\": \"0000001\",\n" +
                     "  \"firstName\": \"firstName1\",\n" +
                     "  \"lastName\": \"lastName1\",\n" +
-                    "  \"birthDate\": \"2020-07-21\",\n" +
+                    "  \"birthDate\": \"2000-07-21\",\n" +
                     "  \"matriculationStatus\": [\n" +
                     "    {\n" +
                     "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -490,7 +490,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -516,7 +516,7 @@ public final class StudentChaincodeTest {
                     "  \"matriculationId\": \"0000001\",\n" +
                     "  \"firstName\": \"firstName1\",\n" +
                     "  \"lastName\": \"lastName1\",\n" +
-                    "  \"birthDate\": \"2020-07-21\",\n" +
+                    "  \"birthDate\": \"2000-07-21\",\n" +
                     "  \"matriculationStatus\": [\n" +
                     "    {\n" +
                     "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -534,7 +534,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -566,7 +566,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -604,7 +604,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -680,7 +680,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "  ]\n" +
                             "}"),
@@ -709,7 +709,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -743,7 +743,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"\",\n" +
@@ -781,7 +781,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -819,7 +819,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -857,7 +857,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1<p>alert(\\\"XSS\\\");</p>\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -875,7 +875,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1alert(\\\"XSS\\\");\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -906,7 +906,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -924,7 +924,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -942,7 +942,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -970,7 +970,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -1001,7 +1001,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -1039,7 +1039,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -1115,7 +1115,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "  ]\n" +
                             "}"),
@@ -1144,7 +1144,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -1178,7 +1178,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"\",\n" +
@@ -1216,7 +1216,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -1254,7 +1254,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -1292,7 +1292,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -1332,7 +1332,7 @@ public final class StudentChaincodeTest {
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
                             "  \"lastName\": \"lastName1\",\n" +
-                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
                             "  \"matriculationStatus\": [\n" +
                             "    {\n" +
                             "      \"fieldOfStudy\": \"Computer Science\",\n" +
@@ -1356,6 +1356,44 @@ public final class StudentChaincodeTest {
                                         .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
                                         .reason("First and last semester must be in chronological order. " +
                                                 "Last semester lays chronologically before first semester."));
+                            }}));
+        }
+
+        @Test
+        public void updateFirstSemesterBeforeBirthDateStudent() {
+            StudentChaincode contract = new StudentChaincode();
+            GsonWrapper gson = new GsonWrapper();
+            Context ctx = mock(Context.class);
+            MockChaincodeStub stub = new MockChaincodeStub();
+            when(ctx.getStub()).thenReturn(stub);
+            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+                    "{\n" +
+                            "  \"matriculationId\": \"0000001\",\n" +
+                            "  \"firstName\": \"firstName1\",\n" +
+                            "  \"lastName\": \"lastName1\",\n" +
+                            "  \"birthDate\": \"2020-07-21\",\n" +
+                            "  \"matriculationStatus\": [\n" +
+                            "    {\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
+                            "      \"intervals\": [\n" +
+                            "        {\n" +
+                            "          \"firstSemester\": \"WS2018\",\n" +
+                            "          \"lastSemester\": \"SS2020\"\n" +
+                            "        }\n" +
+                            "      ]\n" +
+                            "    }\n" +
+                            "  ]\n" +
+                            "}"),
+                    DetailedError.class);
+            assertThat(error).isEqualTo(
+                    new DetailedError()
+                            .type("Unprocessable Entity")
+                            .title("The given string does not conform to the specified json format.")
+                            .invalidParams(new ArrayList<InvalidParameter>()
+                            {{
+                                add(new InvalidParameter()
+                                        .name("SubjectMatriculationInterval.MatriculationInterval.firstSemester")
+                                        .reason("First semester must not be earlier than birth date."));
                             }}));
         }
     }
