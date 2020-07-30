@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.chaincode;
 
+import com.google.gson.*;
 import de.upb.cs.uc4.chaincode.model.Course;
-import de.upb.cs.uc4.chaincode.model.DetailedError;
-import de.upb.cs.uc4.chaincode.model.InvalidParameter;
+import de.upb.cs.uc4.chaincode.model.Error;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hyperledger.fabric.contract.Context;
@@ -13,6 +13,8 @@ import org.hyperledger.fabric.contract.annotation.Transaction;
 import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.hyperledger.fabric.shim.ledger.KeyValue;
 import org.hyperledger.fabric.shim.ledger.QueryResultsIterator;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
 
 import java.util.ArrayList;
 
@@ -42,30 +44,17 @@ public class CourseChaincode implements ContractInterface {
         _logger.info("addCourse");
 
         ChaincodeStub stub = ctx.getStub();
-        Course course = null;
 
-        try
-        {
-            course = gson.fromJson(jsonCourse, Course.class);
-        }
-        catch(Exception e)
-        {
-            return gson.toJson(new DetailedError()
-                    .type("Unprocessable Entity")
-                    .title("The given string does not conform to the specified json format."));
-        }
+        Course course = gson.fromJson(jsonCourse, Course.class);
 
-        QueryResultsIterator<KeyValue> results = stub.getQueryResult("{\"selector\":{\"courseId\":{\"$regex\":\".*\"}}}");
+        if(!stub.getStringState(course.getCourseId()).equals(""))
+            return gson.toJson(new Error()
+                    .name("02")
+                    .detail("ID already exists"));
 
-
-        ArrayList<InvalidParameter> invalidParams = getErrorForCourse(course);
-
-        if(!invalidParams.isEmpty()){
-            return gson.toJson(new DetailedError()
-            .type("Unprocessable Entity")
-            .title("The following parameters are invalid.")
-            .invalidParams(invalidParams));
-        }
+        String error = getErrorForCourse(course);
+        if(error != null)
+            return error;
 
         stub.putStringState(course.getCourseId(),gson.toJson(course));
         return "";
@@ -78,7 +67,7 @@ public class CourseChaincode implements ContractInterface {
 
         QueryResultsIterator<KeyValue> results = stub.getQueryResult("{\"selector\":{\"courseId\":{\"$regex\":\".*\"}}}");
 
-        ArrayList<Course> courses = new ArrayList<>();
+        ArrayList<Course> courses = new ArrayList<Course>();
         for (KeyValue result: results) {
             courses.add(gson.fromJson(result.getStringValue(), Course.class));
         }
@@ -100,9 +89,9 @@ public class CourseChaincode implements ContractInterface {
         ChaincodeStub stub = ctx.getStub();
 
         if(stub.getStringState(courseId) == null || stub.getStringState(courseId).equals(""))
-            return gson.toJson(new DetailedError()
-                    .type("Not found")
-                    .title("The given ID does not fit any existing course."));
+            return gson.toJson(new Error()
+                    .name("03")
+                    .detail("Course not found"));
 
         stub.delState(courseId);
         return "";
@@ -119,21 +108,17 @@ public class CourseChaincode implements ContractInterface {
         Course updatedCourse = gson.fromJson(jsonCourse, Course.class);
 
         if (!courseId.equals(updatedCourse.getCourseId()))
-            return gson.toJson(new DetailedError()
-                    .type("Not Found")
-                    .title("Course ID and ID in path do not match"));
+            return gson.toJson(new Error()
+                    .name("00")
+                    .detail("Course ID and ID in path do not match"));
 
-        ArrayList<InvalidParameter> invalidParams = getErrorForCourse(updatedCourse);
-
-        if (!invalidParams.isEmpty())
-            return gson.toJson(new DetailedError()
-                    .type("Unprocessable Entity")
-                    .title("The given string does not conform to the specified json format."));
-
+        String error = getErrorForCourse(updatedCourse);
+        if (error != null)
+            return error;
         if(stub.getStringState(courseId) == null || stub.getStringState(courseId).equals(""))
-            return gson.toJson(new DetailedError()
-                    .type("Not Found")
-                    .title("Course not found"));
+            return gson.toJson(new Error()
+                    .name("03")
+                    .detail("Course not found"));
 
         stub.delState(courseId);
         stub.putStringState(updatedCourse.getCourseId(), gson.toJson(updatedCourse));
@@ -145,55 +130,52 @@ public class CourseChaincode implements ContractInterface {
         return gson.fromJson(stub.getStringState(courseId), Course.class);
     }
 
-    private ArrayList<InvalidParameter> getErrorForCourse(Course course) {
-
-        ArrayList<InvalidParameter> list = new ArrayList<>();
-
-        if(course.getCourseId().equals(""))
-            list.add(new InvalidParameter()
-                    .name("CourseID")
-                    .reason("ID is empty"));
-
+    private String getErrorForCourse(Course course) {
         if (course.getCourseName().equals(""))
-            list.add(new InvalidParameter()
-                    .name("CourseName")
-                    .reason("Course name must not be empty"));
+            return gson.toJson(new Error()
+                    .name("10")
+                    .detail("Course name must not be empty"));
+
+        if (false)
+            return gson.toJson(new Error()
+                    .name("11")
+                    .detail("Course name has invalid characters"));
 
         if (course.getCourseType() == null)
-            list.add(new InvalidParameter()
-                    .name("CourseType")
-                    .reason("Course type must be one of [\"Lecture\", \"Seminar\", \"Project Group\"]"));
+            return gson.toJson(new Error()
+                    .name("20")
+                    .detail("Course type must be one of [\"Lecture\", \"Seminar\", \"Project Group\"]"));
 
         if (course.getStartDate() == null)
-            list.add(new InvalidParameter()
-                    .name("StartDate")
-                    .reason("startDate must be the following format \"yyyy-mm-dd\""));
+            return gson.toJson(new Error()
+                    .name("30")
+                    .detail("startDate must be the following format \"yyyy-mm-dd\""));
 
         if (course.getEndDate() == null)
-            list.add(new InvalidParameter()
-                    .name("EndDate")
-                    .reason("endDate must be the following format \"yyyy-mm-dd\""));
+            return gson.toJson(new Error()
+                    .name("40")
+                    .detail("endDate must be the following format \"yyyy-mm-dd\""));
 
         if (course.getEcts() == null || course.getEcts() < 1)
-            list.add(new InvalidParameter()
-                    .name("Ects")
-                    .reason("ects must be a positive integer number"));
+            return gson.toJson(new Error()
+                    .name("50")
+                    .detail("ects must be a positive integer number"));
 
         if (course.getLecturerId().equals(""))
-            list.add(new InvalidParameter()
-                    .name("LecturerID")
-                    .reason("lecturerID unknown"));
+            return gson.toJson(new Error()
+                    .name("60")
+                    .detail("lecturerID unknown"));
 
         if (course.getMaxParticipants() == null || course.getMaxParticipants() < 0)
-            list.add(new InvalidParameter()
-                    .name("MaxParticipants")
-                    .reason("maxParticipants must be a positive integer number"));
+            return gson.toJson(new Error()
+                    .name("70")
+                    .detail("maxParticipants must be a positive integer number"));
 
         if (course.getCourseLanguage() == null)
-            list.add(new InvalidParameter()
-                    .name("CourseLanguage")
-                    .reason("language must be one of [\"German\", \"English\"]"));
+            return gson.toJson(new Error()
+                    .name("80")
+                    .detail("language must be one of [\"German\", \"English\"]"));
 
-        return list;
+        return null;
     }
 }
