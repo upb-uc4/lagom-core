@@ -12,6 +12,7 @@ import org.hyperledger.fabric.shim.ChaincodeStub;
 import org.hyperledger.fabric.shim.ledger.KeyValue;
 import org.hyperledger.fabric.shim.ledger.QueryResultsIterator;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -185,12 +186,21 @@ public class StudentChaincode implements ContractInterface {
                     .reason("Matriculation status must not be empty"));
         else {
 
+            ArrayList<SubjectMatriculationInterval.FieldOfStudyEnum> existingFields = new ArrayList<SubjectMatriculationInterval.FieldOfStudyEnum>();
+
             for (SubjectMatriculationInterval subInterval: immatriculationStatus) {
 
                 if (subInterval.getFieldOfStudy() == null || subInterval.getFieldOfStudy().equals(""))
                     list.add(new InvalidParameter()
                             .name("SubjectMatriculationInterval.fieldOfStudy")
                             .reason("Field of study must not be empty"));
+                else
+                    if (existingFields.contains(subInterval.getFieldOfStudy()))
+                        list.add(new InvalidParameter()
+                                .name("SubjectMatriculationInterval.fieldOfStudy")
+                                .reason("Each field of study should only appear in one SubjectMatriculationInterval."));
+                    else
+                        existingFields.add(subInterval.getFieldOfStudy());
 
                 if (subInterval.getIntervals() == null || subInterval.getIntervals().size() == 0)
                     list.add(new InvalidParameter()

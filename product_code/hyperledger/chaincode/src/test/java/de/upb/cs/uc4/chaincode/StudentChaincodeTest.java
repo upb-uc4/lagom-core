@@ -1396,5 +1396,52 @@ public final class StudentChaincodeTest {
                                         .reason("First semester must not be earlier than birth date."));
                             }}));
         }
+
+        @Test
+        public void updateDuplicateFieldOfStudyStudent() {
+            StudentChaincode contract = new StudentChaincode();
+            GsonWrapper gson = new GsonWrapper();
+            Context ctx = mock(Context.class);
+            MockChaincodeStub stub = new MockChaincodeStub();
+            when(ctx.getStub()).thenReturn(stub);
+            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+                    "{\n" +
+                            "  \"matriculationId\": \"0000001\",\n" +
+                            "  \"firstName\": \"firstName1\",\n" +
+                            "  \"lastName\": \"lastName1\",\n" +
+                            "  \"birthDate\": \"2000-07-21\",\n" +
+                            "  \"matriculationStatus\": [\n" +
+                            "    {\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
+                            "      \"intervals\": [\n" +
+                            "        {\n" +
+                            "          \"firstSemester\": \"WS2018\",\n" +
+                            "          \"lastSemester\": \"SS2020\"\n" +
+                            "        }\n" +
+                            "      ]\n" +
+                            "    },\n" +
+                            "   {\n" +
+                            "      \"fieldOfStudy\": \"Computer Science\",\n" +
+                            "      \"intervals\": [\n" +
+                            "        {\n" +
+                            "          \"firstSemester\": \"WS2014\",\n" +
+                            "          \"lastSemester\": \"SS2016\"\n" +
+                            "        }\n" +
+                            "      ]\n" +
+                            "    }\n" +
+                            "  ]\n" +
+                            "}"),
+                    DetailedError.class);
+            assertThat(error).isEqualTo(
+                    new DetailedError()
+                            .type("Unprocessable Entity")
+                            .title("The given string does not conform to the specified json format.")
+                            .invalidParams(new ArrayList<InvalidParameter>()
+                            {{
+                                add(new InvalidParameter()
+                                        .name("SubjectMatriculationInterval.fieldOfStudy")
+                                        .reason("Each field of study should only appear in one SubjectMatriculationInterval."));
+                            }}));
+        }
     }
 }
