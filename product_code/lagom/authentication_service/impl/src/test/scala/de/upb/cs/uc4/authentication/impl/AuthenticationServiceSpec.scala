@@ -9,7 +9,7 @@ import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
@@ -59,6 +59,40 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
   /** Tests only working if the whole instance is started */
   "AuthenticationService service" should {
+
+    "has the default login data" in {
+      eventually(timeout(Span(2, Minutes))) {
+        val futureAnswers = for {
+          answer1 <- client.check("student", "student").invoke()
+          answer2 <- client.check("lecturer", "lecturer").invoke()
+          answer3 <- client.check("admin", "admin").invoke()
+        } yield Seq(answer1, answer2, answer3)
+
+        futureAnswers.map { answers =>
+          answers should contain allOf(
+            ("student", AuthenticationRole.Student),
+            ("lecturer", AuthenticationRole.Lecturer),
+            ("admin", AuthenticationRole.Admin)
+          )
+        }
+      }
+    }
+
+    "add new login data" in {
+      client.setAuthentication().invoke(AuthenticationUser("Gregor", "Greg", AuthenticationRole.Student)).flatMap {
+        _ => client.check("Gregor", "Greg").invoke().map { answer =>
+          answer should ===(("Gregor", AuthenticationRole.Student))
+        }
+      }
+    }
+
+    "update login data" in {
+      client.changePassword("Gregor").handleRequestHeader(addLoginHeader("Gregor", "Greg")).invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).flatMap {
+        _ => client.check("Gregor", "GregNew").invoke().map { answer =>
+          answer should ===(("Gregor", AuthenticationRole.Student))
+        }
+      }
+    }
 
     "detect a wrong username" in {
       client.check("studenta", "student").invoke().failed.map {
