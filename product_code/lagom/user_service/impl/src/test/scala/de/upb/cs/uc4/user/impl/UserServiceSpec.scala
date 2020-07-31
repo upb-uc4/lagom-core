@@ -3,7 +3,7 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
@@ -13,10 +13,10 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
+import de.upb.cs.uc4.matriculation.api.MatriculationService
+import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, ImmatriculationStatus, Interval}
 import de.upb.cs.uc4.shared.client.CustomException
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.immatriculation.{ImmatriculationStatus, Interval}
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{Address, JsonUsername, Role}
@@ -42,9 +42,16 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       override lazy val authenticationService: AuthenticationService =
         (_: String, _: String) => ServiceCall { _ => Future.successful("admin0", AuthenticationRole.Admin) }
 
-      override lazy val hyperLedgerService: HyperLedgerService = new HyperLedgerService(){
-        override def write(transactionId: String): ServiceCall[Seq[String], Done] = ServiceCall{ _ => Future.successful(Done)}
-        override def read(transactionId: String): ServiceCall[Seq[String], String] = ServiceCall{ _ => Future.successful("")}
+      override lazy val matriculationService: MatriculationService = new MatriculationService {
+        override def immatriculateStudent(): ServiceCall[ImmatriculationData, Done] = ServiceCall { _ =>
+          Future.successful(Done)
+        }
+
+        override def getMatriculation(matriculationId: String): ServiceCall[NotUsed, ImmatriculationData] = ServiceCall {
+          _ => Future.successful(null)
+        }
+
+        override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
       }
     }
   }

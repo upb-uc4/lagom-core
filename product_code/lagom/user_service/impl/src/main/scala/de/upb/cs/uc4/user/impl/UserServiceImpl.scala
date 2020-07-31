@@ -11,9 +11,10 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.matriculation.api.MatriculationService
+import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
@@ -21,7 +22,6 @@ import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{OnPasswordUpdate, OnUserCreate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.immatriculation.ImmatriculationData
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
@@ -33,7 +33,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /** Implementation of the UserService */
 class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
                       readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase,
-                      session: HyperLedgerSession)
+                      matriculationService: MatriculationService)
                      (implicit ec: ExecutionContext, auth: AuthenticationService) extends UserService {
   readSide.register(processor)
 
@@ -75,16 +75,16 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Changes the password of a user in the database */
   override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] =
-    identifiedAuthenticated(AuthenticationRole.All: _*){
-      (authUsername, role)=>
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
         ServerServiceCall { (_, user) =>
           if (username != user.username.trim) {
             throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
           }
-          if (authUsername != user.username.trim){
+          if (authUsername != user.username.trim) {
             throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
-          if(role != user.role) {
+          if (role != user.role) {
             //TODO : Needs to be changed with new uneditable fields
             throw new CustomException(TransportErrorCode(403, 1003, "Error"), new DetailedError("uneditable field", "You can not manipulate this field.", List()))
           }
@@ -98,7 +98,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
                 throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
             }
         }
-  }
+    }
 
   /** Get all students from the database */
   override def getAllStudents: ServerServiceCall[NotUsed, Seq[Student]] =
@@ -108,10 +108,11 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new student to the database */
   override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postStudent) =>
-    addUser(postStudent.authUser).invokeWithHeaders(header, postStudent.student).flatMap{
+    addUser(postStudent.authUser).invokeWithHeaders(header, postStudent.student).flatMap {
       case (header, user) =>
         val student = user.asInstanceOf[Student]
-        session.write[ImmatriculationData]("addStudent", ImmatriculationData(student, postStudent.immatriculationStatus)).map{ _ =>
+        matriculationService.immatriculateStudent().invoke(ImmatriculationData(student.matriculationId, student.firstName,
+          student.lastName, student.birthDate, Seq(postStudent.immatriculationStatus))).map { _ =>
           (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"), student)
         }
     }
@@ -254,25 +255,25 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
             throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
           }
-          
+
           // We need to know what role the user has, because their editable fields are different
           getUser(username).invoke().map(_.checkEditableFields(user))
-            .flatMap{ editErrors =>
-            // Other users than admins can only edit specified fields
-            if (role != AuthenticationRole.Admin && editErrors.nonEmpty) { 
-              throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("uneditable fields", editErrors))
-            } else {
-              val ref = entityRef(user.username)
+            .flatMap { editErrors =>
+              // Other users than admins can only edit specified fields
+              if (role != AuthenticationRole.Admin && editErrors.nonEmpty) {
+                throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("uneditable fields", editErrors))
+              } else {
+                val ref = entityRef(user.username)
 
-              ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
-                .map {
-                  case Accepted => // Update successful
-                    (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                  case RejectedWithError(code, errorResponse) => //Update failed
-                    throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
-                }
+                ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
+                  .map {
+                    case Accepted => // Update successful
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    case RejectedWithError(code, errorResponse) => //Update failed
+                      throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                  }
+              }
             }
-          }
         }
     }
 
