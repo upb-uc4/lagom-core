@@ -211,10 +211,20 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
               }
               //In case the password cant be saved
               .recoverWith {
-                case authenticationException: Exception =>
+                case authenticationException: CustomException =>
                   ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
                     .map[(ResponseHeader, User)] { _ =>
-                      throw authenticationException //the deletion of the user was successful after the error in the authentication service
+                      //the deletion of the user was successful after the error in the authentication service
+                      if(authenticationException.getPossibleErrorResponse.`type` == "validation error"){
+                        val detailedError = authenticationException.getPossibleErrorResponse.asInstanceOf[DetailedError]
+                        throw new CustomException(
+                          authenticationException.getErrorCode,
+                          detailedError.copy(invalidParams = detailedError
+                            .invalidParams.map(error => error.copy(name = "authUser. " + error.name)))
+                        )
+                      } else {
+                        throw authenticationException
+                      }
                     }
                     .recover {
                       case deletionException: Exception => throw deletionException //the deletion didnt work, a ghost user does now exist

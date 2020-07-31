@@ -22,8 +22,7 @@ case class AuthenticationState(optEntry: Option[AuthenticationEntry]) {
   def applyCommand(cmd: AuthenticationCommand): ReplyEffect[AuthenticationEvent, AuthenticationState] =
     cmd match {
       case SetAuthentication(user, replyTo) =>
-
-        val validationErrors = user.validate.map(error => SimpleError("authUser." + error.name, error.reason))
+        val validationErrors = user.validate.map(error => SimpleError(error.name, error.reason))
 
         if (validationErrors.isEmpty) {
           Effect.persist(OnSet(user)).thenReply(replyTo) { _ => Accepted }
