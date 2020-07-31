@@ -3,7 +3,7 @@ import java.nio.file.Paths
 
 import de.upb.cs.uc4.hyperledger.exceptions.InvalidCallException
 import de.upb.cs.uc4.hyperledger.traits.ChaincodeActionsTrait
-import de.upb.cs.uc4.hyperledger.{ChaincodeQuickAccess, ConnectionManager}
+import de.upb.cs.uc4.hyperledger.ConnectionManager
 import org.scalatest.{BeforeAndAfterEach, Succeeded}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

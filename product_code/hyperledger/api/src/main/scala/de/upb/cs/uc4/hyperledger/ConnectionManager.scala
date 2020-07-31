@@ -17,11 +17,17 @@ case class ConnectionManager(connection_profile_path : Path, wallet_path : Path)
   val channel_name = "myc"
   private val chaincode_name = "mycc"
   private val client_name = "cli"
+  private val contract_name_course = "UC4.course"
+  private val contract_name_student = "UC4.student"
 
-  override def createConnection() : ChaincodeActionsTrait = { new ChaincodeConnection(this.initializeConnection()) }
+  override def createConnection() : ChaincodeActionsTrait =
+  {
+    val (gateway : Gateway, contract_course : Contract, contract_student : Contract) = this.initializeConnection()
+    new ChaincodeConnection(gateway, contract_course, contract_student)
+  }
 
   @throws[Exception]
-  def initializeConnection() : (Gateway, Contract) = { // Load a file system based wallet for managing identities.
+  def initializeConnection() : (Gateway, Contract, Contract) = { // Load a file system based wallet for managing identities.
     println("Try to get connection with: " + connection_profile_path + "    and: " + wallet_path)
 
     // retrieve possible identities
@@ -31,15 +37,17 @@ case class ConnectionManager(connection_profile_path : Path, wallet_path : Path)
     val builder : Builder = this.getBuilder(wallet)
 
     val gateway : Gateway = builder.connect
-    var contract : Contract = null
+    var contract_course : Contract = null
+    var contract_student : Contract = null
     try{
       val network : Network = gateway.getNetwork(this.channel_name)
-      contract = network.getContract(this.chaincode_name)
+      contract_course = network.getContract(this.chaincode_name, this.contract_name_course)
+      contract_student = network.getContract(this.chaincode_name, this.contract_name_student)
     } catch {
       case e : GatewayRuntimeException => this.disposeGateway(gateway); throw e;
     }
 
-    return (gateway, contract)
+    return (gateway, contract_course, contract_student)
   }
 
   def disposeGateway(gateway: Gateway) = {

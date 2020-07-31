@@ -1,11 +1,37 @@
 package de.upb.cs.uc4.hyperledger.traits
 
 import de.upb.cs.uc4.hyperledger.exceptions.TransactionErrorException
+import org.hyperledger.fabric.gateway.Contract
 
 /**
  * Trait to provide explicit access to chaincode transactions regarding courses
  */
-protected trait ChaincodeActionsTraitCourses extends ChaincodeActionsTraitInternal {
+trait ChaincodeActionsTraitCourses extends ChaincodeActionsTraitInternal {
+
+  val contract_course : Contract
+
+  /**
+    * Submits any transaction specified by transactionId.
+    * @param transactionId transactionId to submit
+    * @param params parameters to pass to the transaction
+    * @throws Exception if chaincode throws an exception.
+    * @return success_state
+    */
+  @throws[Exception]
+  def internalSubmitTransaction(transactionId : String, params : String*) : Array[Byte] =
+    this.internalSubmitTransaction(contract_course, transactionId, params: _*)
+
+  /**
+    * Evaluates the transaction specified by transactionId.
+    * @param transactionId transactionId to evaluate
+    * @param params parameters to pass to the transaction
+    * @throws Exception if chaincode throws an exception.
+    * @return success_state
+    */
+  @throws[Exception]
+  def internalEvaluateTransaction(transactionId : String, params : String*) : Array[Byte] =
+    this.internalEvaluateTransaction(contract_course, transactionId, params: _*)
+
 
   /**
    * Executes the "addCourse" query.

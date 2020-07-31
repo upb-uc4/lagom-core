@@ -54,9 +54,10 @@ class ConnectionTests extends AnyWordSpec with Matchers{
 
       "Provice chaincode connection" in {
         // test full chaincode connection
-        val (gateway, chaincode) = connectionManager.initializeConnection()
+        val (gateway, contract_course, contract_student) = connectionManager.initializeConnection()
         gateway should not be null
-        chaincode should not be null
+        contract_course should not be null
+        contract_student should not be null
 
         // cleanup
         connectionManager.disposeGateway(gateway)

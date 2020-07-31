@@ -3,51 +3,22 @@ package de.upb.cs.uc4.hyperledger.traits
 import java.nio.charset.StandardCharsets
 
 import de.upb.cs.uc4.hyperledger.exceptions.{InvalidCallException, TransactionErrorException}
+import org.hyperledger.fabric.gateway.Contract
 
 /**
  * Trait to provide basic functionality for all chaincode transactions.
  */
 protected trait ChaincodeActionsTraitInternal extends AutoCloseable {
 
-  /**
-   * Submits any transaction specified by transactionId.
-   * @param transactionId transactionId to submit
-   * @param params parameters to pass to the transaction
-   * @throws Exception if chaincode throws an exception.
-   * @return success_state
-   */
   @throws[Exception]
-  def submitTransaction(transactionId : String, params : String*) : String
+  protected final def internalSubmitTransaction(chaincode : Contract, transactionId : String, params: String*) : Array[Byte] = {
+    chaincode.submitTransaction(transactionId, params:_*)
+  }
 
-  /**
-   * Evaluates the transaction specified by transactionId.
-   * @param transactionId transactionId to evaluate
-   * @param params parameters to pass to the transaction
-   * @throws Exception if chaincode throws an exception.
-   * @return success_state
-   */
   @throws[Exception]
-  def evaluateTransaction(transactionId : String, params : String*) : String
-
-  /**
-   * Submits any transaction specified by transactionId.
-   * @param transactionId transactionId to submit
-   * @param params parameters to pass to the transaction
-   * @throws Exception if chaincode throws an exception.
-   * @return success_state
-   */
-  @throws[Exception]
-  def internalSubmitTransaction(transactionId : String, params : String*) : Array[Byte]
-
-  /**
-   * Evaluates the transaction specified by transactionId.
-   * @param transactionId transactionId to evaluate
-   * @param params parameters to pass to the transaction
-   * @throws Exception if chaincode throws an exception.
-   * @return success_state
-   */
-  @throws[Exception]
-  def internalEvaluateTransaction(transactionId : String, params : String*) : Array[Byte]
+  protected final def internalEvaluateTransaction(chaincode : Contract, transactionId : String, params: String*) : Array[Byte] = {
+    chaincode.evaluateTransaction(transactionId, params:_*)
+  }
 
   /**
    * Wraps the chaincode query result bytes.

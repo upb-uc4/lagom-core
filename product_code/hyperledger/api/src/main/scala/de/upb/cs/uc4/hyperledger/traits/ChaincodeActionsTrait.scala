@@ -2,12 +2,13 @@ package de.upb.cs.uc4.hyperledger.traits
 
 import de.upb.cs.uc4.hyperledger.exceptions.{InvalidCallException, TransactionErrorException}
 import de.upb.cs.uc4.hyperledger.traits
+import org.hyperledger.fabric.gateway.Contract
 
 /**
  * Trait to provide general access to all chaincode transactions.
  * Aggregates all specific ChaincodeAccess traits.
  */
-trait ChaincodeActionsTrait extends ChaincodeActionsTraitCourses {
+trait ChaincodeActionsTrait extends ChaincodeActionsTraitCourses{
 
   /**
    * Submits any transaction specified by transactionId.
