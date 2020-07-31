@@ -8,7 +8,6 @@ import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
-import play.api.Environment
 
 
 /** The UserService interface.
