@@ -20,7 +20,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
     """) with AnyWordSpecLike with Matchers {
 
   //Test users
-  val address: Address = Address("ExampleStreet", "42a", "13337", "ExampleCity", "ExampleCountry")
+  val address: Address = Address("ExampleStreet", "42a", "13337", "ExampleCity", "Germany")
 
   val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "IN", "421769", 9000, List())
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")

@@ -18,6 +18,8 @@ trait User {
 
   def trim: User
 
+  def clean: User
+
   /** 
     * Validates the object by checking predefined conditions like correct charsets, syntax, etc.
     * Returns a list of SimpleErrors[[SimpleError]]

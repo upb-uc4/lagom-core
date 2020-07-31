@@ -77,8 +77,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new student to the database */
-  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.student).map {
+  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postMessageStudentRaw) =>
+    val postMessageStudent = postMessageStudentRaw.copy(authUser =  postMessageStudentRaw.authUser.clean, student = postMessageStudentRaw.student.clean)
+    addUser(postMessageStudent.authUser).invokeWithHeaders(header, postMessageStudent.student).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
           user.asInstanceOf[Student])
@@ -110,8 +111,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new lecturer to the database */
-  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.lecturer).map {
+  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, postMessageLecturerRaw) =>
+    val postMessageLecturer = postMessageLecturerRaw.copy(authUser =  postMessageLecturerRaw.authUser.clean, lecturer = postMessageLecturerRaw.lecturer.clean)
+    addUser(postMessageLecturer.authUser).invokeWithHeaders(header, postMessageLecturer.lecturer).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
           user.asInstanceOf[Lecturer])
@@ -142,8 +144,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new admin to the database */
-  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.admin).map {
+  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, postMessageAdminRaw) =>
+    val postMessageAdmin = postMessageAdminRaw.copy(authUser =  postMessageAdminRaw.authUser.clean, admin = postMessageAdminRaw.admin.clean)
+    addUser(postMessageAdmin.authUser).invokeWithHeaders(header, postMessageAdmin.admin).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
           user.asInstanceOf[Admin])
