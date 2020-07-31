@@ -1,10 +1,10 @@
 import java.nio.file.Paths
 
 import de.upb.cs.uc4.hyperledger.ConnectionManager
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ConnectionTests extends AnyWordSpec with Matchers{
+class ConnectionTests extends AnyWordSpec with Matchers {
 
   val connectionManager = ConnectionManager(
     Paths.get(getClass.getResource("/connection_profile.yaml").toURI),
@@ -44,7 +44,7 @@ class ConnectionTests extends AnyWordSpec with Matchers{
         gateway should not be null
 
         // try connecting to the network
-        try{
+        try {
           val network = gateway.getNetwork(connectionManager.channel_name)
           network should not be null
         } finally {

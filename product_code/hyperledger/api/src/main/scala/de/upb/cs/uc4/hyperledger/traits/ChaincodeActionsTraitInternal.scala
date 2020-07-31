@@ -11,34 +11,35 @@ import org.hyperledger.fabric.gateway.Contract
 protected trait ChaincodeActionsTraitInternal extends AutoCloseable {
 
   @throws[Exception]
-  protected final def internalSubmitTransaction(chaincode : Contract, transactionId : String, params: String*) : Array[Byte] = {
-    chaincode.submitTransaction(transactionId, params:_*)
+  protected final def internalSubmitTransaction(chaincode: Contract, transactionId: String, params: String*): Array[Byte] = {
+    chaincode.submitTransaction(transactionId, params: _*)
   }
 
   @throws[Exception]
-  protected final def internalEvaluateTransaction(chaincode : Contract, transactionId : String, params: String*) : Array[Byte] = {
-    chaincode.evaluateTransaction(transactionId, params:_*)
+  protected final def internalEvaluateTransaction(chaincode: Contract, transactionId: String, params: String*): Array[Byte] = {
+    chaincode.evaluateTransaction(transactionId, params: _*)
   }
 
   /**
    * Wraps the chaincode query result bytes.
    * Translates the byte-array to a string and throws an error if said string is not empty
+   *
    * @param result inbut byte-array to translate
    * @return result as a string
    */
-  protected def wrapTransactionResult(transactionId : String, result : Array[Byte]) : String = {
+  protected def wrapTransactionResult(transactionId: String, result: Array[Byte]): String = {
     val resultString = convertTransactionResult(result)
-    if(containsError(resultString)) throw extractErrorFromResult(transactionId, resultString)
+    if (containsError(resultString)) throw extractErrorFromResult(transactionId, resultString)
     else return resultString
   }
 
-  protected def extractErrorFromResult(transactionId : String, result : String): TransactionErrorException = {
+  protected def extractErrorFromResult(transactionId: String, result: String): TransactionErrorException = {
     // retrieve error code
-    var id = result.substring(result.indexOf("\"name\":\"")+8)
+    var id = result.substring(result.indexOf("\"name\":\"") + 8)
     id = id.substring(0, id.indexOf("\""))
 
     // retrieve detail
-    var detail = result.substring(result.indexOf("\"detail\":\"")+10)
+    var detail = result.substring(result.indexOf("\"detail\":\"") + 10)
     detail = detail.substring(0, detail.indexOf("\""))
 
     // create Exception
@@ -47,23 +48,25 @@ protected trait ChaincodeActionsTraitInternal extends AutoCloseable {
 
   /**
    * Evaluates whether a transaction was valid or invalid
+   *
    * @param result result of a chaincode transaction
    * @return true if the result contains error information
    */
-  private def containsError(result : String) : Boolean = {
+  private def containsError(result: String): Boolean = {
     result.contains("{\"name\":") && result.contains("\"detail\":")
   }
 
   /**
    * Since the chain returns bytes, we need to convert them to a readable Result.
+   *
    * @param result Bytes containing a result from a chaincode transaction.
    * @return Result as a String.
    */
-  private def convertTransactionResult(result : Array[Byte]) : String = {
+  private def convertTransactionResult(result: Array[Byte]): String = {
     new String(result, StandardCharsets.UTF_8)
   }
 
-  protected def validateParameterCount(transactionId : String, expected : Integer, params : Array[String]) = {
+  protected def validateParameterCount(transactionId: String, expected: Integer, params: Array[String]) = {
     if (params.size != expected) throw InvalidCallException.CreateInvalidParameterCountException(transactionId, expected, params.size)
   }
 }

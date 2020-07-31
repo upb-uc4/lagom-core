@@ -8,72 +8,65 @@ import org.hyperledger.fabric.gateway.Contract
  */
 trait ChaincodeActionsTraitCourses extends ChaincodeActionsTraitInternal {
 
-  val contract_course : Contract
-
-  /**
-    * Submits any transaction specified by transactionId.
-    * @param transactionId transactionId to submit
-    * @param params parameters to pass to the transaction
-    * @throws Exception if chaincode throws an exception.
-    * @return success_state
-    */
-  @throws[Exception]
-  def internalSubmitTransaction(transactionId : String, params : String*) : Array[Byte] =
-    this.internalSubmitTransaction(contract_course, transactionId, params: _*)
-
-  /**
-    * Evaluates the transaction specified by transactionId.
-    * @param transactionId transactionId to evaluate
-    * @param params parameters to pass to the transaction
-    * @throws Exception if chaincode throws an exception.
-    * @return success_state
-    */
-  @throws[Exception]
-  def internalEvaluateTransaction(transactionId : String, params : String*) : Array[Byte] =
-    this.internalEvaluateTransaction(contract_course, transactionId, params: _*)
-
+  val contract_course: Contract
 
   /**
    * Executes the "addCourse" query.
+   *
    * @param jSonCourse Information about the course to add.
    * @throws Exception if chaincode throws an exception.
    * @return Success_state
    */
   @throws[Exception]
-  final def addCourse(jSonCourse : String) : String = {
+  final def addCourse(jSonCourse: String): String = {
     wrapTransactionResult("addCourse", this.internalSubmitTransaction("addCourse", jSonCourse))
   }
 
   /**
    * Submits the "deleteCourseById" query.
+   *
    * @param courseId courseId to delete course
    * @throws Exception if chaincode throws an exception.
    * @return success_state
    */
   @throws[Exception]
-  final def deleteCourseById(courseId : String) : String = {
+  final def deleteCourseById(courseId: String): String = {
     wrapTransactionResult("deleteCourseById", this.internalSubmitTransaction("deleteCourseById", courseId))
   }
 
   /**
    * Submits the "updateCourseById" query.
-   * @param courseId courseId to update course
+   *
+   * @param courseId   courseId to update course
    * @param jSonCourse courseInfo to update to
    * @throws Exception if chaincode throws an exception.
    * @return success_state
    */
   @throws[Exception]
-  final def updateCourseById(courseId : String, jSonCourse : String) : String = {
+  final def updateCourseById(courseId: String, jSonCourse: String): String = {
     wrapTransactionResult("updateCourseById", this.internalSubmitTransaction("updateCourseById", courseId, jSonCourse))
   }
 
   /**
+   * Submits any transaction specified by transactionId.
+   *
+   * @param transactionId transactionId to submit
+   * @param params        parameters to pass to the transaction
+   * @throws Exception if chaincode throws an exception.
+   * @return success_state
+   */
+  @throws[Exception]
+  def internalSubmitTransaction(transactionId: String, params: String*): Array[Byte] =
+    this.internalSubmitTransaction(contract_course, transactionId, params: _*)
+
+  /**
    * Executes the "getCourses" query.
+   *
    * @throws Exception if chaincode throws an exception.
    * @return List of courses represented by their json value.
    */
   @throws[Exception]
-  final def getAllCourses() : String = {
+  final def getAllCourses(): String = {
     val result = wrapTransactionResult("getAllCourses", this.internalEvaluateTransaction("getAllCourses"))
 
     // check specific error
@@ -82,13 +75,26 @@ trait ChaincodeActionsTraitCourses extends ChaincodeActionsTraitInternal {
   }
 
   /**
+   * Evaluates the transaction specified by transactionId.
+   *
+   * @param transactionId transactionId to evaluate
+   * @param params        parameters to pass to the transaction
+   * @throws Exception if chaincode throws an exception.
+   * @return success_state
+   */
+  @throws[Exception]
+  def internalEvaluateTransaction(transactionId: String, params: String*): Array[Byte] =
+    this.internalEvaluateTransaction(contract_course, transactionId, params: _*)
+
+  /**
    * Executes the "getCourseById" query.
+   *
    * @param courseId courseId to get course information
    * @throws Exception if chaincode throws an exception.
    * @return JSon Course Object
    */
   @throws[Exception]
-  final def getCourseById(courseId : String) : String = {
+  final def getCourseById(courseId: String): String = {
     val result = wrapTransactionResult("getCourseById", this.internalEvaluateTransaction("getCourseById", courseId))
 
     // check specific error
