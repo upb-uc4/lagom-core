@@ -35,5 +35,5 @@ object EnrollAdmin {
     System.out.println("Successfully enrolled user \"admin\" and imported it into the wallet")
   }
 
-  try System.setProperty("org.hyperledger.fabric.sdk.service_discovery.as_localhost", "true")
+  System.setProperty("org.hyperledger.fabric.sdk.service_discovery.as_localhost", "true")
 }
