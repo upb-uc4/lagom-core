@@ -11,7 +11,7 @@ import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, 
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.CustomException
+import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
@@ -26,8 +26,8 @@ import org.scalatest.wordspec.AsyncWordSpec
 import scala.concurrent.Future
 
 /** Tests for the AuthenticationService
-  * All tests need to be started in the defined order
-  */
+ * All tests need to be started in the defined order
+ */
 class AuthenticationServiceSpec extends AsyncWordSpec
   with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures {
 
@@ -66,13 +66,13 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   "AuthenticationService service" should {
 
     "detect a wrong username" in {
-      client.check("studenta", "student").invoke().failed.map{
+      client.check("studenta", "student").invoke().failed.map {
         answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
       }
     }
 
     "detect a wrong password" in {
-      client.check("student", "studenta").invoke().failed.map{
+      client.check("student", "studenta").invoke().failed.map {
         answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
       }
     }
@@ -82,28 +82,28 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       authenticationStub.send(new AuthenticationUser("student", "student", AuthenticationRole.Student))
 
       eventually(timeout(Span(2, Minutes))) {
-        client.check("student", "student").invoke().map{ answer =>
-          answer shouldBe a [(String, AuthenticationRole)]
+        client.check("student", "student").invoke().map { answer =>
+          answer shouldBe a[(String, AuthenticationRole)]
         }
       }
     }
 
     "detect that a user is not authorized" in {
-      val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Admin){
+      val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Admin) {
         _ => Future.successful(NotUsed)
       }(client, server.executionContext)
 
-      serviceCall.handleRequestHeader(addLoginHeader("student", "student")).invoke().failed.map{ answer =>
+      serviceCall.handleRequestHeader(addLoginHeader("student", "student")).invoke().failed.map { answer =>
         answer.asInstanceOf[CustomException].getErrorCode.http should ===(403)
       }
     }
 
     "detect that a user is authorized" in {
-      val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Student){
+      val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Student) {
         _ => Future.successful(NotUsed)
       }(client, server.executionContext)
 
-      serviceCall.handleRequestHeader(addLoginHeader("student", "student")).invoke().map{ answer =>
+      serviceCall.handleRequestHeader(addLoginHeader("student", "student")).invoke().map { answer =>
         answer should ===(NotUsed)
       }
     }
@@ -112,7 +112,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       deletionStub.send(JsonUsername("student"))
 
       eventually(timeout(Span(2, Minutes))) {
-        client.check("student", "student").invoke().failed.map{ answer =>
+        client.check("student", "student").invoke().failed.map { answer =>
           answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
         }
       }
@@ -169,4 +169,6 @@ class UserServiceStub(authenticationStub: ProducerStub[AuthenticationUser],
   override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
 
   override def allowedPost: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 }

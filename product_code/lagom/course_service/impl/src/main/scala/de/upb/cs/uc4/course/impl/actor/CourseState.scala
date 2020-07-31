@@ -7,7 +7,7 @@ import de.upb.cs.uc4.course.impl.CourseApplication
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.events.{CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate}
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.{DetailedError, SimpleError}
+import de.upb.cs.uc4.shared.client.exceptions.{DetailedError, GenericError}
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected, RejectedWithError}
 import play.api.libs.json.{Format, Json}
 
@@ -33,7 +33,7 @@ case class CourseState(optCourse: Option[Course]) {
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(409, DetailedError("key duplicate", List(SimpleError("courseId", "A course with the given Id already exist.")))))
+          Effect.reply(replyTo)(RejectedWithError(409, GenericError("key duplicate")))
         }
 
 
@@ -50,7 +50,7 @@ case class CourseState(optCourse: Option[Course]) {
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(404, DetailedError("key not found", List(SimpleError("courseId", "Course id does not exist.")))))
+          Effect.reply(replyTo)(RejectedWithError(404, GenericError("key not found")))
         }
 
 

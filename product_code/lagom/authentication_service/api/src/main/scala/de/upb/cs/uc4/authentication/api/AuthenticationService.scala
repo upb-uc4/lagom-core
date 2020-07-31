@@ -4,26 +4,25 @@ import akka.NotUsed
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
-import play.api.Environment
+import de.upb.cs.uc4.shared.client.UC4Service
 
 /** The AuthenticationService interface.
   *
   * This describes everything that Lagom needs to know about how to serve and
   * consume the AuthenticationService.
   */
-trait AuthenticationService extends Service {
-  /** Prefix for the path for the endpoints, a name/identifier for the service */
-  val pathPrefix = "/authentication-management"
+trait AuthenticationService extends UC4Service {
+  override val pathPrefix = "/authentication-management"
+  override val name: String = "authentication"
 
   /** Checks if the username and password pair exists */
   def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)]
 
   final override def descriptor: Descriptor = {
     import Service._
-    named("authentication")
-      .withCalls(
+    super.descriptor
+      .addCalls(
         restCall(Method.GET, pathPrefix + "/users?user&pw", check _)
-      ).withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
+      )
   }
 }

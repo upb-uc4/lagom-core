@@ -3,12 +3,13 @@ package de.upb.cs.uc4.hyperledger.api
 import akka.Done
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
-import play.api.Environment
+import de.upb.cs.uc4.shared.client.UC4Service
 
-trait HyperLedgerService extends Service {
+trait HyperLedgerService extends UC4Service {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
-  val pathPrefix = "/hyperledger-management"
+  override val pathPrefix = "/hyperledger-management"
+  /** The name of the service */
+  override val name: String = "hyperledger"
 
   def write(transactionId: String): ServiceCall[Seq[String], Done]
 
@@ -16,10 +17,10 @@ trait HyperLedgerService extends Service {
 
   final override def descriptor: Descriptor = {
     import Service._
-    named("hyperledger")
-      .withCalls(
+    super.descriptor
+      .addCalls(
         restCall(Method.POST, pathPrefix + "/read/:transactionId", read _),
         restCall(Method.POST, pathPrefix + "/write/:transactionId", write _),
-      ).withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
+      )
   }
 }

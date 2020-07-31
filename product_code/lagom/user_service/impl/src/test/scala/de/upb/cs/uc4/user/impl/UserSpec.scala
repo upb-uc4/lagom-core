@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.user.impl
 
-import de.upb.cs.uc4.user.model.{Address, Role}
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
+import de.upb.cs.uc4.user.model.{Address, Role}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

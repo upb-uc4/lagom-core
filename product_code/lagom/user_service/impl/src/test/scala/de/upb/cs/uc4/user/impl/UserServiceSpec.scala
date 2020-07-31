@@ -13,6 +13,8 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, ImmatriculationStatus, Interval}
 import de.upb.cs.uc4.shared.client.CustomException
@@ -39,8 +41,13 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       .withJdbc()
   ) { ctx =>
     new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-      override lazy val authenticationService: AuthenticationService =
-        (_: String, _: String) => ServiceCall { _ => Future.successful("admin0", AuthenticationRole.Admin) }
+      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
+        override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
+          _ => Future.successful("admin0", AuthenticationRole.Admin)
+        }
+
+        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+      }
 
       override lazy val matriculationService: MatriculationService = new MatriculationService {
         override def immatriculateStudent(): ServiceCall[ImmatriculationData, Done] = ServiceCall { _ =>
@@ -87,7 +94,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         client.getAllUsers.handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
 
           answer.admins should have size 1
-          answer.lecturer should have size 1
+          answer.lecturers should have size 1
           answer.students should have size 1
         }
       }

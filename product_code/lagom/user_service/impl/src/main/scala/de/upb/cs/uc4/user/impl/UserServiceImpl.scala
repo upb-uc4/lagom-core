@@ -13,7 +13,7 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
-import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, GenericError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
@@ -68,7 +68,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
             (ResponseHeader(200, MessageProtocol.empty, List()), Done)
           case Rejected("A user with the given username does not exist.") => // Already exists
             throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-              DetailedError("key not found", Seq[SimpleError](SimpleError("username", "A user with the given username does not exist."))))
+              GenericError("key not found"))
         }
     }
   }
@@ -79,14 +79,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       (authUsername, role) =>
         ServerServiceCall { (_, user) =>
           if (username != user.username.trim) {
-            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), GenericError("path parameter mismatch"))
           }
           if (authUsername != user.username.trim) {
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
           }
           if (role != user.role) {
-            //TODO : Needs to be changed with new uneditable fields
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), new DetailedError("uneditable field", "You can not manipulate this field.", List()))
+            throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("uneditable fields", List(SimpleError("role", "Role may not be manually changed."))))
           }
           val ref = entityRef(user.username)
 
@@ -124,8 +123,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Student => user.asInstanceOf[Student]
-          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not a student."))))
+          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+            GenericError("key not found"))
         })
     }
 
@@ -157,8 +156,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Lecturer => user.asInstanceOf[Lecturer]
-          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not a lecturer."))))
+          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+            GenericError("key not found"))
         })
     }
 
@@ -189,8 +188,8 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Admin => user.asInstanceOf[Admin]
-          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not an admin."))))
+          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+            GenericError("key not found"))
         })
     }
 
@@ -221,6 +220,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Allows DELETE */
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
+  /** This Methods needs to allow a GET-Method */
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
+
   /** Helper method for adding a generic User, independent of the role */
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
@@ -249,11 +251,11 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         ServerServiceCall { (_, user) =>
           // Check, if the username in path is different than the username in the object
           if (username != user.username.trim) {
-            throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), GenericError("path parameter mismatch"))
           }
           // If invoked by a non-Admin, check if the manipulated object is owned by the user
           if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
           }
 
           // We need to know what role the user has, because their editable fields are different
@@ -261,7 +263,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
             .flatMap { editErrors =>
               // Other users than admins can only edit specified fields
               if (role != AuthenticationRole.Admin && editErrors.nonEmpty) {
-                throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("uneditable fields", editErrors))
+                throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("uneditable fields", editErrors))
               } else {
                 val ref = entityRef(user.username)
 
@@ -285,7 +287,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
       case Some(user) => user
       case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-        DetailedError("key not found", Seq[SimpleError](SimpleError("username", "A user with the given username does not exist."))))
+        GenericError("key not found"))
     }
   }
 

@@ -31,10 +31,11 @@ class HlCourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfte
   ) { ctx =>
     new HlCourseApplication(ctx) with LocalServiceLocator {
       override lazy val authenticationService: AuthenticationService = new AuthenticationService {
+        override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
+          _ => Future.successful("admin", AuthenticationRole.Admin)
+        }
 
-        override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
-          ServiceCall { _ => Future.successful("admin", AuthenticationRole.Admin) }
-
+        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
       }
 
       override lazy val hyperLedgerService: HyperLedgerService = new HyperLedgerService {
@@ -68,6 +69,8 @@ class HlCourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfte
             case _ => Future.successful("")
           }
         }
+
+        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
       }
     }
   }

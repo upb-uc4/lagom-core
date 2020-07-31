@@ -22,3 +22,8 @@ spec:
       services:
         - name: hlcourse
           port: 80
+    - match: PathPrefix(`/authentication-management`)
+      kind: Rule
+      services:
+        - name: authentication
+          port: 80

@@ -8,7 +8,7 @@ import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.{CustomException, DetailedError}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.varargs
@@ -47,7 +47,7 @@ object ServiceCallFactory {
         case (_, role) =>
           if (!roles.contains(role)) {
             throw new CustomException(TransportErrorCode(403, 1003, "Error"),
-              DetailedError("not enough privileges", List()))
+              GenericError("not enough privileges"))
           }
           serviceCall
       }
@@ -73,7 +73,7 @@ object ServiceCallFactory {
         case (username, role) =>
           if (!roles.contains(role)) {
             throw new CustomException(TransportErrorCode(403, 1003, "Error"),
-              DetailedError("not enough privileges", List()))
+              GenericError("not enough privileges"))
           }
           serviceCall(username, role)
       }
