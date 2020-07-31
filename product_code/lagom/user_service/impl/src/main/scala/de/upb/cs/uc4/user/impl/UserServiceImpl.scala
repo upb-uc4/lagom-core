@@ -10,14 +10,14 @@ import com.lightbend.lagom.scaladsl.broker.TopicProducer
 import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry, ReadSide}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
 import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, GenericError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{OnPasswordUpdate, OnUserCreate, OnUserDelete, UserEvent}
+import de.upb.cs.uc4.user.impl.events.{OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
@@ -68,32 +68,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
               GenericError("key not found"))
         }
     }
-  }
-
-  /** Changes the password of a user in the database */
-  override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] =
-    identifiedAuthenticated(AuthenticationRole.All: _*){
-      (authUsername, role)=>
-        ServerServiceCall { (_, user) =>
-          if (username != user.username.trim) {
-            throw new CustomException(TransportErrorCode(400, 1003, "Error"), GenericError("path parameter mismatch"))
-          }
-          if (authUsername != user.username.trim){
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
-          }
-          if(role != user.role) {
-            throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("uneditable fields", List(SimpleError("role", "Role may not be manually changed."))))
-          }
-          val ref = entityRef(user.username)
-
-          ref.ask[Confirmation](replyTo => UpdatePassword(user, replyTo))
-            .map {
-              case Accepted => // Update Successful
-                (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-              case RejectedWithError(code, errorResponse) =>
-                throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
-            }
-        }
   }
 
   /** Get all students from the database */
@@ -211,9 +185,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
-  /** Allows POST */
-  def allowedPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("POST")
-
   /** Allows DELETE */
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
@@ -231,10 +202,34 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
       val ref = entityRef(user.username)
 
-      ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
-        .map {
+      ref.ask[Confirmation](replyTo => CreateUser(user, replyTo))
+        .flatMap {
           case Accepted => // Creation Successful
-            (ResponseHeader(201, MessageProtocol.empty, List()), user)
+            auth.setAuthentication().invoke(authenticationUser)
+              .map { _ =>
+                (ResponseHeader(201, MessageProtocol.empty, List()), user)
+              }
+              //In case the password cant be saved
+              .recoverWith {
+                case authenticationException: CustomException =>
+                  ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+                    .map[(ResponseHeader, User)] { _ =>
+                      //the deletion of the user was successful after the error in the authentication service
+                      if(authenticationException.getPossibleErrorResponse.`type` == "validation error"){
+                        val detailedError = authenticationException.getPossibleErrorResponse.asInstanceOf[DetailedError]
+                        throw new CustomException(
+                          authenticationException.getErrorCode,
+                          detailedError.copy(invalidParams = detailedError
+                            .invalidParams.map(error => error.copy(name = "authUser. " + error.name)))
+                        )
+                      } else {
+                        throw authenticationException
+                      }
+                    }
+                    .recover {
+                      case deletionException: Exception => throw deletionException //the deletion didnt work, a ghost user does now exist
+                    }
+              }
           case RejectedWithError(code, errorResponse) =>
             throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
         }
@@ -254,25 +249,25 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
             throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
           }
-          
+
           // We need to know what role the user has, because their editable fields are different
           getUser(username).invoke().map(_.checkEditableFields(user))
-            .flatMap{ editErrors =>
-            // Other users than admins can only edit specified fields
-            if (role != AuthenticationRole.Admin && editErrors.nonEmpty) { 
-              throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("uneditable fields", editErrors))
-            } else {
-              val ref = entityRef(user.username)
+            .flatMap { editErrors =>
+              // Other users than admins can only edit specified fields
+              if (role != AuthenticationRole.Admin && editErrors.nonEmpty) {
+                throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("uneditable fields", editErrors))
+              } else {
+                val ref = entityRef(user.username)
 
-              ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
-                .map {
-                  case Accepted => // Update successful
-                    (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                  case RejectedWithError(code, errorResponse) => //Update failed
-                    throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
-                }
+                ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
+                  .map {
+                    case Accepted => // Update successful
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    case RejectedWithError(code, errorResponse) => //Update failed
+                      throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                  }
+              }
             }
-          }
         }
     }
 
@@ -300,20 +295,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           .map(opt => opt.get) //Future[Seq[User]]
         )
       )
-  }
-
-  /** Publishes every authentication change of a user */
-  def userAuthenticationTopic(): Topic[AuthenticationUser] = TopicProducer.singleStreamWithOffset { fromOffset =>
-    persistentEntityRegistry
-      .eventStream(UserEvent.Tag, fromOffset)
-      .mapConcat {
-        //Filter only OnUserCreate events
-        case EventStreamElement(_, OnUserCreate(_, authenticationUser), offset) =>
-          immutable.Seq((authenticationUser, offset))
-        case EventStreamElement(_, OnPasswordUpdate(authenticationUser), offset) =>
-          immutable.Seq((authenticationUser, offset))
-        case _ => Nil
-      }
   }
 
   /** Publishes every deletion of a user */
