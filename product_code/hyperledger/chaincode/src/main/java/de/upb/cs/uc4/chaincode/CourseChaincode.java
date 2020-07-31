@@ -19,9 +19,8 @@ import org.jsoup.safety.Whitelist;
 import java.util.ArrayList;
 
 @Contract(
-        name="UC4"
+        name="UC4.course"
 )
-@Default
 public class CourseChaincode implements ContractInterface {
 
     private static Log _logger = LogFactory.getLog(CourseChaincode.class);
