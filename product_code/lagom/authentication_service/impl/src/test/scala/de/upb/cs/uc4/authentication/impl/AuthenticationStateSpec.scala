@@ -19,8 +19,8 @@ class AuthenticationStateSpec extends ScalaTestWithActorTestKit(s"""
     """) with AnyWordSpecLike with Matchers {
 
   //Test users
-  val authenticationUser1: AuthenticationUser = AuthenticationUser("Ben", "Hermann", AuthenticationRole.Admin)
-  val authenticationUser2: AuthenticationUser = AuthenticationUser("Neb", "Nnamreh", AuthenticationRole.Student)
+  val authenticationUser1: AuthenticationUser = AuthenticationUser("ben123", "Hermann", AuthenticationRole.Admin)
+  val authenticationUser2: AuthenticationUser = AuthenticationUser("312neb", "Nnamreh", AuthenticationRole.Student)
 
 
   "AuthenticationState" should {
