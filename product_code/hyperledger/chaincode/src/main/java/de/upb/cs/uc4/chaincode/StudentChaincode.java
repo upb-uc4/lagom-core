@@ -19,7 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Contract(
-        name="UC4"
+        name="UC4.student"
 )
 @Default
 public class StudentChaincode implements ContractInterface {
