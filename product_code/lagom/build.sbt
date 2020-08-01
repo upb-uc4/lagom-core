@@ -1,14 +1,11 @@
 import com.typesafe.sbt.packager.docker.DockerChmodType
 
-organization in ThisBuild := "de.upb.cs.uc4"
-version in ThisBuild := "v0.4.4"
-lagomServiceEnableSsl in ThisBuild := true
+// apply common settings
+Commons.commonSettings
 
+lagomServiceEnableSsl in ThisBuild := true
 // The project uses PostgreSQL
 lagomCassandraEnabled in ThisBuild := false
-
-// the Scala version that will be used for cross-compiled libraries
-scalaVersion in ThisBuild := "2.13.0"
 
 // Docker
 def dockerSettings = Seq(
@@ -18,34 +15,6 @@ def dockerSettings = Seq(
   dockerChmodType := DockerChmodType.UserGroupWriteExecute,
 )
 
-// Dependencies
-val macwire = "com.softwaremill.macwire" %% "macros" % "2.3.3" % "provided"
-val scalaTest = "org.scalatest" %% "scalatest" % "3.2.0" % Test
-val guava = "com.google.guava" % "guava" % "29.0-jre"
-val akkaDiscoveryKubernetes = "com.lightbend.akka.discovery" %% "akka-discovery-kubernetes-api" % "1.0.8"
-val postgresDriver = "org.postgresql" % "postgresql" % "42.2.8"
-val uuid = "com.fasterxml.uuid" % "java-uuid-generator" % "3.1.0"
-val janino = "org.codehaus.janino" % "janino" % "2.5.16"
-
-val apiDefaultDependencies = Seq(
-  lagomScaladslApi
-)
-
-val implDefaultDependencies = Seq(
-  lagomScaladslTestKit,
-  lagomScaladslAkkaDiscovery,
-  akkaDiscoveryKubernetes,
-  filters,
-  macwire,
-  scalaTest,
-  janino
-)
-
-val defaultPersistenceKafkaDependencies = Seq(
-  lagomScaladslPersistenceJdbc,
-  postgresDriver,
-  lagomScaladslKafkaBroker,
-)
 
 // Projects
 lazy val lagom = (project in file("."))
@@ -67,33 +36,26 @@ lazy val lagom = (project in file("."))
 // This project is not allowed to have lagom server dependencies
 lazy val shared_client = (project in file("shared/client"))
   .settings(
-    libraryDependencies ++= apiDefaultDependencies,
-    libraryDependencies += scalaTest
+    libraryDependencies ++= Dependencies.apiDefaultDependencies,
+    libraryDependencies ++= Dependencies.scalaTestDependencies
   )
 
 lazy val shared_server = (project in file("shared/server"))
   .settings(
-    libraryDependencies ++= Seq(
-      lagomScaladslServer,
-      lagomScaladslTestKit,
-      scalaTest,
-      filters,
-      guava,
-      macwire
-    )
+    libraryDependencies ++=Dependencies.sharedServerDependencies
   )
   .dependsOn(authentication_service_api, hyperledger_service_api, shared_client)
 
 lazy val hyperledger_service_api = (project in file("hyperledger_service/api"))
   .settings(
-    libraryDependencies ++= apiDefaultDependencies
+    libraryDependencies ++= Dependencies.apiDefaultDependencies
   )
   .dependsOn(shared_client)
 
 lazy val hyperledger_service = (project in file("hyperledger_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
-    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies ++= Dependencies.implDefaultDependencies,
     libraryDependencies += lagomScaladslCluster
   )
   .settings(dockerSettings)
@@ -102,75 +64,75 @@ lazy val hyperledger_service = (project in file("hyperledger_service/impl"))
 
 lazy val course_service_api = (project in file("course_service/api"))
   .settings(
-    libraryDependencies ++= apiDefaultDependencies
+    libraryDependencies ++= Dependencies.apiDefaultDependencies
   )
   .dependsOn(shared_client)
 
 lazy val course_service = (project in file("course_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
-    libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies ++= defaultPersistenceKafkaDependencies,
-    libraryDependencies += uuid
+    libraryDependencies ++= Dependencies.implDefaultDependencies,
+    libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies,
+    libraryDependencies ++= Dependencies.uuidDependencies
   )
   .settings(dockerSettings)
   .dependsOn(course_service_api, shared_server)
 
 lazy val hl_course_service_api = (project in file("hl_course_service/api"))
   .settings(
-    libraryDependencies ++= apiDefaultDependencies
+    libraryDependencies ++= Dependencies.apiDefaultDependencies
   )
   .dependsOn(course_service_api)
 
 lazy val hl_course_service = (project in file("hl_course_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
-    libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies += uuid
+    libraryDependencies ++= Dependencies.implDefaultDependencies,
+    libraryDependencies ++= Dependencies.uuidDependencies
   )
   .settings(dockerSettings)
   .dependsOn(hl_course_service_api, shared_server)
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
   .settings(
-    libraryDependencies ++= apiDefaultDependencies
+    libraryDependencies ++= Dependencies.apiDefaultDependencies
   )
   .dependsOn(shared_client)
 
 lazy val authentication_service = (project in file("authentication_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
-    libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies ++= defaultPersistenceKafkaDependencies,
+    libraryDependencies ++= Dependencies.implDefaultDependencies,
+    libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
   )
   .settings(dockerSettings)
   .dependsOn(authentication_service_api, user_service_api, shared_server)
 
 lazy val user_service_api = (project in file("user_service/api"))
   .settings(
-    libraryDependencies ++= apiDefaultDependencies
+    libraryDependencies ++= Dependencies.apiDefaultDependencies
   )
   .dependsOn(authentication_service_api, matriculation_service_api, shared_client)
 
 lazy val user_service = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
-    libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies ++= defaultPersistenceKafkaDependencies,
+    libraryDependencies ++= Dependencies.implDefaultDependencies,
+    libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
   )
   .settings(dockerSettings)
   .dependsOn(user_service_api, shared_server)
 
 lazy val matriculation_service_api = (project in file("matriculation_service/api"))
   .settings(
-    libraryDependencies ++= apiDefaultDependencies
+    libraryDependencies ++= Dependencies.apiDefaultDependencies
   )
   .dependsOn(authentication_service_api, shared_client)
 
 lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
-    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies ++= Dependencies.implDefaultDependencies
   )
   .settings(dockerSettings)
   .dependsOn(matriculation_service_api, shared_server)
