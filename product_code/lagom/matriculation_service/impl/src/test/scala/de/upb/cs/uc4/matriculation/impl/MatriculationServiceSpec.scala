@@ -11,7 +11,7 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.shared.client.{CustomException, DetailedError}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
