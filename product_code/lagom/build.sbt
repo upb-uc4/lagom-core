@@ -175,4 +175,4 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .settings(dockerSettings)
   .dependsOn(matriculation_service_api, shared_server)
 
-lazy val hyperledger_api = ProjectRef(file("../hyperledger/api"), "api")
+lazy val hyperledger_api = ProjectRef(file("../hyperledger/api"), "hyperledger_api")
