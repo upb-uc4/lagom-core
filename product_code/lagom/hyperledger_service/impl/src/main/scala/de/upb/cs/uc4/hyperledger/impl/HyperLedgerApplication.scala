@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.hyperledger.impl
 
+import java.nio.file.{Path, Paths}
+
 import akka.actor.CoordinatedShutdown
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.util.Timeout
@@ -13,15 +15,32 @@ import de.upb.cs.uc4.hyperledger.impl.actor.HyperLedgerBehaviour
 import de.upb.cs.uc4.hyperledger.impl.commands.Shutdown
 import de.upb.cs.uc4.hyperledger.traits.ConnectionManagerTrait
 import play.api.libs.ws.ahc.AhcWSComponents
+import play.api.mvc.EssentialFilter
+import play.filters.cors.CORSComponents
 
 import scala.concurrent.duration._
 
 abstract class HyperLedgerApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
     with ClusterComponents
+    with CORSComponents
     with AhcWSComponents {
 
-  lazy val connectionManager: ConnectionManagerTrait = ConnectionManager
+  lazy val connectionManager: ConnectionManagerTrait = ConnectionManager(
+    retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile.yaml"),
+    retrievePath("uc4.hyperledger.wallet", "/hyperledger_assets/wallet/")
+  )
+
+  private def retrievePath(key: String, fallback: String): Path = {
+    if (config.hasPath(key)) {
+      Paths.get(config.getString(key))
+    } else {
+      Paths.get(getClass.getResource(fallback).toURI)
+    }
+  }
+
+  // Set HttpFilter to the default CorsFilter
+  override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[HyperLedgerService](wire[HyperLedgerServiceImpl])
@@ -39,7 +58,7 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
 
   // Closing HyperLedger connection
   CoordinatedShutdown(actorSystem)
-    .addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "shutdownConnection") { () =>
+    .addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "shutdownConnection") { () =>
       implicit val timeout: Timeout = Timeout(5.seconds)
       clusterSharding.entityRefFor(HyperLedgerBehaviour.typeKey, "hl").ask(_ => Shutdown())
     }

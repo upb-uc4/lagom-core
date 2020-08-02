@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.shared.client
+package de.upb.cs.uc4.shared.client.exceptions
 
 import play.api.libs.json.{Format, Json}
 

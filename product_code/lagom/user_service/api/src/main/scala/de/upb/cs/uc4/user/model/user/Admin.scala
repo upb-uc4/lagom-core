@@ -17,6 +17,10 @@ case class Admin(username: String,
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
       picture.trim, email.trim, birthDate.trim)
   }
+
+  def clean: Admin = {
+    trim.copy(email = email.toLowerCase)
+  }
 }
 
 object Admin {

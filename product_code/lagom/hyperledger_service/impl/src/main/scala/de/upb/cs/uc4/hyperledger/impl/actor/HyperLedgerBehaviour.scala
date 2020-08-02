@@ -18,18 +18,18 @@ object HyperLedgerBehaviour {
       Behaviors.receive {
         case (_, cmd) =>
           cmd match {
-            case Read(key, replyTo) =>
+            case Read(transactionId, params, replyTo) =>
               try {
-                replyTo ! Some(chaincodeConnection.getCourseById(key))
+                replyTo ! Some(chaincodeConnection.evaluateTransaction(transactionId, params: _*))
               } catch {
                 case _: Exception =>
                   replyTo ! None
               }
               Behaviors.same
 
-            case Write(json, replyTo) =>
+            case Write(transactionId, params, replyTo) =>
               try {
-                chaincodeConnection.addCourse(json)
+                chaincodeConnection.submitTransaction(transactionId, params: _*)
                 replyTo ! Accepted
               } catch {
                 case e: Exception =>

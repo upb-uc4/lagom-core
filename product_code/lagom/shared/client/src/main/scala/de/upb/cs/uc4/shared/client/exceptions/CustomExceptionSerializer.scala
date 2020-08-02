@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.shared.client
+package de.upb.cs.uc4.shared.client.exceptions
 
 import java.io.{CharArrayWriter, PrintWriter}
 
@@ -32,7 +32,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
       case der :DetailedError =>
 
         var arr : JsArray = Json.arr()
-        for (error <- der.errors){
+        for (error <- der.invalidParams){
           arr :+= Json.obj(
             "name" -> error.name,
             "reason" -> error.reason
@@ -43,6 +43,12 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
         "title" -> der.title,
         "invalidParams" -> arr
       )))
+
+      case ger :GenericError =>
+        ByteString.fromString(Json.stringify(Json.obj(
+          "type" -> ger.`type`,
+          "title" -> ger.title
+        )))
 
       case message: ExceptionMessage => ByteString.fromString(Json.stringify(Json.obj(
         "name" -> message.name,
@@ -65,18 +71,37 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
       }
 
     //Check if the raw json contains the fields needed for a CustomException (type, title, invalidParams). If so, use our deserializer, if not, use default
-    if (messageJson.toString().contains("type") && messageJson.toString().contains("title") && messageJson.toString().contains("invalidParams")){
-      val jsonParseResult = for {
-        eType   <- (messageJson \ "type").validate[String]
-        title <- (messageJson \ "title").validate[String]
-        invalidParams <- (messageJson \ "invalidParams").validate[Seq[SimpleError]]
+    if (messageJson.toString().contains("type") && messageJson.toString().contains("title")){
+      //We have a CustomError
 
-      } yield new DetailedError(eType, title, invalidParams)
-      val detailedError = jsonParseResult match {
-        case JsSuccess(m, _) => m
-        case JsError(_) => DetailedError("Undeserializable Exception", List())
+      //Check for Detailed Error
+      if(messageJson.toString().contains("invalidParams")){
+        val jsonParseResult = for {
+          eType   <- (messageJson \ "type").validate[String]
+          title <- (messageJson \ "title").validate[String]
+          invalidParams <- (messageJson \ "invalidParams").validate[Seq[SimpleError]]
+
+        } yield new DetailedError(eType, title, invalidParams)
+        val detailedError = jsonParseResult match {
+          case JsSuccess(m, _) => m
+          case JsError(_) => GenericError("deserialization exception")
+        }
+        fromCodeAndMessageCustom(message.errorCode, detailedError)
+      }else{
+        //We have a GenericError
+        val jsonParseResult = for {
+          eType   <- (messageJson \ "type").validate[String]
+          title <- (messageJson \ "title").validate[String]
+
+        } yield new GenericError(eType, title)
+        val detailedError = jsonParseResult match {
+          case JsSuccess(m, _) => m
+          case JsError(_) => GenericError("deserialization exception")
+        }
+        fromCodeAndMessageCustom(message.errorCode, detailedError)
       }
-      fromCodeAndMessageCustom(message.errorCode, detailedError)
+
+
     }
     else{
       //Default serializer for Exceptions with fields "name" and "detail"
@@ -86,7 +111,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
       } yield new ExceptionMessage(name, detail)
       val exceptionMessage = jsonParseResult match {
         case JsSuccess(m, _) => m
-        case JsError(_)      => new ExceptionMessage("UndeserializableException", message.message.utf8String)
+        case JsError(_)      => new ExceptionMessage("deserialization exception", message.message.utf8String)
       }
       fromCodeAndMessage(message.errorCode, exceptionMessage)
     }
@@ -112,12 +137,12 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
    * Used to deserialize our CustomExceptions.
    *
    * @param transportErrorCode The transport error code.
-   * @param detailedError The detailed Error.
+   * @param customError The detailed Error.
    * @return The exception.
    */
   def fromCodeAndMessageCustom(transportErrorCode: TransportErrorCode,
-                                        detailedError: DetailedError): Throwable = {
-    new CustomException(transportErrorCode, detailedError)
+                               customError: CustomError): Throwable = {
+    new CustomException(transportErrorCode, customError)
   }
 }
 

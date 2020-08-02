@@ -25,12 +25,14 @@ spec:
                 secretKeyRef:
                   name: hyperledger-application-secret
                   key: secret
-            - name: CASSANDRA_SERVICE_NAME
-              value: "_cql._tcp.cassandra"
             - name: KAFKA_SERVICE_NAME
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
+            - name: HYPERLEDGER_WALLET
+              value: "/opt/docker/share/hyperledger_assets/wallet/"
+            - name: HYPERLEDGER_NETWORK_CONFIG
+              value: "/opt/docker/share/hyperledger_assets/connection_profile.yaml"
           resources:
             limits:
               memory: 512Mi
@@ -64,6 +66,12 @@ spec:
     - name: http
       port: 80
       targetPort: 9000
+    - name: hyperledger-orderer
+      port: 7050
+      targetPort: 7050
+    - name: hyperledger-peer
+      port: 7051
+      targetPort: 7051
   selector:
     app: hyperledger
   type: LoadBalancer

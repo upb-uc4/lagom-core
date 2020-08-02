@@ -10,14 +10,14 @@ import com.lightbend.lagom.scaladsl.broker.TopicProducer
 import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry, ReadSide}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
+import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, GenericError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
+import de.upb.cs.uc4.user.impl.events.{OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
@@ -65,7 +65,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
             (ResponseHeader(200, MessageProtocol.empty, List()), Done)
           case Rejected("A user with the given username does not exist.") => // Already exists
             throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-              DetailedError("key not found", Seq[SimpleError](SimpleError("username", "A user with the given username does not exist."))))
+              GenericError("key not found"))
         }
     }
   }
@@ -77,8 +77,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new student to the database */
-  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.student).map{
+  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postMessageStudentRaw) =>
+    val postMessageStudent = postMessageStudentRaw.copy(authUser =  postMessageStudentRaw.authUser.clean, student = postMessageStudentRaw.student.clean)
+    addUser(postMessageStudent.authUser).invokeWithHeaders(header, postMessageStudent.student).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
           user.asInstanceOf[Student])
@@ -91,22 +92,17 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Student => user.asInstanceOf[Student]
-          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not a student."))))
+          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+            GenericError("key not found"))
         })
     }
 
   /** Update an existing student */
   override def updateStudent(username: String): ServiceCall[Student, Done] =
-    identifiedAuthenticated(AuthenticationRole.Student, AuthenticationRole.Admin) {
-      (authUsername, role)=>
-        ServerServiceCall { (header, user) =>
-          if (role == AuthenticationRole.Student && authUsername != user.username.trim){
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
-          }
-          updateUser(username).invokeWithHeaders(header, user)
-        }
+    ServerServiceCall { (header, user) =>
+      updateUser(username).invokeWithHeaders(header, user)
     }
+
 
   /** Get all lecturers from the database */
   override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] =
@@ -115,8 +111,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new lecturer to the database */
-  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.lecturer).map{
+  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, postMessageLecturerRaw) =>
+    val postMessageLecturer = postMessageLecturerRaw.copy(authUser =  postMessageLecturerRaw.authUser.clean, lecturer = postMessageLecturerRaw.lecturer.clean)
+    addUser(postMessageLecturer.authUser).invokeWithHeaders(header, postMessageLecturer.lecturer).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
           user.asInstanceOf[Lecturer])
@@ -129,21 +126,15 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Lecturer => user.asInstanceOf[Lecturer]
-          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not a lecturer."))))
+          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+            GenericError("key not found"))
         })
     }
 
   /** Update an existing lecturer */
   override def updateLecturer(username: String): ServiceCall[Lecturer, Done] =
-    identifiedAuthenticated(AuthenticationRole.Lecturer, AuthenticationRole.Admin) {
-      (authUsername, role)=>
-        ServerServiceCall { (header, user) =>
-          if (role == AuthenticationRole.Lecturer && authUsername != user.username.trim){
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), DetailedError("owner mismatch", List()))
-          }
-          updateUser(username).invokeWithHeaders(header, user)
-        }
+    ServerServiceCall { (header, user) =>
+      updateUser(username).invokeWithHeaders(header, user)
     }
 
   /** Get all admins from the database */
@@ -153,8 +144,9 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Add a new admin to the database */
-  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, user) =>
-    addUser(user.authUser).invokeWithHeaders(header, user.admin).map{
+  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, postMessageAdminRaw) =>
+    val postMessageAdmin = postMessageAdminRaw.copy(authUser =  postMessageAdminRaw.authUser.clean, admin = postMessageAdminRaw.admin.clean)
+    addUser(postMessageAdmin.authUser).invokeWithHeaders(header, postMessageAdmin.admin).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
           user.asInstanceOf[Admin])
@@ -167,17 +159,15 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       _ =>
         getUser(username).invoke().map(user => user.role match {
           case Role.Admin => user.asInstanceOf[Admin]
-          case _ => throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-            DetailedError("wrong object", Seq[SimpleError](SimpleError("role", "The user with the given username is not an admin."))))
+          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+            GenericError("key not found"))
         })
     }
 
   /** Update an existing admin */
   override def updateAdmin(username: String): ServiceCall[Admin, Done] =
-    authenticated(AuthenticationRole.Admin) {
-      ServerServiceCall { (header, user) =>
-        updateUser(username).invokeWithHeaders(header, user)
-      }
+    ServerServiceCall { (header, user) =>
+      updateUser(username).invokeWithHeaders(header, user)
     }
 
   /** Get role of the user */
@@ -198,21 +188,48 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   /** Allows DELETE */
   override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
+  /** This Methods needs to allow a GET-Method */
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
+
   /** Helper method for adding a generic User, independent of the role */
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
 
-      if(user.username.trim.isEmpty){
+      if (user.username.trim.isEmpty) {
         throw new CustomException(TransportErrorCode(422, 1003, "Error"),
           DetailedError("validation error", Seq(SimpleError("username", "Username must not be blank."))))
       }
 
       val ref = entityRef(user.username)
 
-      ref.ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
-        .map {
+      ref.ask[Confirmation](replyTo => CreateUser(user, replyTo))
+        .flatMap {
           case Accepted => // Creation Successful
-            (ResponseHeader(201, MessageProtocol.empty, List()), user)
+            auth.setAuthentication().invoke(authenticationUser)
+              .map { _ =>
+                (ResponseHeader(201, MessageProtocol.empty, List()), user)
+              }
+              //In case the password cant be saved
+              .recoverWith {
+                case authenticationException: CustomException =>
+                  ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+                    .map[(ResponseHeader, User)] { _ =>
+                      //the deletion of the user was successful after the error in the authentication service
+                      if(authenticationException.getPossibleErrorResponse.`type` == "validation error"){
+                        val detailedError = authenticationException.getPossibleErrorResponse.asInstanceOf[DetailedError]
+                        throw new CustomException(
+                          authenticationException.getErrorCode,
+                          detailedError.copy(invalidParams = detailedError
+                            .invalidParams.map(error => error.copy(name = "authUser. " + error.name)))
+                        )
+                      } else {
+                        throw authenticationException
+                      }
+                    }
+                    .recover {
+                      case deletionException: Exception => throw deletionException //the deletion didnt work, a ghost user does now exist
+                    }
+              }
           case RejectedWithError(code, errorResponse) =>
             throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
         }
@@ -220,21 +237,40 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Helper method for updating a generic User, independent of the role */
-  private def updateUser(username: String): ServerServiceCall[User, Done] = ServerServiceCall { (_, user) =>
-    if (username != user.username.trim) {
-      throw new CustomException(TransportErrorCode(400, 1003, "Error"), DetailedError("path parameter mismatch", List(SimpleError("username", "Username in object and username in path must match."))))
+  private def updateUser(username: String): ServerServiceCall[User, Done] =
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
+        ServerServiceCall { (_, user) =>
+          // Check, if the username in path is different than the username in the object
+          if (username != user.username.trim) {
+            throw new CustomException(TransportErrorCode(400, 1003, "Error"), GenericError("path parameter mismatch"))
+          }
+          // If invoked by a non-Admin, check if the manipulated object is owned by the user
+          if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
+            throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
+          }
+
+          // We need to know what role the user has, because their editable fields are different
+          getUser(username).invoke().map(_.checkEditableFields(user))
+            .flatMap { editErrors =>
+              // Other users than admins can only edit specified fields
+              if (role != AuthenticationRole.Admin && editErrors.nonEmpty) {
+                throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("uneditable fields", editErrors))
+              } else {
+                val ref = entityRef(user.username)
+
+                ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
+                  .map {
+                    case Accepted => // Update successful
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    case RejectedWithError(code, errorResponse) => //Update failed
+                      throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                  }
+              }
+            }
+        }
     }
 
-    val ref = entityRef(user.username)
-
-    ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
-      .map {
-        case Accepted => // Update Successful
-          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-        case RejectedWithError(code, errorResponse) =>
-          throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
-      }
-  }
 
   /** Helper method for getting a generic User, independent of the role */
   private def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ =>
@@ -243,7 +279,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
       case Some(user) => user
       case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-        DetailedError("key not found", Seq[SimpleError](SimpleError("username", "A user with the given username does not exist."))))
+        GenericError("key not found"))
     }
   }
 
@@ -259,18 +295,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           .map(opt => opt.get) //Future[Seq[User]]
         )
       )
-  }
-
-  /** Publishes every authentication change of a user */
-  def userAuthenticationTopic(): Topic[AuthenticationUser] = TopicProducer.singleStreamWithOffset { fromOffset =>
-    persistentEntityRegistry
-      .eventStream(UserEvent.Tag, fromOffset)
-      .mapConcat {
-        //Filter only OnUserCreate events
-        case EventStreamElement(_, OnUserCreate(_, authenticationUser), offset) =>
-          immutable.Seq((authenticationUser, offset))
-        case _ => Nil
-      }
   }
 
   /** Publishes every deletion of a user */

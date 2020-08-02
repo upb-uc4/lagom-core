@@ -3,7 +3,6 @@ package de.upb.cs.uc4.user.impl.readside
 import akka.Done
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands.{CreateUser, UserCommand}
@@ -48,22 +47,22 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
     lecturers.schema.createIfNotExists >> //AND THEN
     students.schema.createIfNotExists.andFinally(DBIO.successful{
       //Add default users
-      val address: Address = Address("Gaenseweg", "42a", "1337", "Entenhausen", "Nimmerland")
+      val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
       val student: User = Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "IN", "421769", 9000, List())
       val lecturer: User = Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
       val admin: User = Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1992-12-10")
 
-      addUser(student, AuthenticationUser("student", "student", AuthenticationRole.Student))
-      addUser(lecturer, AuthenticationUser("lecturer", "lecturer", AuthenticationRole.Lecturer))
-      addUser(admin, AuthenticationUser("admin", "admin", AuthenticationRole.Admin))
+      addDefaultUser(student)
+      addDefaultUser(lecturer)
+      addDefaultUser(admin)
     })
   }
 
   /** helper method to add a user during table creation. */
-  private def addUser(user: User, authenticationUser: AuthenticationUser) =
+  private def addDefaultUser(user: User) =
     getAll(user.role).map{ result =>
       if(result.isEmpty){
-        entityRef(user.username).ask[Confirmation](replyTo => CreateUser(user, authenticationUser, replyTo))
+        entityRef(user.username).ask[Confirmation](replyTo => CreateUser(user, replyTo))
       }
     }
 
