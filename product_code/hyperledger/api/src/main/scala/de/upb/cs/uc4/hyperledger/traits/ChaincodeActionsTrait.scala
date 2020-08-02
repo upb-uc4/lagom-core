@@ -6,7 +6,7 @@ import de.upb.cs.uc4.hyperledger.exceptions.{InvalidCallException, TransactionEr
  * Trait to provide general access to all chaincode transactions.
  * Aggregates all specific ChaincodeAccess traits.
  */
-trait ChaincodeActionsTrait extends ChaincodeActionsTraitCourses {
+trait ChaincodeActionsTrait extends ChaincodeActionsTraitCourses with ChaincodeActionsTraitStudents {
 
   /**
    * Submits any transaction specified by transactionId.
@@ -33,6 +33,18 @@ trait ChaincodeActionsTrait extends ChaincodeActionsTraitCourses {
         this.validateParameterCount(transactionId, 2, params.toArray)
         this.updateCourseById(params.apply(0), params.apply(1))
       }
+      case "addMatriculationData" => {
+        this.validateParameterCount(transactionId, 1, params.toArray)
+        this.addMatriculationData(params.apply(0))
+      }
+      case "addEntryToMatriculationData" => {
+        this.validateParameterCount(transactionId, 3, params.toArray)
+        this.addEntryToMatriculationData(params.apply(0), params.apply(1), params.apply(2))
+      }
+      case "updateMatriculationData" => {
+        this.validateParameterCount(transactionId, 1, params.toArray)
+        this.updateMatriculationData(params.apply(0))
+      }
       case _ => throw InvalidCallException.CreateInvalidIDException(transactionId)
     }
   }
@@ -57,6 +69,10 @@ trait ChaincodeActionsTrait extends ChaincodeActionsTraitCourses {
       case "getAllCourses" => {
         this.validateParameterCount(transactionId, 0, params.toArray)
         this.getAllCourses()
+      }
+      case "getMatriculationData" => {
+        this.validateParameterCount(transactionId, 1, params.toArray)
+        this.getMatriculationData(params.apply(0))
       }
       case _ => throw InvalidCallException.CreateInvalidIDException(transactionId)
     }
