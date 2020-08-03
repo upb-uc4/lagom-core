@@ -11,19 +11,29 @@ spec:
       kind: Rule
       services:
         - name: course
+          namespace: uc4-lagom
           port: 80
     - match: PathPrefix(`/user-management`)
       kind: Rule
       services:
         - name: user
+          namespace: uc4-lagom
           port: 80
     - match: PathPrefix(`/hl-course-management`)
       kind: Rule
       services:
         - name: hlcourse
+          namespace: uc4-lagom
           port: 80
     - match: PathPrefix(`/authentication-management`)
       kind: Rule
       services:
         - name: authentication
+          namespace: uc4-lagom
+          port: 80
+    - match: PathPrefix(`/hyperledger-management`)
+      kind: Rule
+      services:
+        - name: hyperledger
+          namespace: uc4-lagom
           port: 80
