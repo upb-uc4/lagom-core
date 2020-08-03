@@ -1,9 +1,10 @@
 package de.upb.cs.uc4.hyperledger.traits
 
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.TimeoutException
 
-import de.upb.cs.uc4.hyperledger.exceptions.{InvalidCallException, TransactionErrorException}
-import org.hyperledger.fabric.gateway.Contract
+import de.upb.cs.uc4.hyperledger.exceptions.{HyperledgerInnerException, InvalidCallException, TransactionErrorException, UnhandledException}
+import org.hyperledger.fabric.gateway.{Contract, ContractException, GatewayRuntimeException}
 
 /**
  * Trait to provide basic functionality for all chaincode transactions.
@@ -12,12 +13,25 @@ protected trait ChaincodeActionsTraitInternal extends AutoCloseable {
 
   @throws[Exception]
   protected final def internalSubmitTransaction(chaincode: Contract, transactionId: String, params: String*): Array[Byte] = {
-    chaincode.submitTransaction(transactionId, params: _*)
+    try{
+      chaincode.submitTransaction(transactionId, params: _*)
+    } catch {
+      case ex : ContractException => throw HyperledgerInnerException(transactionId, ex)
+      case ex : TimeoutException =>throw HyperledgerInnerException(transactionId, ex)
+      case ex : java.lang.InterruptedException =>throw HyperledgerInnerException(transactionId, ex)
+      case ex : GatewayRuntimeException => throw HyperledgerInnerException(transactionId, ex)
+      case ex : Exception => throw UnhandledException(transactionId, ex)
+    }
   }
 
   @throws[Exception]
   protected final def internalEvaluateTransaction(chaincode: Contract, transactionId: String, params: String*): Array[Byte] = {
-    chaincode.evaluateTransaction(transactionId, params: _*)
+    try{
+      chaincode.evaluateTransaction(transactionId, params: _*)
+    } catch {
+      case ex : ContractException => throw HyperledgerInnerException(transactionId, ex)
+      case ex : Exception => throw UnhandledException(transactionId, ex)
+    }
   }
 
   /**

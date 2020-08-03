@@ -8,7 +8,31 @@ import org.hyperledger.fabric.gateway.Contract
  */
 trait ChaincodeActionsTraitCourses extends ChaincodeActionsTraitInternal {
 
-  val contract_course: Contract
+  def contract_course: Contract
+
+  /**
+    * Submits any transaction specified by transactionId.
+    *
+    * @param transactionId transactionId to submit
+    * @param params        parameters to pass to the transaction
+    * @throws Exception if chaincode throws an exception.
+    * @return success_state
+    */
+  @throws[Exception]
+  private def internalSubmitTransaction(transactionId: String, params: String*): Array[Byte] =
+    this.internalSubmitTransaction(contract_course, transactionId, params: _*)
+
+  /**
+    * Evaluates the transaction specified by transactionId.
+    *
+    * @param transactionId transactionId to evaluate
+    * @param params        parameters to pass to the transaction
+    * @throws Exception if chaincode throws an exception.
+    * @return success_state
+    */
+  @throws[Exception]
+  private def internalEvaluateTransaction(transactionId: String, params: String*): Array[Byte] =
+    this.internalEvaluateTransaction(contract_course, transactionId, params: _*)
 
   /**
    * Executes the "addCourse" query.
@@ -48,18 +72,6 @@ trait ChaincodeActionsTraitCourses extends ChaincodeActionsTraitInternal {
   }
 
   /**
-   * Submits any transaction specified by transactionId.
-   *
-   * @param transactionId transactionId to submit
-   * @param params        parameters to pass to the transaction
-   * @throws Exception if chaincode throws an exception.
-   * @return success_state
-   */
-  @throws[Exception]
-  def internalSubmitTransaction(transactionId: String, params: String*): Array[Byte] =
-    this.internalSubmitTransaction(contract_course, transactionId, params: _*)
-
-  /**
    * Executes the "getCourses" query.
    *
    * @throws Exception if chaincode throws an exception.
@@ -73,18 +85,6 @@ trait ChaincodeActionsTraitCourses extends ChaincodeActionsTraitInternal {
     if (!result.startsWith("[") || !result.endsWith("]")) throw TransactionErrorException("getAllCourses", 0, "Returned invalid structure: " + result)
     else return result
   }
-
-  /**
-   * Evaluates the transaction specified by transactionId.
-   *
-   * @param transactionId transactionId to evaluate
-   * @param params        parameters to pass to the transaction
-   * @throws Exception if chaincode throws an exception.
-   * @return success_state
-   */
-  @throws[Exception]
-  def internalEvaluateTransaction(transactionId: String, params: String*): Array[Byte] =
-    this.internalEvaluateTransaction(contract_course, transactionId, params: _*)
 
   /**
    * Executes the "getCourseById" query.
