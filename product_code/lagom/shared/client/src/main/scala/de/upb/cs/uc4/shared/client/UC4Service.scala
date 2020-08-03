@@ -13,6 +13,8 @@ trait UC4Service extends Service {
   val pathPrefix: String
   /** The name of the service */
   val name: String
+  /** This services uses auto acl (Default: True) */
+  val autoAcl: Boolean = true
 
   private lazy val versionNumber = getClass.getPackage.getImplementationVersion
 
@@ -26,17 +28,22 @@ trait UC4Service extends Service {
 
   override def descriptor: Descriptor = {
     import Service._
-    named(name)
+    var descriptor = named(name)
       .withCalls(
         restCall(Method.GET, pathPrefix + "/version", getVersionNumber _),
         restCall(Method.OPTIONS, pathPrefix + "/version", allowVersionNumber _),
       )
-      .withAcls(
-        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
-      )
       .withExceptionSerializer(
         new CustomExceptionSerializer(Environment.simple())
       )
+
+    if (!autoAcl) {
+      descriptor = descriptor.withAcls(
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
+      )
+    }
+
+    descriptor
   }
 }
