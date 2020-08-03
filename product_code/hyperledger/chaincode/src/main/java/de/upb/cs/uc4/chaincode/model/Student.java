@@ -43,7 +43,7 @@ public class Student {
   private LocalDate birthDate = null;
 
   @SerializedName("matriculationStatus")
-  private List<SubjectMatriculationInterval> matriculationStatus = null;
+  private List<SubjectMatriculation> matriculationStatus = null;
 
   public Student matriculationId(String matriculationId) {
     this.matriculationId = matriculationId;
@@ -117,29 +117,29 @@ public class Student {
     this.birthDate = birthDate;
   }
 
-  public Student matriculationStatus(List<SubjectMatriculationInterval> immatriculationStatus) {
-    this.matriculationStatus = immatriculationStatus;
+  public Student matriculationStatus(List<SubjectMatriculation> matriculationStatus) {
+    this.matriculationStatus = matriculationStatus;
     return this;
   }
 
-  public Student addImmatriculationStatusItem(SubjectMatriculationInterval immatriculationStatusItem) {
+  public Student addMatriculationStatusItem(SubjectMatriculation matriculationStatusItem) {
     if (this.matriculationStatus == null) {
-      this.matriculationStatus = new ArrayList<SubjectMatriculationInterval>();
+      this.matriculationStatus = new ArrayList<SubjectMatriculation>();
     }
-    this.matriculationStatus.add(immatriculationStatusItem);
+    this.matriculationStatus.add(matriculationStatusItem);
     return this;
   }
 
    /**
-   * Get immatriculationStatus
-   * @return immatriculationStatus
+   * Get matriculationStatus
+   * @return matriculationStatus
   **/
   @ApiModelProperty(value = "")
-  public List<SubjectMatriculationInterval> getMatriculationStatus() {
+  public List<SubjectMatriculation> getMatriculationStatus() {
     return matriculationStatus;
   }
 
-  public void setMatriculationStatus(List<SubjectMatriculationInterval> matriculationStatus) {
+  public void setMatriculationStatus(List<SubjectMatriculation> matriculationStatus) {
     this.matriculationStatus = matriculationStatus;
   }
 
@@ -175,7 +175,7 @@ public class Student {
     sb.append("    firstName: ").append(toIndentedString(firstName)).append("\n");
     sb.append("    lastName: ").append(toIndentedString(lastName)).append("\n");
     sb.append("    birthDate: ").append(toIndentedString(birthDate)).append("\n");
-    sb.append("    immatriculationStatus: ").append(toIndentedString(matriculationStatus)).append("\n");
+    sb.append("    matriculationStatus: ").append(toIndentedString(matriculationStatus)).append("\n");
     sb.append("}");
     return sb.toString();
   }

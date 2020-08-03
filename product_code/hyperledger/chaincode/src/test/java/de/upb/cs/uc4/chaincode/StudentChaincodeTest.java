@@ -408,17 +408,17 @@ public final class StudentChaincodeTest {
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        String tmp = contract.getStudent(ctx, "0000001");
-        Student student = gson.fromJson(contract.getStudent(ctx, "0000001"), Student.class);
+        String tmp = contract.getMatriculationData(ctx, "0000001");
+        Student student = gson.fromJson(contract.getMatriculationData(ctx, "0000001"), Student.class);
         assertThat(student).isEqualTo(new Student()
                 .matriculationId("0000001")
                 .firstName("firstName1")
                 .lastName("lastName1")
                 .birthDate(LocalDate.parse("2000-07-21"))
-                .matriculationStatus(new ArrayList<SubjectMatriculationInterval>()
+                .matriculationStatus(new ArrayList<SubjectMatriculation>()
                 {{
-                    add(new SubjectMatriculationInterval()
-                            .fieldOfStudy(SubjectMatriculationInterval.FieldOfStudyEnum.COMPUTER_SCIENCE)
+                    add(new SubjectMatriculation()
+                            .fieldOfStudy(SubjectMatriculation.FieldOfStudyEnum.COMPUTER_SCIENCE)
                             .intervals(new ArrayList<MatriculationInterval>()
                             {{
                                 add(new MatriculationInterval()
@@ -468,7 +468,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            contract.immatriculateStudent(ctx, "{\n" +
+            contract.addMatriculationData(ctx, "{\n" +
                     "  \"matriculationId\": \"0000001\",\n" +
                     "  \"firstName\": \"firstName1\",\n" +
                     "  \"lastName\": \"lastName1\",\n" +
@@ -529,7 +529,7 @@ public final class StudentChaincodeTest {
                     "    }\n" +
                     "  ]\n" +
                     "}");
-            DetailedError error = gson.fromJson(contract.immatriculateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -561,7 +561,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.immatriculateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"\",\n" +
@@ -599,7 +599,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.immatriculateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -637,7 +637,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.immatriculateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -675,7 +675,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.immatriculateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -704,7 +704,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.immatriculateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -738,7 +738,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.immatriculateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -776,7 +776,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.immatriculateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -814,7 +814,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.immatriculateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -852,7 +852,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            contract.immatriculateStudent(ctx,
+            contract.addMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1<p>alert(\\\"XSS\\\");</p>\",\n" +
@@ -919,7 +919,7 @@ public final class StudentChaincodeTest {
                             "    }\n" +
                             "  ]\n" +
                             "}");
-            contract.updateStudent(ctx,
+            contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -965,7 +965,7 @@ public final class StudentChaincodeTest {
             ChaincodeStub stub = mock(ChaincodeStub.class);
             when(ctx.getStub()).thenReturn(stub);
             when(stub.getStringState("0000001")).thenReturn("");
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -996,7 +996,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"\",\n" +
@@ -1034,7 +1034,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1072,7 +1072,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1110,7 +1110,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1139,7 +1139,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1173,7 +1173,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1211,7 +1211,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1249,7 +1249,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1287,7 +1287,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1327,7 +1327,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1366,7 +1366,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +
@@ -1404,7 +1404,7 @@ public final class StudentChaincodeTest {
             Context ctx = mock(Context.class);
             MockChaincodeStub stub = new MockChaincodeStub();
             when(ctx.getStub()).thenReturn(stub);
-            DetailedError error = gson.fromJson(contract.updateStudent(ctx,
+            DetailedError error = gson.fromJson(contract.updateMatriculationData(ctx,
                     "{\n" +
                             "  \"matriculationId\": \"0000001\",\n" +
                             "  \"firstName\": \"firstName1\",\n" +

@@ -32,7 +32,7 @@ import java.util.List;
 
 
 
-public class SubjectMatriculationInterval {
+public class SubjectMatriculation {
   /**
    * Gets or Sets fieldOfStudy
    */
@@ -109,10 +109,10 @@ public class SubjectMatriculationInterval {
   @SerializedName("fieldOfStudy")
   private FieldOfStudyEnum fieldOfStudy = null;
 
-  @SerializedName("intervals")
-  private List<MatriculationInterval> intervals = null;
+  @SerializedName("semesters")
+  private List<String> semesters = null;
 
-  public SubjectMatriculationInterval fieldOfStudy(FieldOfStudyEnum fieldOfStudy) {
+  public SubjectMatriculation fieldOfStudy(FieldOfStudyEnum fieldOfStudy) {
     this.fieldOfStudy = fieldOfStudy;
     return this;
   }
@@ -130,30 +130,30 @@ public class SubjectMatriculationInterval {
     this.fieldOfStudy = fieldOfStudy;
   }
 
-  public SubjectMatriculationInterval intervals(List<MatriculationInterval> intervals) {
-    this.intervals = intervals;
+  public SubjectMatriculation semesters(List<String> semesters) {
+    this.semesters = semesters;
     return this;
   }
 
-  public SubjectMatriculationInterval addIntervalsItem(MatriculationInterval intervalsItem) {
-    if (this.intervals == null) {
-      this.intervals = new ArrayList<MatriculationInterval>();
+  public SubjectMatriculation addsemestersItem(String semestersItem) {
+    if (this.semesters == null) {
+      this.semesters = new ArrayList<String>();
     }
-    this.intervals.add(intervalsItem);
+    this.semesters.add(semestersItem);
     return this;
   }
 
    /**
-   * Get intervals
-   * @return intervals
+   * Get semesters
+   * @return semesters
   **/
   @ApiModelProperty(value = "")
-  public List<MatriculationInterval> getIntervals() {
-    return intervals;
+  public List<String> getSemesters() {
+    return semesters;
   }
 
-  public void setIntervals(List<MatriculationInterval> intervals) {
-    this.intervals = intervals;
+  public void setSemesters(List<String> semesters) {
+    this.semesters = semesters;
   }
 
 
@@ -165,14 +165,14 @@ public class SubjectMatriculationInterval {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    SubjectMatriculationInterval subjectImmatriculationInterval = (SubjectMatriculationInterval) o;
+    SubjectMatriculation subjectImmatriculationInterval = (SubjectMatriculation) o;
     return Objects.equals(this.fieldOfStudy, subjectImmatriculationInterval.fieldOfStudy) &&
-        Objects.equals(this.intervals, subjectImmatriculationInterval.intervals);
+        Objects.equals(this.semesters, subjectImmatriculationInterval.semesters);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldOfStudy, intervals);
+    return Objects.hash(fieldOfStudy, semesters);
   }
 
 
@@ -182,7 +182,7 @@ public class SubjectMatriculationInterval {
     sb.append("class SubjectImmatriculationInterval {\n");
     
     sb.append("    fieldOfStudy: ").append(toIndentedString(fieldOfStudy)).append("\n");
-    sb.append("    intervals: ").append(toIndentedString(intervals)).append("\n");
+    sb.append("    semesters: ").append(toIndentedString(semesters)).append("\n");
     sb.append("}");
     return sb.toString();
   }
