@@ -14,12 +14,6 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Check out source repository
       uses: actions/checkout@v2
-    
-    # Set up Node
-    - name: Set up Node
-      uses: actions/setup-node@v1
-      with:
-        node-version: '12'
         
     # Set up JDK
     - name: Set up JDK 1.8
