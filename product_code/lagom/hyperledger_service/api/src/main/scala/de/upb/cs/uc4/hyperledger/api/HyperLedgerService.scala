@@ -10,6 +10,8 @@ trait HyperLedgerService extends UC4Service {
   override val pathPrefix = "/hyperledger-management"
   /** The name of the service */
   override val name: String = "hyperledger"
+  /** This services does not use auto acl */
+  override val autoAcl: Boolean = false
 
   def write(transactionId: String): ServiceCall[Seq[String], Done]
 

@@ -13,8 +13,9 @@ import de.upb.cs.uc4.shared.client.UC4Service
   * consume the AuthenticationService.
   */
 trait AuthenticationService extends UC4Service {
-  override val pathPrefix = "/authentication-management"
+  override val pathPrefix: String = "/authentication-management"
   override val name: String = "authentication"
+  override val autoAcl: Boolean = false
 
   /** Checks if the username and password pair exists */
   def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)]
