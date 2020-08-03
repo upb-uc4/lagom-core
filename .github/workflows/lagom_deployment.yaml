@@ -2,9 +2,7 @@ name: Lagom Deployment Pipeline
 
 on:
   push:
-    tags:
-      - v0
-      - v1
+    tags: [ v* ]
 
 jobs:
   deploy:
