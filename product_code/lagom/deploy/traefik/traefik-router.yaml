@@ -31,3 +31,9 @@ spec:
         - name: authentication
           namespace: uc4-lagom
           port: 80
+    - match: PathPrefix(`/hyperledger-management`)
+      kind: Rule
+      services:
+        - name: hyperledger
+          namespace: uc4-lagom
+          port: 80
