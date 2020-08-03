@@ -1,6 +1,7 @@
 apiVersion: "apps/v1"
 kind: Deployment
 metadata:
+  namespace: uc4-lagom
   name: user
 spec:
   replicas: 1
@@ -11,12 +12,14 @@ spec:
 
   template:
     metadata:
+      namespace: uc4-lagom
       labels:
         app: user
     spec:
       containers:
         - name: user
           image: "uc4official/user_service:latest"
+          imagePullPolicy: Always
           env:
             - name: JAVA_OPTS
               value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf"
@@ -26,7 +29,7 @@ spec:
                   name: user-application-secret
                   key: secret
             - name: POSTGRESQL_URL
-              value: "jdbc:postgresql://postgres/uc4user"
+              value: "jdbc:postgresql://postgres.postgres/uc4user"
             - name: POSTGRESQL_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -68,6 +71,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: uc4-lagom
   name: user
 spec:
   ports:
