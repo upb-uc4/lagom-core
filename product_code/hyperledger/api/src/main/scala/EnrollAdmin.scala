@@ -1,10 +1,9 @@
-import org.hyperledger.fabric.gateway.Wallets
-import org.hyperledger.fabric.gateway.Identities
-import org.hyperledger.fabric.sdk.security.CryptoSuiteFactory
-import org.hyperledger.fabric_ca.sdk.EnrollmentRequest
-import org.hyperledger.fabric_ca.sdk.HFCAClient
 import java.nio.file.Paths
 import java.util.Properties
+
+import org.hyperledger.fabric.gateway.{Identities, Wallets}
+import org.hyperledger.fabric.sdk.security.CryptoSuiteFactory
+import org.hyperledger.fabric_ca.sdk.{EnrollmentRequest, HFCAClient}
 
 object EnrollAdmin {
   @throws[Exception]
@@ -35,5 +34,5 @@ object EnrollAdmin {
     System.out.println("Successfully enrolled user \"admin\" and imported it into the wallet")
   }
 
-  try System.setProperty("org.hyperledger.fabric.sdk.service_discovery.as_localhost", "true")
+  System.setProperty("org.hyperledger.fabric.sdk.service_discovery.as_localhost", "true")
 }

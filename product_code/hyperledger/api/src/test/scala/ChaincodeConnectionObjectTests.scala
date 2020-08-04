@@ -1,9 +1,8 @@
 
 import java.nio.file.Paths
 
-import de.upb.cs.uc4.hyperledger.exceptions.InvalidCallException
+import de.upb.cs.uc4.hyperledger.ConnectionManager
 import de.upb.cs.uc4.hyperledger.traits.ChaincodeActionsTrait
-import de.upb.cs.uc4.hyperledger.{ChaincodeQuickAccess, ConnectionManager}
 import org.scalatest.Succeeded
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -46,7 +45,7 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
           val testCourseId = "41"
           val addCourseResult = chaincodeConnection.addCourse(TestData.exampleCourseData(testCourseId))
           addCourseResult should not be null
-          addCourseResult should equal ("")
+          addCourseResult should equal("")
           println("AddNew Result: " + addCourseResult)
 
           // Check AddNew worked as expected READ COURSE
@@ -54,7 +53,7 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
           readCourseResult should not be null
           println("newCourse read: " + readCourseResult)
           println("example data: " + TestData.exampleCourseData(testCourseId))
-          readCourseResult should equal (TestData.exampleCourseData(testCourseId))
+          readCourseResult should equal(TestData.exampleCourseData(testCourseId))
 
           // delete new course
           val deleteCourseResult = chaincodeConnection.deleteCourseById(testCourseId)
@@ -72,18 +71,15 @@ class ChaincodeConnectionObjectTests extends AnyWordSpec with Matchers {
           // add new course
           val testUpdateCourseId = "90"
           val updateAddCourseResult = chaincodeConnection.addCourse(TestData.exampleCourseData(testUpdateCourseId))
-          updateAddCourseResult should equal ("")
+          updateAddCourseResult should equal("")
           // update
           val updateCouresResult = chaincodeConnection.updateCourseById(testUpdateCourseId, TestData.exampleCourseData2(testUpdateCourseId))
           updateCouresResult should not be null
-          updateCouresResult should equal ("")
+          updateCouresResult should equal("")
         }
 
-        val allCoursesAfter = ChaincodeQuickAccess.getAllCourses()
-        println("All Courses after test: " + allCoursesAfter)
-
         println("TestResult : " + testResult)
-        testResult should equal (Success(Succeeded))
+        testResult should equal(Success(Succeeded))
       }
     }
   }

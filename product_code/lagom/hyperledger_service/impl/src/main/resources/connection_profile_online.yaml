@@ -38,12 +38,12 @@ organizations:
 # information about how the gateway can reach the orderers
 orderers:
   orderer:
-    url: grpc://localhost:7050
+    url: grpc://host.minikube.internal:7050
 
 # information about how the gateway can reach the peers
 peers:
   peer: # peer domain-name
-    url: grpc://localhost:7051
+    url: grpc://host.minikube.internal:7051
 #    tlsCACerts:
 #      pem: |
 #        -----BEGIN CERTIFICATE-----

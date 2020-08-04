@@ -1,25 +1,24 @@
 
 import java.nio.file.Paths
 
+import de.upb.cs.uc4.hyperledger.ConnectionManager
 import de.upb.cs.uc4.hyperledger.exceptions.InvalidCallException
 import de.upb.cs.uc4.hyperledger.traits.ChaincodeActionsTrait
-import de.upb.cs.uc4.hyperledger.{ChaincodeQuickAccess, ConnectionManager}
-import org.scalatest.{BeforeAndAfterEach, Succeeded}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.util.{Success, Using}
-
-class InvalidCallTests extends AnyWordSpec with Matchers with BeforeAndAfterEach{
+class InvalidCallTests extends AnyWordSpec with Matchers with BeforeAndAfterEach {
 
   val connectionManager = ConnectionManager(
     Paths.get(getClass.getResource("/connection_profile.yaml").toURI),
     Paths.get(getClass.getResource("/wallet/").toURI))
-  var chaincodeConnection : ChaincodeActionsTrait = null
+  var chaincodeConnection: ChaincodeActionsTrait = null
 
   override def beforeEach() {
     chaincodeConnection = connectionManager.createConnection()
   }
+
   override def afterEach() {
     chaincodeConnection.close()
   }

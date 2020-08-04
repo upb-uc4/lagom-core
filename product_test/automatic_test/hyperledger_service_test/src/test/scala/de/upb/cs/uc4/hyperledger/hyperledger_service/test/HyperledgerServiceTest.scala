@@ -9,7 +9,6 @@ import org.scalatest.matchers.should.Matchers
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.hyperledger.impl._
-import de.upb.cs.uc4.hyperledger.exceptions._
 import de.upb.cs.uc4.hyperledger.api._
 import de.upb.cs.uc4.hyperledger.exceptions.TransactionErrorException
 import de.upb.cs.uc4.shared.client.exceptions.CustomException

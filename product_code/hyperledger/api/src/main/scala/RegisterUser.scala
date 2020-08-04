@@ -1,13 +1,12 @@
-import org.hyperledger.fabric.gateway.{Identities, Identity, Wallet, Wallets, X509Identity}
-import org.hyperledger.fabric.sdk.Enrollment
-import org.hyperledger.fabric.sdk.User
-import org.hyperledger.fabric.sdk.security.CryptoSuiteFactory
-import org.hyperledger.fabric_ca.sdk.HFCAClient
-import org.hyperledger.fabric_ca.sdk.RegistrationRequest
 import java.nio.file.Paths
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 import java.util.Properties
+
+import org.hyperledger.fabric.gateway.{Identities, Wallets, X509Identity}
+import org.hyperledger.fabric.sdk.{Enrollment, User}
+import org.hyperledger.fabric.sdk.security.CryptoSuiteFactory
+import org.hyperledger.fabric_ca.sdk.{HFCAClient, RegistrationRequest}
 
 object RegisterUser {
   @throws[Exception]
@@ -61,5 +60,5 @@ object RegisterUser {
     println("Successfully enrolled user \"appUser\" and imported it into the wallet")
   }
 
-  try System.setProperty("org.hyperledger.fabric.sdk.service_discovery.as_localhost", "true")
+  System.setProperty("org.hyperledger.fabric.sdk.service_discovery.as_localhost", "true")
 }
