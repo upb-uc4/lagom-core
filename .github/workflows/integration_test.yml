@@ -3,8 +3,8 @@ name: IntegrationTests Single Service
 on:
   push:
     branches:
-      - feature/hyperledger*
-      - feature/lagom*
+      - **hyperledger**
+      - **lagom**
       - develop
       - master
   pull_request:
@@ -57,19 +57,28 @@ jobs:
     # set up Dev_network
     - name: Set up dev_network - dockers
       run: |
-        pushd ./product_code/hyperledger/dev_network
+        pushd ./product_test/automatic_test/hyperledger_service_test
         echo "##########################"
-        echo "#  start docker-compose  #"
+        echo "#   clone dev_network    #"
         echo "##########################"
-        docker-compose -f docker-compose-simple.yaml up -d
+        ./fetch_dev_network.sh
         echo "##########################"
-        echo "# started docker-compose #"
+        echo "#   copied dev_network   #"
         echo "##########################"
-        echo "#     begin sleep        #"
+        pushd ./hyperledger_dev_network
+        echo "##########################"
+        echo "#  start network script  #"
+        echo "##########################"
+        ./network.sh &
+        echo "##########################"
+        echo "# started network script #"
+        echo "##########################"
+        echo "#    begin sleep         #"
         echo "##########################"
         sleep 180
         echo "#    finish sleep        #"
         echo "##########################"
+        popd
         popd
     
     # run sbt tests
