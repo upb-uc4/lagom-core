@@ -26,6 +26,8 @@ val akkaDiscoveryKubernetes = "com.lightbend.akka.discovery" %% "akka-discovery-
 val postgresDriver = "org.postgresql" % "postgresql" % "42.2.8"
 val uuid = "com.fasterxml.uuid" % "java-uuid-generator" % "3.1.0"
 val janino = "org.codehaus.janino" % "janino" % "2.5.16"
+val hyperledger_api_version = "v0.5"
+val hyperledger_api = RootProject(uri("https://github.com/upb-uc4/hyperledger_api.git#%s".format(hyperledger_api_version)))
 
 val apiDefaultDependencies = Seq(
   lagomScaladslApi
@@ -161,5 +163,3 @@ lazy val user_service = (project in file("user_service/impl"))
   )
   .settings(dockerSettings)
   .dependsOn(user_service_api, shared_server, shared_client)
-
-lazy val hyperledger_api = ProjectRef(file("../hyperledger/api"), "api")
