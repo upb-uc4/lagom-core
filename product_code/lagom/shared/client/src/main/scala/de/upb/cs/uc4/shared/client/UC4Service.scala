@@ -28,7 +28,7 @@ trait UC4Service extends Service {
 
   override def descriptor: Descriptor = {
     import Service._
-    var descriptor = named(name)
+    val descriptor = named(name)
       .withCalls(
         restCall(Method.GET, pathPrefix + "/version", getVersionNumber _),
         restCall(Method.OPTIONS, pathPrefix + "/version", allowVersionNumber _),
@@ -38,12 +38,12 @@ trait UC4Service extends Service {
       )
 
     if (!autoAcl) {
-      descriptor = descriptor.withAcls(
+      descriptor.withAcls(
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
       )
+    } else {
+      descriptor.withAutoAcl(true)
     }
-
-    descriptor
   }
 }
