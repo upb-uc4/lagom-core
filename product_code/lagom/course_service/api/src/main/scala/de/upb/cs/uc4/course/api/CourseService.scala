@@ -54,7 +54,7 @@ trait CourseService extends UC4Service {
         restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),
         restCall(Method.GET, pathPrefix + "/courses/:id", findCourseByCourseId _),
         restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
-        restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _))
-      .withAutoAcl(true)
+        restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _)
+      )
   }
 }
