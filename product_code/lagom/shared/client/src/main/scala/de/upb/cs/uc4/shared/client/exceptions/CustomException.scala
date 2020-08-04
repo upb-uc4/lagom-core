@@ -11,6 +11,14 @@ class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: Cust
   def this(errorCode: Int, possibleErrorResponse: CustomError) =
     this (TransportErrorCode(errorCode, 1003, "Error"), possibleErrorResponse)
 
+  def getErrorCode: TransportErrorCode = {
+    errorCode
+  }
+  def getPossibleErrorResponse: CustomError = {
+    possibleErrorResponse
+  }
+}
+object CustomException{
   //400
   val DeserializationError = new CustomException(400, GenericError("deserialization error"))
   //401
@@ -27,11 +35,4 @@ class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: Cust
   //500
   val InternalServerError = new CustomException(500, GenericError("Server Error"))
   val InternalDeserializationError = new CustomException(500, GenericError("undeserializable exception"))
-
-  def getErrorCode: TransportErrorCode = {
-    errorCode
-  }
-  def getPossibleErrorResponse: CustomError = {
-    possibleErrorResponse
-  }
 }
