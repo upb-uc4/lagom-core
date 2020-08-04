@@ -56,4 +56,6 @@ case class Address(street: String,
 
 object Address {
   implicit val format: Format[Address] = Json.format
+
+  val empty = Address("", "", "", "", "")
 }
