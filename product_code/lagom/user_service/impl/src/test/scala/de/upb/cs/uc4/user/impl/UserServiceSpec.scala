@@ -2,10 +2,7 @@ package de.upb.cs.uc4.user.impl
 
 import java.util.Base64
 
-import akka.{Done, NotUsed}
 import akka.stream.scaladsl.Source
-import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.scaladsl.TestSink
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
@@ -14,8 +11,6 @@ import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
-import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, ImmatriculationStatus, Interval}
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
@@ -52,18 +47,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
         override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
       }
-
-      override lazy val matriculationService: MatriculationService = new MatriculationService {
-        override def immatriculateStudent(): ServiceCall[ImmatriculationData, Done] = ServiceCall { _ =>
-          Future.successful(Done)
-        }
-
-        override def getMatriculation(matriculationId: String): ServiceCall[NotUsed, ImmatriculationData] = ServiceCall {
-          _ => Future.successful(null)
-        }
-
-        override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-      }
     }
   }
 
@@ -80,7 +63,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
   val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
   val authenticationUser2: AuthenticationUser = AuthenticationUser("admin0", "newPassword", AuthenticationRole.Admin)
-  val immatriculationStatus: ImmatriculationStatus = ImmatriculationStatus("CS", Seq(Interval("WS19/20", "SS20")))
 
   val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "421769")
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
@@ -102,7 +84,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add a student" in {
-      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(authenticationUser, student0, immatriculationStatus))
+      client.addStudent().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(authenticationUser, student0))
       eventually(timeout(Span(2, Minutes))) {
         client.getAllStudents.handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
           answer should contain(student0)

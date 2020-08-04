@@ -176,6 +176,6 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
     libraryDependencies ++= implDefaultDependencies,
   )
   .settings(dockerSettings)
-  .dependsOn(matriculation_service_api, shared_server)
+  .dependsOn(matriculation_service_api, user_service_api, shared_server)
 
 lazy val hyperledger_api = ProjectRef(file("../hyperledger/api"), "api")

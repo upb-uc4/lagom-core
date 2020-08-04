@@ -11,8 +11,6 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
-import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, GenericError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
@@ -32,8 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the UserService */
 class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
-                      readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase,
-                      matriculationService: MatriculationService)
+                      readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase)
                      (implicit ec: ExecutionContext, auth: AuthenticationService) extends UserService {
   readSide.register(processor)
 
@@ -81,14 +78,11 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new student to the database */
   override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postMessageStudentRaw) =>
-    val postMessageStudent = postMessageStudentRaw.copy(authUser =  postMessageStudentRaw.authUser.clean, student = postMessageStudentRaw.student.clean)
+    val postMessageStudent = postMessageStudentRaw.copy(authUser = postMessageStudentRaw.authUser.clean, student = postMessageStudentRaw.student.clean)
     addUser(postMessageStudent.authUser).invokeWithHeaders(header, postMessageStudent.student).map {
       case (header, user) =>
-        val student = user.asInstanceOf[Student]
-        matriculationService.immatriculateStudent().invoke(ImmatriculationData(student.matriculationId, student.firstName,
-          student.lastName, student.birthDate, Seq(postStudent.immatriculationStatus))).map { _ =>
-          (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"), student)
-        }
+        (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
+          user.asInstanceOf[Student])
     }
   }
 
@@ -118,7 +112,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new lecturer to the database */
   override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, postMessageLecturerRaw) =>
-    val postMessageLecturer = postMessageLecturerRaw.copy(authUser =  postMessageLecturerRaw.authUser.clean, lecturer = postMessageLecturerRaw.lecturer.clean)
+    val postMessageLecturer = postMessageLecturerRaw.copy(authUser = postMessageLecturerRaw.authUser.clean, lecturer = postMessageLecturerRaw.lecturer.clean)
     addUser(postMessageLecturer.authUser).invokeWithHeaders(header, postMessageLecturer.lecturer).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
@@ -151,7 +145,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new admin to the database */
   override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, postMessageAdminRaw) =>
-    val postMessageAdmin = postMessageAdminRaw.copy(authUser =  postMessageAdminRaw.authUser.clean, admin = postMessageAdminRaw.admin.clean)
+    val postMessageAdmin = postMessageAdminRaw.copy(authUser = postMessageAdminRaw.authUser.clean, admin = postMessageAdminRaw.admin.clean)
     addUser(postMessageAdmin.authUser).invokeWithHeaders(header, postMessageAdmin.admin).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
@@ -221,7 +215,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
                   ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
                     .map[(ResponseHeader, User)] { _ =>
                       //the deletion of the user was successful after the error in the authentication service
-                      if(authenticationException.getPossibleErrorResponse.`type` == "validation error"){
+                      if (authenticationException.getPossibleErrorResponse.`type` == "validation error") {
                         val detailedError = authenticationException.getPossibleErrorResponse.asInstanceOf[DetailedError]
                         throw new CustomException(
                           authenticationException.getErrorCode,

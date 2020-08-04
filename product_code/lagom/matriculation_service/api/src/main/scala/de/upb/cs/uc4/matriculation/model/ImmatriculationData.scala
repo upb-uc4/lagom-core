@@ -6,7 +6,7 @@ case class ImmatriculationData(matriculationId: String,
                                firstName: String,
                                lastName: String,
                                birthDate: String,
-                               immatriculationStatus: Seq[ImmatriculationStatus])
+                               matriculationStatus: Seq[SubjectMatriculation])
 
 object ImmatriculationData {
   implicit val format: Format[ImmatriculationData] = Json.format
