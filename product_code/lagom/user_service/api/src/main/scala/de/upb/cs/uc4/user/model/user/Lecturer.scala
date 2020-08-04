@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
-import de.upb.cs.uc4.shared.client.SimpleError
+import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
 import play.api.libs.json.{Format, Json}
@@ -19,6 +19,10 @@ case class Lecturer(username: String,
   def trim: Lecturer = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
       picture.trim, email.trim, birthDate.trim, freeText.trim, researchArea.trim)
+  }
+
+  def clean: Lecturer = {
+    trim.copy(email = email.toLowerCase)
   }
 
   /** @inheritdoc */

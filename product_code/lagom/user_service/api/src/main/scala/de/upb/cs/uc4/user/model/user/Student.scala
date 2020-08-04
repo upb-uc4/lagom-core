@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
-import de.upb.cs.uc4.shared.client.SimpleError
+import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
 import play.api.libs.json.{Format, Json}
@@ -20,14 +20,22 @@ case class Student(username: String,
       picture.trim, email.trim, birthDate.trim, matriculationId.trim)
   }
 
+  def clean: Student = {
+    trim.copy(email = email.toLowerCase)
+  }
+
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
     val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
       "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
 
     var errors = super.validate.asInstanceOf[List[SimpleError]]
-    if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
-      errors :+= SimpleError("matriculationId", "Matriculation ID must be a number between 1 and 9999999.")
+    if(matriculationId.isEmpty) {
+      errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
+    }else{
+      if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
+        errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 1 and 9999999.")
+      }
     }
     errors
   }
@@ -35,10 +43,10 @@ case class Student(username: String,
 
   /** 
     * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
-    * Returns a list of SimpleErrors[[de.upb.cs.uc4.shared.client.SimpleError]]
+    * Returns a list of [[SimpleError]]
     * 
     * @param user 
-    * @return Filled Sequence of [[de.upb.cs.uc4.shared.client.SimpleError]]
+    * @return Filled Sequence of [[SimpleError]]
     */
   override def checkEditableFields (user: User): Seq[SimpleError] = {
     if(!user.isInstanceOf[Student]){

@@ -1,7 +1,7 @@
 import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
-version in ThisBuild := "v0.4.3"
+version in ThisBuild := "v0.5.0"
 lagomServiceEnableSsl in ThisBuild := true
 
 // The project uses PostgreSQL
@@ -94,11 +94,14 @@ lazy val hyperledger_service = (project in file("hyperledger_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies += lagomScaladslCluster
+    libraryDependencies += lagomScaladslCluster,
+    mappings in Docker += file("hyperledger_service/impl/src/main/resources/hyperledger_assets/connection_profile_release.yaml")
+      -> "opt/docker/share/hyperledger_assets/connection_profile.yaml",
+    mappings in Docker += file("hyperledger_service/impl/src/main/resources/hyperledger_assets/wallet/cli.id")
+      -> "opt/docker/share/hyperledger_assets/wallet/cli.id",
   )
   .settings(dockerSettings)
   .dependsOn(hyperledger_api, hyperledger_service_api, shared_server)
-
 
 lazy val course_service_api = (project in file("course_service/api"))
   .settings(

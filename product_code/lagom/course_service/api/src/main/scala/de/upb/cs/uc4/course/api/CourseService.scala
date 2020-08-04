@@ -4,22 +4,21 @@ import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
-import play.api.Environment
+import de.upb.cs.uc4.shared.client.UC4Service
 
 object CourseService {
   val TOPIC_NAME = "Courses"
 }
 
 /** The CourseService interface.
-  *
-  * This describes everything that Lagom needs to know about how to serve and
-  * consume the CourseService.
-  */
-trait CourseService extends Service {
+ *
+ * This describes everything that Lagom needs to know about how to serve and
+ * consume the CourseService.
+ */
+trait CourseService extends UC4Service {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
-  val pathPrefix = "/course-management"
-  protected val name = "course"
+  override val pathPrefix = "/course-management"
+  override val name = "course"
 
   /** Add a new course to the database */
   def addCourse(): ServiceCall[Course, Course]
@@ -47,15 +46,15 @@ trait CourseService extends Service {
 
   final override def descriptor: Descriptor = {
     import Service._
-    named(name).withCalls(
-      restCall(Method.GET, pathPrefix + "/courses?courseName&lecturerId", getAllCourses _),
-      restCall(Method.POST, pathPrefix + "/courses", addCourse _),
-      restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _),
-      restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),
-      restCall(Method.GET, pathPrefix + "/courses/:id", findCourseByCourseId _),
-      restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
-      restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _))
-      .withAutoAcl(true)
-      .withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
+    super.descriptor
+      .addCalls(
+        restCall(Method.GET, pathPrefix + "/courses?courseName&lecturerId", getAllCourses _),
+        restCall(Method.POST, pathPrefix + "/courses", addCourse _),
+        restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _),
+        restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),
+        restCall(Method.GET, pathPrefix + "/courses/:id", findCourseByCourseId _),
+        restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
+        restCall(Method.OPTIONS, pathPrefix + "/courses/:id", allowedMethodsGETPUTDELETE _)
+      )
   }
 }

@@ -4,11 +4,10 @@ import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import de.upb.cs.uc4.shared.client.CustomExceptionSerializer
+import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
-import de.upb.cs.uc4.user.model.user.{Admin, AuthenticationUser, Lecturer, Student}
+import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
 import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
-import play.api.Environment
 
 
 /** The UserService interface.
@@ -16,9 +15,11 @@ import play.api.Environment
   * This describes everything that Lagom needs to know about how to serve and
   * consume the UserService.
   */
-trait UserService extends Service {
+trait UserService extends UC4Service {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
-  val pathPrefix = "/user-management"
+  override val pathPrefix = "/user-management"
+  /** The name of the service */
+  override val name = "user"
 
   // USER
 
@@ -27,9 +28,6 @@ trait UserService extends Service {
 
   /** Delete a users from the database */
   def deleteUser(username: String): ServiceCall[NotUsed, Done]
-
-  /** Changes the password of a user in the database */
-  def changePassword(username: String): ServiceCall[AuthenticationUser, Done]
 
   // STUDENT
 
@@ -87,29 +85,20 @@ trait UserService extends Service {
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 
-  /** Allows POST */
-  def allowedPost: ServiceCall[NotUsed, Done]
-
   /** Allows DELETE */
   def allowedDelete: ServiceCall[NotUsed, Done]
-
-  /** Publishes every authentication change of a user */
-  def userAuthenticationTopic(): Topic[AuthenticationUser]
 
   /** Publishes every deletion of a user */
   def userDeletedTopic(): Topic[JsonUsername]
 
   final override def descriptor: Descriptor = {
     import Service._
-    named("user")
-      .withCalls(
+    super.descriptor
+      .addCalls(
         restCall(Method.GET, pathPrefix + "/users", getAllUsers _),
         restCall(Method.DELETE, pathPrefix + "/users/:username", deleteUser _),
         restCall(Method.OPTIONS, pathPrefix + "/users", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDelete _),
-
-        restCall(Method.POST, pathPrefix + "/password/:username", changePassword _),
-        restCall(Method.OPTIONS, pathPrefix + "/password/:username", allowedPost _),
 
         restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
@@ -135,15 +124,12 @@ trait UserService extends Service {
         restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _),
       )
-      .withAutoAcl(true)
       .withTopics(
-        topic(UserService.AUTHENTICATION_TOPIC_NAME, userAuthenticationTopic _),
         topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)
-      ).withExceptionSerializer(new CustomExceptionSerializer(Environment.simple()))
+      )
   }
 }
 
 object UserService {
-  val AUTHENTICATION_TOPIC_NAME = "authentication"
   val DELETE_TOPIC_NAME = "delete"
 }

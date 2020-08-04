@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.hyperledger.impl
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -8,7 +8,8 @@ import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.hyperledger.impl.actor.HyperLedgerBehaviour
 import de.upb.cs.uc4.hyperledger.impl.commands.{HyperLedgerCommand, Read, Write}
-import de.upb.cs.uc4.shared.client.{CustomException, DetailedError, SimpleError}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError}
+import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
 
 import scala.concurrent.ExecutionContext
@@ -27,7 +28,7 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
     entityRef.ask[Confirmation](replyTo => Write(transactionId, params, replyTo)).map{
       case Accepted => Done
       case Rejected(reason) => throw new CustomException(TransportErrorCode(500, 1003, "Error"),
-        DetailedError("hyperledger write exception", List[SimpleError](SimpleError("HLService Exception", reason))))
+        GenericError("hyperledger write exception"))
     }
   }
 
@@ -37,4 +38,7 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
       case Failure(exception) => throw exception
     }
   }
+
+  /** This Methods needs to allow a GET-Method */
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCallFactory.allowedMethodsCustom("GET")
 }

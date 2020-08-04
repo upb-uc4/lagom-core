@@ -4,7 +4,6 @@ import java.util.UUID
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.impl.actor.UserBehaviour
 import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateUser}
@@ -21,8 +20,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
     """) with AnyWordSpecLike with Matchers {
 
   //Test users
-  val address: Address = Address("ExampleStreet", "42a", "13337", "ExampleCity", "ExampleCountry")
-  val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
+  val address: Address = Address("ExampleStreet", "42a", "13337", "ExampleCity", "Germany")
 
   val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "421769")
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
@@ -46,7 +44,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-2")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(student0, authenticationUser, probe1.ref)
+      ref ! CreateUser(student0, probe1.ref)
       probe1.expectMessage(Accepted)
 
       val probe2 = createTestProbe[Option[User]]()
@@ -58,11 +56,11 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-3")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(admin0, authenticationUser, probe1.ref)
+      ref ! CreateUser(admin0, probe1.ref)
       probe1.expectMessage(Accepted)
 
       val probe2 = createTestProbe[Confirmation]()
-      ref ! CreateUser(admin1, authenticationUser, probe2.ref)
+      ref ! CreateUser(admin1, probe2.ref)
       val message = probe2.receiveMessage()
       assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 409)
     }
@@ -71,7 +69,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(emptyLecturer, authenticationUser, probe1.ref)
+      ref ! CreateUser(emptyLecturer, probe1.ref)
       val message = probe1.receiveMessage()
       assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 422)
     }
@@ -90,7 +88,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4.1")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(lecturer0, authenticationUser, probe1.ref)
+      ref ! CreateUser(lecturer0, probe1.ref)
       probe1.expectMessage(Accepted)
 
       val probe2 = createTestProbe[Confirmation]()
@@ -103,7 +101,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-5")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(admin0, authenticationUser, probe1.ref)
+      ref ! CreateUser(admin0, probe1.ref)
       probe1.expectMessage(Accepted)
 
       val probe2 = createTestProbe[Confirmation]()
@@ -128,7 +126,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(lecturer0, authenticationUser, probe1.ref)
+      ref ! CreateUser(lecturer0, probe1.ref)
       probe1.expectMessage(Accepted)
 
       val probe2 = createTestProbe[Confirmation]()

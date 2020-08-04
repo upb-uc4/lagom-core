@@ -1,6 +1,7 @@
 apiVersion: "apps/v1"
 kind: Deployment
 metadata:
+  namespace: uc4-lagom
   name: hyperledger
 spec:
   replicas: 1
@@ -11,12 +12,14 @@ spec:
 
   template:
     metadata:
+      namespace: uc4-lagom
       labels:
         app: hyperledger
     spec:
       containers:
         - name: hyperledger
           image: "uc4official/hyperledger_service:latest"
+          imagePullPolicy: Always
           env:
             - name: JAVA_OPTS
               value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf"
@@ -29,6 +32,10 @@ spec:
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
+            - name: HYPERLEDGER_WALLET
+              value: "/opt/docker/share/hyperledger_assets/wallet/"
+            - name: HYPERLEDGER_NETWORK_CONFIG
+              value: "/opt/docker/share/hyperledger_assets/connection_profile.yaml"
           resources:
             limits:
               memory: 512Mi
@@ -56,16 +63,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: uc4-lagom
   name: hyperledger
 spec:
   ports:
     - name: http
       port: 80
       targetPort: 9000
-    - name: hyperledger_orderer
+    - name: hyperledger-orderer
       port: 7050
       targetPort: 7050
-    - name: hyperledger_peer
+    - name: hyperledger-peer
       port: 7051
       targetPort: 7051
   selector:

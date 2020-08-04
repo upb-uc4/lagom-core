@@ -8,7 +8,7 @@ import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, RequestHeader, Tr
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
@@ -31,10 +31,17 @@ class HlCourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfte
   ) { ctx =>
     new HlCourseApplication(ctx) with LocalServiceLocator {
       override lazy val authenticationService: AuthenticationService = new AuthenticationService {
+        override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
+          _ => Future.successful("admin", AuthenticationRole.Admin)
+        }
 
-        override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] =
-          ServiceCall { _ => Future.successful("admin", AuthenticationRole.Admin) }
+        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
+        override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
+
+        override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
+
+        override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
       }
 
       override lazy val hyperLedgerService: HyperLedgerService = new HyperLedgerService {
@@ -68,6 +75,8 @@ class HlCourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfte
             case _ => Future.successful("")
           }
         }
+
+        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
       }
     }
   }
