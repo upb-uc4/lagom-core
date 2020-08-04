@@ -4,4 +4,4 @@
 ## Refactor
  
 ## Bugfix
- 
+- Fix ambigous endpoints caused by UC4Service Trait
