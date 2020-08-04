@@ -37,7 +37,8 @@ trait UC4Service extends Service {
         new CustomExceptionSerializer(Environment.simple())
       )
 
-    if (!autoAcl) {
+    if (autoAcl) {
+
       descriptor.withAcls(
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
