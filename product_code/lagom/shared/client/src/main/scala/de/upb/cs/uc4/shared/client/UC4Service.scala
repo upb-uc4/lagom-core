@@ -28,7 +28,7 @@ trait UC4Service extends Service {
 
   override def descriptor: Descriptor = {
     import Service._
-    var descriptor = named(name)
+    val descriptor = named(name)
       .withCalls(
         restCall(Method.GET, pathPrefix + "/version", getVersionNumber _),
         restCall(Method.OPTIONS, pathPrefix + "/version", allowVersionNumber _),
@@ -37,13 +37,14 @@ trait UC4Service extends Service {
         new CustomExceptionSerializer(Environment.simple())
       )
 
-    if (!autoAcl) {
-      descriptor = descriptor.withAcls(
-        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
-      )
-    }
+    if (autoAcl) {
 
-    descriptor
+      descriptor.withAutoAcl(true)
+    } else {
+        descriptor.withAcls(
+            ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
+            ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
+       )
+    }
   }
 }
