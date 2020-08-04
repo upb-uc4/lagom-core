@@ -5,7 +5,7 @@ import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
-import de.upb.cs.uc4.hyperledger.traits.{ChaincodeTrait, ConnectionManagerTrait}
+import de.upb.cs.uc4.hyperledger.traits.{ChaincodeActionsTrait, ConnectionManagerTrait}
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -21,8 +21,9 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       .withCluster()
   ) { ctx =>
     new HyperLedgerApplication(ctx) with LocalServiceLocator {
-      override lazy val connectionManager: ConnectionManagerTrait = () => new ChaincodeTrait {
+      override lazy val connectionManager: ConnectionManagerTrait = () => new ChaincodeActionsTrait {
 
+        override val contract_course = null;
         override def close(): Unit = {}
 
         override def internalSubmitTransaction(transactionId: String, params: String*): Array[Byte] = transactionId match {
