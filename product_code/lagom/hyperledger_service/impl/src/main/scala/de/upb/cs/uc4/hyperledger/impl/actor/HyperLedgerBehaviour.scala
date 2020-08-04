@@ -5,14 +5,14 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import de.upb.cs.uc4.hyperledger.impl.HyperLedgerApplication
 import de.upb.cs.uc4.hyperledger.impl.commands.{HyperLedgerCommand, Read, Shutdown, Write}
-import de.upb.cs.uc4.hyperledger.traits.{ChaincodeTrait, ConnectionManagerTrait}
+import de.upb.cs.uc4.hyperledger.traits.{ChaincodeActionsTrait, ConnectionManagerTrait}
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected}
 
 object HyperLedgerBehaviour {
 
   def create(manager: ConnectionManagerTrait): Behavior[HyperLedgerCommand] = Behaviors.setup { _ =>
 
-    val chaincodeConnection: ChaincodeTrait = manager.createConnection()
+    val chaincodeConnection: ChaincodeActionsTrait = manager.createConnection()
 
     def start(): Behavior[HyperLedgerCommand] =
       Behaviors.receive {
