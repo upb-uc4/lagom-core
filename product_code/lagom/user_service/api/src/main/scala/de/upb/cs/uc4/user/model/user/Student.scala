@@ -26,9 +26,6 @@ case class Student(username: String,
 
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
-    val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
-      "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
-
     var errors = super.validate.asInstanceOf[List[SimpleError]]
     if(matriculationId.isEmpty) {
       errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")

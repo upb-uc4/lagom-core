@@ -2,12 +2,13 @@ package de.upb.cs.uc4.matriculation.impl
 
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader, TransportErrorCode}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
 import de.upb.cs.uc4.user.api.UserService
@@ -23,6 +24,10 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
     authenticated[PutMessageMatriculationData, Done](AuthenticationRole.Admin) {
       ServerServiceCall { (header, rawMessage) =>
         val message = rawMessage.trim
+        val validationList = message.validate
+        if (validationList.nonEmpty){
+          throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("validation error", validationList))
+        }
         userService.getStudent(username).handleRequestHeader(_ => header).invoke()
           .flatMap { student =>
             hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", student.matriculationId)
