@@ -2,7 +2,7 @@ lazy val hyperledger_service_test = (project in file("."))
   .settings(
     name := "hyperledger_service_test",
     organization := "de.upb.cs.uc4",
-    version := "v0.3.0",
+    version := "v0.5.1",
     scalaVersion := "2.13.0",
     libraryDependencies ++= Seq(
         "org.scalatest" %% "scalatest" % "3.2.0" % Test,
@@ -11,9 +11,11 @@ lazy val hyperledger_service_test = (project in file("."))
         //lagomScaladslAkkaDiscovery,
     )
   )
-  .dependsOn(lagom)//, api)
+  .dependsOn(lagom) // , hyperledger_api)
   //.enablePlugins(LagomScala)
 
 // Tested Projects
 lazy val lagom = ProjectRef(file("../../../product_code/lagom"), "lagom")
-// lazy val api = ProjectRef(file("../../../product_code/hyperledger/api"), "api")
+
+// val hyperledger_api_version = "v0.5"
+// val hyperledger_api = RootProject(uri("https://github.com/upb-uc4/hyperledger_api.git#%s".format(hyperledger_api_version)))

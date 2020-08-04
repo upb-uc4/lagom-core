@@ -1,13 +1,12 @@
 package de.upb.cs.uc4.hyperledger.impl
 
 import akka.Done
-import com.lightbend.lagom.scaladsl.api.transport.TransportException
+import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.hyperledger.traits.{ChaincodeActionsTrait, ConnectionManagerTrait}
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
-import org.hyperledger.fabric.gateway.Contract
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -23,46 +22,44 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
   ) { ctx =>
     new HyperLedgerApplication(ctx) with LocalServiceLocator {
       override lazy val connectionManager: ConnectionManagerTrait = () => new ChaincodeActionsTrait {
-
-        override val contract_course: Contract = null
-
-        override def close(): Unit = {}
-
-        override def internalSubmitTransaction(transactionId: String, params: String*): Array[Byte] = transactionId match {
-          case "addCourse" =>
-            params.head match {
-              case `courseA` => "".getBytes
-              case `courseB` => "".getBytes
-              case `courseInvalid` => throw new Exception("""{"name":"50","detail":"ects must be a positive integer number"}""")
+            override def close(): Unit = {}
+            override val contract_course: ContractTrait = new ContractTrait {
+              override def submitTransaction(transactionId: String, params: String*): Array[Byte] = transactionId match {
+                case "addCourse" =>
+                  params.head match {
+                    case `courseA` => "".getBytes
+                    case `courseB` => "".getBytes
+                    case `courseInvalid` => throw new Exception("""{"name":"50","detail":"ects must be a positive integer number"}""")
+                  }
+                case "deleteCourseById" =>
+                  params.head match {
+                    case "A" => "".getBytes
+                    case "validID" => "".getBytes
+                    case "invalidID" => throw new Exception("Course not found.")
+                  }
+                case "updateCourseById" =>
+                  params.head match {
+                    case "validID" => "".getBytes
+                    case "invalidID" => throw new Exception("""{"name":"03","detail":"Course not found"}""")
+                  }
+                case _ => throw new Exception("Undefined")
+              }
+              override def evaluateTransaction(transactionId: String, params: String*): Array[Byte] = transactionId match {
+                case "getAllCourses" => "[]".getBytes//empty
+                //not empty = [courseA]
+                case "getCourseById" =>
+                  params.head match {
+                    case "A" => courseA.getBytes
+                    case "B" => courseB.getBytes
+                    case "invalidID" => throw new Exception("Course not found.")
+                  }
+                case _ => throw new Exception("Undefined")
+              }
             }
-          case "deleteCourseById" =>
-            params.head match {
-              case "A" => "".getBytes
-              case "validID" => "".getBytes
-              case "invalidID" => throw new Exception("Course not found.")
-            }
-          case "updateCourseById" =>
-            params.head match {
-              case "validID" => "".getBytes()
-              case "invalidID" => throw new Exception("""{"name":"03","detail":"Course not found"}""")
-            }
-          case _ => throw new Exception("Undefined")
-        }
-
-        override def internalEvaluateTransaction(transactionId: String, params: String*): Array[Byte] = transactionId match {
-          case "getAllCourses" => "[]".getBytes //empty
-          //not empty = [courseA]
-          case "getCourseById" =>
-            params.head match {
-              case "A" => courseA.getBytes
-              case "B" => courseB.getBytes
-              case "invalidID" => throw new Exception("Course not found.")
-            }
-          case _ => throw new Exception("Undefined")
-        }
+            override val contract_student: ContractTrait = null
+          }
       }
     }
-  }
 
   val client: HyperLedgerService = server.serviceClient.implement[HyperLedgerService]
 
@@ -125,7 +122,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not read a non-existing course" in {
       client.read("getCourseById").invoke(List("invalidID")).failed.map { answer =>
-        answer.asInstanceOf[TransportException].exceptionMessage.name should ===(new Exception("Course not found.").toString)
+        answer.asInstanceOf[CustomException].getErrorCode should ===(TransportErrorCode(404, 1008, "Policy Violation/Not Found"))
       }
     }
 

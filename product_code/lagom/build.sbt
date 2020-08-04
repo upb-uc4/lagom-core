@@ -1,8 +1,8 @@
 import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
-version in ThisBuild := "v0.5.0"
 lagomServiceEnableSsl in ThisBuild := true
+val hyperledgerApiVersion = "v0.5"
 
 // The project uses PostgreSQL
 lagomCassandraEnabled in ThisBuild := false
@@ -26,6 +26,7 @@ val akkaDiscoveryKubernetes = "com.lightbend.akka.discovery" %% "akka-discovery-
 val postgresDriver = "org.postgresql" % "postgresql" % "42.2.8"
 val uuid = "com.fasterxml.uuid" % "java-uuid-generator" % "3.1.0"
 val janino = "org.codehaus.janino" % "janino" % "2.5.16"
+val hyperledger_api = RootProject(uri("https://github.com/upb-uc4/hyperledger_api.git#%s".format(hyperledgerApiVersion)))
 
 val apiDefaultDependencies = Seq(
   lagomScaladslApi
@@ -101,6 +102,7 @@ lazy val hyperledger_service = (project in file("hyperledger_service/impl"))
       -> "opt/docker/share/hyperledger_assets/wallet/cli.id",
   )
   .settings(dockerSettings)
+  .settings(version := "v0.5.0")
   .dependsOn(hyperledger_api, hyperledger_service_api, shared_server)
 
 lazy val course_service_api = (project in file("course_service/api"))
@@ -117,6 +119,7 @@ lazy val course_service = (project in file("course_service/impl"))
     libraryDependencies += uuid
   )
   .settings(dockerSettings)
+  .settings(version := "v0.5.0")
   .dependsOn(course_service_api, shared_server)
 
 lazy val hl_course_service_api = (project in file("hl_course_service/api"))
@@ -132,6 +135,7 @@ lazy val hl_course_service = (project in file("hl_course_service/impl"))
     libraryDependencies += uuid
   )
   .settings(dockerSettings)
+  .settings(version := "v0.5.0")
   .dependsOn(hl_course_service_api, shared_server)
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
@@ -147,6 +151,7 @@ lazy val authentication_service = (project in file("authentication_service/impl"
     libraryDependencies ++= defaultPersistenceKafkaDependencies,
   )
   .settings(dockerSettings)
+  .settings(version := "v0.5.0")
   .dependsOn(authentication_service_api, user_service_api, shared_server)
 
 lazy val user_service_api = (project in file("user_service/api"))
@@ -176,6 +181,5 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
     libraryDependencies ++= implDefaultDependencies,
   )
   .settings(dockerSettings)
-  .dependsOn(matriculation_service_api, user_service_api, shared_server)
-
-lazy val hyperledger_api = ProjectRef(file("../hyperledger/api"), "hyperledger_api")
+  .settings(version := "v0.5.0")
+  .dependsOn(user_service_api, shared_server, shared_client, matriculation_service_api)
