@@ -13,12 +13,12 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, SubjectMatriculation}
+import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation}
 import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError}
 import de.upb.cs.uc4.user.api.UserService
+import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
-import de.upb.cs.uc4.user.model._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -33,11 +33,11 @@ import scala.concurrent.Future
 class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
 
   private val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
-  private val students: Seq[Student] = Seq(
-    Student("dieter", Role.Student, address, "Dieter", "Dietrich", "Picture", "example@mail.de", "1990-12-11", "000001"),
-    Student("hans", Role.Student, address, "Hans", "Hansen", "Picture", "example@mail.de", "1990-12-11", "000002"),
-    Student("max", Role.Student, address, "Max", "Mustermann", "Picture", "example@mail.de", "1990-12-11", "000003"),
-  )
+  private val student0: Student = Student("dieter", Role.Student, address, "Dieter", "Dietrich", "Picture", "example@mail.de", "1990-12-11", "000001")
+  private val student1: Student = Student("hans", Role.Student, address, "Hans", "Hansen", "Picture", "example@mail.de", "1990-12-11", "000002")
+  private val student2: Student = Student("max", Role.Student, address, "Max", "Mustermann", "Picture", "example@mail.de", "1990-12-11", "000003")
+
+  private val students: Seq[Student] = Seq(student0, student1, student2)
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -77,7 +77,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         override def getStudent(username: String): ServiceCall[NotUsed, Student] = ServiceCall { _ =>
           val optStudent = students.find(_.username == username)
 
-          if(optStudent.isDefined){
+          if (optStudent.isDefined) {
             Future.successful(optStudent.get)
           } else {
             throw new CustomException(TransportErrorCode(404, 1003, "Error"), GenericError("key not found"))
@@ -138,14 +138,14 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
                   if (subject != optSubject.get) {
                     subject
                   } else {
-                    subject.copy(semesters = subject.semesters ++ semester)
+                    subject.copy(semesters = subject.semesters :+ semester)
                   }
                 })
               } else {
                 data = data.copy(matriculationStatus = data.matriculationStatus :+ SubjectMatriculation(fieldOfStudy, Seq(semester)))
               }
 
-              jsonStringList = jsonStringList.filter(json => !json.contains(matriculationID)) ++ Json.stringify(Json.toJson(data))
+              jsonStringList = jsonStringList.filter(json => !json.contains(matriculationID)) :+ Json.stringify(Json.toJson(data))
               Future.successful(Done)
             case _ => Future.successful(Done)
           }
@@ -158,7 +158,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               if (mat.isDefined) {
                 Future.successful(mat.get)
               } else {
-                throw new CustomException(TransportErrorCode(404, 1003, "Error"), GenericError("key not found"))
+                Future.failed(new CustomException(TransportErrorCode(404, 1003, "Error"), GenericError("key not found")))
               }
             case _ => Future.successful("")
           }
@@ -180,5 +180,43 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
   /** Tests only working if the whole instance is started */
   "MatriculationService service" should {
 
+    "add matriculation data for a student" in {
+      client.addMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader())
+        .invoke(PutMessageMatriculationData("Computer Science", "SS2020")).flatMap { _ =>
+        client.getMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader()).invoke().map {
+          answer =>
+            answer.matriculationId should ===(student0.matriculationId)
+            answer.matriculationStatus should contain theSameElementsAs
+              Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
+        }
+      }
+    }
+
+    "extend matriculation data of an already existing field of study" in {
+      client.addMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader())
+        .invoke(PutMessageMatriculationData("Computer Science", "WS2020/21")).flatMap { _ =>
+        client.getMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader()).invoke().map {
+          answer =>
+            answer.matriculationId should ===(student0.matriculationId)
+            answer.matriculationStatus should contain theSameElementsAs
+              Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
+        }
+      }
+    }
+
+    "extend matriculation data of a non-existing field of study" in {
+      client.addMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader())
+        .invoke(PutMessageMatriculationData("Mathematics", "WS2020/21")).flatMap { _ =>
+        client.getMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader()).invoke().map {
+          answer =>
+            answer.matriculationId should ===(student0.matriculationId)
+            answer.matriculationStatus should contain theSameElementsAs
+              Seq(
+                SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")),
+                SubjectMatriculation("Mathematics", Seq("WS2020/21"))
+              )
+        }
+      }
+    }
   }
 }

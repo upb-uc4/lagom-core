@@ -7,7 +7,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData}
+import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
 import de.upb.cs.uc4.user.api.UserService
@@ -40,9 +40,9 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
               .recoverWith {
                 case _: Exception =>
                   val data = ImmatriculationData(
-                    student.matriculationId, student.firstName, student.lastName, student.birthDate, Seq()
+                    student.matriculationId, student.firstName, student.lastName, student.birthDate,
+                    Seq(SubjectMatriculation(message.fieldOfStudy, Seq(message.semester)))
                   )
-                  //data.addSemester(message) TODO
                   hyperLedgerSession.write[ImmatriculationData]("addMatriculationData", data).map { _ =>
                     (ResponseHeader(201, MessageProtocol.empty,
                       List(("Location", s"$pathPrefix/history/${student.username}"))), Done)
@@ -53,9 +53,17 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
     }
 
   /** Returns the ImmatriculationData of a student with the given username */
-  override def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData] = ServiceCall { _ =>
-    hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", username)
-  }
+  override def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData] =
+      authenticated(AuthenticationRole.Admin) {
+        ServerServiceCall { (header, _) =>
+          userService.getStudent(username).handleRequestHeader(_ => header).invoke().flatMap { student =>
+            hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", student.matriculationId).map {
+              data => (ResponseHeader(200, MessageProtocol.empty, List()), data)
+            }
+          }
+        }
+      }
+
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
