@@ -13,11 +13,12 @@ case class Student(username: String,
                    picture: String,
                    email: String,
                    birthDate: String,
+                   latestImmatriculation: String,
                    matriculationId: String) extends User {
 
   def trim: Student = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim, birthDate.trim, matriculationId.trim)
+      picture.trim, email.trim, birthDate.trim, latestImmatriculation.trim, matriculationId.trim)
   }
 
   def clean: Student = {
@@ -26,7 +27,18 @@ case class Student(username: String,
 
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
+    val semsterRegex = """(WS[1-9][0-9]{3}\/[0-9]{2})|(SS[1-9][0-9]{3})""".r
+
     var errors = super.validate.asInstanceOf[List[SimpleError]]
+
+    if(!semsterRegex.matches(latestImmatriculation)){
+      errors :+= SimpleError("latestImmatriculation", "Latest Immatriculation must be a semester of the format \"SSyyyy\" for summer, \"WSyyyy/yy\" for winter.")
+    }else{
+      if (latestImmatriculation.substring(0,2) == "WS" && (latestImmatriculation.substring(4, 6).toInt+1 == latestImmatriculation.substring(7,9).toInt)){
+        errors :+= SimpleError("latestImmatriculation", "Winter semester must consist of two consecutive years.")
+      }
+    }
+
     if(matriculationId.isEmpty) {
       errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
     }else{
@@ -45,7 +57,7 @@ case class Student(username: String,
     * @param user 
     * @return Filled Sequence of [[SimpleError]]
     */
-  override def checkEditableFields (user: User): Seq[SimpleError] = {
+  override def checkPermissionedUneditableFields(user: User): Seq[SimpleError] = {
     if(!user.isInstanceOf[Student]){
       throw new Exception("Tried to parse a non-Student as Student.")
     }
@@ -53,10 +65,31 @@ case class Student(username: String,
 
     var errors = List[SimpleError]()
    
-    errors ++= super.checkEditableFields(user)
+    errors ++= super.checkPermissionedUneditableFields(user)
     if (matriculationId != student.matriculationId){
       errors :+= SimpleError("matriculationId", "Matriculation ID may not be manually changed.")
     }
+    errors
+  }
+
+  /**
+   * Compares the object against the user parameter to find out if fields, which cannot be changed, are different.
+   * Returns a list of SimpleErrors[[SimpleError]]
+   *
+   * @param user
+   * @return Filled Sequence of [[SimpleError]]
+   * */
+  override def checkUneditableFields(user: User): Seq[SimpleError] = {
+    if(!user.isInstanceOf[Student]){
+      throw new Exception("Tried to parse a non-Student as Student.")
+    }
+    val student = user.asInstanceOf[Student]
+    var errors = List[SimpleError]()
+
+    if (latestImmatriculation != student.latestImmatriculation) {
+      errors :+= SimpleError("latestImmatriculation", "Latest Immatriculation must not be changed.")
+    }
+
     errors
   }
 }

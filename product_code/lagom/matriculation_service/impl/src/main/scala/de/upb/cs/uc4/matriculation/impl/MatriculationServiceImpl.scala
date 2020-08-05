@@ -59,14 +59,18 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
 
   /** Returns the ImmatriculationData of a student with the given username */
   override def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData] =
-      authenticated(AuthenticationRole.Admin) {
-        ServerServiceCall { (header, _) =>
-          userService.getStudent(username).handleRequestHeader(_ => header).invoke().flatMap { student =>
-            hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", student.matriculationId).map {
-              data => (ResponseHeader(200, MessageProtocol.empty, List()), data)
+      identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Student) {
+        (authUsername, role) =>
+          ServerServiceCall { (header, _) =>
+            if (role != AuthenticationRole.Admin && authUsername != username){
+              //TODO
+            }
+            userService.getStudent(username).handleRequestHeader(_ => header).invoke().flatMap { student =>
+              hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", student.matriculationId).map {
+                data => (ResponseHeader(200, MessageProtocol.empty, List()), data)
+              }
             }
           }
-        }
       }
 
 

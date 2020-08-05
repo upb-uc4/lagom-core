@@ -33,9 +33,9 @@ import scala.concurrent.Future
 class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
 
   private val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
-  private val student0: Student = Student("dieter", Role.Student, address, "Dieter", "Dietrich", "Picture", "example@mail.de", "1990-12-11", "000001")
-  private val student1: Student = Student("hans", Role.Student, address, "Hans", "Hansen", "Picture", "example@mail.de", "1990-12-11", "000002")
-  private val student2: Student = Student("max", Role.Student, address, "Max", "Mustermann", "Picture", "example@mail.de", "1990-12-11", "000003")
+  private val student0: Student = Student("dieter", Role.Student, address, "Dieter", "Dietrich", "Picture", "example@mail.de", "1990-12-11", "SS2020","000001")
+  private val student1: Student = Student("hans", Role.Student, address, "Hans", "Hansen", "Picture", "example@mail.de", "1990-12-11", "SS2020", "000002")
+  private val student2: Student = Student("max", Role.Student, address, "Max", "Mustermann", "Picture", "example@mail.de", "1990-12-11", "SS2020", "000003")
 
   private val students: Seq[Student] = Seq(student0, student1, student2)
 
