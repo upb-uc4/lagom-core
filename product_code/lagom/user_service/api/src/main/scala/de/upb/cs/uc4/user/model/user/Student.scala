@@ -27,6 +27,10 @@ case class Student(username: String,
     trim.copy(email = email.toLowerCase)
   }
 
+  def toPublic: Student = {
+    copy(address = Address.empty, birthDate = "", immatriculationStatus = "", matriculationId = "")
+  }
+
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
     val fos = List("Computer Science","Philosophy","Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
