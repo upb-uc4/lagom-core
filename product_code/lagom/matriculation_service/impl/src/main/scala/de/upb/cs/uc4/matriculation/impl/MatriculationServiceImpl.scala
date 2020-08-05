@@ -2,7 +2,7 @@ package de.upb.cs.uc4.matriculation.impl
 
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader, TransportErrorCode}
+import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole

@@ -33,8 +33,10 @@ case class UserState(optUser: Option[User]) {
               case _: Admin => SimpleError("admin." + error.name, error.reason)
         })
         //A student cannot be created with latestImmatriculation already set
-        if (user.isInstanceOf[Student] && user.asInstanceOf[Student].latestImmatriculation != ""){
-          validationErrors +:= SimpleError("student." + "latestImmatriculation", "Latest Immatriculation must not be set upon creation.")
+        user match {
+          case student: Student if student.latestImmatriculation != "" =>
+            validationErrors +:= SimpleError("student." + "latestImmatriculation", "Latest Immatriculation must not be set upon creation.")
+          case _ =>
         }
 
         if (optUser.isEmpty){
