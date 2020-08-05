@@ -26,7 +26,7 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
         val message = rawMessage.trim
         val validationList = message.validate
         if (validationList.nonEmpty){
-          throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("validation error", validationList))
+          throw new CustomException(422, DetailedError("validation error", validationList))
         }
         userService.getStudent(username).handleRequestHeader(_ => header).invoke()
           .flatMap { student =>
@@ -63,7 +63,7 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
         (authUsername, role) =>
           ServerServiceCall { (header, _) =>
             if (role != AuthenticationRole.Admin && authUsername != username){
-              //TODO
+              throw CustomException.OwnerMismatch
             }
             userService.getStudent(username).handleRequestHeader(_ => header).invoke().flatMap { student =>
               hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", student.matriculationId).map {
