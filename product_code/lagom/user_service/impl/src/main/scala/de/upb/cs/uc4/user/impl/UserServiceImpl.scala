@@ -78,7 +78,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new student to the database */
   override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postMessageStudentRaw) =>
-    val postMessageStudent = postMessageStudentRaw.copy(authUser =  postMessageStudentRaw.authUser.clean, student = postMessageStudentRaw.student.clean)
+    val postMessageStudent = postMessageStudentRaw.copy(authUser = postMessageStudentRaw.authUser.clean, student = postMessageStudentRaw.student.clean)
     addUser(postMessageStudent.authUser).invokeWithHeaders(header, postMessageStudent.student).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
@@ -88,13 +88,21 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Get a specific student */
   override def getStudent(username: String): ServiceCall[NotUsed, Student] =
-    authenticated[NotUsed, Student](AuthenticationRole.All: _*) {
-      _ =>
-        getUser(username).invoke().map(user => user.role match {
-          case Role.Student => user.asInstanceOf[Student]
-          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-            GenericError("key not found"))
-        })
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
+        ServerServiceCall { _ =>
+
+          getUser(username).invoke().map(user => user.role match {
+            case Role.Student =>
+              if (role != AuthenticationRole.Admin && username != authUsername) {
+                user.toPublic.asInstanceOf[Student]
+              } else {
+                user.asInstanceOf[Student]
+              }
+            case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+              GenericError("key not found"))
+          })
+        }
     }
 
   /** Update an existing student */
@@ -112,7 +120,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new lecturer to the database */
   override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, postMessageLecturerRaw) =>
-    val postMessageLecturer = postMessageLecturerRaw.copy(authUser =  postMessageLecturerRaw.authUser.clean, lecturer = postMessageLecturerRaw.lecturer.clean)
+    val postMessageLecturer = postMessageLecturerRaw.copy(authUser = postMessageLecturerRaw.authUser.clean, lecturer = postMessageLecturerRaw.lecturer.clean)
     addUser(postMessageLecturer.authUser).invokeWithHeaders(header, postMessageLecturer.lecturer).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
@@ -122,13 +130,20 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Get a specific lecturer */
   override def getLecturer(username: String): ServiceCall[NotUsed, Lecturer] =
-    authenticated[NotUsed, Lecturer](AuthenticationRole.All: _*) {
-      _ =>
-        getUser(username).invoke().map(user => user.role match {
-          case Role.Lecturer => user.asInstanceOf[Lecturer]
-          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-            GenericError("key not found"))
-        })
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
+        ServerServiceCall { _ =>
+          getUser(username).invoke().map(user => user.role match {
+            case Role.Lecturer =>
+              if (role != AuthenticationRole.Admin && username != authUsername) {
+                user.toPublic.asInstanceOf[Lecturer]
+              } else {
+                user.asInstanceOf[Lecturer]
+              }
+            case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+              GenericError("key not found"))
+          })
+        }
     }
 
   /** Update an existing lecturer */
@@ -145,7 +160,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Add a new admin to the database */
   override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, postMessageAdminRaw) =>
-    val postMessageAdmin = postMessageAdminRaw.copy(authUser =  postMessageAdminRaw.authUser.clean, admin = postMessageAdminRaw.admin.clean)
+    val postMessageAdmin = postMessageAdminRaw.copy(authUser = postMessageAdminRaw.authUser.clean, admin = postMessageAdminRaw.admin.clean)
     addUser(postMessageAdmin.authUser).invokeWithHeaders(header, postMessageAdmin.admin).map {
       case (header, user) =>
         (header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
@@ -155,13 +170,20 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Get a specific admin */
   override def getAdmin(username: String): ServiceCall[NotUsed, Admin] =
-    authenticated[NotUsed, Admin](AuthenticationRole.All: _*) {
-      _ =>
-        getUser(username).invoke().map(user => user.role match {
-          case Role.Admin => user.asInstanceOf[Admin]
-          case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-            GenericError("key not found"))
-        })
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
+        ServerServiceCall { _ =>
+          getUser(username).invoke().map(user => user.role match {
+            case Role.Admin =>
+              if (role != AuthenticationRole.Admin && username != authUsername) {
+                user.toPublic.asInstanceOf[Admin]
+              } else {
+                user.asInstanceOf[Admin]
+              }
+            case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
+              GenericError("key not found"))
+          })
+        }
     }
 
   /** Update an existing admin */
@@ -215,7 +237,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
                   ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
                     .map[(ResponseHeader, User)] { _ =>
                       //the deletion of the user was successful after the error in the authentication service
-                      if(authenticationException.getPossibleErrorResponse.`type` == "validation error"){
+                      if (authenticationException.getPossibleErrorResponse.`type` == "validation error") {
                         val detailedError = authenticationException.getPossibleErrorResponse.asInstanceOf[DetailedError]
                         throw new CustomException(
                           authenticationException.getErrorCode,
