@@ -4,4 +4,7 @@
 ## Refactor
  - Changed exceptions to use these standard exceptions whereever possible
 ## Bugfix
-- Fix ambigous endpoints caused by UC4Service Trait
+- Fixed ambigous endpoints caused by UC4Service Trait
+- Fixed search for courseName not being fuzzy
+- Fixed a bug that allowed houseNumbers to be empty
+- Fixed a bug that allowed "01" and "001" as matriculationId's, while not recognising them as the same number

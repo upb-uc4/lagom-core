@@ -32,7 +32,8 @@ case class Address(street: String,
       errors :+= SimpleError("street", "Street must only contain at letters and '-''.")
     }
     houseNumber match{
-      case "" => SimpleError("houseNumber","House number must not be empty.")
+      case "" =>
+        errors :+= SimpleError("houseNumber","House number must not be empty.")
       case _ if(houseNumber.startsWith("0")) =>
         errors :+= SimpleError("houseNumber","House number must not have a leading zero.")
       case _ if(!houseNumberRegex.matches(houseNumber)) =>
