@@ -88,10 +88,8 @@ trait User {
     * @param user 
     * @return Filled Sequence of [[SimpleError]]
     */
-  def checkPermissionedUneditableFields(user: User): Seq[SimpleError] = {
+  def checkProtectedFields(user: User): Seq[SimpleError] = {
     var errors = List[SimpleError]()
-
-    errors ++= checkUneditableFields(this)
 
     if (firstName != user.firstName){
       errors :+= SimpleError("firstName", "First name may not be manually changed.")

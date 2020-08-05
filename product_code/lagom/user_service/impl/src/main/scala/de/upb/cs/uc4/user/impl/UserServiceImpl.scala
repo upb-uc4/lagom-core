@@ -270,11 +270,11 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
           // We need to know what role the user has, because their editable fields are different
           getUser(username).invoke().map{ oldUser =>
-              if(role == AuthenticationRole.Admin){
-                oldUser.checkUneditableFields(user)
-              }else{
-                oldUser.checkPermissionedUneditableFields(user)
+              var err = oldUser.checkUneditableFields(user)
+              if(role != AuthenticationRole.Admin){
+                err ++= oldUser.checkProtectedFields(user)
               }
+              err
             }
             .flatMap { editErrors =>
               // Other users than admins can only edit specified fields
