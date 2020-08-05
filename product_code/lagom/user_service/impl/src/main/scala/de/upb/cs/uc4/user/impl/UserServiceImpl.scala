@@ -64,8 +64,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           case Accepted => // Update Successful
             (ResponseHeader(200, MessageProtocol.empty, List()), Done)
           case Rejected("A user with the given username does not exist.") => // Already exists
-            throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-              GenericError("key not found"))
+            throw CustomException.NotFound
         }
     }
   }
@@ -99,8 +98,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
               } else {
                 user.asInstanceOf[Student]
               }
-            case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-              GenericError("key not found"))
+            case _ => throw CustomException.NotFound
           })
         }
     }
@@ -140,8 +138,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
               } else {
                 user.asInstanceOf[Lecturer]
               }
-            case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-              GenericError("key not found"))
+            case _ => throw CustomException.NotFound
           })
         }
     }
@@ -180,8 +177,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
               } else {
                 user.asInstanceOf[Admin]
               }
-            case _ => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-              GenericError("key not found"))
+            case _ => throw CustomException.NotFound
           })
         }
     }
@@ -218,7 +214,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     ServerServiceCall { (_, user) =>
 
       if (user.username.trim.isEmpty) {
-        throw new CustomException(TransportErrorCode(422, 1003, "Error"),
+        throw new CustomException(422,
           DetailedError("validation error", Seq(SimpleError("username", "Username must not be blank."))))
       }
 
@@ -253,7 +249,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
                     }
               }
           case RejectedWithError(code, errorResponse) =>
-            throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+            throw new CustomException(code, errorResponse)
         }
     }
   }
@@ -265,11 +261,11 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         ServerServiceCall { (_, user) =>
           // Check, if the username in path is different than the username in the object
           if (username != user.username.trim) {
-            throw new CustomException(TransportErrorCode(400, 1003, "Error"), GenericError("path parameter mismatch"))
+            throw CustomException.PathParameterMismatch
           }
           // If invoked by a non-Admin, check if the manipulated object is owned by the user
           if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
+            throw CustomException.OwnerMismatch
           }
 
           // We need to know what role the user has, because their editable fields are different
@@ -277,7 +273,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
             .flatMap { editErrors =>
               // Other users than admins can only edit specified fields
               if (role != AuthenticationRole.Admin && editErrors.nonEmpty) {
-                throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("uneditable fields", editErrors))
+                throw new CustomException(422, DetailedError("uneditable fields", editErrors))
               } else {
                 val ref = entityRef(user.username)
 
@@ -286,7 +282,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
                     case Accepted => // Update successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case RejectedWithError(code, errorResponse) => //Update failed
-                      throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                      throw new CustomException(code, errorResponse)
                   }
               }
             }
@@ -300,8 +296,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
     ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
       case Some(user) => user
-      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-        GenericError("key not found"))
+      case None => throw CustomException.NotFound
     }
   }
 

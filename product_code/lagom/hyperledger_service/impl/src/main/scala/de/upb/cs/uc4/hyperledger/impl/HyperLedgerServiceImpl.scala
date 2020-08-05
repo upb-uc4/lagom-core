@@ -26,15 +26,14 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
   override def write(transactionId: String): ServiceCall[Seq[String], Done] = ServiceCall{ params =>
     entityRef.ask[Confirmation](replyTo => Write(transactionId, params, replyTo)).map{
       case Accepted => Done
-      case Rejected(reason) => throw new CustomException(TransportErrorCode(500, 1003, "Error"),
-        GenericError("hyperledger write exception"))
+      case Rejected(reason) => throw new CustomException(500, GenericError("hyperledger write exception"))
     }
   }
 
   override def read(transactionId: String): ServiceCall[Seq[String], String] = ServiceCall{ params =>
     entityRef.ask[Option[String]](replyTo => Read(transactionId, params, replyTo)).map{
       case Some(json) => json
-      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"), GenericError("key not found"))
+      case None => throw CustomException.NotFound
     }
   }
 

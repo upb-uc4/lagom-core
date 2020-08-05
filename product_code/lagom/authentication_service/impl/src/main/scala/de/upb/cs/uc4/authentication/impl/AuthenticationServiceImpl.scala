@@ -38,14 +38,12 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     entityRef(Hashing.sha256(username)).ask[Option[AuthenticationEntry]](replyTo => GetAuthentication(replyTo)).map{
       case Some(entry) =>
         if (entry.password != Hashing.sha256(entry.salt + password)) {
-          throw new CustomException(TransportErrorCode(401, 1003, "Unauthorized"),
-            GenericError("authorization error"))
+          throw CustomException.AuthorizationError
         } else {
           (username, entry.role)
         }
       case None =>
-        throw new CustomException(TransportErrorCode(401, 1003, "Unauthorized"),
-          GenericError("authorization error"))
+        throw CustomException.AuthorizationError
     }
   }
 
@@ -56,7 +54,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     entityRef(Hashing.sha256(user.username)).ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map {
       case Accepted => Done
       case RejectedWithError(code, errorResponse) =>
-        throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+        throw new CustomException(code, errorResponse)
     }
   }
 
@@ -66,13 +64,13 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       (authUsername, role) =>
         ServerServiceCall{ (_: RequestHeader, user: AuthenticationUser) =>
           if (username != user.username.trim) {
-            throw new CustomException(TransportErrorCode(400, 1003, "Error"), GenericError("path parameter mismatch"))
+            throw CustomException.PathParameterMismatch
           }
           if (authUsername != user.username.trim) {
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
+            throw CustomException.OwnerMismatch
           }
           if (role != user.role) {
-            throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("uneditable fields", List(SimpleError("role", "Role may not be manually changed."))))
+            throw new CustomException(422, DetailedError("uneditable fields", List(SimpleError("role", "Role may not be manually changed."))))
           }
           val ref = entityRef(Hashing.sha256(user.username))
 
@@ -81,7 +79,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
               case Accepted => // Update Successful
                 (ResponseHeader(200, MessageProtocol.empty, List()), Done)
               case RejectedWithError(code, errorResponse) =>
-                throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                throw new CustomException(code, errorResponse)
             }
         }
     }(this, ec)
