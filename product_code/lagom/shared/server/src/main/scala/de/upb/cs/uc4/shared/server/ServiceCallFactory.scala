@@ -46,8 +46,7 @@ object ServiceCallFactory {
       auth.check(user, pw).invoke().map {
         case (_, role) =>
           if (!roles.contains(role)) {
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"),
-              GenericError("not enough privileges"))
+            throw CustomException.NotEnoughPrivileges
           }
           serviceCall
       }
@@ -72,8 +71,7 @@ object ServiceCallFactory {
       auth.check(user, pw).invoke().map {
         case (username, role) =>
           if (!roles.contains(role)) {
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"),
-              GenericError("not enough privileges"))
+            throw CustomException.NotEnoughPrivileges
           }
           serviceCall(username, role)
       }
@@ -97,8 +95,7 @@ object ServiceCallFactory {
     }
 
     if (userPw.isEmpty) {
-      throw new Forbidden(TransportErrorCode(401, 1003, "Password Error, wrong password"),
-        new ExceptionMessage("Unauthorized", "No Authorization given"))
+      throw CustomException.AuthorizationError
     } else {
       userPw.get
     }

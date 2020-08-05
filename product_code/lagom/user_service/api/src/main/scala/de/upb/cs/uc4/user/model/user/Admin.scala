@@ -21,6 +21,10 @@ case class Admin(username: String,
   def clean: Admin = {
     trim.copy(email = email.toLowerCase)
   }
+
+  def toPublic: Admin = {
+    copy(address = Address.empty, birthDate = "")
+  }
 }
 
 object Admin {
