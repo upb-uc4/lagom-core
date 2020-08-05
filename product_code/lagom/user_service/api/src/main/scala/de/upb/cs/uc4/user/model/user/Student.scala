@@ -41,7 +41,11 @@ case class Student(username: String,
       errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
     }else{
       if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
-        errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 1 and 9999999.")
+        errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 0000001 and 9999999.")
+      }else {
+        if(matriculationId.length != 7){
+          errors :+= SimpleError("matriculationId", "Matriculation ID must be a string of length 7.")
+        }
       }
     }
     if(!(semesterCount > 0)) {
