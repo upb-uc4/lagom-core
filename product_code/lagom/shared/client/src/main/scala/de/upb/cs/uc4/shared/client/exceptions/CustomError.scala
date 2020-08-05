@@ -26,8 +26,7 @@ object CustomError{
   def getTitle(`type` : String) : String = {
     `type` match{
       //400
-      case "path parameter mismatch" => "Parameter specified in path and in object do not match"
-      case "wrong object" => "Unexpected object"
+      case "deserialization error" => "Error while deserializing object"
       //401
       case "authorization error" => "Username and password combination does not exist"
       //403
@@ -40,6 +39,7 @@ object CustomError{
       //418
       case "teapot" => "I'm a teapot"
       //422
+      case "path parameter mismatch" => "Parameter specified in path and in object do not match"
       case "validation error" => "Your request parameters did not validate"
       case "uneditable fields" => "Attempted to change uneditable fields"
       //500

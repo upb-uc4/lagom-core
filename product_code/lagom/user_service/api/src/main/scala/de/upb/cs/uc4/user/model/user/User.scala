@@ -20,6 +20,8 @@ trait User {
 
   def clean: User
 
+  def toPublic : User
+
   /** 
     * Validates the object by checking predefined conditions like correct charsets, syntax, etc.
     * Returns a list of SimpleErrors[[SimpleError]]

@@ -25,6 +25,10 @@ case class Student(username: String,
     trim.copy(email = email.toLowerCase)
   }
 
+  def toPublic: Student = {
+    copy(address = Address.empty, birthDate = "", immatriculationStatus = "", matriculationId = "")
+  }
+
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
     val semsterRegex = """(WS[1-9][0-9]{3}\/[0-9]{2})|(SS[1-9][0-9]{3})""".r

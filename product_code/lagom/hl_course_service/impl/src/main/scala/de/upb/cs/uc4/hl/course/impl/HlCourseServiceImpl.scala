@@ -39,12 +39,12 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
         ServerServiceCall {
           (_,courseProposal) =>
             if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username){
-              throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
+              throw CustomException.OwnerMismatch
             }
             val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
             val validationErrors = courseToAdd.validateCourseSyntax
             if (validationErrors.nonEmpty) {
-              throw new CustomException(TransportErrorCode(422, 1003, "Error"), DetailedError("validation error", validationErrors))
+              throw new CustomException(422, DetailedError("validation error", validationErrors))
             }
             hyperLedgerSession.write("addCourse", courseToAdd).map{
               case Done => // Creation Successful
@@ -59,7 +59,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
       (username, role) => ServerServiceCall { _ =>
         hyperLedgerSession.read[Course]("getCourseById", id).flatMap{ course =>
           if(role == AuthenticationRole.Lecturer && username != course.lecturerId){
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
+            throw CustomException.OwnerMismatch
           } else {
             hyperLedgerSession.write("deleteCourseById", id)
           }
@@ -79,17 +79,15 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
         ServerServiceCall {
           (_, updatedCourse) =>
             if (id != updatedCourse.courseId) {
-              throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-                GenericError("path parameter mismatch"))
+              throw CustomException.PathParameterMismatch
             }
             hyperLedgerSession.read[Course]("getCourseById", id).flatMap{course =>
               if(role == AuthenticationRole.Lecturer && username != course.lecturerId){
-                throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
+                throw CustomException.OwnerMismatch
               } else {
                 val validationErrors = updatedCourse.validateCourseSyntax
                 if (validationErrors.nonEmpty) {
-                  throw new CustomException(TransportErrorCode(422, 1003, "Error"),
-                    DetailedError("validation error", validationErrors))
+                  throw new CustomException(422, DetailedError("validation error", validationErrors))
                 }
                 hyperLedgerSession.write("updateCourseById", Seq(updatedCourse.courseId), Seq(updatedCourse))
                   .map((ResponseHeader(200, MessageProtocol.empty, List()), _))
