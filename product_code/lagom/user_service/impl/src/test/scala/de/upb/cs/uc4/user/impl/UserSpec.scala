@@ -10,11 +10,11 @@ class UserSpec extends AnyWordSpecLike with Matchers {
   val address0: Address = Address("Gaenseweg", "42a", "13337", "Entenhausen", "Germany")
   val address1: Address = Address("643n53w3g?", "b42a", "1337", "R164-?", "1377l4nd")
 
-  val student0: Student = Student("student0", Role.Student, address0, "VollDer", "Hammer", "Picture", "example@mail.de", "+49 123456789", "1990-12-11", "IN", "7421769", 9000, List())
+  val student0: Student = Student("student0", Role.Student, address0, "VollDer", "Hammer", "Picture", "example@mail.de", "+49123456789", "1990-12-11", "IN", "7421769", 9000, List())
   val student1: Student = Student("student0", Role.Lecturer, address0, "", "", "Picture", "org.exampleatmail", "49 123456789","11-12-1996a", "--a,s@", "matriculationText", -7, List("(╯°□°）╯︵ ┻━┻"))
-  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address0, "EchtDer", "Hammer", "Picture", "example@mail.de", "+49 123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address0, "EchtDer", "Hammer", "Picture", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
   val lecturer1: Lecturer = Lecturer("lecturer0", Role.Student, address0, "", "", "P1ctur3", "130SS@@mail.de","49 123456789", "19912-121-111", "╬þv¦e1┐‗☺❤🍕🍕😘😒", "🏆Pokemon Trainer💦")
-  val admin0: Admin = Admin("admin0", Role.Admin, address0, "firstName", "LastName", "Picture", "example@mail.de","+49 123456789", "1992-12-11")
+  val admin0: Admin = Admin("admin0", Role.Admin, address0, "firstName", "LastName", "Picture", "example@mail.de","+49123456789", "1992-12-11")
   val admin1: Admin = Admin("admin0", Role.Student, address0, "", "", "🔫🔫🔫🔫", "example.mail@de","49 123456789", "Gestern, den 12.11.1995")
 
 
