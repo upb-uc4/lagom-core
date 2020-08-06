@@ -13,8 +13,8 @@ trait User {
   val lastName: String
   val picture: String
   val email: String
-  val birthDate: String
   val phoneNumber: String
+  val birthDate: String
 
 
   def trim: User
@@ -71,7 +71,7 @@ trait User {
       errors :+= SimpleError("birthDate", "Birthdate must be of the following format \"yyyy-mm-dd\".")
     }
     if (!phoneNumberRegex.matches(phoneNumber)) {
-      errors :+= SimpleError("phoneNumber", "Phone number must be of the following format \"+xxx yyyyyyyyyy\".")
+      errors :+= SimpleError("phoneNumber", "Phone number must be of the following format \"+xxxxxxxxxxxx\".")
     }
     if (!nameRegex.matches(firstName)) {
       errors :+= SimpleError("firstName", "First name must contain between 1 and 100 characters.")
