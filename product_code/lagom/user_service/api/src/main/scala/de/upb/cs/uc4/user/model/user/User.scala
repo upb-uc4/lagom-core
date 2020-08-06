@@ -14,6 +14,7 @@ trait User {
   val picture: String
   val email: String
   val birthDate: String
+  val phoneNumber: String
 
 
   def trim: User
@@ -34,6 +35,7 @@ trait User {
     val usernameRegex = """[a-zA-Z0-9-.]{4,16}""".r
     val nameRegex = """[\s\S]{1,100}""".r
     val mailRegex = """(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])""".r
+    val phoneNumberRegex = """\+[0-9]{1,30}""".r
 
     val dateRegex = """^(?:(?:(?:(?:(?:[1-9]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:[2468][048]|[13579][26])00))(-)(?:0?2\1(?:29)))|(?:(?:[1-9]\d{3})(-)(?:(?:(?:0?[13578]|1[02])\2(?:31))|(?:(?:0?[13-9]|1[0-2])\2(?:29|30))|(?:(?:0?[1-9])|(?:1[0-2]))\2(?:0?[1-9]|1\d|2[0-8])))))$""".r
 
@@ -68,6 +70,9 @@ trait User {
     if (!dateRegex.matches(birthDate)) {
       errors :+= SimpleError("birthDate", "Birthdate must be of the following format \"yyyy-mm-dd\".")
     }
+    if (!phoneNumberRegex.matches(phoneNumber)) {
+      errors :+= SimpleError("phoneNumber", "Phone number must be of the following format \"+xxx yyyyyyyyyy\".")
+    }
     if (!nameRegex.matches(firstName)) {
       errors :+= SimpleError("firstName", "First name must contain between 1 and 100 characters.")
     }
@@ -85,7 +90,7 @@ trait User {
     * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
     * Returns a list of SimpleErrors[[SimpleError]]
     * 
-    * @param user 
+    * @param user to be checked
     * @return Filled Sequence of [[SimpleError]]
     */
   def checkEditableFields (user: User): Seq[SimpleError] = {

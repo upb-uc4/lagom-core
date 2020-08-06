@@ -12,6 +12,7 @@ case class Lecturer(username: String,
                     lastName: String,
                     picture: String,
                     email: String,
+                    phoneNumber: String,
                     birthDate: String,
                     freeText: String,
                     researchArea: String) extends User {
@@ -22,7 +23,7 @@ case class Lecturer(username: String,
   }
 
   def clean: Lecturer = {
-    trim.copy(email = email.toLowerCase)
+    trim.copy(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
   }
 
   def toPublic: Lecturer = {

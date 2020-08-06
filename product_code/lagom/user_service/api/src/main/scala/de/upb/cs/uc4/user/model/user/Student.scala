@@ -12,6 +12,7 @@ case class Student(username: String,
                    lastName: String,
                    picture: String,
                    email: String,
+                   phoneNumber: String,
                    birthDate: String,
                    immatriculationStatus: String,
                    matriculationId: String,
@@ -24,7 +25,7 @@ case class Student(username: String,
   }
 
   def clean: Student = {
-    trim.copy(email = email.toLowerCase)
+    trim.copy(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
   }
 
   def toPublic: Student = {
@@ -62,7 +63,7 @@ case class Student(username: String,
     * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
     * Returns a list of [[SimpleError]]
     * 
-    * @param user 
+    * @param user to be checked
     * @return Filled Sequence of [[SimpleError]]
     */
   override def checkEditableFields (user: User): Seq[SimpleError] = {

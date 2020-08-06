@@ -1,6 +1,6 @@
 # [v.0.5.2 WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.5.1...user-v0.5.2) (2020-XX-XX)
 ## Feature
-
+- Added phone number field to all users
 ## Refactor
 
 ## Bugfix

@@ -11,6 +11,7 @@ case class Admin(username: String,
                  lastName: String,
                  picture: String,
                  email: String,
+                 phoneNumber: String,
                  birthDate: String) extends User {
 
   def trim: Admin = {
@@ -19,7 +20,7 @@ case class Admin(username: String,
   }
 
   def clean: Admin = {
-    trim.copy(email = email.toLowerCase)
+    trim.copy(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
   }
 
   def toPublic: Admin = {
