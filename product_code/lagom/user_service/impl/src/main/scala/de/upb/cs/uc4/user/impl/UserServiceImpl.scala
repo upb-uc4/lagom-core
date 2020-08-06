@@ -41,18 +41,20 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   implicit val timeout: Timeout = Timeout(5.seconds)
 
   /** Get all users from the database */
-  override def getAllUsers: ServiceCall[NotUsed, GetAllUsersResponse] =
-    authenticated[NotUsed, GetAllUsersResponse](AuthenticationRole.Admin) {
+  override def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse] =
+    authenticated[NotUsed, GetAllUsersResponse](AuthenticationRole.All: _*) {
       ServerServiceCall { (header, notUsed) =>
         for {
-          students <- getAllStudents.invokeWithHeaders(header, notUsed)
-          lecturers <- getAllLecturers.invokeWithHeaders(header, notUsed)
-          admins <- getAllAdmins.invokeWithHeaders(header, notUsed)
+          students <- getAllStudents(usernames).invokeWithHeaders(header, notUsed)
+          lecturers <- getAllLecturers(usernames).invokeWithHeaders(header, notUsed)
+          admins <- getAllAdmins(usernames).invokeWithHeaders(header, notUsed)
         } yield
           (ResponseHeader(200, MessageProtocol.empty, List()),
             GetAllUsersResponse(students._2, lecturers._2, admins._2))
+
       }
     }
+
 
   /** Delete a users from the database */
   override def deleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
@@ -70,9 +72,20 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   }
 
   /** Get all students from the database */
-  override def getAllStudents: ServerServiceCall[NotUsed, Seq[Student]] =
-    authenticated[NotUsed, Seq[Student]](AuthenticationRole.Admin) { _ =>
-      getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
+  override def getAllStudents(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Student]] =
+    identifiedAuthenticated[NotUsed, Seq[Student]](AuthenticationRole.All: _*) {
+      (_, role) =>
+        _ =>
+          usernames match {
+            case None if (role != AuthenticationRole.Admin) =>
+              throw CustomException.NotEnoughPrivileges
+            case None if (role == AuthenticationRole.Admin) =>
+              getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
+            case Some(listOfUsernames) if (role != AuthenticationRole.Admin) =>
+              getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student].toPublic))
+            case Some(listOfUsernames) if (role == AuthenticationRole.Admin )=>
+              getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
+          }
     }
 
   /** Add a new student to the database */
@@ -111,9 +124,20 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
 
   /** Get all lecturers from the database */
-  override def getAllLecturers: ServerServiceCall[NotUsed, Seq[Lecturer]] =
-    authenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.Admin) { _ =>
-      getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
+  def getAllLecturers(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Lecturer]] =
+    identifiedAuthenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.All: _*) {
+      (_, role) =>
+        _ =>
+          usernames match {
+            case None if (role != AuthenticationRole.Admin) =>
+              throw CustomException.NotEnoughPrivileges
+            case None if (role == AuthenticationRole.Admin) =>
+              getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
+            case Some(listOfUsernames) if (role != AuthenticationRole.Admin) =>
+              getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer].toPublic))
+            case Some(listOfUsernames) if (role == AuthenticationRole.Admin )=>
+              getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
+          }
     }
 
   /** Add a new lecturer to the database */
@@ -150,9 +174,20 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
 
   /** Get all admins from the database */
-  override def getAllAdmins: ServerServiceCall[NotUsed, Seq[Admin]] =
-    authenticated[NotUsed, Seq[Admin]](AuthenticationRole.Admin) { _ =>
-      getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
+  override def getAllAdmins(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Admin]] =
+    identifiedAuthenticated[NotUsed, Seq[Admin]](AuthenticationRole.All: _*) {
+      (_, role) =>
+        _ =>
+          usernames match {
+            case None if (role != AuthenticationRole.Admin) =>
+              throw CustomException.NotEnoughPrivileges
+            case None if (role == AuthenticationRole.Admin) =>
+              getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
+            case Some(listOfUsernames) if (role != AuthenticationRole.Admin) =>
+              getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin].toPublic))
+            case Some(listOfUsernames) if (role == AuthenticationRole.Admin )=>
+              getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
+          }
     }
 
   /** Add a new admin to the database */

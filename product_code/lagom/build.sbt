@@ -167,7 +167,8 @@ lazy val user_service = (project in file("user_service/impl"))
     libraryDependencies ++= defaultPersistenceKafkaDependencies,
   )
   .settings(dockerSettings)
-  .dependsOn(user_service_api, shared_server)
+  .settings(version := "v0.5.1")
+  .dependsOn(user_service_api, shared_server, shared_client)
 
 lazy val matriculation_service_api = (project in file("matriculation_service/api"))
   .settings(

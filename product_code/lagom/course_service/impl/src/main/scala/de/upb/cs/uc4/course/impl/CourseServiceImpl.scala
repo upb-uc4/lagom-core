@@ -47,7 +47,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         )
       )
       .map(seq => seq
-        .filter(course => courseName.isEmpty || course.courseName == courseName.get)
+        .filter { course =>
+          //If courseName query is set, we check that every whitespace seperated parameter is contained
+          courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
+        }
         .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
       )
   }

@@ -10,7 +10,7 @@ class UserSpec extends AnyWordSpecLike with Matchers {
   val address0: Address = Address("Gaenseweg", "42a", "13337", "Entenhausen", "Germany")
   val address1: Address = Address("643n53w3g?", "b42a", "1337", "R164-?", "1377l4nd")
 
-  val student0: Student = Student("student0", Role.Student, address0, "VollDer", "Hammer", "Picture", "example@mail.de", "1990-12-11", "SS2020", "421769")
+  val student0: Student = Student("student0", Role.Student, address0, "VollDer", "Hammer", "Picture", "example@mail.de", "1990-12-11", "SS2020", "7421769")
   val student1: Student = Student("student0", Role.Lecturer, address0, "", "", "Picture", "org.exampleatmail", "11-12-1996a", "WS1993/81", "--a,s@")
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address0, "EchtDer", "Hammer", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
   val lecturer1: Lecturer = Lecturer("lecturer0", Role.Student, address0, "", "", "P1ctur3", "130SS@@mail.de", "19912-121-111", "╬þv¦e1┐‗☺❤🍕🍕😘😒", "🏆Pokemon Trainer💦")
