@@ -2,8 +2,9 @@ package de.upb.cs.uc4.matriculation.impl
 
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, RequestHeader, ResponseHeader}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
+import com.sun.tools.sjavac.server.RequestHandler
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.matriculation.api.MatriculationService
@@ -18,6 +19,10 @@ import scala.concurrent.ExecutionContext
 /** Implementation of the MatriculationService */
 class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userService: UserService)
                               (implicit ec: ExecutionContext, auth: AuthenticationService) extends MatriculationService {
+  
+  def getAuthHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
+    origin => origin.addHeader("authorization", serviceHeader.headerMap("authorization").head._2)
+  }
 
   /** Immatriculates a student */
   override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculationData, Done] =
@@ -28,7 +33,7 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
         if (validationList.nonEmpty){
           throw new CustomException(422, DetailedError("validation error", validationList))
         }
-        userService.getStudent(username).handleRequestHeader(_ => header).invoke()
+        userService.getStudent(username).handleRequestHeader(getAuthHeader(header)).invoke()
           .flatMap { student =>
             hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", student.matriculationId)
               .flatMap { _ =>
@@ -65,7 +70,7 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
             if (role != AuthenticationRole.Admin && authUsername != username){
               throw CustomException.OwnerMismatch
             }
-            userService.getStudent(username).handleRequestHeader(_ => header).invoke().flatMap { student =>
+            userService.getStudent(username).handleRequestHeader(getAuthHeader(header)).invoke().flatMap { student =>
               hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", student.matriculationId).map {
                 data => (ResponseHeader(200, MessageProtocol.empty, List()), data)
               }
