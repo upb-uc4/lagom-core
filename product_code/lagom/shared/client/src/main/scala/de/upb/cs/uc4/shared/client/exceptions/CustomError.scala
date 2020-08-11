@@ -46,6 +46,7 @@ object CustomError{
       case "uneditable fields" => "Attempted to change uneditable fields"     //In a DetailedError
       //500
       case "undeserializable exception" => "Internal error while deserializing Exception"
+      case "hl: internal error" => "Hyperledger encountered an internal error" //In an InformativeError
       //???
       case _ => "Title not Found"
 

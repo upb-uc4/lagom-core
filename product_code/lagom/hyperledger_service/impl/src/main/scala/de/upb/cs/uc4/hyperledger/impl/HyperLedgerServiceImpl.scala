@@ -8,6 +8,7 @@ import com.lightbend.lagom.scaladsl.api.deser.RawExceptionMessage
 import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, TransportErrorCode}
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.hyperledger.exceptions.TransactionException
+import de.upb.cs.uc4.hyperledger.exceptions.traits.{HyperledgerExceptionTrait, TransactionExceptionTrait}
 import de.upb.cs.uc4.hyperledger.impl.actor.HyperLedgerBehaviour
 import de.upb.cs.uc4.hyperledger.impl.commands.{HyperLedgerCommand, Read, Write}
 import de.upb.cs.uc4.shared.client.exceptions._
@@ -42,10 +43,11 @@ class HyperLedgerServiceImpl(clusterSharding: ClusterSharding)(implicit ex: Exec
 
   def hlExceptionDeserialize(exception: Throwable): CustomException = {
     exception match {
-      case transactionException: TransactionException =>
+      case transactionException: TransactionExceptionTrait =>
         errorMatching(new CustomExceptionSerializer(Environment.simple()).deserialize(
-          RawExceptionMessage(TransportErrorCode(418, 1003, "Error"), MessageProtocol.empty, ByteString.fromString(transactionException.error))
+          RawExceptionMessage(TransportErrorCode(418, 1003, "Error"), MessageProtocol.empty, ByteString.fromString(transactionException.jsonError))
         ).asInstanceOf[CustomException])
+      case hyperledgerException: HyperledgerExceptionTrait => throw new CustomException(500, InformativeError("hl: internal error", hyperledgerException.innerException.toString))
       case _ => throw CustomException.InternalServerError
     }
   }
