@@ -25,6 +25,8 @@ object CustomError{
 
   def getTitle(`type` : String) : String = {
     `type` match{
+      //HL errors are missing, but as they are given to us with a title, we do not need to find a fitting title
+      //If not stated otherwise, the type is contained in a  GenericError
       //400
       case "deserialization error" => "Error while deserializing object"
       //401
@@ -40,12 +42,14 @@ object CustomError{
       case "teapot" => "I'm a teapot"
       //422
       case "path parameter mismatch" => "Parameter specified in path and in object do not match"
-      case "validation error" => "Your request parameters did not validate"
-      case "uneditable fields" => "Attempted to change uneditable fields"
+      case "validation error" => "Your request parameters did not validate"   //In a DetailedError
+      case "uneditable fields" => "Attempted to change uneditable fields"     //In a DetailedError
       //500
       case "undeserializable exception" => "Internal error while deserializing Exception"
       //???
-      case _ => "Internal Server Error"
+      case _ => "Title not Found"
+
+
 
     }
   }

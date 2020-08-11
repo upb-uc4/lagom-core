@@ -4,7 +4,6 @@ import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, RequestHeader, ResponseHeader}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
-import com.sun.tools.sjavac.server.RequestHandler
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.matriculation.api.MatriculationService
