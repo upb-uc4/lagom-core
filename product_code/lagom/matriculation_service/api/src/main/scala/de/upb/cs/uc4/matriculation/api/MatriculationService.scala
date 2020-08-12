@@ -1,9 +1,10 @@
 package de.upb.cs.uc4.matriculation.api
 
 import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData}
+import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, MatriculationUpdate, PutMessageMatriculationData}
 import de.upb.cs.uc4.shared.client.UC4Service
 
 /** The MatriculationService interface.
@@ -30,6 +31,9 @@ trait MatriculationService extends UC4Service {
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 
+  /** Publishes every update of a matriculation of a user */
+  def matriculationUpdateTopic(): Topic[MatriculationUpdate]
+
   final override def descriptor: Descriptor = {
     import Service._
     super.descriptor
@@ -39,5 +43,12 @@ trait MatriculationService extends UC4Service {
         restCall(Method.OPTIONS, pathPrefix + "/:username", allowedPut _),
         restCall(Method.OPTIONS, pathPrefix + "/history/:username", allowedGet _),
       )
+      .addTopics(
+        topic(MatriculationService.UPDATE_TOPIC_NAME, matriculationUpdateTopic _)
+      )
   }
+}
+
+object MatriculationService {
+  val UPDATE_TOPIC_NAME = "update"
 }

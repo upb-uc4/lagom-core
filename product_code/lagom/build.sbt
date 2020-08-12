@@ -180,6 +180,7 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies += lagomScaladslKafkaBroker
   )
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
