@@ -16,25 +16,36 @@ trait User {
   val phoneNumber: String
   val birthDate: String
 
+  def copyUser(username: String = this.username,
+               role: Role = this.role,
+               address: Address = this.address,
+               firstName: String = this.firstName,
+               lastName: String = this.lastName,
+               picture: String = this.picture,
+               email: String = this.email,
+               phoneNumber: String = this.phoneNumber,
+               birthDate: String = this.birthDate): User
 
-  def trim: User
+  def trim: User = copyUser(
+    username.trim, role, address.trim, firstName.trim, lastName.trim,
+    picture.trim, email.trim, phoneNumber.trim, birthDate.trim)
 
-  def clean: User
+  def clean: User = trim.copyUser(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
 
-  def toPublic : User
+  def toPublic: User = copyUser(address = Address.empty, birthDate = "")
 
-  /** 
-    * Validates the object by checking predefined conditions like correct charsets, syntax, etc.
-    * Returns a list of SimpleErrors[[SimpleError]]
-    *
-    * @return Filled Sequence of [[SimpleError]]
-    */
+  /**
+   * Validates the object by checking predefined conditions like correct charsets, syntax, etc.
+   * Returns a list of SimpleErrors[[SimpleError]]
+   *
+   * @return Filled Sequence of [[SimpleError]]
+   */
   def validate: Seq[SimpleError] = {
-    
+
     val generalRegex = """[\s\S]{0,200}""".r // Allowed characters for general strings TBD
     val usernameRegex = """[a-zA-Z0-9-.]{4,16}""".r
     val nameRegex = """[\s\S]{1,100}""".r
-    val mailRegex = """(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])""".r
+    val mailRegex = """(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)])""".r
     val phoneNumberRegex = """\+[0-9]{1,30}""".r
 
     val dateRegex = """^(?:(?:(?:(?:(?:[1-9]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:[2468][048]|[13579][26])00))(-)(?:0?2\1(?:29)))|(?:(?:[1-9]\d{3})(-)(?:(?:(?:0?[13578]|1[02])\2(?:31))|(?:(?:0?[13-9]|1[0-2])\2(?:29|30))|(?:(?:0?[1-9])|(?:1[0-2]))\2(?:0?[1-9]|1\d|2[0-8])))))$""".r
@@ -48,15 +59,15 @@ trait User {
 
     if (!Role.All.contains(role)) { //optUser check to ensure this is during creation
       errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
-    }else{
+    } else {
       this match {
-        case _: Student => if(role != Role.Student){
+        case _: Student => if (role != Role.Student) {
           errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
         }
-        case _: Lecturer => if(role != Role.Lecturer){
+        case _: Lecturer => if (role != Role.Lecturer) {
           errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
         }
-        case _: Admin => if(role != Role.Admin){
+        case _: Admin => if (role != Role.Admin) {
           errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
         }
       }
@@ -86,26 +97,26 @@ trait User {
   }
 
 
-  /** 
-    * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
-    * Returns a list of SimpleErrors[[SimpleError]]
-    * 
-    * @param user to be checked
-    * @return Filled Sequence of [[SimpleError]]
-    */
-  def checkEditableFields (user: User): Seq[SimpleError] = {
+  /**
+   * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
+   * Returns a list of SimpleErrors[[SimpleError]]
+   *
+   * @param user to be checked
+   * @return Filled Sequence of [[SimpleError]]
+   */
+  def checkEditableFields(user: User): Seq[SimpleError] = {
     var errors = List[SimpleError]()
-    
-    if (role != user.role){
+
+    if (role != user.role) {
       errors :+= SimpleError("role", "Role may not be changed.")
     }
-    if (firstName != user.firstName){
+    if (firstName != user.firstName) {
       errors :+= SimpleError("firstName", "First name may not be changed.")
     }
-    if (lastName != user.lastName){
+    if (lastName != user.lastName) {
       errors :+= SimpleError("lastName", "Last name may not be changed.")
-    } 
-    if (birthDate != user.birthDate){
+    }
+    if (birthDate != user.birthDate) {
       errors :+= SimpleError("birthDate", "Birthdate may not be changed.")
     }
     errors
