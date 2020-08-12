@@ -30,7 +30,7 @@ case class PutMessageMatriculationData(fieldOfStudy: String, semester: String) {
     if(!semesterRegex.matches(semester)){
       errors :+= SimpleError("semester", "Semester must be of the format \"SSyyyy\" for summer, \"WSyyyy/yy\" for winter.")
     }else{
-      if (semester.substring(0,2) == "WS" && (semester.substring(4, 6).toInt+1 == semester.substring(7,9).toInt)){
+      if (semester.substring(0,2) == "WS" && (semester.substring(4, 6).toInt+1 != semester.substring(7,9).toInt)){
         errors :+= SimpleError("semester", "Winter semester must consist of two consecutive years.")
       }
     }

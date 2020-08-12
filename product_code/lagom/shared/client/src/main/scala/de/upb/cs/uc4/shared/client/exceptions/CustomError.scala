@@ -45,6 +45,7 @@ object CustomError{
       case "validation error" => "Your request parameters did not validate"   //In a DetailedError
       case "uneditable fields" => "Attempted to change uneditable fields"     //In a DetailedError
       //500
+      case "internal server error" => "An internal server error has occurred"
       case "undeserializable exception" => "Internal error while deserializing Exception"
       case "hl: internal error" => "Hyperledger encountered an internal error" //In an InformativeError
       //???

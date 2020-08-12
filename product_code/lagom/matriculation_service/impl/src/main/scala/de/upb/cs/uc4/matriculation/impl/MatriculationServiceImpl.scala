@@ -12,11 +12,12 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, MatriculationUpdate, PutMessageMatriculationData, SubjectMatriculation}
+import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation}
 import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
 import de.upb.cs.uc4.user.api.UserService
+import de.upb.cs.uc4.user.model.MatriculationUpdate
 
 import scala.concurrent.ExecutionContext
 
@@ -24,15 +25,6 @@ import scala.concurrent.ExecutionContext
 class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userService: UserService)
                               (implicit ec: ExecutionContext, auth: AuthenticationService, materializer: Materializer)
   extends MatriculationService {
-
-  private val preSource = Source.actorRef[MatriculationUpdate](
-    completionMatcher = {
-      case Done =>
-        CompletionStrategy.draining
-    },
-    PartialFunction.empty, 100, OverflowStrategy.backpressure)
-
-  val (actorRef, source): (ActorRef, Source[MatriculationUpdate, NotUsed]) = preSource.preMaterialize()
 
   def getAuthHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
     origin => origin.addHeader("authorization", serviceHeader.headerMap("authorization").head._2)
@@ -58,7 +50,7 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
                     message.semester
                   )
                 ).map { _ =>
-                  actorRef ! MatriculationUpdate(username, message.semester)
+                  userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
                   (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                 }
               }
@@ -69,7 +61,7 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
                     Seq(SubjectMatriculation(message.fieldOfStudy, Seq(message.semester)))
                   )
                   hyperLedgerSession.write[ImmatriculationData]("addMatriculationData", data).map { _ =>
-                    actorRef ! MatriculationUpdate(username, message.semester)
+                    userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
                     (ResponseHeader(201, MessageProtocol.empty,
                       List(("Location", s"$pathPrefix/history/${student.username}"))), Done)
                   }
@@ -104,8 +96,4 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
-  /** Publishes every update of a matriculation of a user */
-  override def matriculationUpdateTopic(): Topic[MatriculationUpdate] = TopicProducer.singleStreamWithOffset {
-    fromOffset => source.map((_, fromOffset))
-  }
 }

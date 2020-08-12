@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.matriculation.model
+package de.upb.cs.uc4.user.model
 
 import play.api.libs.json.{Format, Json}
 

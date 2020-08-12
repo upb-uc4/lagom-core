@@ -39,7 +39,7 @@ case class Student(username: String,
       if(!semsterRegex.matches(latestImmatriculation)){
         errors :+= SimpleError("latestImmatriculation", "Latest Immatriculation must be a semester of the format \"SSyyyy\" for summer, \"WSyyyy/yy\" for winter.")
       }else{
-        if (latestImmatriculation.substring(0,2) == "WS" && (latestImmatriculation.substring(4, 6).toInt+1 == latestImmatriculation.substring(7,9).toInt)){
+        if (latestImmatriculation.substring(0,2) == "WS" && (latestImmatriculation.substring(4, 6).toInt+1 != latestImmatriculation.substring(7,9).toInt)){
           errors :+= SimpleError("latestImmatriculation", "Winter semester must consist of two consecutive years.")
         }
       }

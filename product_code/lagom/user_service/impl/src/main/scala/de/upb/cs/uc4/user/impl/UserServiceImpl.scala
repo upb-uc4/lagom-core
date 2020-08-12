@@ -17,12 +17,12 @@ import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, R
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{OnUserDelete, UserEvent}
+import de.upb.cs.uc4.user.impl.events.{OnLatestMatriculationUpdate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user._
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate, Role}
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -365,5 +365,14 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           immutable.Seq((JsonUsername(user.username), offset))
         case _ => Nil
       }
+  }
+
+  /** Update latestMatriculation */
+  override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall{matriculationUpdate =>
+    val ref = entityRef(matriculationUpdate.username)
+    ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map{
+      case Accepted => Done
+      case RejectedWithError(error,reason) => throw new CustomException(error, reason)
+    }
   }
 }
