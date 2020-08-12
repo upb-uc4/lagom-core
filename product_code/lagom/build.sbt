@@ -2,7 +2,7 @@ import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
 lagomServiceEnableSsl in ThisBuild := true
-val hyperledgerApiVersion = "v0.5.3"
+val hyperledgerApiVersion = "v0.5.4"
 
 // The project uses PostgreSQL
 lagomCassandraEnabled in ThisBuild := false

@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.matriculation.impl
 
+import akka.actor.ActorRef
 import akka.stream.scaladsl.Source
 import akka.stream.{CompletionStrategy, Materializer, OverflowStrategy}
 import akka.{Done, NotUsed}
@@ -31,7 +32,7 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
     },
     PartialFunction.empty, 100, OverflowStrategy.backpressure)
 
-  val (actorRef, source) = preSource.preMaterialize()
+  val (actorRef, source): (ActorRef, Source[MatriculationUpdate, NotUsed]) = preSource.preMaterialize()
 
   def getAuthHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
     origin => origin.addHeader("authorization", serviceHeader.headerMap("authorization").head._2)
@@ -67,7 +68,7 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
                     student.matriculationId, student.firstName, student.lastName, student.birthDate,
                     Seq(SubjectMatriculation(message.fieldOfStudy, Seq(message.semester)))
                   )
-                  hyperLedgerSession.write[ImmatriculationData]("addMatriculationData", data).map { _
+                  hyperLedgerSession.write[ImmatriculationData]("addMatriculationData", data).map { _ =>
                     actorRef ! MatriculationUpdate(username, message.semester)
                     (ResponseHeader(201, MessageProtocol.empty,
                       List(("Location", s"$pathPrefix/history/${student.username}"))), Done)
