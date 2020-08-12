@@ -31,7 +31,7 @@ case class Lecturer(username: String,
   override def trim: Lecturer =
     super.trim.asInstanceOf[Lecturer].copy(freeText = freeText.trim, researchArea = researchArea.trim)
 
-  override def toPublic: Lecturer = super.clean.asInstanceOf[Lecturer]
+  override def toPublic: Lecturer = super.toPublic.asInstanceOf[Lecturer]
 
   override def clean: Lecturer = super.clean.asInstanceOf[Lecturer]
 

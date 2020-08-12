@@ -25,9 +25,9 @@ case class Admin(username: String,
                birthDate: String = this.birthDate): Admin =
     copy(username, role, address, firstName, lastName, picture, email, phoneNumber, birthDate)
 
-  override def trim: Admin = super.clean.asInstanceOf[Admin]
+  override def trim: Admin = super.trim.asInstanceOf[Admin]
 
-  override def toPublic: Admin = super.clean.asInstanceOf[Admin]
+  override def toPublic: Admin = super.toPublic.asInstanceOf[Admin]
 
   override def clean: Admin = super.clean.asInstanceOf[Admin]
 }
