@@ -12,6 +12,7 @@ case class Student(username: String,
                    lastName: String,
                    picture: String,
                    email: String,
+                   phoneNumber: String,
                    birthDate: String,
                    immatriculationStatus: String,
                    matriculationId: String,
@@ -20,11 +21,11 @@ case class Student(username: String,
 
   def trim: Student = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim, birthDate.trim, immatriculationStatus.trim, matriculationId.trim)
+      picture.trim, email.trim, phoneNumber.trim, birthDate.trim, immatriculationStatus.trim, matriculationId.trim)
   }
 
   def clean: Student = {
-    trim.copy(email = email.toLowerCase)
+    trim.copy(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
   }
 
   def toPublic: Student = {
@@ -41,7 +42,11 @@ case class Student(username: String,
       errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
     }else{
       if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
-        errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 1 and 9999999.")
+        errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 0000001 and 9999999.")
+      }else {
+        if(matriculationId.length != 7){
+          errors :+= SimpleError("matriculationId", "Matriculation ID must be a string of length 7.")
+        }
       }
     }
     if(!(semesterCount > 0)) {
@@ -58,7 +63,7 @@ case class Student(username: String,
     * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
     * Returns a list of [[SimpleError]]
     * 
-    * @param user 
+    * @param user to be checked
     * @return Filled Sequence of [[SimpleError]]
     */
   override def checkEditableFields (user: User): Seq[SimpleError] = {
