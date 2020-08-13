@@ -12,7 +12,7 @@ object Utils {
      * @return a Sequence of [[de.upb.cs.uc4.shared.client.exceptions.SimpleError]]
      */
     def validateSemester: Seq[SimpleError] = {
-      var errors = List()
+      var errors: List[SimpleError] = List()
 
       // Regex for semesters, accepts for example "SS2020" and "WS2020/21"
       val semesterRegex = """(WS[1-9][0-9]{3}/[0-9]{2})|(SS[1-9][0-9]{3})""".r
