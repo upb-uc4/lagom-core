@@ -21,8 +21,8 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
   ) { ctx =>
     new HyperLedgerApplication(ctx) with LocalServiceLocator {
       override lazy val connectionManager: ConnectionManagerTrait = null
-      }
     }
+  }
 
   /*
   override def close(): Unit = {}
@@ -118,7 +118,8 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
     "read empty list of all courses" in {
       client.read("getAllCourses").invoke(List()).map { answer => {
         answer should ===("[]")
-      }}
+      }
+      }
     }
 
     "not read a non-existing course" in {
@@ -135,7 +136,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not write a ill-formatted course" in {
       client.write("addCourse").invoke(List(courseInvalid)).failed.map { answer =>
-        answer shouldBe a [Exception]
+        answer shouldBe a[Exception]
       }
     }
 
@@ -147,7 +148,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not write a non json" in {
       client.write("addCourse").invoke(List("invalid")).failed.map { answer =>
-        answer shouldBe a [Exception]
+        answer shouldBe a[Exception]
       }
     }
 
@@ -159,7 +160,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "not delete a non-existing course" in {
       client.write("deleteCourseById").invoke(List("invalidID")).failed.map { answer =>
-        answer shouldBe a [Exception]
+        answer shouldBe a[Exception]
       }
     }
 

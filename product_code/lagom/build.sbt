@@ -69,7 +69,8 @@ lazy val lagom = (project in file("."))
 lazy val shared_client = (project in file("shared/client"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies,
-    libraryDependencies += scalaTest
+    libraryDependencies += scalaTest,
+    libraryDependencies += janino
   )
 
 lazy val shared_server = (project in file("shared/server"))
