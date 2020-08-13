@@ -3,6 +3,7 @@
  - Added predefined standard exceptions to CustomException
  - Added call to immatriculate a Student for one specific fieldOfStudy + semester
  - Added call to fetch the complete matriculation history of a specific Student
+ - Added update call to UserService to cache the latestImmatriculation
 ## Refactor
- - Changed exceptions to use these standard exceptions whereever possible
+ - Changed exceptions to use these standard exceptions wherever possible
 ## Bugfix
