@@ -1,4 +1,4 @@
-name: Lagom Deployment Pipeline
+name: Lagom Code Format Check Pipeline
 
 on: [push]
 
@@ -33,6 +33,6 @@ jobs:
         echo "##########################"
         echo "#    Check Code Style    #"
         echo "##########################"
-        wget https://github.com/scala-ide/scalariform/releases/download/0.2.10/scalariform.jar
+        wget https://github.com/scala-ide/scalariform/releases/download/0.2.10/scalariform.jar --quiet
         java -jar scalariform.jar --preferenceFile=".scalariform.conf" --test --recurse .
         popd
