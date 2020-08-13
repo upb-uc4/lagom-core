@@ -53,7 +53,7 @@ class UserSpec extends AnyWordSpecLike with Matchers {
       "return validation errors" in {
         val errors = student1.validate
         val errorVariables = errors.map(error => error.name)
-        errorVariables should contain only ("role","email","phoneNumber","birthDate", "firstName", "lastName","matriculationId")
+        errorVariables should contain only ("role","email","phoneNumber","birthDate", "firstName", "lastName","matriculationId", "latestImmatriculation")
       }
   }
 
