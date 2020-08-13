@@ -6,7 +6,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.impl.actor.UserBehaviour
-import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateUser}
+import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateLatestMatriculation, UpdateUser}
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{Address, Role}
 import org.scalatest.matchers.should.Matchers
@@ -111,6 +111,62 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)
       probe3.expectMessage(Some(admin1))
+    }
+
+    "update the latestImmatriculation of a student" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-5A")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! CreateUser(student0, probe1.ref)
+      probe1.expectMessage(Accepted)
+
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! UpdateLatestMatriculation("SS2020", probe2.ref)
+      probe2.expectMessage(Accepted)
+
+      val probe3 = createTestProbe[Option[User]]()
+      ref ! GetUser(probe3.ref)
+      probe3.expectMessage(Some(student0.copy(latestImmatriculation = "SS2020")))
+    }
+
+    "update the latestImmatriculation of a student a second time successful" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-5B")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! CreateUser(student0, probe1.ref)
+      probe1.expectMessage(Accepted)
+
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! UpdateLatestMatriculation("SS2020", probe2.ref)
+      probe2.expectMessage(Accepted)
+
+      val probe3 = createTestProbe[Confirmation]()
+      ref ! UpdateLatestMatriculation("WS2020/21", probe3.ref)
+      probe3.expectMessage(Accepted)
+
+      val probe4 = createTestProbe[Option[User]]()
+      ref ! GetUser(probe4.ref)
+      probe4.expectMessage(Some(student0.copy(latestImmatriculation = "WS2020/21")))
+    }
+
+    "update the latestImmatriculation of a student a second time not successful" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-5C")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! CreateUser(student0, probe1.ref)
+      probe1.expectMessage(Accepted)
+
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! UpdateLatestMatriculation("SS2020", probe2.ref)
+      probe2.expectMessage(Accepted)
+
+      val probe3 = createTestProbe[Confirmation]()
+      ref ! UpdateLatestMatriculation("SS2019", probe3.ref)
+      probe3.expectMessage(Accepted)
+
+      val probe4 = createTestProbe[Option[User]]()
+      ref ! GetUser(probe4.ref)
+      probe4.expectMessage(Some(student0.copy(latestImmatriculation = "SS2020")))
     }
 
     //DELETE
