@@ -18,13 +18,6 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-
-    #change .sbtopts
-    - name: Add -J to .sbtops
-      run: |
-        pushd ./product_code/lagom
-        echo "-J-Xms512M -J-Xmx4096M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
-        popd
     
     # run scalariform test
     - name: Code format check
