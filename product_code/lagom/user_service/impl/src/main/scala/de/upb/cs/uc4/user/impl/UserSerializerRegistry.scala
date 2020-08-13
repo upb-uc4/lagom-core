@@ -25,6 +25,6 @@ object UserSerializerRegistry extends SharedSerializerRegistry {
     //Events
     JsonSerializer[OnUserCreate],
     JsonSerializer[OnUserDelete],
-    JsonSerializer[OnUserUpdate],
+    JsonSerializer[OnUserUpdate]
   )
 }

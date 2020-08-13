@@ -36,11 +36,11 @@ trait AuthenticationService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/users?user&pw", check _),
         restCall(Method.POST, pathPrefix + "/users", setAuthentication _),
         restCall(Method.PUT, pathPrefix + "/users/:username", changePassword _),
-        restCall(Method.OPTIONS, pathPrefix + "/users", allowedPut _),
+        restCall(Method.OPTIONS, pathPrefix + "/users", allowedPut _)
       )
       .addAcls(
         ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)")
       )
   }
 }

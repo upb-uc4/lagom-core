@@ -22,7 +22,7 @@ trait HyperLedgerService extends UC4Service {
     super.descriptor
       .addCalls(
         restCall(Method.POST, pathPrefix + "/read/:transactionId", read _),
-        restCall(Method.POST, pathPrefix + "/write/:transactionId", write _),
+        restCall(Method.POST, pathPrefix + "/write/:transactionId", write _)
       )
   }
 }

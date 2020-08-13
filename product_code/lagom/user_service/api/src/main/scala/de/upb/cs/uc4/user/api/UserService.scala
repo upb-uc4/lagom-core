@@ -122,7 +122,7 @@ trait UserService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
         restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _),
         restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPut _),
-        restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _)
       )
       .withTopics(
         topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)
