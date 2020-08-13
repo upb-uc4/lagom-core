@@ -1,6 +1,5 @@
 package de.upb.cs.uc4.user.impl.actor
 
-
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
 import de.upb.cs.uc4.shared.client.exceptions.{DetailedError, GenericError, SimpleError}
@@ -11,6 +10,7 @@ import de.upb.cs.uc4.user.impl.events._
 import de.upb.cs.uc4.user.model.Role
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student, User}
 import play.api.libs.json.{Format, Json}
+import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 
 /** The current state of a User */
 case class UserState(optUser: Option[User]) {
@@ -69,18 +69,13 @@ case class UserState(optUser: Option[User]) {
 
       case UpdateLatestMatriculation(semester, replyTo) =>
         //Check for existence and check for student
-        if(optUser.isDefined && optUser.get.role == Role.Student){
-            //validate semester
-            val semesterRegex = """(WS[1-9][0-9]{3}\/[0-9]{2})|(SS[1-9][0-9]{3})""".r
-            semester match {
-              //Regex check
-              case _ if !semesterRegex.matches(semester) =>
-                Effect.reply(replyTo)(RejectedWithError(500, GenericError("internal server error")))
-              case _ if semester.substring(0, 2) == "WS" && (semester.substring(4, 6).toInt + 1 != semester.substring(7, 9).toInt) =>
-                Effect.reply(replyTo)(RejectedWithError(500, GenericError("internal server error")))
-              case _ => Effect.persist(OnLatestMatriculationUpdate(semester)).thenReply(replyTo) { _ => Accepted }
-            }
-        }else{
+        if (optUser.isDefined && optUser.get.role == Role.Student) {
+          if (semester.compareSemester(optUser.get.asInstanceOf[Student].latestImmatriculation) > 0) {
+            Effect.persist(OnLatestMatriculationUpdate(semester)).thenReply(replyTo) { _ => Accepted }
+          } else {
+            Effect.reply(replyTo)(Accepted)
+          }
+        } else {
           Effect.reply(replyTo)(RejectedWithError(500, GenericError("internal server error")))
         }
 
@@ -108,7 +103,7 @@ case class UserState(optUser: Option[User]) {
       case OnUserUpdate(user) =>
         copy(Some(user))
       case OnLatestMatriculationUpdate(semester) =>
-        copy(optUser.map{
+        copy(optUser.map {
           case student: Student => student.copy(latestImmatriculation = semester)
         })
       case OnUserDelete(_) =>

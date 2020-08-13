@@ -4,6 +4,7 @@ import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
 import play.api.libs.json.{Format, Json}
+import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 
 case class Student(username: String,
                    role: Role,
@@ -31,18 +32,10 @@ case class Student(username: String,
 
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
-    val semsterRegex = """(WS[1-9][0-9]{3}\/[0-9]{2})|(SS[1-9][0-9]{3})""".r
-
     var errors = super.validate.asInstanceOf[List[SimpleError]]
 
     if(latestImmatriculation != ""){
-      if(!semsterRegex.matches(latestImmatriculation)){
-        errors :+= SimpleError("latestImmatriculation", "Latest Immatriculation must be a semester of the format \"SSyyyy\" for summer, \"WSyyyy/yy\" for winter.")
-      }else{
-        if (latestImmatriculation.substring(0,2) == "WS" && (latestImmatriculation.substring(4, 6).toInt+1 != latestImmatriculation.substring(7,9).toInt)){
-          errors :+= SimpleError("latestImmatriculation", "Winter semester must consist of two consecutive years.")
-        }
-      }
+      errors :++= latestImmatriculation.validateSemester.map(error => SimpleError("latestImmatriculation", error.reason))
     }
 
     if(matriculationId.isEmpty) {
@@ -60,11 +53,11 @@ case class Student(username: String,
   }
 
 
-  /** 
+  /**
     * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
     * Returns a list of [[SimpleError]]
-    * 
-    * @param user 
+    *
+    * @param user
     * @return Filled Sequence of [[SimpleError]]
     */
   override def checkProtectedFields(user: User): Seq[SimpleError] = {

@@ -1,13 +1,9 @@
 package de.upb.cs.uc4.matriculation.impl
 
-import akka.actor.ActorRef
-import akka.stream.scaladsl.Source
-import akka.stream.{CompletionStrategy, Materializer, OverflowStrategy}
+import akka.stream.Materializer
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, RequestHeader, ResponseHeader}
-import com.lightbend.lagom.scaladsl.broker.TopicProducer
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
