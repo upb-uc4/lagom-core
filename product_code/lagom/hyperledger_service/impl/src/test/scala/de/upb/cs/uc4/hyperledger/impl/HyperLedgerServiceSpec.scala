@@ -4,7 +4,7 @@ import akka.Done
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
-import de.upb.cs.uc4.hyperledger.traits.{ChaincodeActionsTrait, ConnectionManagerTrait}
+import de.upb.cs.uc4.hyperledger.traits.ConnectionManagerTrait
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -20,8 +20,12 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       .withCluster()
   ) { ctx =>
     new HyperLedgerApplication(ctx) with LocalServiceLocator {
-      override lazy val connectionManager: ConnectionManagerTrait = () => new ChaincodeActionsTrait {
-            override def close(): Unit = {}
+      override lazy val connectionManager: ConnectionManagerTrait = null
+      }
+    }
+
+  /*
+  override def close(): Unit = {}
             override val contract_course: ContractTrait = new ContractTrait {
               override def submitTransaction(transactionId: String, params: String*): Array[Byte] = transactionId match {
                 case "addCourse" =>
@@ -56,9 +60,7 @@ class HyperLedgerServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
               }
             }
             override val contract_student: ContractTrait = null
-          }
-      }
-    }
+   */
 
   val client: HyperLedgerService = server.serviceClient.implement[HyperLedgerService]
 
