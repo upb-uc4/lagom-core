@@ -31,7 +31,7 @@ trait UC4Service extends Service {
     val descriptor = named(name)
       .withCalls(
         restCall(Method.GET, pathPrefix + "/version", getVersionNumber _),
-        restCall(Method.OPTIONS, pathPrefix + "/version", allowVersionNumber _),
+        restCall(Method.OPTIONS, pathPrefix + "/version", allowVersionNumber _)
       )
       .withExceptionSerializer(
         new CustomExceptionSerializer(Environment.simple())
@@ -43,7 +43,7 @@ trait UC4Service extends Service {
     } else {
         descriptor.withAcls(
             ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
-            ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
+            ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E")
        )
     }
   }
