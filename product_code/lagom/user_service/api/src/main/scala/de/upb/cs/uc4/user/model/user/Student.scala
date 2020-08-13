@@ -13,17 +13,18 @@ case class Student(username: String,
                    lastName: String,
                    picture: String,
                    email: String,
+                   phoneNumber: String,
                    birthDate: String,
                    latestImmatriculation: String,
                    matriculationId: String) extends User {
 
   def trim: Student = {
     copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim, birthDate.trim, latestImmatriculation.trim, matriculationId.trim)
+      picture.trim, email.trim, phoneNumber.trim, birthDate.trim, latestImmatriculation.trim, matriculationId.trim)
   }
 
   def clean: Student = {
-    trim.copy(email = email.toLowerCase)
+    trim.copy(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
   }
 
   def toPublic: Student = {
@@ -57,7 +58,7 @@ case class Student(username: String,
     * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
     * Returns a list of [[SimpleError]]
     *
-    * @param user
+    * @param user to be checked
     * @return Filled Sequence of [[SimpleError]]
     */
   override def checkProtectedFields(user: User): Seq[SimpleError] = {
@@ -77,7 +78,7 @@ case class Student(username: String,
    * Compares the object against the user parameter to find out if fields, which cannot be changed, are different.
    * Returns a list of SimpleErrors[[SimpleError]]
    *
-   * @param user
+   * @param user to be checked
    * @return Filled Sequence of [[SimpleError]]
    * */
   override def checkUneditableFields(user: User): Seq[SimpleError] = {

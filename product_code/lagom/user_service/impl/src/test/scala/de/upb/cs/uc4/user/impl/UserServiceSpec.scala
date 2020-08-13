@@ -75,17 +75,17 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
   val authenticationUser2: AuthenticationUser = AuthenticationUser("admin0", "newPassword", AuthenticationRole.Admin)
 
-  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "1990-12-11", "","7421769")
+  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1990-12-11", "","7421769")
   val student0UpdatedUneditable: Student = student0.copy(role = Role.Lecturer, latestImmatriculation = "SS2012")
   val student0UpdatedProtected: Student = student0UpdatedUneditable.copy(firstName = "Dieter", lastName = "Dietrich", birthDate = "1996-12-11", matriculationId = "1333337")
   val uneditableErrorSize: Int = 2
   val protectedErrorSize: Int = 4 + uneditableErrorSize
 
-  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
   val lecturer0Updated: Lecturer = lecturer0.copy(picture = "aBetterPicture", email = "noreply@scam.ng", address = addressUpdated, freeText = "Morgen kommt der große Gauss.", researchArea = "Physics")
 
-  val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1992-12-11")
-  val admin1: Admin = Admin("lecturer0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "1996-12-11")
+  val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1992-12-11")
+  val admin1: Admin = Admin("lecturer0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1996-12-11")
 
   /** Tests only working if the whole instance is started */
   "UserService service" should {
