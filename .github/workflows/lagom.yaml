@@ -39,8 +39,22 @@ jobs:
     - name: Run tests
       run: |
         pushd ./product_code/lagom
-        echo "##########################"
-        echo "#    starting test       #"
-        echo "##########################"
-        sbt test
+        echo "##################################"
+        echo "#  Starting Tests with Coverage  #"
+        echo "##################################"
+        sbt test coverageReport coverageAggregate 
         popd
+        
+    - name: Upload test report
+      uses: actions/upload-artifact@v1
+      if: always()
+      with:
+        name: test-reports
+        path: product_code/lagom/target/test_reports/
+        
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v1
+      if: always()
+      with:
+        name: code-coverage
+        path: product_code/lagom/target/scala-2.13/scoverage-report

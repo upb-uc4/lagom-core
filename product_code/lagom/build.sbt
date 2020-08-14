@@ -2,6 +2,7 @@ import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
 lagomServiceEnableSsl in ThisBuild := true
+coverageEnabled in ThisBuild := true
 val hyperledgerApiVersion = "v0.5"
 
 // The project uses PostgreSQL
@@ -10,7 +11,6 @@ lagomCassandraEnabled in ThisBuild := false
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.13.0"
 
-coverageEnabled in ThisBuild := true
 
 def commonSettings(project: String) = Seq(
   testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test_reports/" + project)
