@@ -11,7 +11,7 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, GenericError, SimpleError}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
@@ -77,13 +77,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       (_, role) =>
         _ =>
           usernames match {
-            case None if (role != AuthenticationRole.Admin) =>
+            case None if role != AuthenticationRole.Admin =>
               throw CustomException.NotEnoughPrivileges
-            case None if (role == AuthenticationRole.Admin) =>
+            case None if role == AuthenticationRole.Admin =>
               getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
-            case Some(listOfUsernames) if (role != AuthenticationRole.Admin) =>
+            case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
               getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student].toPublic))
-            case Some(listOfUsernames) if (role == AuthenticationRole.Admin )=>
+            case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
               getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
           }
     }
@@ -129,13 +129,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       (_, role) =>
         _ =>
           usernames match {
-            case None if (role != AuthenticationRole.Admin) =>
+            case None if role != AuthenticationRole.Admin =>
               throw CustomException.NotEnoughPrivileges
-            case None if (role == AuthenticationRole.Admin) =>
+            case None if role == AuthenticationRole.Admin =>
               getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
-            case Some(listOfUsernames) if (role != AuthenticationRole.Admin) =>
+            case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
               getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer].toPublic))
-            case Some(listOfUsernames) if (role == AuthenticationRole.Admin )=>
+            case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
               getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
           }
     }
@@ -179,13 +179,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       (_, role) =>
         _ =>
           usernames match {
-            case None if (role != AuthenticationRole.Admin) =>
+            case None if role != AuthenticationRole.Admin =>
               throw CustomException.NotEnoughPrivileges
-            case None if (role == AuthenticationRole.Admin) =>
+            case None if role == AuthenticationRole.Admin =>
               getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
-            case Some(listOfUsernames) if (role != AuthenticationRole.Admin) =>
+            case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
               getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin].toPublic))
-            case Some(listOfUsernames) if (role == AuthenticationRole.Admin )=>
+            case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
               getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
           }
     }
