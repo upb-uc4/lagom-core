@@ -80,7 +80,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
           if (optStudent.isDefined) {
             Future.successful(optStudent.get)
           } else {
-            throw new CustomException(TransportErrorCode(404, 1003, "Error"), GenericError("key not found"))
+            throw CustomException.NotFound
           }
         }
 
