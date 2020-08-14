@@ -1,11 +1,13 @@
 package de.upb.cs.uc4.authentication.api
 
 import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceAcl, ServiceCall}
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationUser
 import de.upb.cs.uc4.shared.client.UC4Service
+import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
 /** The AuthenticationService interface.
   *
@@ -35,7 +37,8 @@ trait AuthenticationService extends UC4Service {
       .addCalls(
         restCall(Method.GET, pathPrefix + "/users?user&pw", check _),
         restCall(Method.POST, pathPrefix + "/users", setAuthentication _),
-        restCall(Method.PUT, pathPrefix + "/users/:username", changePassword _),
+        restCall(Method.PUT, pathPrefix + "/users/:username", changePassword _)
+          (CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/users", allowedPut _),
       )
       .addAcls(

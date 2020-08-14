@@ -26,7 +26,8 @@ object CustomError{
   def getTitle(`type` : String) : String = {
     `type` match{
       //400
-      case "deserialization error" => "Error while deserializing object"
+      case "deserialization error" => "Syntax of the provided json object was incorrect"
+      case "json validation error" => "The provided json object did not validate"
       //401
       case "authorization error" => "Username and password combination does not exist"
       //403

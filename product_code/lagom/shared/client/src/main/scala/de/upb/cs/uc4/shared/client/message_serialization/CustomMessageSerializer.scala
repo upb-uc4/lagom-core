@@ -4,7 +4,7 @@ import akka.util.ByteString
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer.{NegotiatedDeserializer, NegotiatedSerializer}
 import com.lightbend.lagom.scaladsl.api.deser.{MessageSerializer, StrictMessageSerializer}
 import com.lightbend.lagom.scaladsl.api.transport.{DeserializationException, MessageProtocol, SerializationException}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DeserializationError, DetailedError, SimpleError}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, SimpleError}
 import de.upb.cs.uc4.shared.client.exceptions
 import play.api.libs.json._
 
@@ -16,7 +16,7 @@ object CustomMessageSerializer {
   def jsValueFormatMessageSerializer[Message](
                                                implicit jsValueMessageSerializer: MessageSerializer[JsValue, ByteString],
                                                format: Format[Message]
-  ): StrictMessageSerializer[Message] = new StrictMessageSerializer[Message] {
+                                             ): StrictMessageSerializer[Message] = new StrictMessageSerializer[Message] {
 
     private class JsValueFormatSerializer(jsValueSerializer: NegotiatedSerializer[JsValue, ByteString])
       extends NegotiatedSerializer[Message, ByteString] {
@@ -37,14 +37,29 @@ object CustomMessageSerializer {
     private class JsValueFormatDeserializer(jsValueDeserializer: NegotiatedDeserializer[JsValue, ByteString])
       extends NegotiatedDeserializer[Message, ByteString] {
       override def deserialize(wire: ByteString): Message = {
-        val jsValue = jsValueDeserializer.deserialize(wire)
+
+        val jsValue =
+          try {
+            jsValueDeserializer.deserialize(wire)
+          }
+
+          catch {
+            case ex: DeserializationException =>
+              throw CustomException.DeserializationError
+          }
+
         jsValue.validate[Message] match {
           case JsSuccess(message, _) => message
           case JsError(errors) =>
-            val errorList: Seq[SimpleError] = errors.map{
-              error => SimpleError(error._1.toString().substring(1).replace("/","."),error._2.apply(0).message)
+
+            val errorList: Seq[SimpleError] = errors.map {
+              case (path, list) if path.toString().isEmpty =>
+                SimpleError("unknown path", list.head.message.replaceFirst("error.",""))
+              case (path, list) =>
+                SimpleError(path.toString().replaceFirst("/", "").replace("/", "."),
+                  list.head.message.replaceFirst("error.",""))
             }.toList
-            throw new CustomException(400,exceptions.DetailedError("deserialization error",errorList) )
+            throw new CustomException(400, exceptions.DetailedError("json validation error", errorList))
         }
       }
     }
