@@ -10,6 +10,8 @@ lagomCassandraEnabled in ThisBuild := false
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.13.0"
 
+coverageEnabled in ThisBuild := true
+
 def commonSettings(project: String) = Seq(
   testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test_reports/" + project)
 )
