@@ -30,17 +30,18 @@ case class Student(username: String,
     copy(username, role, address, firstName, lastName, picture, email, phoneNumber, birthDate)
 
   override def trim: Student =
-    super.trim.asInstanceOf[Student].copy(matriculationId = matriculationId.trim)
+    super.trim.asInstanceOf[Student].copy(
+      latestImmatriculation = latestImmatriculation.trim,
+      matriculationId = matriculationId.trim
+    )
 
   override def toPublic: Student =
-    super.toPublic.asInstanceOf[Student].copy(immatriculationStatus = "", matriculationId = "")
+    super.toPublic.asInstanceOf[Student].copy(latestImmatriculation = "", matriculationId = "")
 
   override def clean: Student = super.clean.asInstanceOf[Student]
 
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
-    val fos = List("Computer Science", "Philosophy", "Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
-      "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
 
     var errors = super.validate.asInstanceOf[List[SimpleError]]
 

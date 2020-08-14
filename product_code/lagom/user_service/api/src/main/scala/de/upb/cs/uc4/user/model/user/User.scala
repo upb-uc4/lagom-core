@@ -123,7 +123,7 @@ trait User {
    * Compares the object against the user parameter to find out if fields, which cannot be changed, are different.
    * Returns a list of SimpleErrors[[SimpleError]]
    *
-   * @param user
+   * @param user to be checked
    * @return Filled Sequence of [[SimpleError]]
    * */
   def checkUneditableFields(user: User): Seq[SimpleError] = {
