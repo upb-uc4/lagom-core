@@ -248,9 +248,25 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
 
+      val userTypeString = user match {
+        case _: Student => "student"
+        case _: Lecturer => "lecturer"
+        case _: Admin => "admin"
+      }
+      if(authenticationUser.username != user.username){
+        throw new CustomException(422,
+          DetailedError("validation error", Seq(
+            SimpleError("authUser.username", "Username in authUser must match username in user"),
+            SimpleError(userTypeString+".username", "Username in user must match username in authUser")
+          )))
+      }
+
       if (user.username.trim.isEmpty) {
         throw new CustomException(422,
-          DetailedError("validation error", Seq(SimpleError("username", "Username must not be blank."))))
+          DetailedError("validation error", Seq(
+            SimpleError("authUser.username", "Username must not be empty"),
+            SimpleError(userTypeString + ".username", "Username must not be empty")
+          )))
       }
 
       val ref = entityRef(user.username)

@@ -76,16 +76,22 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val authenticationUser2: AuthenticationUser = AuthenticationUser("admin0", "newPassword", AuthenticationRole.Admin)
 
   val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1990-12-11", "","7421769")
+  val student0Auth : AuthenticationUser = AuthenticationUser(student0.username, student0.username, AuthenticationRole.Student)
   val student0UpdatedUneditable: Student = student0.copy(role = Role.Lecturer, latestImmatriculation = "SS2012")
   val student0UpdatedProtected: Student = student0UpdatedUneditable.copy(firstName = "Dieter", lastName = "Dietrich", birthDate = "1996-12-11", matriculationId = "1333337")
   val uneditableErrorSize: Int = 2
   val protectedErrorSize: Int = 4 + uneditableErrorSize
 
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+  val lecturer0Auth : AuthenticationUser = AuthenticationUser(lecturer0.username, lecturer0.username, AuthenticationRole.Lecturer)
   val lecturer0Updated: Lecturer = lecturer0.copy(picture = "aBetterPicture", email = "noreply@scam.ng", address = addressUpdated, freeText = "Morgen kommt der große Gauss.", researchArea = "Physics")
 
   val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1992-12-11")
+  val admin0Auth : AuthenticationUser = AuthenticationUser(admin0.username, admin0.username, AuthenticationRole.Admin)
+  val admin0Auth2: AuthenticationUser = AuthenticationUser(admin0.username, "newPassword", AuthenticationRole.Admin)
+
   val admin1: Admin = Admin("lecturer0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1996-12-11")
+  val admin1Auth : AuthenticationUser = AuthenticationUser(admin1.username, admin1.username, AuthenticationRole.Admin)
 
   /** Tests only working if the whole instance is started */
   "UserService service" should {
@@ -102,7 +108,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add a student" in {
-      client.addStudent().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageStudent(authenticationUser, student0))
+      client.addStudent().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageStudent(student0Auth, student0))
       eventually(timeout(Span(2, Minutes))) {
         client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
           answer should contain(student0)
@@ -111,7 +117,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add a lecturer" in {
-      client.addLecturer().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageLecturer(authenticationUser, lecturer0))
+      client.addLecturer().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageLecturer(lecturer0Auth, lecturer0))
       eventually(timeout(Span(2, Minutes))) {
         client.getAllLecturers(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
           answer should contain(lecturer0)
@@ -120,7 +126,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add an admin" in {
-      client.addAdmin().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageAdmin(authenticationUser, admin0))
+      client.addAdmin().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageAdmin(admin0Auth, admin0))
       eventually(timeout(Span(2, Minutes))) {
         client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
           answer should contain(admin0)
@@ -212,6 +218,13 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       }
     }
 
+    "throw an exception on adding a user with different username in authUser" in {
+      client.addAdmin().handleRequestHeader(addAuthorizationHeader("admin"))
+        .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username+"changed"), admin0))
+        .failed.map{
+          answer => answer.asInstanceOf[CustomException].getErrorCode.http should===(422)
+        }
+    }
 
     "delete a non-existing user" in {
       client.deleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed.map {
@@ -261,7 +274,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
     "add an already existing user" in {
       client.addAdmin().handleRequestHeader(addAuthorizationHeader("admin"))
-        .invoke(PostMessageAdmin(authenticationUser, admin1)).failed.map { answer =>
+        .invoke(PostMessageAdmin(admin1Auth, admin1)).failed.map { answer =>
         answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
       }
     }
