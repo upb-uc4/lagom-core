@@ -37,3 +37,9 @@ spec:
         - name: hyperledger
           namespace: uc4-lagom
           port: 80
+    - match: PathPrefix(`/matriculation-management`)
+      kind: Rule
+      services:
+        - name: matriculation
+          namespace: uc4-lagom
+          port: 80

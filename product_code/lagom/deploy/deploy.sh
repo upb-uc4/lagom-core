@@ -69,3 +69,6 @@ kubectl apply -f services/hyperledger.yaml
 
 kubectl create secret generic hl-course-application-secret --from-literal=secret="test" -n uc4-lagom
 kubectl apply -f services/hl_course.yaml
+
+kubectl create secret generic matriculation-application-secret --from-literal=secret="test" -n uc4-lagom
+kubectl apply -f services/matriculation.yaml
