@@ -18,34 +18,43 @@ case class Student(username: String,
                    latestImmatriculation: String,
                    matriculationId: String) extends User {
 
-  def trim: Student = {
-    copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim, phoneNumber.trim, birthDate.trim, latestImmatriculation.trim, matriculationId.trim)
-  }
+  def copyUser(username: String = this.username,
+               role: Role = this.role,
+               address: Address = this.address,
+               firstName: String = this.firstName,
+               lastName: String = this.lastName,
+               picture: String = this.picture,
+               email: String = this.email,
+               phoneNumber: String = this.phoneNumber,
+               birthDate: String = this.birthDate): Student =
+    copy(username, role, address, firstName, lastName, picture, email, phoneNumber, birthDate)
 
-  def clean: Student = {
-    trim.copy(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
-  }
+  override def trim: Student =
+    super.trim.asInstanceOf[Student].copy(matriculationId = matriculationId.trim)
 
-  def toPublic: Student = {
-    copy(address = Address.empty, birthDate = "", latestImmatriculation = "", matriculationId = "")
-  }
+  override def toPublic: Student =
+    super.toPublic.asInstanceOf[Student].copy(immatriculationStatus = "", matriculationId = "")
+
+  override def clean: Student = super.clean.asInstanceOf[Student]
 
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
+    val fos = List("Computer Science", "Philosophy", "Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
+      "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
+
     var errors = super.validate.asInstanceOf[List[SimpleError]]
 
     if(latestImmatriculation != ""){
       errors :++= latestImmatriculation.validateSemester.map(error => SimpleError("latestImmatriculation", error.reason))
     }
 
-    if(matriculationId.isEmpty) {
+    if (matriculationId.isEmpty) {
       errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
-    }else{
-      if(!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
+    } else {
+      if (!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
         errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 0000001 and 9999999.")
-      }else {
-        if(matriculationId.length != 7){
+      } else {
+        if (matriculationId.length != 7) {
           errors :+= SimpleError("matriculationId", "Matriculation ID must be a string of length 7.")
         }
       }
