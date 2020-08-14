@@ -24,7 +24,7 @@ trait UserService extends UC4Service {
   // USER
 
   /** Get all users from the database */
-  def getAllUsers: ServiceCall[NotUsed, GetAllUsersResponse]
+  def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse]
 
   /** Delete a users from the database */
   def deleteUser(username: String): ServiceCall[NotUsed, Done]
@@ -32,7 +32,7 @@ trait UserService extends UC4Service {
   // STUDENT
 
   /** Get all students from the database */
-  def getAllStudents: ServiceCall[NotUsed, Seq[Student]]
+  def getAllStudents(usernames: Option[String]): ServiceCall[NotUsed, Seq[Student]]
 
   /** Add a new student to the database */
   def addStudent(): ServiceCall[PostMessageStudent, Student]
@@ -46,7 +46,7 @@ trait UserService extends UC4Service {
   // LECTURER
 
   /** Get all lecturers from the database */
-  def getAllLecturers: ServiceCall[NotUsed, Seq[Lecturer]]
+  def getAllLecturers(usernames: Option[String]): ServiceCall[NotUsed, Seq[Lecturer]]
 
   /** Add a new lecturer to the database */
   def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer]
@@ -60,7 +60,7 @@ trait UserService extends UC4Service {
   // ADMIN
 
   /** Get all admins from the database */
-  def getAllAdmins: ServiceCall[NotUsed, Seq[Admin]]
+  def getAllAdmins(usernames: Option[String]): ServiceCall[NotUsed, Seq[Admin]]
 
   /** Add a new admin to the database */
   def addAdmin(): ServiceCall[PostMessageAdmin, Admin]
@@ -95,7 +95,7 @@ trait UserService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/users", getAllUsers _),
+        restCall(Method.GET, pathPrefix + "/users?usernames", getAllUsers _),
         restCall(Method.DELETE, pathPrefix + "/users/:username", deleteUser _),
         restCall(Method.OPTIONS, pathPrefix + "/users", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDelete _),
@@ -103,21 +103,21 @@ trait UserService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
 
-        restCall(Method.GET, pathPrefix + "/students", getAllStudents _),
+        restCall(Method.GET, pathPrefix + "/students?usernames", getAllStudents _),
         restCall(Method.POST, pathPrefix + "/students", addStudent _),
         restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
         restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _),
         restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPost _),
 
-        restCall(Method.GET, pathPrefix + "/lecturers", getAllLecturers _),
+        restCall(Method.GET, pathPrefix + "/lecturers?usernames", getAllLecturers _),
         restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _),
         restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
         restCall(Method.PUT, pathPrefix + "/lecturers/:username", updateLecturer _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
 
-        restCall(Method.GET, pathPrefix + "/admins", getAllAdmins _),
+        restCall(Method.GET, pathPrefix + "/admins?usernames", getAllAdmins _),
         restCall(Method.POST, pathPrefix + "/admins", addAdmin _),
         restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
         restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _),

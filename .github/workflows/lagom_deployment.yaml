@@ -35,12 +35,10 @@ jobs:
     - name: Deploy
       run: |
         pushd ./product_code/lagom
+        tag=${GITHUB_REF#refs/tags/}
+        tag=${tag%-v*}
         echo "##########################"
-        echo "#   deploy services      #"
+        echo "    deploy ${tag}    "
         echo "##########################"
-        sbt authentication_service/docker:publish
-        sbt user_service/docker:publish
-        sbt course_service/docker:publish
-        sbt hyperledger_service/docker:publish
-        sbt hl_course_service/docker:publish
+        sbt ${tag}_service/docker:publish
         popd
