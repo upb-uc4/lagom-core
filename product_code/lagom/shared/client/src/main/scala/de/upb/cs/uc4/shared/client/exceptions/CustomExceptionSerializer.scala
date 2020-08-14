@@ -5,7 +5,7 @@ import java.io.{CharArrayWriter, PrintWriter}
 import akka.util.ByteString
 import com.lightbend.lagom.scaladsl.api.deser.{DefaultExceptionSerializer, RawExceptionMessage}
 import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, MessageProtocol, TransportErrorCode, TransportException}
-import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
+import play.api.libs.json.{JsArray, JsError, JsSuccess, JsValue, Json}
 import play.api.{Environment, Mode}
 
 import scala.util.control.NonFatal
@@ -55,6 +55,18 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
         "detail" -> message.detail
       ))) //If it is not one of our custom types of Exceptions, it is one of the default exception
 
+      case der :DeserializationError =>
+
+        var arr : JsArray = Json.arr()
+        for (field <- der.missingFields){
+          arr :+= Json.parse(field)
+        }
+        ByteString.fromString(Json.stringify(Json.obj(
+          "type" -> der.`type`,
+          "title" -> der.title,
+          "missingFields" -> arr
+        )))
+
       case _ => ByteString("")
     }
 
@@ -87,7 +99,21 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
           case JsError(_) => GenericError("deserialization exception")
         }
         fromCodeAndMessageCustom(message.errorCode, detailedError)
-      }else{
+      }
+      else if(messageJson.toString().contains("missingFields")){
+        val jsonParseResult = for {
+          eType   <- (messageJson \ "type").validate[String]
+          title <- (messageJson \ "title").validate[String]
+          missingFields <- (messageJson \ "missingFields").validate[Seq[String]]
+
+        } yield new DeserializationError(eType, title, missingFields)
+        val deserializationError = jsonParseResult match {
+          case JsSuccess(m, _) => m
+          case JsError(_) => GenericError("deserialization exception")
+        }
+        fromCodeAndMessageCustom(message.errorCode, deserializationError)
+      }
+      else{
         //We have a GenericError
         val jsonParseResult = for {
           eType   <- (messageJson \ "type").validate[String]
