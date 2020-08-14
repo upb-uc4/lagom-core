@@ -37,12 +37,6 @@ class HyperledgerServiceTest extends AsyncWordSpec with Matchers with BeforeAndA
       }}
     }
 
-    "not read a non-existing course" in {
-      client.read("getCourseById").invoke(List("invalidID")).failed.map { answer =>
-        answer.asInstanceOf[TransportException].exceptionMessage.name should ===(new TransactionErrorException("getCourseById", 404, "wahtever"))
-      }
-    }
-
     "write a course" in {
       client.write("addCourse").invoke(List(TestCourses.courseA)).map { answer =>
         answer should ===(Done)
