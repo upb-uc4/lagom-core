@@ -61,12 +61,6 @@ class HyperledgerServiceTest extends AsyncWordSpec with Matchers with BeforeAndA
       }
     }
 
-    "not write a non json" in {
-      client.write("addCourse").invoke(List("invalid")).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(500)
-      }
-    }
-
     "delete a course" in {
       client.write("deleteCourseById").invoke(List("A")).map { answer =>
         answer should ===(Done)
