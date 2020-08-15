@@ -26,7 +26,7 @@ spec:
             - name: APPLICATION_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: hl-course-application-secret
+                  name: matriculation-application-secret
                   key: secret
             - name: KAFKA_SERVICE_NAME
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
