@@ -10,8 +10,7 @@ import de.upb.cs.uc4.user.impl.events.UserEvent
 
 object UserBehaviour {
 
-  /**
-    * Given a sharding [[EntityContext]] this function produces an Akka [[Behavior]] for the aggregate.
+  /** Given a sharding [[EntityContext]] this function produces an Akka [[Behavior]] for the aggregate.
     */
   def create(entityContext: EntityContext[UserCommand]): Behavior[UserCommand] = {
     val persistenceId: PersistenceId = PersistenceId(entityContext.entityTypeKey.name, entityContext.entityId)
@@ -28,8 +27,7 @@ object UserBehaviour {
   /*
    * This method is extracted to write unit tests that are completely independent to Akka Cluster.
    */
-  private[impl] def create(persistenceId: PersistenceId): EventSourcedBehavior[UserCommand, UserEvent, UserState]
-  = EventSourcedBehavior
+  private[impl] def create(persistenceId: PersistenceId): EventSourcedBehavior[UserCommand, UserEvent, UserState] = EventSourcedBehavior
     .withEnforcedReplies[UserCommand, UserEvent, UserState](
       persistenceId = persistenceId,
       emptyState = UserState.initial,

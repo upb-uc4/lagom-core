@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.shared.server
 
-import com.lightbend.lagom.scaladsl.playjson.{JsonSerializer, JsonSerializerRegistry}
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
+import com.lightbend.lagom.scaladsl.playjson.{ JsonSerializer, JsonSerializerRegistry }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 
 import scala.collection.immutable.Seq
 

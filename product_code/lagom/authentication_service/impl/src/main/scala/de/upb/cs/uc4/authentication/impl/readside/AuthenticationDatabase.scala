@@ -1,11 +1,11 @@
 package de.upb.cs.uc4.authentication.impl.readside
 
 import akka.Done
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
 import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
-import de.upb.cs.uc4.authentication.impl.commands.{AuthenticationCommand, SetAuthentication}
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
+import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, SetAuthentication }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import slick.dbio.Effect
@@ -13,7 +13,7 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class AuthenticationDatabase(database: Database, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext) {
 
@@ -53,22 +53,22 @@ class AuthenticationDatabase(database: Database, clusterSharding: ClusterShardin
   def getAll: Future[Seq[String]] = database.run(findAllQuery)
 
   /** Adds an AuthenticationUser to the table
-   *
-   * @param user which should get added
-   */
+    *
+    * @param user which should get added
+    */
   def addAuthenticationUser(user: AuthenticationUser): DBIO[Done] =
     findByUsernameQuery(user.username)
       .flatMap {
         case None => authenticationUsers += Hashing.sha256(user.username)
-        case _ => DBIO.successful(Done)
+        case _    => DBIO.successful(Done)
       }
       .map(_ => Done)
       .transactionally
 
   /** Deletes an AuthenticationUser from the table
-   *
-   * @param username of the user which should get removed
-   */
+    *
+    * @param username of the user which should get removed
+    */
   def removeAuthenticationUser(username: String): DBIO[Done] =
     authenticationUsers
       .filter(_.username === Hashing.sha256(username))

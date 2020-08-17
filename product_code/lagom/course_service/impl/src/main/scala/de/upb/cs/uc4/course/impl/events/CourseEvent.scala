@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.course.impl.events
 
-import com.lightbend.lagom.scaladsl.persistence.{AggregateEvent, AggregateEventTag}
+import com.lightbend.lagom.scaladsl.persistence.{ AggregateEvent, AggregateEventTag }
 
 /** The trait for the events needed in the state
   * Every event is a case class containing the

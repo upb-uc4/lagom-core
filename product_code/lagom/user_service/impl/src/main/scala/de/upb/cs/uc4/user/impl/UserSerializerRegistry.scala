@@ -3,13 +3,11 @@ package de.upb.cs.uc4.user.impl
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 import de.upb.cs.uc4.user.impl.actor.UserState
-import de.upb.cs.uc4.user.impl.events.{OnLatestMatriculationUpdate, OnUserCreate, OnUserDelete, OnUserUpdate}
+import de.upb.cs.uc4.user.impl.events.{ OnLatestMatriculationUpdate, OnUserCreate, OnUserDelete, OnUserUpdate }
 
 import scala.collection.immutable.Seq
 
-
-/**
-  * Akka serialization, used by both persistence and remoting, needs to have
+/** Akka serialization, used by both persistence and remoting, needs to have
   * serializers registered for every type serialized or deserialized. While it's
   * possible to use any serializer you want for Akka messages, out of the box
   * Lagom provides support for JSON, via this registry abstraction.
@@ -26,6 +24,6 @@ object UserSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[OnUserCreate],
     JsonSerializer[OnUserDelete],
     JsonSerializer[OnUserUpdate],
-    JsonSerializer[OnLatestMatriculationUpdate],
+    JsonSerializer[OnLatestMatriculationUpdate]
   )
 }

@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.course.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
@@ -13,19 +13,20 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
-import de.upb.cs.uc4.course.impl.readside.{CourseDatabase, CourseEventProcessor}
+import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError}
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, GenericError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the CourseService */
-class CourseServiceImpl(clusterSharding: ClusterSharding,
-                        readSide: ReadSide, processor: CourseEventProcessor, database: CourseDatabase)
-                       (implicit ec: ExecutionContext, auth: AuthenticationService) extends CourseService {
+class CourseServiceImpl(
+    clusterSharding: ClusterSharding,
+    readSide: ReadSide, processor: CourseEventProcessor, database: CourseDatabase
+)(implicit ec: ExecutionContext, auth: AuthenticationService) extends CourseService {
   readSide.register(processor)
 
   /** Looks up the entity for the given ID */
@@ -44,15 +45,13 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         .map(seq => seq
           .filter(opt => opt.isDefined) //Filter every not existing course
           .map(opt => opt.get) //Future[Seq[Course]]
-        )
-      )
+        ))
       .map(seq => seq
         .filter { course =>
           //If courseName query is set, we check that every whitespace seperated parameter is contained
           courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
         }
-        .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
-      )
+        .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get))
   }
 
   /** @inheritdoc */
@@ -60,7 +59,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
         ServerServiceCall { (_, courseProposal) =>
-          if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username){
+          if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username) {
             throw CustomException.OwnerMismatch
           }
           // Generate unique ID for the course to add
@@ -88,7 +87,8 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
             case Some(course) =>
               if (role == AuthenticationRole.Lecturer && username != course.lecturerId) {
                 throw CustomException.OwnerMismatch
-              } else {
+              }
+              else {
                 entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
                   .map {
                     case Accepted => // OK
@@ -107,7 +107,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
-      case None => throw CustomException.NotFound
+      case None         => throw CustomException.NotFound
     }
   }
 
@@ -115,7 +115,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   override def updateCourse(id: String): ServiceCall[Course, Done] =
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
-        ServerServiceCall{
+        ServerServiceCall {
           (_, updatedCourse) =>
             // Look up the sharded entity (aka the aggregate instance) for the given ID.
             if (id != updatedCourse.courseId) {
@@ -125,12 +125,12 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
             val ref = entityRef(id)
 
             val courseBefore = ref.ask[Option[Course]](replyTo => GetCourse(replyTo))
-            courseBefore.flatMap{
+            courseBefore.flatMap {
               case Some(course) =>
-                if(role == AuthenticationRole.Lecturer && course.lecturerId != username){
+                if (role == AuthenticationRole.Lecturer && course.lecturerId != username) {
                   throw CustomException.OwnerMismatch
                 }
-                else{
+                else {
                   ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
                     .map {
                       case Accepted => // Update Successful

@@ -1,12 +1,12 @@
 package de.upb.cs.uc4.user.impl.readside
 
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickReadSide
-import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, ReadSideProcessor}
+import com.lightbend.lagom.scaladsl.persistence.{ AggregateEventTag, ReadSideProcessor }
 import de.upb.cs.uc4.user.impl.UserApplication
-import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, UserEvent}
+import de.upb.cs.uc4.user.impl.events.{ OnUserCreate, OnUserDelete, UserEvent }
 
 class UserEventProcessor(readSide: SlickReadSide, database: UserDatabase)
-  extends ReadSideProcessor[UserEvent]{
+  extends ReadSideProcessor[UserEvent] {
 
   /** @inheritdoc */
   override def buildHandler(): ReadSideProcessor.ReadSideHandler[UserEvent] =

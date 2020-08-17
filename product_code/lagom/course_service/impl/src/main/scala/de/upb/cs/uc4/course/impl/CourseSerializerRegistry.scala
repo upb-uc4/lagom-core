@@ -2,14 +2,12 @@ package de.upb.cs.uc4.course.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.course.impl.actor.CourseState
-import de.upb.cs.uc4.course.impl.events.{OnCourseCreate, OnCourseDelete, OnCourseUpdate}
+import de.upb.cs.uc4.course.impl.events.{ OnCourseCreate, OnCourseDelete, OnCourseUpdate }
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq
 
-
-/**
-  * Akka serialization, used by both persistence and remoting, needs to have
+/** Akka serialization, used by both persistence and remoting, needs to have
   * serializers registered for every type serialized or deserialized. While it's
   * possible to use any serializer you want for Akka messages, out of the box
   * Lagom provides support for JSON, via this registry abstraction.

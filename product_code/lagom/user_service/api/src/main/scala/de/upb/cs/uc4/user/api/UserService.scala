@@ -1,16 +1,15 @@
 package de.upb.cs.uc4.user.api
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
+import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
-import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
-import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate}
-
+import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student }
+import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate }
 
 /** The UserService interface.
   *
@@ -110,31 +109,25 @@ trait UserService extends UC4Service {
 
         restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
         restCall(Method.GET, pathPrefix + "/students?usernames", getAllStudents _),
-        restCall(Method.POST, pathPrefix + "/students", addStudent _)
-          (CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/students", addStudent _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
-        restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _)
-          (CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/lecturers?usernames", getAllLecturers _),
-        restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _)
-          (CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
-        restCall(Method.PUT, pathPrefix + "/lecturers/:username", updateLecturer _)
-          (CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.PUT, pathPrefix + "/lecturers/:username", updateLecturer _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/admins?usernames", getAllAdmins _),
-        restCall(Method.POST, pathPrefix + "/admins", addAdmin _)
-          (CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/admins", addAdmin _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
-        restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _)
-          (CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPut _),
-        restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _)
       )
       .withTopics(
         topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)

@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.hl.course.impl
 
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
@@ -10,16 +10,15 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.hl.course.api.HlCourseService
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, GenericError}
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, GenericError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the CourseService */
-class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
-                         (implicit ec: ExecutionContext, auth: AuthenticationService) extends HlCourseService {
+class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)(implicit ec: ExecutionContext, auth: AuthenticationService) extends HlCourseService {
 
   implicit val timeout: Timeout = Timeout(60.seconds)
 
@@ -27,9 +26,8 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
     hyperLedgerSession.read[Seq[Course]]("getAllCourses")
       .map(seq => seq
-      .filter(course => courseName.isEmpty || course.courseName == courseName.get)
-      .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
-    )
+        .filter(course => courseName.isEmpty || course.courseName == courseName.get)
+        .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get))
   }
 
   /** @inheritdoc */
@@ -37,8 +35,8 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
         ServerServiceCall {
-          (_,courseProposal) =>
-            if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username){
+          (_, courseProposal) =>
+            if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username) {
               throw CustomException.OwnerMismatch
             }
             val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
@@ -46,7 +44,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
             if (validationErrors.nonEmpty) {
               throw new CustomException(422, DetailedError("validation error", validationErrors))
             }
-            hyperLedgerSession.write("addCourse", courseToAdd).map{
+            hyperLedgerSession.write("addCourse", courseToAdd).map {
               case Done => // Creation Successful
                 (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
             }
@@ -56,15 +54,17 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
   /** @inheritdoc */
   override def deleteCourse(id: String): ServiceCall[NotUsed, Done] =
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
-      (username, role) => ServerServiceCall { _ =>
-        hyperLedgerSession.read[Course]("getCourseById", id).flatMap{ course =>
-          if(role == AuthenticationRole.Lecturer && username != course.lecturerId){
-            throw CustomException.OwnerMismatch
-          } else {
-            hyperLedgerSession.write("deleteCourseById", id)
+      (username, role) =>
+        ServerServiceCall { _ =>
+          hyperLedgerSession.read[Course]("getCourseById", id).flatMap { course =>
+            if (role == AuthenticationRole.Lecturer && username != course.lecturerId) {
+              throw CustomException.OwnerMismatch
+            }
+            else {
+              hyperLedgerSession.write("deleteCourseById", id)
+            }
           }
         }
-      }
     }
 
   /** @inheritdoc */
@@ -81,10 +81,11 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)
             if (id != updatedCourse.courseId) {
               throw CustomException.PathParameterMismatch
             }
-            hyperLedgerSession.read[Course]("getCourseById", id).flatMap{course =>
-              if(role == AuthenticationRole.Lecturer && username != course.lecturerId){
+            hyperLedgerSession.read[Course]("getCourseById", id).flatMap { course =>
+              if (role == AuthenticationRole.Lecturer && username != course.lecturerId) {
                 throw CustomException.OwnerMismatch
-              } else {
+              }
+              else {
                 val validationErrors = updatedCourse.validateCourseSyntax
                 if (validationErrors.nonEmpty) {
                   throw new CustomException(422, DetailedError("validation error", validationErrors))

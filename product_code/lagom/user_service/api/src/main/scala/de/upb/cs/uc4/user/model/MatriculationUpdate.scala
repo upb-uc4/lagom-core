@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
 case class MatriculationUpdate(username: String, semester: String)
 

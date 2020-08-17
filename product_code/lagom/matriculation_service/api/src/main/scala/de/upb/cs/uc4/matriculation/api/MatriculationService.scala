@@ -1,10 +1,10 @@
 package de.upb.cs.uc4.matriculation.api
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData}
+import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
+import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData }
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
@@ -18,7 +18,6 @@ trait MatriculationService extends UC4Service {
   override val pathPrefix: String = "/matriculation-management"
   /** The name of the service */
   override val name: String = "matriculation"
-
 
   /** Immatriculates a student */
   def addMatriculationData(username: String): ServiceCall[PutMessageMatriculationData, Done]
@@ -36,8 +35,7 @@ trait MatriculationService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)
-        (CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.GET, pathPrefix + "/history/:username", getMatriculationData _),
         restCall(Method.OPTIONS, pathPrefix + "/:username", allowedPut _),
         restCall(Method.OPTIONS, pathPrefix + "/history/:username", allowedGet _),

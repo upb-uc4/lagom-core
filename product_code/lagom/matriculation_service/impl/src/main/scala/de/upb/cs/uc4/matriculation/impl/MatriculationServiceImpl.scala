@@ -1,15 +1,15 @@
 package de.upb.cs.uc4.matriculation.impl
 
 import akka.stream.Materializer
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, RequestHeader, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, RequestHeader, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError}
+import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
 import de.upb.cs.uc4.user.api.UserService
@@ -18,8 +18,7 @@ import de.upb.cs.uc4.user.model.MatriculationUpdate
 import scala.concurrent.ExecutionContext
 
 /** Implementation of the MatriculationService */
-class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userService: UserService)
-                              (implicit ec: ExecutionContext, auth: AuthenticationService, materializer: Materializer)
+class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userService: UserService)(implicit ec: ExecutionContext, auth: AuthenticationService, materializer: Materializer)
   extends MatriculationService {
 
   def getAuthHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
@@ -46,9 +45,9 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
                     message.semester
                   )
                 ).map { _ =>
-                  userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
-                  (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                }
+                    userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
+                    (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                  }
               }
               .recoverWith {
                 case _: Exception =>
@@ -81,7 +80,6 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
           }
         }
     }
-
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")

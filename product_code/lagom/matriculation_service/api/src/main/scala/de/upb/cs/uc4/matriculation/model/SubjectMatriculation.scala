@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.matriculation.model
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
 case class SubjectMatriculation(fieldOfStudy: String, semesters: Seq[String]) {
   def trim: SubjectMatriculation =

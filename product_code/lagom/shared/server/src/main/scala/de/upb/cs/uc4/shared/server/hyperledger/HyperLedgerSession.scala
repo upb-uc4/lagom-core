@@ -2,9 +2,9 @@ package de.upb.cs.uc4.shared.server.hyperledger
 
 import akka.Done
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class HyperLedgerSession(hyperLedgerService: HyperLedgerService)(implicit ec: ExecutionContext) {
 
@@ -26,6 +26,6 @@ class HyperLedgerSession(hyperLedgerService: HyperLedgerService)(implicit ec: Ex
   def write[A](transactionId: String, params: Seq[String], seq: Seq[A])(implicit format: Format[A]): Future[Done] =
     hyperLedgerService.write(transactionId).invoke(params ++ seq.map {
       case s: String => s
-      case obj => Json.stringify(Json.toJson(obj))
+      case obj       => Json.stringify(Json.toJson(obj))
     })
 }

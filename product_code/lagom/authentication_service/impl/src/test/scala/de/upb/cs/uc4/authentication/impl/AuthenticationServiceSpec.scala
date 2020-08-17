@@ -2,31 +2,31 @@ package de.upb.cs.uc4.authentication.impl
 
 import java.util.Base64
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
+import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest }
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
-import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate}
+import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student }
+import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate }
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Minutes, Span}
+import org.scalatest.time.{ Minutes, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
 
 /** Tests for the AuthenticationService
- * All tests need to be started in the defined order
- */
+  * All tests need to be started in the defined order
+  */
 class AuthenticationServiceSpec extends AsyncWordSpec
   with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures {
 
@@ -36,18 +36,18 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new AuthenticationApplication(ctx) with LocalServiceLocator {
-      // Declaration as lazy values forces right execution order
-      lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
-      lazy val internDeletionStub: ProducerStub[JsonUsername] =
-        stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
+      new AuthenticationApplication(ctx) with LocalServiceLocator {
+        // Declaration as lazy values forces right execution order
+        lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
+        lazy val internDeletionStub: ProducerStub[JsonUsername] =
+          stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
 
-      deletionStub = internDeletionStub
+        deletionStub = internDeletionStub
 
-      // Create a userService with ProducerStub as topic
-      override lazy val userService: UserServiceStub = new UserServiceStub(internDeletionStub)
+        // Create a userService with ProducerStub as topic
+        override lazy val userService: UserServiceStub = new UserServiceStub(internDeletionStub)
+      }
     }
-  }
 
   private val client: AuthenticationService = server.serviceClient.implement[AuthenticationService]
 
@@ -69,7 +69,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
         } yield Seq(answer1, answer2, answer3)
 
         futureAnswers.map { answers =>
-          answers should contain allOf(
+          answers should contain allOf (
             ("student", AuthenticationRole.Student),
             ("lecturer", AuthenticationRole.Lecturer),
             ("admin", AuthenticationRole.Admin)
@@ -80,17 +80,19 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
     "add new login data" in {
       client.setAuthentication().invoke(AuthenticationUser("Gregor", "Greg", AuthenticationRole.Student)).flatMap {
-        _ => client.check("Gregor", "Greg").invoke().map { answer =>
-          answer should ===(("Gregor", AuthenticationRole.Student))
-        }
+        _ =>
+          client.check("Gregor", "Greg").invoke().map { answer =>
+            answer should ===(("Gregor", AuthenticationRole.Student))
+          }
       }
     }
 
     "update login data" in {
       client.changePassword("Gregor").handleRequestHeader(addLoginHeader("Gregor", "Greg")).invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).flatMap {
-        _ => client.check("Gregor", "GregNew").invoke().map { answer =>
-          answer should ===(("Gregor", AuthenticationRole.Student))
-        }
+        _ =>
+          client.check("Gregor", "GregNew").invoke().map { answer =>
+            answer should ===(("Gregor", AuthenticationRole.Student))
+          }
       }
     }
 

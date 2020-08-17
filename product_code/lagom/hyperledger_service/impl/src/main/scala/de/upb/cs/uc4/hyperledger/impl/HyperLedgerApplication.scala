@@ -1,13 +1,13 @@
 package de.upb.cs.uc4.hyperledger.impl
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{ Path, Paths }
 
 import akka.actor.CoordinatedShutdown
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.cluster.ClusterComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
+import com.lightbend.lagom.scaladsl.server.{ LagomApplication, LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.hyperledger.ConnectionManager
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
@@ -22,9 +22,9 @@ import scala.concurrent.duration._
 
 abstract class HyperLedgerApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
-    with ClusterComponents
-    with CORSComponents
-    with AhcWSComponents {
+  with ClusterComponents
+  with CORSComponents
+  with AhcWSComponents {
 
   lazy val connectionManager: ConnectionManagerTrait = ConnectionManager(
     retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile.yaml"),
@@ -34,7 +34,8 @@ abstract class HyperLedgerApplication(context: LagomApplicationContext)
   private def retrievePath(key: String, fallback: String): Path = {
     if (config.hasPath(key)) {
       Paths.get(config.getString(key))
-    } else {
+    }
+    else {
       Paths.get(getClass.getResource(fallback).toURI)
     }
   }

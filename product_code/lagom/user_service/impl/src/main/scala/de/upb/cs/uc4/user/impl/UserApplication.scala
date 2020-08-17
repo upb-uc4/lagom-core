@@ -4,26 +4,25 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
+import com.lightbend.lagom.scaladsl.server.{ LagomApplication, LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.shared.server.AuthenticationComponent
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.impl.actor.{UserBehaviour, UserState}
-import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
+import de.upb.cs.uc4.user.impl.actor.{ UserBehaviour, UserState }
+import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import play.api.db.HikariCPComponents
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc.EssentialFilter
 import play.filters.cors.CORSComponents
 
-
 abstract class UserApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
-    with SlickPersistenceComponents
-    with JdbcPersistenceComponents
-    with HikariCPComponents
-    with CORSComponents
-    with AhcWSComponents
-    with AuthenticationComponent {
+  with SlickPersistenceComponents
+  with JdbcPersistenceComponents
+  with HikariCPComponents
+  with CORSComponents
+  with AhcWSComponents
+  with AuthenticationComponent {
 
   // Create ReadSide
   lazy val database: UserDatabase = wire[UserDatabase]
@@ -47,7 +46,7 @@ abstract class UserApplication(context: LagomApplicationContext)
   )
 }
 
-object UserApplication{
+object UserApplication {
   /** Functions as offset for the database */
   val offset: String = "UniversityCredits4Users"
 }

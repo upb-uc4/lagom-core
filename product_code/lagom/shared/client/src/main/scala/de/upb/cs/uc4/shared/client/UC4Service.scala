@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.shared.client
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceAcl, ServiceCall}
+import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, ServiceCall }
 import de.upb.cs.uc4.shared.client.exceptions.CustomExceptionSerializer
 import play.api.Environment
 
@@ -31,7 +31,7 @@ trait UC4Service extends Service {
     val descriptor = named(name)
       .withCalls(
         restCall(Method.GET, pathPrefix + "/version", getVersionNumber _),
-        restCall(Method.OPTIONS, pathPrefix + "/version", allowVersionNumber _),
+        restCall(Method.OPTIONS, pathPrefix + "/version", allowVersionNumber _)
       )
       .withExceptionSerializer(
         new CustomExceptionSerializer(Environment.simple())
@@ -39,10 +39,11 @@ trait UC4Service extends Service {
 
     if (autoAcl) {
       descriptor.withAutoAcl(true)
-    } else {
+    }
+    else {
       descriptor.withAcls(
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E")
       )
     }
   }

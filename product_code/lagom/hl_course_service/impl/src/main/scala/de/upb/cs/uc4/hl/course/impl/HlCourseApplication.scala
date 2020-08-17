@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.hl.course.impl
 
-import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
+import com.lightbend.lagom.scaladsl.server.{ LagomApplication, LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.hl.course.api.HlCourseService
 import de.upb.cs.uc4.shared.server.AuthenticationComponent
@@ -11,10 +11,10 @@ import play.filters.cors.CORSComponents
 
 abstract class HlCourseApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
-    with CORSComponents
-    with AhcWSComponents
-    with AuthenticationComponent
-    with HyperledgerComponent {
+  with CORSComponents
+  with AhcWSComponents
+  with AuthenticationComponent
+  with HyperledgerComponent {
 
   // Set HttpFilter to the default CorsFilter
   override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)

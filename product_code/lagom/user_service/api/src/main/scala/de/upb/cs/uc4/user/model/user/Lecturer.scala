@@ -3,29 +3,33 @@ package de.upb.cs.uc4.user.model.user
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
-case class Lecturer(username: String,
-                    role: Role,
-                    address: Address,
-                    firstName: String,
-                    lastName: String,
-                    picture: String,
-                    email: String,
-                    phoneNumber: String,
-                    birthDate: String,
-                    freeText: String,
-                    researchArea: String) extends User {
+case class Lecturer(
+    username: String,
+    role: Role,
+    address: Address,
+    firstName: String,
+    lastName: String,
+    picture: String,
+    email: String,
+    phoneNumber: String,
+    birthDate: String,
+    freeText: String,
+    researchArea: String
+) extends User {
 
-  def copyUser(username: String = this.username,
-               role: Role = this.role,
-               address: Address = this.address,
-               firstName: String = this.firstName,
-               lastName: String = this.lastName,
-               picture: String = this.picture,
-               email: String = this.email,
-               phoneNumber: String = this.phoneNumber,
-               birthDate: String = this.birthDate): Lecturer =
+  def copyUser(
+      username: String = this.username,
+      role: Role = this.role,
+      address: Address = this.address,
+      firstName: String = this.firstName,
+      lastName: String = this.lastName,
+      picture: String = this.picture,
+      email: String = this.email,
+      phoneNumber: String = this.phoneNumber,
+      birthDate: String = this.birthDate
+  ): Lecturer =
     copy(username, role, address, firstName, lastName, picture, email, phoneNumber, birthDate)
 
   override def trim: Lecturer =

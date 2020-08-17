@@ -5,10 +5,10 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import de.upb.cs.uc4.hyperledger.impl.HyperLedgerApplication
-import de.upb.cs.uc4.hyperledger.impl.commands.{HyperLedgerCommand, Read, Shutdown, Write}
-import de.upb.cs.uc4.hyperledger.traits.{ChaincodeActionsTrait, ConnectionManagerTrait}
+import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperLedgerCommand, Read, Shutdown, Write }
+import de.upb.cs.uc4.hyperledger.traits.{ ChaincodeActionsTrait, ConnectionManagerTrait }
 
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 object HyperLedgerBehaviour {
 
@@ -23,7 +23,8 @@ object HyperLedgerBehaviour {
             case Read(transactionId, params, replyTo) =>
               try {
                 replyTo ! Success(chaincodeConnection.evaluateTransaction(transactionId, params: _*))
-              } catch {
+              }
+              catch {
                 case e: Exception =>
                   replyTo ! Failure(e)
               }
@@ -33,14 +34,15 @@ object HyperLedgerBehaviour {
               try {
                 chaincodeConnection.submitTransaction(transactionId, params: _*)
                 replyTo ! Success(Done)
-              } catch {
+              }
+              catch {
                 case e: Exception =>
                   replyTo ! Failure(e)
               }
               Behaviors.same
 
             case Shutdown() =>
-              if(chaincodeConnection !=  null){
+              if (chaincodeConnection != null) {
                 chaincodeConnection.close()
               }
               Behaviors.same

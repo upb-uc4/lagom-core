@@ -17,4 +17,3 @@ class CourseLoader extends LagomApplicationLoader {
   override def describeService: Some[Descriptor] = Some(readDescriptor[CourseService])
 }
 
-

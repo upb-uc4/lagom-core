@@ -3,7 +3,7 @@ package de.upb.cs.uc4.hyperledger.impl
 import com.lightbend.lagom.scaladsl.akka.discovery.AkkaDiscoveryComponents
 import com.lightbend.lagom.scaladsl.api.Descriptor
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
-import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomApplicationLoader}
+import com.lightbend.lagom.scaladsl.server.{ LagomApplication, LagomApplicationContext, LagomApplicationLoader }
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 
 class HyperLedgerLoader extends LagomApplicationLoader {

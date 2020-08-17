@@ -4,10 +4,10 @@ import java.util.UUID
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationBehaviour, AuthenticationEntry}
-import de.upb.cs.uc4.authentication.impl.commands.{DeleteAuthentication, GetAuthentication, SetAuthentication}
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationBehaviour, AuthenticationEntry }
+import de.upb.cs.uc4.authentication.impl.commands.{ DeleteAuthentication, GetAuthentication, SetAuthentication }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -22,7 +22,6 @@ class AuthenticationStateSpec extends ScalaTestWithActorTestKit(s"""
   val authenticationUser1: AuthenticationUser = AuthenticationUser("ben123", "Hermann", AuthenticationRole.Admin)
   val authenticationUser2: AuthenticationUser = AuthenticationUser("312neb", "Nnamreh", AuthenticationRole.Student)
 
-
   "AuthenticationState" should {
 
     "get non-existing user" in {
@@ -32,7 +31,7 @@ class AuthenticationStateSpec extends ScalaTestWithActorTestKit(s"""
       probe.expectMessage(None)
     }
 
-    "set a user" in  {
+    "set a user" in {
       val ref = spawn(AuthenticationBehaviour.create(PersistenceId("fake-type-hint", "fake-id-2")))
 
       val probe1 = createTestProbe[Confirmation]()

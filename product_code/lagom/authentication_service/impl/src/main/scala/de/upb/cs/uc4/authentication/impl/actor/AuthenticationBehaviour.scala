@@ -10,8 +10,7 @@ import de.upb.cs.uc4.authentication.impl.events.AuthenticationEvent
 
 object AuthenticationBehaviour {
 
-  /**
-    * Given a sharding [[EntityContext]] this function produces an Akka [[Behavior]] for the aggregate.
+  /** Given a sharding [[EntityContext]] this function produces an Akka [[Behavior]] for the aggregate.
     */
   def create(entityContext: EntityContext[AuthenticationCommand]): Behavior[AuthenticationCommand] = {
     val persistenceId: PersistenceId = PersistenceId(entityContext.entityTypeKey.name, entityContext.entityId)
@@ -28,8 +27,7 @@ object AuthenticationBehaviour {
   /*
    * This method is extracted to write unit tests that are completely independent to Akka Cluster.
    */
-  private[impl] def create(persistenceId: PersistenceId): EventSourcedBehavior[AuthenticationCommand, AuthenticationEvent, AuthenticationState]
-  = EventSourcedBehavior
+  private[impl] def create(persistenceId: PersistenceId): EventSourcedBehavior[AuthenticationCommand, AuthenticationEvent, AuthenticationState] = EventSourcedBehavior
     .withEnforcedReplies[AuthenticationCommand, AuthenticationEvent, AuthenticationState](
       persistenceId = persistenceId,
       emptyState = AuthenticationState.initial,

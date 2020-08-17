@@ -4,7 +4,6 @@ import play.api.libs.json._
 
 case class GenericError(`type`: String, title: String) extends CustomError
 
-
 object GenericError {
   implicit val format: Format[GenericError] = Json.format
 

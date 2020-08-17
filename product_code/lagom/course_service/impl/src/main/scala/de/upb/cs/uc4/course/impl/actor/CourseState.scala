@@ -1,15 +1,14 @@
 package de.upb.cs.uc4.course.impl.actor
 
-
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
+import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.course.impl.CourseApplication
 import de.upb.cs.uc4.course.impl.commands._
-import de.upb.cs.uc4.course.impl.events.{CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate}
+import de.upb.cs.uc4.course.impl.events.{ CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate }
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.exceptions.{DetailedError, GenericError}
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected, RejectedWithError}
-import play.api.libs.json.{Format, Json}
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, GenericError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected, RejectedWithError }
+import play.api.libs.json.{ Format, Json }
 
 /** The current state of a Course */
 case class CourseState(optCourse: Option[Course]) {
@@ -36,7 +35,6 @@ case class CourseState(optCourse: Option[Course]) {
           Effect.reply(replyTo)(RejectedWithError(409, GenericError("key duplicate")))
         }
 
-
       case UpdateCourse(courseRaw, replyTo) =>
 
         val course = courseRaw.trim
@@ -53,14 +51,14 @@ case class CourseState(optCourse: Option[Course]) {
           Effect.reply(replyTo)(RejectedWithError(404, GenericError("key not found")))
         }
 
-
       case GetCourse(replyTo) =>
         Effect.reply(replyTo)(optCourse)
 
       case DeleteCourse(id, replyTo) =>
         if (optCourse.isDefined) {
           Effect.persist(OnCourseDelete(id)).thenReply(replyTo) { _ => Accepted }
-        } else {
+        }
+        else {
           Effect.reply(replyTo)(Rejected("A course with the given Id does not exist."))
         }
 
@@ -77,7 +75,7 @@ case class CourseState(optCourse: Option[Course]) {
     evt match {
       case OnCourseCreate(course) => copy(Some(course))
       case OnCourseUpdate(course) => copy(Some(course))
-      case OnCourseDelete(_) => copy(None)
+      case OnCourseDelete(_)      => copy(None)
       case _ =>
         println("Unknown Event")
         this
@@ -86,21 +84,18 @@ case class CourseState(optCourse: Option[Course]) {
 
 object CourseState {
 
-  /**
-    * The initial state. This is used if there is no snapshotted state to be found.
+  /** The initial state. This is used if there is no snapshotted state to be found.
     */
   def initial: CourseState = CourseState(None)
 
-  /**
-    * The [[akka.persistence.typed.scaladsl.EventSourcedBehavior]] instances (aka Aggregates) run on sharded actors inside the Akka Cluster.
+  /** The [[akka.persistence.typed.scaladsl.EventSourcedBehavior]] instances (aka Aggregates) run on sharded actors inside the Akka Cluster.
     * When sharding actors and distributing them across the cluster, each aggregate is
     * namespaced under a typekey that specifies a name and also the type of the commands
     * that sharded actor can receive.
     */
   val typeKey: EntityTypeKey[CourseCommand] = EntityTypeKey[CourseCommand](CourseApplication.offset)
 
-  /**
-    * Format for the course state.
+  /** Format for the course state.
     *
     * Persisted entities get snapshotted every configured number of events. This
     * means the state gets stored to the database, so that when the aggregate gets

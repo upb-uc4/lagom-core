@@ -2,8 +2,8 @@ package de.upb.cs.uc4.user.model.user
 
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{Address, Role}
-import play.api.libs.json.{Format, JsResult, JsValue, Json}
+import de.upb.cs.uc4.user.model.{ Address, Role }
+import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
 trait User {
   val username: String
@@ -16,30 +16,32 @@ trait User {
   val phoneNumber: String
   val birthDate: String
 
-  def copyUser(username: String = this.username,
-               role: Role = this.role,
-               address: Address = this.address,
-               firstName: String = this.firstName,
-               lastName: String = this.lastName,
-               picture: String = this.picture,
-               email: String = this.email,
-               phoneNumber: String = this.phoneNumber,
-               birthDate: String = this.birthDate): User
+  def copyUser(
+      username: String = this.username,
+      role: Role = this.role,
+      address: Address = this.address,
+      firstName: String = this.firstName,
+      lastName: String = this.lastName,
+      picture: String = this.picture,
+      email: String = this.email,
+      phoneNumber: String = this.phoneNumber,
+      birthDate: String = this.birthDate
+  ): User
 
   def trim: User = copyUser(
     username.trim, role, address.trim, firstName.trim, lastName.trim,
-    picture.trim, email.trim, phoneNumber.trim, birthDate.trim)
+    picture.trim, email.trim, phoneNumber.trim, birthDate.trim
+  )
 
   def clean: User = trim.copyUser(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
 
   def toPublic: User = copyUser(address = Address.empty, birthDate = "")
 
-  /**
-   * Validates the object by checking predefined conditions like correct charsets, syntax, etc.
-   * Returns a list of SimpleErrors[[SimpleError]]
-   *
-   * @return Filled Sequence of [[SimpleError]]
-   */
+  /** Validates the object by checking predefined conditions like correct charsets, syntax, etc.
+    * Returns a list of SimpleErrors[[SimpleError]]
+    *
+    * @return Filled Sequence of [[SimpleError]]
+    */
   def validate: Seq[SimpleError] = {
 
     val generalRegex = """[\s\S]{0,200}""".r // Allowed characters for general strings TBD
@@ -53,13 +55,16 @@ trait User {
     var errors = List[SimpleError]()
 
     if (!usernameRegex.matches(username)) {
-      errors :+= SimpleError("username",
-        "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'.")
+      errors :+= SimpleError(
+        "username",
+        "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'."
+      )
     }
 
     if (!Role.All.contains(role)) { //optUser check to ensure this is during creation
       errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
-    } else {
+    }
+    else {
       this match {
         case _: Student => if (role != Role.Student) {
           errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
@@ -96,14 +101,12 @@ trait User {
     errors
   }
 
-
-  /**
-   * Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
-   * Returns a list of SimpleErrors[[SimpleError]]
-   *
-   * @param user to be checked
-   * @return Filled Sequence of [[SimpleError]]
-   */
+  /** Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
+    * Returns a list of SimpleErrors[[SimpleError]]
+    *
+    * @param user to be checked
+    * @return Filled Sequence of [[SimpleError]]
+    */
   def checkProtectedFields(user: User): Seq[SimpleError] = {
     var errors = List[SimpleError]()
 
@@ -119,13 +122,12 @@ trait User {
     errors
   }
 
-  /**
-   * Compares the object against the user parameter to find out if fields, which cannot be changed, are different.
-   * Returns a list of SimpleErrors[[SimpleError]]
-   *
-   * @param user to be checked
-   * @return Filled Sequence of [[SimpleError]]
-   * */
+  /** Compares the object against the user parameter to find out if fields, which cannot be changed, are different.
+    * Returns a list of SimpleErrors[[SimpleError]]
+    *
+    * @param user to be checked
+    * @return Filled Sequence of [[SimpleError]]
+    */
   def checkUneditableFields(user: User): Seq[SimpleError] = {
     var errors = List[SimpleError]()
 
@@ -141,16 +143,16 @@ object User {
   implicit val format: Format[User] = new Format[User] {
     override def reads(json: JsValue): JsResult[User] = {
       json("role").as[Role] match {
-        case Role.Admin => Json.fromJson[Admin](json)
-        case Role.Student => Json.fromJson[Student](json)
+        case Role.Admin    => Json.fromJson[Admin](json)
+        case Role.Student  => Json.fromJson[Student](json)
         case Role.Lecturer => Json.fromJson[Lecturer](json)
       }
     }
 
     override def writes(o: User): JsValue = {
       o match {
-        case admin: Admin => Json.toJson(admin)
-        case student: Student => Json.toJson(student)
+        case admin: Admin       => Json.toJson(admin)
+        case student: Student   => Json.toJson(student)
         case lecturer: Lecturer => Json.toJson(lecturer)
       }
     }

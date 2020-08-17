@@ -5,11 +5,11 @@ import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
+import com.lightbend.lagom.scaladsl.server.{ LagomApplication, LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.course.api.CourseService
-import de.upb.cs.uc4.course.impl.actor.{CourseBehaviour, CourseState}
-import de.upb.cs.uc4.course.impl.readside.{CourseDatabase, CourseEventProcessor}
+import de.upb.cs.uc4.course.impl.actor.{ CourseBehaviour, CourseState }
+import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
 import de.upb.cs.uc4.shared.server.AuthenticationComponent
 import play.api.db.HikariCPComponents
 import play.api.libs.ws.ahc.AhcWSComponents
@@ -18,13 +18,13 @@ import play.filters.cors.CORSComponents
 
 abstract class CourseApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
-    with SlickPersistenceComponents
-    with JdbcPersistenceComponents
-    with HikariCPComponents
-    with LagomKafkaComponents
-    with CORSComponents
-    with AhcWSComponents
-    with AuthenticationComponent {
+  with SlickPersistenceComponents
+  with JdbcPersistenceComponents
+  with HikariCPComponents
+  with LagomKafkaComponents
+  with CORSComponents
+  with AhcWSComponents
+  with AuthenticationComponent {
 
   // Create ReadSide
   lazy val database: CourseDatabase = wire[CourseDatabase]
@@ -48,7 +48,7 @@ abstract class CourseApplication(context: LagomApplicationContext)
   )
 }
 
-object CourseApplication{
+object CourseApplication {
   /** Functions as offset for the database */
   val offset: String = "UniversityCredits4Courses"
 }
