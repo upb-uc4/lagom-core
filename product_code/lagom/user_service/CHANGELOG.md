@@ -4,7 +4,7 @@
 - Added phone number field to all users
 - Added latestImmatriculation to student
 - Added function to update latestImmatriculation
-- Removed now obsolet fields (fieldOfStudy, semesterCount, immatriculationStatus)
+- Removed now obsolete fields (fieldOfStudy, semesterCount, immatriculationStatus)
 ## Refactor
 - Splitted editableFields method into two methods, one for permission check, one for possibility check
 ## Bugfix
