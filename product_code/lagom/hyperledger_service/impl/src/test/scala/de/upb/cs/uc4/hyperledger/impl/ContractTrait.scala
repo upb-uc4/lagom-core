@@ -4,9 +4,9 @@ import java.util.function.Consumer
 import java.util.regex.Pattern
 
 import org.hyperledger.fabric.gateway.spi.Checkpointer
-import org.hyperledger.fabric.gateway.{Contract, ContractEvent, Transaction}
+import org.hyperledger.fabric.gateway.{ Contract, ContractEvent, Transaction }
 
-trait ContractTrait extends Contract{
+trait ContractTrait extends Contract {
   override def createTransaction(name: String): Transaction = null
 
   override def addContractListener(listener: Consumer[ContractEvent]): Consumer[ContractEvent] = null

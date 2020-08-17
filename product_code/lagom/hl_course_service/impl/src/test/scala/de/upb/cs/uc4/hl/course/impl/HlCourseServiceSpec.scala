@@ -2,21 +2,21 @@ package de.upb.cs.uc4.hl.course.impl
 
 import java.util.Base64
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, RequestHeader, TransportException}
+import com.lightbend.lagom.scaladsl.api.transport.{ BadRequest, RequestHeader, TransportException }
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
-import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
+import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
 import de.upb.cs.uc4.hl.course.api.HlCourseService
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
@@ -29,57 +29,59 @@ class HlCourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfte
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
   ) { ctx =>
-    new HlCourseApplication(ctx) with LocalServiceLocator {
-      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
-        override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
-          _ => Future.successful("admin", AuthenticationRole.Admin)
-        }
-
-        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-
-        override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
-
-        override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
-
-        override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-      }
-
-      override lazy val hyperLedgerService: HyperLedgerService = new HyperLedgerService {
-        override def write(transactionId: String): ServiceCall[Seq[String], Done] = ServiceCall { seq =>
-          transactionId match {
-            case "deleteCourseById" =>
-              if (Seq("0", "1").contains(seq.head)) {
-                Future.successful(Done)
-              } else {
-                throw BadRequest("ERROR")
-              }
-            case "updateCourseById"  =>
-              if (Seq("0", "1").contains(seq.head)) {
-                Future.successful(Done)
-              } else {
-                throw BadRequest("ERROR")
-              }
-            case _ => Future.successful(Done)
+      new HlCourseApplication(ctx) with LocalServiceLocator {
+        override lazy val authenticationService: AuthenticationService = new AuthenticationService {
+          override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
+            _ => Future.successful("admin", AuthenticationRole.Admin)
           }
+
+          override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+          override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
+
+          override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
+
+          override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
         }
 
-        override def read(transactionId: String): ServiceCall[Seq[String], String] = ServiceCall { seq =>
-          transactionId match {
-            case "getAllCourses" => Future.successful("[]")
-            case "getCourseById" => seq.head match {
-              case course0.courseId => Future.successful(Json.stringify(Json.toJson(course0)))
-              case course2.courseId => Future.successful(Json.stringify(Json.toJson(course2)))
-              case course3.courseId => Future.successful(Json.stringify(Json.toJson(course0)))
-              case _ => throw BadRequest("ERROR")
+        override lazy val hyperLedgerService: HyperLedgerService = new HyperLedgerService {
+          override def write(transactionId: String): ServiceCall[Seq[String], Done] = ServiceCall { seq =>
+            transactionId match {
+              case "deleteCourseById" =>
+                if (Seq("0", "1").contains(seq.head)) {
+                  Future.successful(Done)
+                }
+                else {
+                  throw BadRequest("ERROR")
+                }
+              case "updateCourseById" =>
+                if (Seq("0", "1").contains(seq.head)) {
+                  Future.successful(Done)
+                }
+                else {
+                  throw BadRequest("ERROR")
+                }
+              case _ => Future.successful(Done)
             }
-            case _ => Future.successful("")
           }
-        }
 
-        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+          override def read(transactionId: String): ServiceCall[Seq[String], String] = ServiceCall { seq =>
+            transactionId match {
+              case "getAllCourses" => Future.successful("[]")
+              case "getCourseById" => seq.head match {
+                case course0.courseId => Future.successful(Json.stringify(Json.toJson(course0)))
+                case course2.courseId => Future.successful(Json.stringify(Json.toJson(course2)))
+                case course3.courseId => Future.successful(Json.stringify(Json.toJson(course0)))
+                case _                => throw BadRequest("ERROR")
+              }
+              case _ => Future.successful("")
+            }
+          }
+
+          override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+        }
       }
     }
-  }
 
   val client: CourseService = server.serviceClient.implement[HlCourseService]
 

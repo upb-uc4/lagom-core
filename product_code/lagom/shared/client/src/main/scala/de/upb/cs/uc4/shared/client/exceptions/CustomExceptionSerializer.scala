@@ -1,12 +1,12 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
-import java.io.{CharArrayWriter, PrintWriter}
+import java.io.{ CharArrayWriter, PrintWriter }
 
 import akka.util.ByteString
-import com.lightbend.lagom.scaladsl.api.deser.{DefaultExceptionSerializer, RawExceptionMessage}
-import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, MessageProtocol, TransportErrorCode, TransportException}
-import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.{Environment, Mode}
+import com.lightbend.lagom.scaladsl.api.deser.{ DefaultExceptionSerializer, RawExceptionMessage }
+import com.lightbend.lagom.scaladsl.api.transport.{ ExceptionMessage, MessageProtocol, TransportErrorCode, TransportException }
+import play.api.libs.json.{ JsArray, JsError, JsSuccess, Json }
+import play.api.{ Environment, Mode }
 
 import scala.util.control.NonFatal
 

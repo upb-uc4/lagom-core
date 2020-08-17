@@ -1,5 +1,5 @@
 package de.upb.cs.uc4.course.model
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
 object CourseLanguage extends Enumeration {
   type CourseLanguage = Value

@@ -5,9 +5,9 @@ import java.util.UUID
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.course.impl.actor.CourseBehaviour
-import de.upb.cs.uc4.course.impl.commands.{CreateCourse, DeleteCourse, GetCourse, UpdateCourse}
-import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
+import de.upb.cs.uc4.course.impl.commands.{ CreateCourse, DeleteCourse, GetCourse, UpdateCourse }
+import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -33,7 +33,7 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
       probe.expectMessage(None)
     }
 
-    "create a course" in  {
+    "create a course" in {
       val ref = spawn(CourseBehaviour.create(PersistenceId("fake-type-hint", "fake-id-2")))
 
       val probe1 = createTestProbe[Confirmation]()

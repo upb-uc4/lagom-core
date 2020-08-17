@@ -3,62 +3,63 @@ package de.upb.cs.uc4.user.impl
 import java.util.Base64
 
 import akka.stream.scaladsl.Source
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
+import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError}
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
-import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
-import de.upb.cs.uc4.user.model.{Address, GetAllUsersResponse, JsonUsername, Role}
+import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student }
+import de.upb.cs.uc4.user.model.{ Address, GetAllUsersResponse, JsonUsername, Role }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Minutes, Span}
+import org.scalatest.time.{ Minutes, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
 
 /** Tests for the CourseService
- * All tests need to be started in the defined order
- */
+  * All tests need to be started in the defined order
+  */
 class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
-        override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
-          _ =>
-            if(user.contains("student")){
-              Future.successful(user, AuthenticationRole.Student)
-            }
-            else{
-              if(user.contains("lecturer")){
-                Future.successful(user, AuthenticationRole.Lecturer)
-              } else{
-                Future.successful("admin", AuthenticationRole.Admin)
+      new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
+        override lazy val authenticationService: AuthenticationService = new AuthenticationService {
+          override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
+            _ =>
+              if (user.contains("student")) {
+                Future.successful(user, AuthenticationRole.Student)
               }
-            }
+              else {
+                if (user.contains("lecturer")) {
+                  Future.successful(user, AuthenticationRole.Lecturer)
+                }
+                else {
+                  Future.successful("admin", AuthenticationRole.Admin)
+                }
+              }
+          }
+
+          override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+          override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
+
+          override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
+
+          override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
         }
-
-        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-
-        override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
-
-        override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
-
-        override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
       }
     }
-  }
 
   val client: UserService = server.serviceClient.implement[UserService]
   val deletionTopic: Source[JsonUsername, _] = client.userDeletedTopic().subscribe.atMostOnceSource
@@ -66,7 +67,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   override protected def afterAll(): Unit = server.stop()
 
   def addAuthorizationHeader(username: String): RequestHeader => RequestHeader = { header =>
-    header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString(s"${username}:${username}".getBytes()))
+    header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString(s"$username:$username".getBytes()))
   }
 
   //Test users
@@ -75,23 +76,23 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
   val authenticationUser2: AuthenticationUser = AuthenticationUser("admin0", "newPassword", AuthenticationRole.Admin)
 
-  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1990-12-11", "","7421769")
-  val student0Auth : AuthenticationUser = AuthenticationUser(student0.username, student0.username, AuthenticationRole.Student)
+  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1990-12-11", "", "7421769")
+  val student0Auth: AuthenticationUser = AuthenticationUser(student0.username, student0.username, AuthenticationRole.Student)
   val student0UpdatedUneditable: Student = student0.copy(role = Role.Lecturer, latestImmatriculation = "SS2012")
   val student0UpdatedProtected: Student = student0UpdatedUneditable.copy(firstName = "Dieter", lastName = "Dietrich", birthDate = "1996-12-11", matriculationId = "1333337")
   val uneditableErrorSize: Int = 2
   val protectedErrorSize: Int = 4 + uneditableErrorSize
 
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
-  val lecturer0Auth : AuthenticationUser = AuthenticationUser(lecturer0.username, lecturer0.username, AuthenticationRole.Lecturer)
+  val lecturer0Auth: AuthenticationUser = AuthenticationUser(lecturer0.username, lecturer0.username, AuthenticationRole.Lecturer)
   val lecturer0Updated: Lecturer = lecturer0.copy(picture = "aBetterPicture", email = "noreply@scam.ng", address = addressUpdated, freeText = "Morgen kommt der große Gauss.", researchArea = "Physics")
 
   val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1992-12-11")
-  val admin0Auth : AuthenticationUser = AuthenticationUser(admin0.username, admin0.username, AuthenticationRole.Admin)
+  val admin0Auth: AuthenticationUser = AuthenticationUser(admin0.username, admin0.username, AuthenticationRole.Admin)
   val admin0Auth2: AuthenticationUser = AuthenticationUser(admin0.username, "newPassword", AuthenticationRole.Admin)
 
   val admin1: Admin = Admin("lecturer0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1996-12-11")
-  val admin1Auth : AuthenticationUser = AuthenticationUser(admin1.username, admin1.username, AuthenticationRole.Admin)
+  val admin1Auth: AuthenticationUser = AuthenticationUser(admin1.username, admin1.username, AuthenticationRole.Admin)
 
   /** Tests only working if the whole instance is started */
   "UserService service" should {
@@ -208,21 +209,21 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       }
     }
     "fetch the public information of all specified Users, as a non-Admin" in {
-      client.getAllUsers(Some(student0.username+","+ lecturer0.username +","+admin0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().map { answer =>
+      client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().map { answer =>
         answer should ===(GetAllUsersResponse(Seq(student0.toPublic), Seq(lecturer0.toPublic), Seq(admin0.toPublic)))
       }
     }
     "fetch the information of all specified Users, as a non-Admin" in {
-      client.getAllUsers(Some(student0.username+","+ lecturer0.username +","+admin0.username)).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
+      client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username)).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
         answer should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
       }
     }
 
     "throw an exception on adding a user with different username in authUser" in {
       client.addAdmin().handleRequestHeader(addAuthorizationHeader("admin"))
-        .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username+"changed"), admin0))
-        .failed.map{
-          answer => answer.asInstanceOf[CustomException].getErrorCode.http should===(422)
+        .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
+        .failed.map {
+          answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
         }
     }
 
@@ -254,40 +255,38 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "update a non-existing student" in {
       client.updateStudent("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(student0.copy(username = "Guten Abend")).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+        }
     }
 
     "update a non-existing lecturer" in {
       client.updateLecturer("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(lecturer0.copy(username = "Guten Abend")).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+        }
     }
 
     "update a non-existing admin" in {
       client.updateAdmin("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(admin0.copy(username = "Guten Abend")).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+        }
     }
 
     "add an already existing user" in {
       client.addAdmin().handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(PostMessageAdmin(admin1Auth, admin1)).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
-      }
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
+        }
     }
-
-
 
     "update a user as an admin" in {
       client.updateAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(admin0.copy(firstName = "KLAUS")).flatMap { _ =>
-        client.getAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
-      }.map { answer =>
-        answer.firstName shouldBe "KLAUS"
-      }
+          client.getAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
+        }.map { answer =>
+          answer.firstName shouldBe "KLAUS"
+        }
     }
 
     "get a role of a user" in {
@@ -299,10 +298,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "update a user as the user himself" in {
       client.updateLecturer(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
         .invoke(lecturer0Updated).flatMap { _ =>
-        client.getLecturer(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
-      }.map { answer =>
-        answer should ===(lecturer0Updated)
-      }
+          client.getLecturer(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
+        }.map { answer =>
+          answer should ===(lecturer0Updated)
+        }
     }
 
     "not update uneditable fields as an admin" in {

@@ -4,11 +4,11 @@ import java.util.UUID
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.impl.actor.UserBehaviour
-import de.upb.cs.uc4.user.impl.commands.{CreateUser, DeleteUser, GetUser, UpdateLatestMatriculation, UpdateUser}
+import de.upb.cs.uc4.user.impl.commands.{ CreateUser, DeleteUser, GetUser, UpdateLatestMatriculation, UpdateUser }
 import de.upb.cs.uc4.user.model.user._
-import de.upb.cs.uc4.user.model.{Address, Role}
+import de.upb.cs.uc4.user.model.{ Address, Role }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -27,8 +27,8 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
   val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "Picture", "example1@mail.de", "+49123456789", "1992-12-11")
   val admin1: Admin = Admin("admin0", Role.Admin, address, "firstNameDifferent", "LastNameDifferent", "Picture", "example2@mail.de", "+49123456789", "1992-12-11")
 
-  val emptyLecturer: Lecturer = Lecturer("lecturer0",Role.Lecturer,address,"","","","","","","","") //name for update test
-  
+  val emptyLecturer: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "", "", "", "", "", "", "", "") //name for update test
+
   "UserState" should {
 
     //GET
@@ -40,7 +40,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     //ADD
-    "add a user" in  {
+    "add a user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-2")))
 
       val probe1 = createTestProbe[Confirmation]()

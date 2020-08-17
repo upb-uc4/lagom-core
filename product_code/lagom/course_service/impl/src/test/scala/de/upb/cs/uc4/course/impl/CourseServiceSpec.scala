@@ -2,50 +2,50 @@ package de.upb.cs.uc4.course.impl
 
 import java.util.Base64
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
-import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
+import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Minutes, Seconds, Span}
+import org.scalatest.time.{ Minutes, Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
 
 /** Tests for the CourseService
- * All tests need to be started in the defined order
- */
+  * All tests need to be started in the defined order
+  */
 class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new CourseApplication(ctx) with LocalServiceLocator {
-      override lazy val authenticationService: AuthenticationService = new AuthenticationService {
-        override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
-          _ => Future.successful("admin", AuthenticationRole.Admin)
+      new CourseApplication(ctx) with LocalServiceLocator {
+        override lazy val authenticationService: AuthenticationService = new AuthenticationService {
+          override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
+            _ => Future.successful("admin", AuthenticationRole.Admin)
+          }
+
+          override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+          override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
+
+          override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
+
+          override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
         }
-
-        override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-
-        override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
-
-        override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
-
-        override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
       }
     }
-  }
 
   val client: CourseService = server.serviceClient.implement[CourseService]
 
@@ -82,20 +82,20 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       }
       eventually(timeout(Span(2, Minutes))) {
         client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-          answer should contain allOf(course0, course1, course2)
+          answer should contain allOf (course0, course1, course2)
         }
       }
     }
 
     "get all courses with matching names" in {
       client.getAllCourses(Some("Course 1"), None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer should contain only(course1, course2)
+        answer should contain only (course1, course2)
       }
     }
 
     "get all courses with matching lecturerIds" in {
       client.getAllCourses(None, Some("11")).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer should contain only(course0, course1)
+        answer should contain only (course0, course1)
       }
     }
 
