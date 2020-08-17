@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
-import play.api.libs.json.{ Format, JsResult, JsValue }
+import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
 trait CustomError {
   val `type`: String
@@ -10,17 +10,18 @@ trait CustomError {
 
 object CustomError {
   implicit val format: Format[CustomError] = new Format[CustomError] {
-    override def reads(json: JsValue): JsResult[CustomError] = {
-      if (json.toString().contains("invalidParams")) {
-        DetailedError.format.reads(json)
+    override def reads(json: JsValue): JsResult[CustomError] = json match {
+        case json if (json \ "invalidParams").isDefined => Json.fromJson[DetailedError](json)
+        case json if (json \ "transactionId").isDefined => Json.fromJson[TransactionError](json)
+        case json if (json \ "information").isDefined => Json.fromJson[InformativeError](json)
+        case json => Json.fromJson[GenericError](json)
       }
-      else {
-        GenericError.format.reads(json)
-      }
-    }
+
     override def writes(o: CustomError): JsValue = o match {
-      case dErr: DetailedError ⇒ DetailedError.format.writes(dErr)
-      case gErr: GenericError  ⇒ GenericError.format.writes(gErr)
+      case dErr: DetailedError => Json.toJson(dErr)
+      case gErr: GenericError  => Json.toJson(gErr)
+      case tErr: TransactionError => Json.toJson(tErr)
+      case iErr: InformativeError => Json.toJson(iErr)
     }
   }
 

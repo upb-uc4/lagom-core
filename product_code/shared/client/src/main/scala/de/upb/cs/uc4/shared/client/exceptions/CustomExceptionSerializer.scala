@@ -5,7 +5,7 @@ import java.io.{ CharArrayWriter, PrintWriter }
 import akka.util.ByteString
 import com.lightbend.lagom.scaladsl.api.deser.{ DefaultExceptionSerializer, RawExceptionMessage }
 import com.lightbend.lagom.scaladsl.api.transport.{ ExceptionMessage, MessageProtocol, TransportErrorCode, TransportException }
-import play.api.libs.json.{ JsArray, JsError, JsSuccess, Json }
+import play.api.libs.json.{ JsError, JsSuccess, Json }
 import play.api.{ Environment, Mode }
 
 import scala.util.control.NonFatal
@@ -29,33 +29,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     }
 
     val messageBytes = message match {
-      case der: DetailedError =>
-
-        var arr: JsArray = Json.arr()
-        for (error <- der.invalidParams) {
-          arr :+= Json.obj(
-            "name" -> error.name,
-            "reason" -> error.reason
-          )
-        }
-        ByteString.fromString(Json.stringify(Json.obj(
-          "type" -> der.`type`,
-          "title" -> der.title,
-          "invalidParams" -> arr
-        )))
-
-      case ter: TransactionError =>
-        ByteString.fromString(Json.stringify(Json.obj(
-          "type" -> ter.`type`,
-          "title" -> ter.title,
-          "transactionId" -> ter.transactionId
-        )))
-
-      case ger: GenericError =>
-        ByteString.fromString(Json.stringify(Json.obj(
-          "type" -> ger.`type`,
-          "title" -> ger.title
-        )))
+      case custom: CustomError => ByteString.fromString(Json.stringify(Json.toJson(custom)))
 
       case message: ExceptionMessage => ByteString.fromString(Json.stringify(Json.obj(
         "name" -> message.name,
@@ -74,56 +48,17 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
         Json.parse(message.message.iterator.asInputStream)
       }
       catch {
-        case NonFatal(e) =>
+        case NonFatal(_) =>
           Json.obj()
       }
 
     //Check if the raw json contains the fields needed for a CustomException (type, title, invalidParams). If so, use our deserializer, if not, use default
-    if (messageJson.toString().contains("type") && messageJson.toString().contains("title")) {
-      //We have a CustomError, this part is different from the default serializer
-      //Match for Error Subtype
-      messageJson.toString() match {
-        //DetailedError
-        case jsonString: String if jsonString.contains("invalidParams") =>
-          val jsonParseResult = for {
-            eType <- (messageJson \ "type").validate[String]
-            title <- (messageJson \ "title").validate[String]
-            invalidParams <- (messageJson \ "invalidParams").validate[Seq[SimpleError]]
-
-          } yield new DetailedError(eType, title, invalidParams)
-          val detailedError = jsonParseResult match {
-            case JsSuccess(m, _) => m
-            case JsError(_)      => GenericError("deserialization exception")
-          }
-          fromCodeAndMessageCustom(message.errorCode, detailedError)
-
-        //TransactionError
-        case jsonString: String if jsonString.contains("transactionId") =>
-          val jsonParseResult = for {
-            eType <- (messageJson \ "type").validate[String]
-            title <- (messageJson \ "title").validate[String]
-            transactionId <- (messageJson \ "transactionId").validate[String]
-
-          } yield new TransactionError(eType, title, transactionId)
-          val transactionError = jsonParseResult match {
-            case JsSuccess(m, _) => m
-            case JsError(_)      => GenericError("deserialization exception")
-          }
-          fromCodeAndMessageCustom(message.errorCode, transactionError)
-
-        //GenericError
-        case _ =>
-          val jsonParseResult = for {
-            eType <- (messageJson \ "type").validate[String]
-            title <- (messageJson \ "title").validate[String]
-
-          } yield new GenericError(eType, title)
-          val genericError = jsonParseResult match {
-            case JsSuccess(m, _) => m
-            case JsError(_)      => GenericError("deserialization exception")
-          }
-          fromCodeAndMessageCustom(message.errorCode, genericError)
+    if ((messageJson \ "type").isDefined && (messageJson \ "title").isDefined) {
+      val customError = Json.fromJson[CustomError](messageJson) match {
+        case JsSuccess(error, _) => error
+        case JsError(_) => throw CustomException.InternalDeserializationError
       }
+      fromCodeAndMessageCustom(message.errorCode, customError)
     }
     else {
       //Default serializer for Exceptions with fields "name" and "detail"
@@ -133,7 +68,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
       } yield new ExceptionMessage(name, detail)
       val exceptionMessage = jsonParseResult match {
         case JsSuccess(m, _) => m
-        case JsError(_)      => new ExceptionMessage("deserialization exception", message.message.utf8String)
+        case JsError(_) => new ExceptionMessage("deserialization exception", message.message.utf8String)
       }
       fromCodeAndMessage(message.errorCode, exceptionMessage)
     }
@@ -146,26 +81,21 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     * Lagom built-in exception.
     *
     * @param transportErrorCode The transport error code.
-    * @param exceptionMessage The exception message.
+    * @param exceptionMessage   The exception message.
     * @return The exception.
     */
-  override def fromCodeAndMessage(
-      transportErrorCode: TransportErrorCode,
-      exceptionMessage: ExceptionMessage
-  ): Throwable = {
-    TransportException.fromCodeAndMessage(transportErrorCode, exceptionMessage)
-  }
+  override def fromCodeAndMessage(transportErrorCode: TransportErrorCode,
+                                  exceptionMessage: ExceptionMessage
+                                 ): Throwable = TransportException.fromCodeAndMessage(transportErrorCode, exceptionMessage)
+
   /** Used to deserialize our CustomExceptions.
     *
     * @param transportErrorCode The transport error code.
-    * @param customError The detailed Error.
+    * @param customError        The detailed Error.
     * @return The exception.
     */
-  def fromCodeAndMessageCustom(
-      transportErrorCode: TransportErrorCode,
-      customError: CustomError
-  ): Throwable = {
-    new CustomException(transportErrorCode, customError)
-  }
+  def fromCodeAndMessageCustom(transportErrorCode: TransportErrorCode,
+                               customError: CustomError
+                              ): Throwable = new CustomException(transportErrorCode, customError)
 }
 

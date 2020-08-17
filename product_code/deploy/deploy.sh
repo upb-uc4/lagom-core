@@ -64,9 +64,6 @@ kubectl create secret generic course-application-secret --from-literal=secret="t
 kubectl create secret generic postgres-course --from-literal=username="uc4course" --from-literal=password="uc4course" -n uc4-lagom
 kubectl apply -f services/course.yaml
 
-kubectl create secret generic hyperledger-application-secret --from-literal=secret="test" -n uc4-lagom
-kubectl apply -f services/hyperledger.yaml
-
 kubectl create secret generic hl-course-application-secret --from-literal=secret="test" -n uc4-lagom
 kubectl apply -f services/hl_course.yaml
 
