@@ -45,6 +45,12 @@ jobs:
         sbt test coverageReport coverageAggregate 
         popd
         
+    - name: Scalatest multiproject HTML merger
+      uses: bastihav/scalatest-mutliproject-html-action@v2
+      with:
+        inputPath: product_code/lagom/target/test_reports/
+
+        
     - name: Upload test report
       uses: actions/upload-artifact@v1
       if: always()
