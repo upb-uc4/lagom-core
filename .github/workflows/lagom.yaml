@@ -53,6 +53,7 @@ jobs:
         
     - name: Scalatest multiproject HTML merger
       uses: bastihav/scalatest-multiproject-html-action@v1
+      if: always()
       with:
         path: product_code/lagom/target/test_reports/
 
