@@ -3,12 +3,11 @@ name: Lagom Test Pipeline
 on:
   push:
     branches:
-      - '**lagom**'
       - develop
-      - master
   pull_request:
     branches: 
       - develop
+      - release
       - master
 
 jobs:
