@@ -29,7 +29,7 @@ jobs:
     # Start postgresql docker
     - name: Start Postgres
       run: |
-        pushd ./product_code/lagom
+        pushd ./product_code
         docker-compose up -d
         sleep 30
         popd
@@ -37,14 +37,14 @@ jobs:
     #change .sbtopts
     - name: Add -J to .sbtops
       run: |
-        pushd ./product_code/lagom
+        pushd ./product_code
         echo "-J-Xms512M -J-Xmx4096M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
         popd
     
     # run sbt tests
     - name: Run tests
       run: |
-        pushd ./product_code/lagom
+        pushd ./product_code
         echo "##################################"
         echo "#  Starting Tests with Coverage  #"
         echo "##################################"
@@ -55,7 +55,7 @@ jobs:
       uses: bastihav/scalatest-multiproject-html-action@v1
       if: always()
       with:
-        path: product_code/lagom/target/test_reports/
+        path: product_code/target/test_reports/
 
         
     - name: Upload test report
@@ -63,11 +63,10 @@ jobs:
       if: always()
       with:
         name: test-reports
-        path: product_code/lagom/target/test_reports/
+        path: product_code/target/test_reports/
         
     - name: Upload coverage report
       uses: actions/upload-artifact@v1
-      if: always()
       with:
         name: code-coverage
-        path: product_code/lagom/target/scala-2.13/scoverage-report
+        path: product_code/target/scala-2.13/scoverage-report
