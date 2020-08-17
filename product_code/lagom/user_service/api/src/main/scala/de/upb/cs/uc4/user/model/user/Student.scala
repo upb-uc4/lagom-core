@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
-import de.upb.cs.uc4.shared.client.exceptions.SimpleError
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, SimpleError}
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
 import play.api.libs.json.{Format, Json}
@@ -73,7 +73,7 @@ case class Student(username: String,
     */
   override def checkProtectedFields(user: User): Seq[SimpleError] = {
     if(!user.isInstanceOf[Student]){
-      throw new Exception("Tried to parse a non-Student as Student.")
+      throw CustomException.InternalServerError
     }
     val student = user.asInstanceOf[Student]
     var errors = super.checkProtectedFields(user).asInstanceOf[List[SimpleError]]
@@ -93,7 +93,7 @@ case class Student(username: String,
    * */
   override def checkUneditableFields(user: User): Seq[SimpleError] = {
     if(!user.isInstanceOf[Student]){
-      throw new Exception("Tried to parse a non-Student as Student.")
+      throw CustomException.InternalServerError
     }
     val student = user.asInstanceOf[Student]
     var errors = super.checkUneditableFields(student).asInstanceOf[List[SimpleError]]
