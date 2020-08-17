@@ -17,18 +17,23 @@ case class Lecturer(username: String,
                     freeText: String,
                     researchArea: String) extends User {
 
-  def trim: Lecturer = {
-    copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim, phoneNumber.trim, birthDate.trim, freeText.trim, researchArea.trim)
-  }
+  def copyUser(username: String = this.username,
+               role: Role = this.role,
+               address: Address = this.address,
+               firstName: String = this.firstName,
+               lastName: String = this.lastName,
+               picture: String = this.picture,
+               email: String = this.email,
+               phoneNumber: String = this.phoneNumber,
+               birthDate: String = this.birthDate): Lecturer =
+    copy(username, role, address, firstName, lastName, picture, email, phoneNumber, birthDate)
 
-  def clean: Lecturer = {
-    trim.copy(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
-  }
+  override def trim: Lecturer =
+    super.trim.asInstanceOf[Lecturer].copy(freeText = freeText.trim, researchArea = researchArea.trim)
 
-  def toPublic: Lecturer = {
-    copy(address = Address.empty, birthDate = "")
-  }
+  override def toPublic: Lecturer = super.toPublic.asInstanceOf[Lecturer]
+
+  override def clean: Lecturer = super.clean.asInstanceOf[Lecturer]
 
   /** @inheritdoc */
   override def validate: Seq[SimpleError] = {
@@ -45,8 +50,6 @@ case class Lecturer(username: String,
     errors
   }
 }
-
-
 
 object Lecturer {
   implicit val format: Format[Lecturer] = Json.format

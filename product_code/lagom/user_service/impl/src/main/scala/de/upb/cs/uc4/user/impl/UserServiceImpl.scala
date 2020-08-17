@@ -11,18 +11,18 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, GenericError, SimpleError}
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, SimpleError}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{OnUserDelete, UserEvent}
+import de.upb.cs.uc4.user.impl.events.{OnLatestMatriculationUpdate, OnUserDelete, UserEvent}
 import de.upb.cs.uc4.user.impl.readside.{UserDatabase, UserEventProcessor}
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user._
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, Role}
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate, Role}
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -77,13 +77,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       (_, role) =>
         _ =>
           usernames match {
-            case None if (role != AuthenticationRole.Admin) =>
+            case None if role != AuthenticationRole.Admin =>
               throw CustomException.NotEnoughPrivileges
-            case None if (role == AuthenticationRole.Admin) =>
+            case None if role == AuthenticationRole.Admin =>
               getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
-            case Some(listOfUsernames) if (role != AuthenticationRole.Admin) =>
+            case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
               getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student].toPublic))
-            case Some(listOfUsernames) if (role == AuthenticationRole.Admin )=>
+            case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
               getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
           }
     }
@@ -129,13 +129,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       (_, role) =>
         _ =>
           usernames match {
-            case None if (role != AuthenticationRole.Admin) =>
+            case None if role != AuthenticationRole.Admin =>
               throw CustomException.NotEnoughPrivileges
-            case None if (role == AuthenticationRole.Admin) =>
+            case None if role == AuthenticationRole.Admin =>
               getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
-            case Some(listOfUsernames) if (role != AuthenticationRole.Admin) =>
+            case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
               getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer].toPublic))
-            case Some(listOfUsernames) if (role == AuthenticationRole.Admin )=>
+            case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
               getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
           }
     }
@@ -179,13 +179,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       (_, role) =>
         _ =>
           usernames match {
-            case None if (role != AuthenticationRole.Admin) =>
+            case None if role != AuthenticationRole.Admin =>
               throw CustomException.NotEnoughPrivileges
-            case None if (role == AuthenticationRole.Admin) =>
+            case None if role == AuthenticationRole.Admin =>
               getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
-            case Some(listOfUsernames) if (role != AuthenticationRole.Admin) =>
+            case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
               getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin].toPublic))
-            case Some(listOfUsernames) if (role == AuthenticationRole.Admin )=>
+            case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
               getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
           }
     }
@@ -248,9 +248,25 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, user) =>
 
+      val userTypeString = user match {
+        case _: Student => "student"
+        case _: Lecturer => "lecturer"
+        case _: Admin => "admin"
+      }
+      if(authenticationUser.username != user.username){
+        throw new CustomException(422,
+          DetailedError("validation error", Seq(
+            SimpleError("authUser.username", "Username in authUser must match username in user"),
+            SimpleError(userTypeString+".username", "Username in user must match username in authUser")
+          )))
+      }
+
       if (user.username.trim.isEmpty) {
         throw new CustomException(422,
-          DetailedError("validation error", Seq(SimpleError("username", "Username must not be blank."))))
+          DetailedError("validation error", Seq(
+            SimpleError("authUser.username", "Username must not be empty"),
+            SimpleError(userTypeString + ".username", "Username must not be empty")
+          )))
       }
 
       val ref = entityRef(user.username)
@@ -304,10 +320,16 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           }
 
           // We need to know what role the user has, because their editable fields are different
-          getUser(username).invoke().map(_.checkEditableFields(user))
+          getUser(username).invoke().map{ oldUser =>
+              var err = oldUser.checkUneditableFields(user)
+              if(role != AuthenticationRole.Admin){
+                err ++= oldUser.checkProtectedFields(user)
+              }
+              err
+            }
             .flatMap { editErrors =>
               // Other users than admins can only edit specified fields
-              if (role != AuthenticationRole.Admin && editErrors.nonEmpty) {
+              if (editErrors.nonEmpty) {
                 throw new CustomException(422, DetailedError("uneditable fields", editErrors))
               } else {
                 val ref = entityRef(user.username)
@@ -359,5 +381,14 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           immutable.Seq((JsonUsername(user.username), offset))
         case _ => Nil
       }
+  }
+
+  /** Update latestMatriculation */
+  override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall{matriculationUpdate =>
+    val ref = entityRef(matriculationUpdate.username)
+    ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map{
+      case Accepted => Done
+      case RejectedWithError(error,reason) => throw new CustomException(error, reason)
+    }
   }
 }

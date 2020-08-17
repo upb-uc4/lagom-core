@@ -5,7 +5,7 @@ import java.io.{CharArrayWriter, PrintWriter}
 import akka.util.ByteString
 import com.lightbend.lagom.scaladsl.api.deser.{DefaultExceptionSerializer, RawExceptionMessage}
 import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, MessageProtocol, TransportErrorCode, TransportException}
-import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
+import play.api.libs.json.{JsArray, JsError, JsSuccess, JsValue, Json}
 import play.api.{Environment, Mode}
 
 import scala.util.control.NonFatal
@@ -44,6 +44,13 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
         "invalidParams" -> arr
       )))
 
+      case ter :TransactionError =>
+        ByteString.fromString(Json.stringify(Json.obj(
+          "type" -> ter.`type`,
+          "title" -> ter.title,
+          "transactionId" -> ter.transactionId
+        )))
+
       case ger :GenericError =>
         ByteString.fromString(Json.stringify(Json.obj(
           "type" -> ger.`type`,
@@ -72,36 +79,50 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
 
     //Check if the raw json contains the fields needed for a CustomException (type, title, invalidParams). If so, use our deserializer, if not, use default
     if (messageJson.toString().contains("type") && messageJson.toString().contains("title")){
-      //We have a CustomError
+      //We have a CustomError, this part is different from the default serializer
+      //Match for Error Subtype
+      messageJson.toString() match{
+        //DetailedError
+        case jsonString: String if(jsonString.contains("invalidParams")) =>
+          val jsonParseResult = for {
+            eType   <- (messageJson \ "type").validate[String]
+            title <- (messageJson \ "title").validate[String]
+            invalidParams <- (messageJson \ "invalidParams").validate[Seq[SimpleError]]
 
-      //Check for Detailed Error
-      if(messageJson.toString().contains("invalidParams")){
-        val jsonParseResult = for {
-          eType   <- (messageJson \ "type").validate[String]
-          title <- (messageJson \ "title").validate[String]
-          invalidParams <- (messageJson \ "invalidParams").validate[Seq[SimpleError]]
+          } yield new DetailedError(eType, title, invalidParams)
+          val detailedError = jsonParseResult match {
+            case JsSuccess(m, _) => m
+            case JsError(_) => GenericError("deserialization exception")
+          }
+          fromCodeAndMessageCustom(message.errorCode, detailedError)
 
-        } yield new DetailedError(eType, title, invalidParams)
-        val detailedError = jsonParseResult match {
-          case JsSuccess(m, _) => m
-          case JsError(_) => GenericError("deserialization exception")
-        }
-        fromCodeAndMessageCustom(message.errorCode, detailedError)
-      }else{
-        //We have a GenericError
-        val jsonParseResult = for {
-          eType   <- (messageJson \ "type").validate[String]
-          title <- (messageJson \ "title").validate[String]
+        //TransactionError
+        case jsonString: String if(jsonString.contains("transactionId")) =>
+          val jsonParseResult = for {
+            eType   <- (messageJson \ "type").validate[String]
+            title <- (messageJson \ "title").validate[String]
+            transactionId <- (messageJson \ "transactionId").validate[String]
 
-        } yield new GenericError(eType, title)
-        val detailedError = jsonParseResult match {
-          case JsSuccess(m, _) => m
-          case JsError(_) => GenericError("deserialization exception")
-        }
-        fromCodeAndMessageCustom(message.errorCode, detailedError)
+          } yield new TransactionError(eType, title, transactionId)
+          val transactionError = jsonParseResult match {
+            case JsSuccess(m, _) => m
+            case JsError(_) => GenericError("deserialization exception")
+          }
+          fromCodeAndMessageCustom(message.errorCode, transactionError)
+
+        //GenericError
+        case _ =>
+          val jsonParseResult = for {
+            eType   <- (messageJson \ "type").validate[String]
+            title <- (messageJson \ "title").validate[String]
+
+          } yield new GenericError(eType, title)
+          val genericError = jsonParseResult match {
+            case JsSuccess(m, _) => m
+            case JsError(_) => GenericError("deserialization exception")
+          }
+          fromCodeAndMessageCustom(message.errorCode, genericError)
       }
-
-
     }
     else{
       //Default serializer for Exceptions with fields "name" and "detail"

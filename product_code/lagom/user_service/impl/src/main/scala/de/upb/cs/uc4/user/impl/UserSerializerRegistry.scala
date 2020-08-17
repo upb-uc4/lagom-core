@@ -3,7 +3,7 @@ package de.upb.cs.uc4.user.impl
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 import de.upb.cs.uc4.user.impl.actor.UserState
-import de.upb.cs.uc4.user.impl.events.{OnUserCreate, OnUserDelete, OnUserUpdate}
+import de.upb.cs.uc4.user.impl.events.{OnLatestMatriculationUpdate, OnUserCreate, OnUserDelete, OnUserUpdate}
 
 import scala.collection.immutable.Seq
 
@@ -25,6 +25,7 @@ object UserSerializerRegistry extends SharedSerializerRegistry {
     //Events
     JsonSerializer[OnUserCreate],
     JsonSerializer[OnUserDelete],
-    JsonSerializer[OnUserUpdate]
+    JsonSerializer[OnUserUpdate],
+    JsonSerializer[OnLatestMatriculationUpdate]
   )
 }

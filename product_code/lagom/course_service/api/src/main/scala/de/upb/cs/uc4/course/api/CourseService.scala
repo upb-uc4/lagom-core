@@ -1,10 +1,12 @@
 package de.upb.cs.uc4.course.api
 
 import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.UC4Service
+import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
 object CourseService {
   val TOPIC_NAME = "Courses"
@@ -49,8 +51,10 @@ trait CourseService extends UC4Service {
     super.descriptor
       .addCalls(
         restCall(Method.GET, pathPrefix + "/courses?courseName&lecturerId", getAllCourses _),
-        restCall(Method.POST, pathPrefix + "/courses", addCourse _),
-        restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _),
+        restCall(Method.POST, pathPrefix + "/courses", addCourse _)
+          (CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _)
+          (CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),
         restCall(Method.GET, pathPrefix + "/courses/:id", findCourseByCourseId _),
         restCall(Method.OPTIONS, pathPrefix + "/courses", allowedMethodsGETPOST _),
