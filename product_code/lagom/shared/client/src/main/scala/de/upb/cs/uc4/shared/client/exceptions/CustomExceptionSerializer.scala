@@ -5,7 +5,7 @@ import java.io.{CharArrayWriter, PrintWriter}
 import akka.util.ByteString
 import com.lightbend.lagom.scaladsl.api.deser.{DefaultExceptionSerializer, RawExceptionMessage}
 import com.lightbend.lagom.scaladsl.api.transport.{ExceptionMessage, MessageProtocol, TransportErrorCode, TransportException}
-import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
+import play.api.libs.json.{JsArray, JsError, JsSuccess, JsValue, Json}
 import play.api.{Environment, Mode}
 
 import scala.util.control.NonFatal

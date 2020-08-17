@@ -1,3 +1,9 @@
+# [v.0.6.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.6.0...user-v0.6.1) (2020-XX-XX)
+## Feature
+ - Added custom deserialization exception
+## Refactor
+## Bugfix
+
 # [v.0.6.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.5.1...user-v0.6.0) (2020-08-17)
 ## Feature
 - Added check in update call if the fields are editable (even for an admin)

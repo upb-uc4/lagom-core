@@ -1,11 +1,12 @@
 package de.upb.cs.uc4.matriculation.api
 
 import akka.{Done, NotUsed}
-import com.lightbend.lagom.scaladsl.api.broker.Topic
+import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData}
 import de.upb.cs.uc4.shared.client.UC4Service
+import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
 /** The MatriculationService interface.
   *
@@ -35,7 +36,8 @@ trait MatriculationService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _),
+        restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)
+        (CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.GET, pathPrefix + "/history/:username", getMatriculationData _),
         restCall(Method.OPTIONS, pathPrefix + "/:username", allowedPut _),
         restCall(Method.OPTIONS, pathPrefix + "/history/:username", allowedGet _),
