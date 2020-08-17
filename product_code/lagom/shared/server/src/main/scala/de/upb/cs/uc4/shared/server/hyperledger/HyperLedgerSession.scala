@@ -20,6 +20,9 @@ class HyperLedgerSession(hyperLedgerService: HyperLedgerService)(implicit ec: Ex
   def write[A](transactionId: String, obj: A)(implicit format: Format[A]): Future[Done] =
     write(transactionId, Seq(), Seq(obj))
 
+  def write[A](transactionId: String, seq: Seq[A])(implicit format: Format[A]): Future[Done] =
+    write(transactionId, Seq(), seq)
+
   def write[A](transactionId: String, params: Seq[String], seq: Seq[A])(implicit format: Format[A]): Future[Done] =
     hyperLedgerService.write(transactionId).invoke(params ++ seq.map {
       case s: String => s

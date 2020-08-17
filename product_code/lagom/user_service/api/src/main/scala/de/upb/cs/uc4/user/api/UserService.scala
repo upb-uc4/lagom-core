@@ -9,7 +9,7 @@ import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate}
 
 
 /** The UserService interface.
@@ -76,6 +76,9 @@ trait UserService extends UC4Service {
   // ROLE
   def getRole(username: String): ServiceCall[NotUsed, JsonRole]
 
+  /** Update latestMatriculation */
+  def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done]
+
   // OPTIONS
 
   /** Allows GET, PUT */
@@ -105,6 +108,7 @@ trait UserService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
 
+        restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
         restCall(Method.GET, pathPrefix + "/students?usernames", getAllStudents _),
         restCall(Method.POST, pathPrefix + "/students", addStudent _)
           (CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),

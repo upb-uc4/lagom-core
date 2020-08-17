@@ -38,13 +38,12 @@ trait UC4Service extends Service {
       )
 
     if (autoAcl) {
-
       descriptor.withAutoAcl(true)
     } else {
-        descriptor.withAcls(
-            ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
-            ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
-       )
+      descriptor.withAcls(
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/version\\E"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E"),
+      )
     }
   }
 }
