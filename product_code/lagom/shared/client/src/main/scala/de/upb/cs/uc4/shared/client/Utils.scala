@@ -36,7 +36,7 @@ object Utils {
      *         1  if this semester is after the other
      */
     def compareSemester(other: String): Int = {
-      if(semester.validateSemester.nonEmpty || other.validateSemester.nonEmpty) {
+      if((semester.validateSemester.nonEmpty && !semester.isEmpty) || other.validateSemester.nonEmpty && !other.isEmpty) {
         throw CustomException.InternalServerError
       } else {
         semesterToNumber(semester).compareTo(semesterToNumber(other))
