@@ -1,32 +1,30 @@
 package de.upb.cs.uc4.authentication.impl
 
-import akka.{Done, NotUsed}
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.{ Done, NotUsed }
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationEntry, AuthenticationState}
-import de.upb.cs.uc4.authentication.impl.commands.{AuthenticationCommand, GetAuthentication, SetAuthentication}
+import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, AuthenticationState }
+import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, GenericError, SimpleError}
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, GenericError, SimpleError }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, RejectedWithError}
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEventProcessor,
-                                clusterSharding: ClusterSharding)
-                               (implicit ec: ExecutionContext) extends AuthenticationService {
+    clusterSharding: ClusterSharding)(implicit ec: ExecutionContext) extends AuthenticationService {
 
   readSide.register(processor)
-
 
   private def entityRef(id: String): EntityRef[AuthenticationCommand] =
     clusterSharding.entityRefFor(AuthenticationState.typeKey, id)
@@ -35,11 +33,12 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
 
   /** @inheritdoc */
   override def check(username: String, password: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall { _ =>
-    entityRef(Hashing.sha256(username)).ask[Option[AuthenticationEntry]](replyTo => GetAuthentication(replyTo)).map{
+    entityRef(Hashing.sha256(username)).ask[Option[AuthenticationEntry]](replyTo => GetAuthentication(replyTo)).map {
       case Some(entry) =>
         if (entry.password != Hashing.sha256(entry.salt + password)) {
           throw CustomException.AuthorizationError
-        } else {
+        }
+        else {
           (username, entry.role)
         }
       case None =>
@@ -62,7 +61,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
   override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] =
     identifiedAuthenticated[AuthenticationUser, Done](AuthenticationRole.All: _*) {
       (authUsername, role) =>
-        ServerServiceCall{ (_: RequestHeader, user: AuthenticationUser) =>
+        ServerServiceCall { (_: RequestHeader, user: AuthenticationUser) =>
           if (username != user.username.trim) {
             throw CustomException.PathParameterMismatch
           }

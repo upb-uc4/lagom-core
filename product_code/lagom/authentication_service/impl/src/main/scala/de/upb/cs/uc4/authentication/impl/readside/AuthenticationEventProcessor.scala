@@ -1,12 +1,12 @@
 package de.upb.cs.uc4.authentication.impl.readside
 
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickReadSide
-import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, ReadSideProcessor}
+import com.lightbend.lagom.scaladsl.persistence.{ AggregateEventTag, ReadSideProcessor }
 import de.upb.cs.uc4.authentication.impl.AuthenticationApplication
-import de.upb.cs.uc4.authentication.impl.events.{AuthenticationEvent, OnDelete, OnSet}
+import de.upb.cs.uc4.authentication.impl.events.{ AuthenticationEvent, OnDelete, OnSet }
 
 class AuthenticationEventProcessor(readSide: SlickReadSide, database: AuthenticationDatabase)
-  extends ReadSideProcessor[AuthenticationEvent]{
+  extends ReadSideProcessor[AuthenticationEvent] {
 
   /** @inheritdoc */
   override def buildHandler(): ReadSideProcessor.ReadSideHandler[AuthenticationEvent] =

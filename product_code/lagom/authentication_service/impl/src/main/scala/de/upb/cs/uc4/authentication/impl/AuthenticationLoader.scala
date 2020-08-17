@@ -17,4 +17,3 @@ class AuthenticationLoader extends LagomApplicationLoader {
   override def describeService: Some[Descriptor] = Some(readDescriptor[AuthenticationService])
 }
 
-

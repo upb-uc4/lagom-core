@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.authentication.model
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
 object AuthenticationRole extends Enumeration {
   type AuthenticationRole = Value

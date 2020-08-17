@@ -8,12 +8,12 @@ import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{LagomApplication, LagomApplicationContext, LagomServer}
+import com.lightbend.lagom.scaladsl.server.{ LagomApplication, LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationBehaviour, AuthenticationState}
+import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationBehaviour, AuthenticationState }
 import de.upb.cs.uc4.authentication.impl.commands.DeleteAuthentication
-import de.upb.cs.uc4.authentication.impl.readside.{AuthenticationDatabase, AuthenticationEventProcessor}
+import de.upb.cs.uc4.authentication.impl.readside.{ AuthenticationDatabase, AuthenticationEventProcessor }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
@@ -28,12 +28,12 @@ import scala.concurrent.duration._
 
 abstract class AuthenticationApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
-    with SlickPersistenceComponents
-    with JdbcPersistenceComponents
-    with HikariCPComponents
-    with LagomKafkaComponents
-    with CORSComponents
-    with AhcWSComponents {
+  with SlickPersistenceComponents
+  with JdbcPersistenceComponents
+  with HikariCPComponents
+  with LagomKafkaComponents
+  with CORSComponents
+  with AhcWSComponents {
 
   private implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -66,13 +66,11 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
     .atLeastOnce(
       Flow.fromFunction[JsonUsername, Future[Done]](json =>
         clusterSharding.entityRefFor(AuthenticationState.typeKey, Hashing.sha256(json.username))
-          .ask[Confirmation](replyTo => DeleteAuthentication(replyTo)).map(_ => Done)
-      ).mapAsync(8)(done => done)
+          .ask[Confirmation](replyTo => DeleteAuthentication(replyTo)).map(_ => Done)).mapAsync(8)(done => done)
     )
 }
 
 object AuthenticationApplication {
   val offset: String = "UC4Authentication"
 }
-
 

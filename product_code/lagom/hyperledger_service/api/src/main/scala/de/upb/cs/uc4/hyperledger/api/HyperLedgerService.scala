@@ -2,7 +2,7 @@ package de.upb.cs.uc4.hyperledger.api
 
 import akka.Done
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
+import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.shared.client.UC4Service
 
 trait HyperLedgerService extends UC4Service {

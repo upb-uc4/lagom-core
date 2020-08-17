@@ -2,17 +2,17 @@ package de.upb.cs.uc4.shared.server
 
 import java.util.Base64
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError}
-import org.slf4j.{Logger, LoggerFactory}
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, GenericError }
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.annotation.varargs
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 object ServiceCallFactory {
 
@@ -37,9 +37,7 @@ object ServiceCallFactory {
     * @return finished [[com.lightbend.lagom.scaladsl.server.ServerServiceCall]]
     */
   @varargs
-  def authenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: ServerServiceCall[Request, Response])
-                                      (implicit auth: AuthenticationService, ec: ExecutionContext)
-  : ServerServiceCall[Request, Response] = {
+  def authenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: ServerServiceCall[Request, Response])(implicit auth: AuthenticationService, ec: ExecutionContext): ServerServiceCall[Request, Response] = {
     ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
       val (user, pw) = getUserAndPassword(requestHeader)
 
@@ -61,10 +59,7 @@ object ServiceCallFactory {
     * @return finished [[com.lightbend.lagom.scaladsl.server.ServerServiceCall]]
     */
   @varargs
-  def identifiedAuthenticated[Request, Response](roles: AuthenticationRole*)
-                                                (serviceCall: (String, AuthenticationRole) => ServerServiceCall[Request, Response])
-                                                (implicit auth: AuthenticationService, ec: ExecutionContext)
-  : ServerServiceCall[Request, Response] = {
+  def identifiedAuthenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: (String, AuthenticationRole) => ServerServiceCall[Request, Response])(implicit auth: AuthenticationService, ec: ExecutionContext): ServerServiceCall[Request, Response] = {
     ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
       val (user, pw) = getUserAndPassword(requestHeader)
 
@@ -78,8 +73,7 @@ object ServiceCallFactory {
     }
   }
 
-  /**
-    * Reads username and password out of the header
+  /** Reads username and password out of the header
     *
     * @param requestHeader with the an authentication header
     * @return an Option with a String tuple
@@ -89,20 +83,20 @@ object ServiceCallFactory {
       case Array("Basic", userAndPass) =>
         new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":") match {
           case Array(user, password) => Option(user, password)
-          case _ => None
+          case _                     => None
         }
       case _ => None
     }
 
     if (userPw.isEmpty) {
       throw CustomException.AuthorizationError
-    } else {
+    }
+    else {
       userPw.get
     }
   }
 
-  /**
-    * ServiceCall that returns a list of allowed methods, all of which will also be listed as access controlled
+  /** ServiceCall that returns a list of allowed methods, all of which will also be listed as access controlled
     *
     * @param listOfOptions with the allowed options. Schema: "GET, POST, DELETE"
     *                      OPTIONS is added automatically

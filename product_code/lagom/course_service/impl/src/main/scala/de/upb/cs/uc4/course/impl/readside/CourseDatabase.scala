@@ -6,7 +6,7 @@ import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class CourseDatabase(database: Database)(implicit ec: ExecutionContext) {
 
@@ -29,9 +29,9 @@ class CourseDatabase(database: Database)(implicit ec: ExecutionContext) {
     database.run(findAllQuery)
 
   /** Adds a course to the table
-   *
-   * @param course which should get added
-   */
+    *
+    * @param course which should get added
+    */
   def addCourse(course: Course): DBIO[Done] = {
     findByCourseIdQuery(course.courseId)
       .flatMap {
@@ -43,9 +43,9 @@ class CourseDatabase(database: Database)(implicit ec: ExecutionContext) {
   }
 
   /** Deletes a course from the table
-   *
-   * @param id of the course which should get added
-   */
+    *
+    * @param id of the course which should get added
+    */
   def removeCourse(id: String): DBIO[Done] = {
     courses
       .filter(_.id === id)

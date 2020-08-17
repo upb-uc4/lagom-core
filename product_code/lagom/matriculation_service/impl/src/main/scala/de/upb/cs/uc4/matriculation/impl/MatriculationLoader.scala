@@ -17,4 +17,3 @@ class MatriculationLoader extends LagomApplicationLoader {
   override def describeService: Some[Descriptor] = Some(readDescriptor[MatriculationService])
 }
 
-

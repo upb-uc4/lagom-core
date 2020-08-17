@@ -1,30 +1,31 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
-import play.api.libs.json.{Format, JsResult, JsValue}
+import play.api.libs.json.{ Format, JsResult, JsValue }
 
-trait CustomError{
+trait CustomError {
   val `type`: String
   val title: String
 
 }
 
-object CustomError{
-  implicit val format: Format[CustomError] = new Format[CustomError]{
+object CustomError {
+  implicit val format: Format[CustomError] = new Format[CustomError] {
     override def reads(json: JsValue): JsResult[CustomError] = {
-      if (json.toString().contains("invalidParams")){
+      if (json.toString().contains("invalidParams")) {
         DetailedError.format.reads(json)
-      }else{
+      }
+      else {
         GenericError.format.reads(json)
       }
     }
     override def writes(o: CustomError): JsValue = o match {
       case dErr: DetailedError ⇒ DetailedError.format.writes(dErr)
-      case gErr: GenericError ⇒ GenericError.format.writes(gErr)
+      case gErr: GenericError  ⇒ GenericError.format.writes(gErr)
     }
   }
 
-  def getTitle(`type` : String) : String = {
-    `type` match{
+  def getTitle(`type`: String): String = {
+    `type` match {
       //HL errors are missing, but as they are given to us with a title, we do not need to find a fitting title
       //If not stated otherwise, the type is contained in a  GenericError
       //400
@@ -43,16 +44,14 @@ object CustomError{
       case "teapot" => "I'm a teapot"
       //422
       case "path parameter mismatch" => "Parameter specified in path and in object do not match"
-      case "validation error" => "Your request parameters did not validate"   //In a DetailedError
-      case "uneditable fields" => "Attempted to change uneditable fields"     //In a DetailedError
+      case "validation error" => "Your request parameters did not validate" //In a DetailedError
+      case "uneditable fields" => "Attempted to change uneditable fields" //In a DetailedError
       //500
       case "internal server error" => "An internal server error has occurred"
       case "undeserializable exception" => "Internal error while deserializing Exception"
       case "hl: internal error" => "Hyperledger encountered an internal error" //In an InformativeError
       //???
       case _ => "Title not Found"
-
-
 
     }
   }

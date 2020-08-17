@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
 case class InformativeError(`type`: String, title: String, information: String) extends CustomError
 

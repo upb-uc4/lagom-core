@@ -1,12 +1,12 @@
 package de.upb.cs.uc4.course.impl.readside
 
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickReadSide
-import com.lightbend.lagom.scaladsl.persistence.{AggregateEventTag, ReadSideProcessor}
+import com.lightbend.lagom.scaladsl.persistence.{ AggregateEventTag, ReadSideProcessor }
 import de.upb.cs.uc4.course.impl.CourseApplication
-import de.upb.cs.uc4.course.impl.events.{CourseEvent, OnCourseCreate, OnCourseDelete}
+import de.upb.cs.uc4.course.impl.events.{ CourseEvent, OnCourseCreate, OnCourseDelete }
 
 class CourseEventProcessor(readSide: SlickReadSide, database: CourseDatabase)
-  extends ReadSideProcessor[CourseEvent]{
+  extends ReadSideProcessor[CourseEvent] {
 
   /** @inheritdoc */
   override def buildHandler(): ReadSideProcessor.ReadSideHandler[CourseEvent] =

@@ -10,8 +10,7 @@ import de.upb.cs.uc4.course.impl.events.CourseEvent
 
 object CourseBehaviour {
 
-  /**
-    * Given a sharding [[EntityContext]] this function produces an Akka [[Behavior]] for the aggregate.
+  /** Given a sharding [[EntityContext]] this function produces an Akka [[Behavior]] for the aggregate.
     */
   def create(entityContext: EntityContext[CourseCommand]): Behavior[CourseCommand] = {
     val persistenceId: PersistenceId = PersistenceId(entityContext.entityTypeKey.name, entityContext.entityId)
@@ -28,8 +27,7 @@ object CourseBehaviour {
   /*
    * This method is extracted to write unit tests that are completely independent to Akka Cluster.
    */
-  private[impl] def create(persistenceId: PersistenceId): EventSourcedBehavior[CourseCommand, CourseEvent, CourseState]
-  = EventSourcedBehavior
+  private[impl] def create(persistenceId: PersistenceId): EventSourcedBehavior[CourseCommand, CourseEvent, CourseState] = EventSourcedBehavior
     .withEnforcedReplies[CourseCommand, CourseEvent, CourseState](
       persistenceId = persistenceId,
       emptyState = CourseState.initial,

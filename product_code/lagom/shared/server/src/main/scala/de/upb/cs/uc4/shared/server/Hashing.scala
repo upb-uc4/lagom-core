@@ -3,10 +3,10 @@ package de.upb.cs.uc4.shared.server
 import java.nio.charset.Charset
 
 /** The Hashing object.
- *
- * Provides an interface to SHA hash functions of different length. Hash functions can be queried to receive a string
- * hash of a string input.
- */
+  *
+  * Provides an interface to SHA hash functions of different length. Hash functions can be queried to receive a string
+  * hash of a string input.
+  */
 object Hashing {
 
   /*
