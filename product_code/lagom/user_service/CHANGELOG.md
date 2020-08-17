@@ -17,4 +17,6 @@
 ## Refactor
 - Changed exceptions to use these standard exceptions wherever possible
 ## Bugfix
+- Fixed a bug that allowed houseNumbers to be empty
+- Fixed a bug that allowed "01" and "001" as matriculationId's, while not recognising them as the same number
 - Fixed ambigous endpoints caused by UC4Service Trait
