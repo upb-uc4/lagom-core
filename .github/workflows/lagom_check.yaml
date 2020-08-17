@@ -22,7 +22,7 @@ jobs:
     # run scalariform test
     - name: Code format check
       run: |
-        pushd ./product_code/lagom
+        pushd ./product_code
         echo "##########################"
         echo "#    Check Code Style    #"
         echo "##########################"
