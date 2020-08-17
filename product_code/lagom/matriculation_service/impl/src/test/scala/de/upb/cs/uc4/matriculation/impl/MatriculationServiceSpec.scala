@@ -5,7 +5,7 @@ import java.util.Base64
 import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, TransportErrorCode}
+import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
@@ -14,7 +14,7 @@ import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUse
 import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, GenericError}
+import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
@@ -160,7 +160,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               if (mat.isDefined) {
                 Future.successful(mat.get)
               } else {
-                Future.failed(new CustomException(TransportErrorCode(404, 1003, "Error"), GenericError("key not found")))
+                Future.failed(CustomException.NotFound)
               }
             case _ => Future.successful("")
           }
