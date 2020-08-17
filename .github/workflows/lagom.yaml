@@ -46,7 +46,7 @@ jobs:
         popd
         
     - name: Scalatest multiproject HTML merger
-      uses: bastihav/scalatest-mutliproject-html-action@v1
+      uses: bastihav/scalatest-multiproject-html-action@v1
       with:
         path: product_code/lagom/target/test_reports/
 
