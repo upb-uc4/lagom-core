@@ -1,18 +1,16 @@
 package de.upb.cs.uc4.hyperledger.hyperledger_service.test
 
-import java.nio.file.Paths
-
 import akka.Done
+import com.lightbend.lagom.scaladsl.api.transport.TransportException
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.matchers.should.Matchers
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.hyperledger.ConnectionManager
-import de.upb.cs.uc4.hyperledger.traits._
 import de.upb.cs.uc4.hyperledger.impl._
 import de.upb.cs.uc4.hyperledger.api._
+import de.upb.cs.uc4.hyperledger.exceptions.TransactionErrorException
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.test_resources._
 import play.api.libs.json.Json
@@ -39,12 +37,6 @@ class HyperledgerServiceTest extends AsyncWordSpec with Matchers with BeforeAndA
       }}
     }
 
-    "not read a non-existing course" in {
-      client.read("getCourseById").invoke(List("invalidID")).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
-    }
-
     "write a course" in {
       client.write("addCourse").invoke(List(TestCourses.courseA)).map { answer =>
         answer should ===(Done)
@@ -60,12 +52,6 @@ class HyperledgerServiceTest extends AsyncWordSpec with Matchers with BeforeAndA
     "read a course" in {
       client.read("getCourseById").invoke(List("A")).map { answer =>
         Json.parse(answer).as[Course] should ===(Json.parse(TestCourses.courseA).as[Course])
-      }
-    }
-
-    "not write a non json" in {
-      client.write("addCourse").invoke(List("invalid")).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(500)
       }
     }
 

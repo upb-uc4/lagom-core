@@ -1,8 +1,14 @@
 name: Lagom Test Pipeline
 
 on:
+  push:
+    branches:
+      - develop
   pull_request:
-    branches: [ develop ]
+    branches: 
+      - develop
+      - release
+      - master
 
 jobs:
   RunAllTests:
@@ -47,6 +53,7 @@ jobs:
         
     - name: Scalatest multiproject HTML merger
       uses: bastihav/scalatest-multiproject-html-action@v1
+      if: always()
       with:
         path: product_code/lagom/target/test_reports/
 

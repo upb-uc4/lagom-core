@@ -104,21 +104,35 @@ trait User {
    * @param user to be checked
    * @return Filled Sequence of [[SimpleError]]
    */
-  def checkEditableFields(user: User): Seq[SimpleError] = {
+  def checkProtectedFields(user: User): Seq[SimpleError] = {
+    var errors = List[SimpleError]()
+
+    if (firstName != user.firstName) {
+      errors :+= SimpleError("firstName", "First name may not be manually changed.")
+    }
+    if (lastName != user.lastName) {
+      errors :+= SimpleError("lastName", "Last name may not be manually changed.")
+    }
+    if (birthDate != user.birthDate) {
+      errors :+= SimpleError("birthDate", "Birthdate may not be manually changed.")
+    }
+    errors
+  }
+
+  /**
+   * Compares the object against the user parameter to find out if fields, which cannot be changed, are different.
+   * Returns a list of SimpleErrors[[SimpleError]]
+   *
+   * @param user to be checked
+   * @return Filled Sequence of [[SimpleError]]
+   * */
+  def checkUneditableFields(user: User): Seq[SimpleError] = {
     var errors = List[SimpleError]()
 
     if (role != user.role) {
-      errors :+= SimpleError("role", "Role may not be changed.")
+      errors :+= SimpleError("role", "Role must not be changed.")
     }
-    if (firstName != user.firstName) {
-      errors :+= SimpleError("firstName", "First name may not be changed.")
-    }
-    if (lastName != user.lastName) {
-      errors :+= SimpleError("lastName", "Last name may not be changed.")
-    }
-    if (birthDate != user.birthDate) {
-      errors :+= SimpleError("birthDate", "Birthdate may not be changed.")
-    }
+
     errors
   }
 }

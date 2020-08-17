@@ -4,4 +4,4 @@
 ## Refactor
  - Changed exceptions to use these standard exceptions whereever possible
 ## Bugfix
-- Fix ambigous endpoints caused by UC4Service Trait
+- Fixed ambigous endpoints caused by UC4Service Trait

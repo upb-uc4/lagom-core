@@ -11,7 +11,7 @@ import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser}
-import de.upb.cs.uc4.shared.client.exceptions.CustomException
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
@@ -71,12 +71,20 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
   //Test users
   val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
+  val addressUpdated: Address = Address("Entenweg", "41b", "13342", "Gänsenhausen", "United States")
+  val authenticationUser: AuthenticationUser = AuthenticationUser("MOCK", "MOCK", AuthenticationRole.Admin)
+  val authenticationUser2: AuthenticationUser = AuthenticationUser("admin0", "newPassword", AuthenticationRole.Admin)
 
-  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1990-12-11", "IN", "7421769", 9000, List())
+  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1990-12-11", "","7421769")
   val student0Auth : AuthenticationUser = AuthenticationUser(student0.username, student0.username, AuthenticationRole.Student)
+  val student0UpdatedUneditable: Student = student0.copy(role = Role.Lecturer, latestImmatriculation = "SS2012")
+  val student0UpdatedProtected: Student = student0UpdatedUneditable.copy(firstName = "Dieter", lastName = "Dietrich", birthDate = "1996-12-11", matriculationId = "1333337")
+  val uneditableErrorSize: Int = 2
+  val protectedErrorSize: Int = 4 + uneditableErrorSize
 
   val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
   val lecturer0Auth : AuthenticationUser = AuthenticationUser(lecturer0.username, lecturer0.username, AuthenticationRole.Lecturer)
+  val lecturer0Updated: Lecturer = lecturer0.copy(picture = "aBetterPicture", email = "noreply@scam.ng", address = addressUpdated, freeText = "Morgen kommt der große Gauss.", researchArea = "Physics")
 
   val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1992-12-11")
   val admin0Auth : AuthenticationUser = AuthenticationUser(admin0.username, admin0.username, AuthenticationRole.Admin)
@@ -271,15 +279,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       }
     }
 
-    "delete a user" in {
-      client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { _ =>
-        client.getStudent(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed
-      }.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
-    }
 
-    "update a user" in {
+
+    "update a user as an admin" in {
       client.updateAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(admin0.copy(firstName = "KLAUS")).flatMap { _ =>
         client.getAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
@@ -291,6 +293,39 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "get a role of a user" in {
       client.getRole(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
         answer.role shouldBe Role.Lecturer
+      }
+    }
+
+    "update a user as the user himself" in {
+      client.updateLecturer(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
+        .invoke(lecturer0Updated).flatMap { _ =>
+        client.getLecturer(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
+      }.map { answer =>
+        answer should ===(lecturer0Updated)
+      }
+    }
+
+    "not update uneditable fields as an admin" in {
+      client.updateStudent(student0UpdatedUneditable.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedUneditable.username))
+        .invoke(student0UpdatedUneditable).failed.map { answer =>
+          answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+            have length uneditableErrorSize
+        }
+    }
+
+    "not update protected fields as the user himself" in {
+      client.updateStudent(student0UpdatedProtected.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedProtected.username))
+        .invoke(student0UpdatedProtected).failed.map { answer =>
+          answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+            have length protectedErrorSize
+        }
+    }
+
+    "delete a user" in {
+      client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { _ =>
+        client.getStudent(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed
+      }.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 

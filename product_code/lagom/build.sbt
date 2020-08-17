@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.docker.DockerChmodType
 organization in ThisBuild := "de.upb.cs.uc4"
 lagomServiceEnableSsl in ThisBuild := true
 coverageEnabled in ThisBuild := true
-val hyperledgerApiVersion = "v0.5"
+val hyperledgerApiVersion = "v0.5.4"
 
 // The project uses PostgreSQL
 lagomCassandraEnabled in ThisBuild := false
@@ -65,20 +65,23 @@ lazy val lagom = (project in file("."))
     hl_course_service_api, hl_course_service,
     hyperledger_service_api, hyperledger_service,
     authentication_service_api, authentication_service,
-    user_service_api, user_service)
+    user_service_api, user_service,
+    matriculation_service_api, matriculation_service)
   .dependsOn(shared_client, shared_server,
     course_service_api, course_service,
     hl_course_service_api, hl_course_service,
     hyperledger_service_api, hyperledger_service,
     authentication_service_api, authentication_service,
-    user_service_api, user_service)
+    user_service_api, user_service,
+    matriculation_service_api, matriculation_service)
 
 // This project is not allowed to have lagom server dependencies
 lazy val shared_client = (project in file("shared/client"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies,
     libraryDependencies += scalaTest,
-    libraryDependencies += flexmark
+    libraryDependencies += flexmark,
+    libraryDependencies += janino
   )
   .settings(commonSettings("shared_client"))
 
@@ -180,7 +183,7 @@ lazy val user_service_api = (project in file("user_service/api"))
     libraryDependencies ++= apiDefaultDependencies
   )
   .settings(commonSettings("user_service_api"))
-  .dependsOn(authentication_service_api, shared_client)
+  .dependsOn(authentication_service_api, matriculation_service_api, shared_client)
 
 lazy val user_service = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
@@ -192,3 +195,21 @@ lazy val user_service = (project in file("user_service/impl"))
   .settings(dockerSettings)
   .settings(version := "v0.5.1")
   .dependsOn(user_service_api, shared_server, shared_client)
+
+lazy val matriculation_service_api = (project in file("matriculation_service/api"))
+  .settings(
+    libraryDependencies ++= apiDefaultDependencies
+  )
+  .settings(commonSettings("matriculation_service_api"))
+  .dependsOn(authentication_service_api, shared_client)
+
+lazy val matriculation_service = (project in file("matriculation_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies += lagomScaladslKafkaBroker
+  )
+  .settings(commonSettings("matriculation_service"))
+  .settings(dockerSettings)
+  .settings(version := "v0.5.0")
+  .dependsOn(user_service_api, shared_server, shared_client, matriculation_service_api)
