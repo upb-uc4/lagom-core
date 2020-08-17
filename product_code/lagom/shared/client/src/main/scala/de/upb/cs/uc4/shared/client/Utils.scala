@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.shared.client
 
-import de.upb.cs.uc4.shared.client.exceptions.SimpleError
+import de.upb.cs.uc4.shared.client.exceptions.{CustomException, SimpleError}
 
 object Utils {
 
@@ -35,7 +35,13 @@ object Utils {
      *         0  if this semester is the same as the other
      *         1  if this semester is after the other
      */
-    def compareSemester(other: String): Int = semesterToNumber(semester).compareTo(semesterToNumber(other))
+    def compareSemester(other: String): Int = {
+      if(semester.validateSemester.nonEmpty || other.validateSemester.nonEmpty) {
+        throw CustomException.InternalServerError
+      } else {
+        semesterToNumber(semester).compareTo(semesterToNumber(other))
+      }
+    }
   }
 
   private def semesterToNumber(semester: String): Double = {
