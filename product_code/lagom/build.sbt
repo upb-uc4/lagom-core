@@ -200,6 +200,7 @@ lazy val matriculation_service_api = (project in file("matriculation_service/api
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
+  .settings(commonSettings("matriculation_service_api"))
   .dependsOn(authentication_service_api, shared_client)
 
 lazy val matriculation_service = (project in file("matriculation_service/impl"))
@@ -208,6 +209,7 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
     libraryDependencies ++= implDefaultDependencies,
     libraryDependencies += lagomScaladslKafkaBroker
   )
+  .settings(commonSettings("matriculation_service"))
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
   .dependsOn(user_service_api, shared_server, shared_client, matriculation_service_api)
