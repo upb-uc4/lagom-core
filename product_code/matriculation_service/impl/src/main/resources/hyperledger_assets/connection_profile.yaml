@@ -19,7 +19,6 @@ channels:
       - orderer
     peers:
       peer:
-        discover: true
         endorsingPeer: true
         chaincodeQuery: true
         ledgerQuery: true
