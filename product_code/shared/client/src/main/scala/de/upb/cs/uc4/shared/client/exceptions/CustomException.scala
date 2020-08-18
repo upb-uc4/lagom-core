@@ -32,6 +32,6 @@ object CustomException {
   //422
   val PathParameterMismatch = new CustomException(422, GenericError("path parameter mismatch"))
   //500
-  val InternalServerError = new CustomException(500, GenericError("Server Error"))
+  val InternalServerError = new CustomException(500, GenericError("internal server error"))
   val InternalDeserializationError = new CustomException(500, GenericError("undeserializable exception"))
 }
