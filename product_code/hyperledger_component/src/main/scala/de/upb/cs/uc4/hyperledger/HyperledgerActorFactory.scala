@@ -8,13 +8,13 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import com.typesafe.config.Config
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown }
-import de.upb.cs.uc4.hyperledger.connections.traits.AbstractConnectionTrait
+import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
 import de.upb.cs.uc4.shared.server.messages.RejectedWithError
 
 import scala.util.Failure
 
-trait HyperledgerActorFactory[Connection <: AbstractConnectionTrait] {
+trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
 
   /** The configuration of the service */
   val config: Config
