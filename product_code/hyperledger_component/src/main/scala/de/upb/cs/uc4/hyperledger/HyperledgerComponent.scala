@@ -11,8 +11,15 @@ import scala.concurrent.duration._
 
 trait HyperledgerComponent extends ClusterComponents with LagomConfigComponent {
 
-  def createActorFactory: HyperledgerActorFactory[_]
+  /** Creates the HyperledgerActorFactory for this application.
+    * Should not be called manually.
+    * If a reference to the factory is needed use [[actorFactory]].
+    *
+    * @return the factory for this application
+    */
+  protected def createActorFactory: HyperledgerActorFactory[_]
 
+  /** The HyperledgerActorFactory of this application */
   lazy val actorFactory: HyperledgerActorFactory[_] = createActorFactory
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
