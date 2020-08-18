@@ -28,7 +28,7 @@ trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
 
   protected val username: String = retrieveString("uc4.hyperledger.username")
   protected val password: String = retrieveString("uc4.hyperledger.password")
-  protected val organisationId: String = retrieveString("uc4.hyperledger.organistionId")
+  protected val organisationId: String = retrieveString("uc4.hyperledger.organisationId")
 
   protected val channel: String = retrieveString("uc4.hyperledger.channel")
   protected val chaincode: String = retrieveString("uc4.hyperledger.chaincode")

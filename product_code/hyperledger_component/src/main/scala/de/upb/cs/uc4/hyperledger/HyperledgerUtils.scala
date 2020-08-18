@@ -14,6 +14,9 @@ object HyperledgerUtils {
           CustomException.InternalServerError
         case transactionEx: TransactionExceptionTrait =>
           errorMatching(Json.parse(transactionEx.payload).as[CustomError])
+        case _ =>
+          exception.printStackTrace()
+          CustomException.InternalServerError
       }
     }
   }
