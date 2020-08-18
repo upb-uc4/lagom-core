@@ -48,7 +48,7 @@ case class Address(
       errors :+= SimpleError("city", "City name contains illegal characters.")
     }
     if (!countryList.contains(country)) {
-      errors :+= SimpleError("country", "Country nmust be one of " + countryList.reduce((a, b) => a + ", " + b) + ".")
+      errors :+= SimpleError("country", "Country must be one of " + countryList.reduce((a, b) => a + ", " + b) + ".")
     }
     errors
   }

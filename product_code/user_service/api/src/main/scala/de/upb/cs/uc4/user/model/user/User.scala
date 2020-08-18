@@ -61,7 +61,7 @@ trait User {
       )
     }
 
-    if (!Role.All.contains(role)) { //optUser check to ensure this is during creation
+    if (!Role.All.contains(role)) {
       errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
     }
     else {

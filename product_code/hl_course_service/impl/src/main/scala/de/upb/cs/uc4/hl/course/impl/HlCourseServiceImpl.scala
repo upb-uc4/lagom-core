@@ -40,7 +40,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)(implicit ec: E
               throw CustomException.OwnerMismatch
             }
             val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
-            val validationErrors = courseToAdd.validateCourseSyntax
+            val validationErrors = courseToAdd.validate
             if (validationErrors.nonEmpty) {
               throw new CustomException(422, DetailedError("validation error", validationErrors))
             }
@@ -86,7 +86,7 @@ class HlCourseServiceImpl(hyperLedgerSession: HyperLedgerSession)(implicit ec: E
                 throw CustomException.OwnerMismatch
               }
               else {
-                val validationErrors = updatedCourse.validateCourseSyntax
+                val validationErrors = updatedCourse.validate
                 if (validationErrors.nonEmpty) {
                   throw new CustomException(422, DetailedError("validation error", validationErrors))
                 }
