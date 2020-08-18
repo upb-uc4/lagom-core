@@ -19,7 +19,7 @@ abstract class MatriculationApplication(context: LagomApplicationContext)
   with AuthenticationComponent
   with HyperledgerComponent {
 
-  override val actorFactory: MatriculationBehaviour = wire[MatriculationBehaviour]
+  override def createActorFactory: MatriculationBehaviour = wire[MatriculationBehaviour]
 
   // Set HttpFilter to the default CorsFilter
   override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)

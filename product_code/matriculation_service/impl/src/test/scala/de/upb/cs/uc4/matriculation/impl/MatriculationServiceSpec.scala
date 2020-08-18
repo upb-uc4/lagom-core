@@ -43,7 +43,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
   private val students: Seq[Student] = Seq(student0, student1, student2)
 
   private val server = ServiceTest.startServer(
-    ServiceTest.defaultSetup
+    ServiceTest.defaultSetup.withCluster()
   ) { ctx =>
       new MatriculationApplication(ctx) with LocalServiceLocator {
         override lazy val authenticationService: AuthenticationService = new AuthenticationService {
@@ -123,7 +123,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
           override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { _ => Future.successful(Done) }
         }
 
-        override val actorFactory: MatriculationBehaviour = new MatriculationBehaviour(config) {
+        override def createActorFactory: MatriculationBehaviour = new MatriculationBehaviour(config) {
           override protected def createConnection: ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
             private var jsonStringList: Seq[String] = List()
 

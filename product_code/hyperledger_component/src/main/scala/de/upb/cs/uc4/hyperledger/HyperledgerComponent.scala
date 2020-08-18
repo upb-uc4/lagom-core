@@ -11,7 +11,9 @@ import scala.concurrent.duration._
 
 trait HyperledgerComponent extends ClusterComponents with LagomConfigComponent {
 
-  val actorFactory: HyperledgerActorFactory[_]
+  def createActorFactory: HyperledgerActorFactory[_]
+
+  lazy val actorFactory: HyperledgerActorFactory[_] = createActorFactory
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
   // a given sharding entity typeKey.
@@ -25,6 +27,6 @@ trait HyperledgerComponent extends ClusterComponents with LagomConfigComponent {
   CoordinatedShutdown(actorSystem)
     .addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "shutdownConnection") { () =>
       implicit val timeout: Timeout = Timeout(5.seconds)
-      clusterSharding.entityRefFor(actorFactory.companionObject.typeKey, actorFactory.companionObject.entityId).ask(_ => Shutdown())
+      clusterSharding.entityRefFor(actorFactory.companionObject.typeKey, createActorFactory.companionObject.entityId).ask(_ => Shutdown())
     }
 }
