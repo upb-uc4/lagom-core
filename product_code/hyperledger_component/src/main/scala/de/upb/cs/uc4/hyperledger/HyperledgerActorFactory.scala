@@ -61,7 +61,7 @@ trait HyperledgerActorFactory[Connection <: AbstractConnectionTrait] {
                   cmd match {
                     case write: HyperledgerWriteCommand =>
                       write.replyTo ! RejectedWithError(customException.getErrorCode.http, customException.getPossibleErrorResponse)
-                    case read:  HyperledgerReadCommand[_] =>
+                    case read: HyperledgerReadCommand[_] =>
                       read.replyTo ! Failure(customException)
                   }
               }
@@ -94,7 +94,7 @@ trait HyperledgerActorFactory[Connection <: AbstractConnectionTrait] {
     * @return the retrieved string
     */
   protected def retrieveString(key: String, fallback: String = ""): String = {
-    if(config.hasPath(key)) {
+    if (config.hasPath(key)) {
       config.getString(key)
     }
     else {
@@ -105,7 +105,7 @@ trait HyperledgerActorFactory[Connection <: AbstractConnectionTrait] {
   /** Creates the connection to the chaincode */
   protected def createConnection: Connection
 
-  /** Gets called every time when the actor receives a command
+  /** Gets called every time when the actor receives a command.
     * Errors which this method will thrown will be handled accordingly
     * if the command implements [[HyperledgerReadCommand]] or the
     * [[HyperledgerWriteCommand]].

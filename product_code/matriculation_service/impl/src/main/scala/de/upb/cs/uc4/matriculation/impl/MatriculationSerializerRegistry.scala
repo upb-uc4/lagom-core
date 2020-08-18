@@ -14,8 +14,7 @@ import scala.collection.immutable.Seq
   * application loader.
   */
 object MatriculationSerializerRegistry extends SharedSerializerRegistry {
-  override def customSerializers: Seq[JsonSerializer[_]] = Seq(
-    // state and events can use play-json, but commands should use jackson because of ActorRef[T] (see application.conf)
-    //States
+  override def customSerializers: Seq[JsonSerializer[_]] = Seq( // state and events can use play-json, but commands should use jackson because of ActorRef[T] (see application.conf)
+  //States
   )
 }

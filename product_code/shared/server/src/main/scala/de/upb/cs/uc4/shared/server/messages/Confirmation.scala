@@ -16,8 +16,8 @@ case object Confirmation {
 
     override def writes(o: Confirmation): JsValue = {
       o match {
-        case acc: Accepted => Json.toJson(acc)
-        case rej: Rejected => Json.toJson(rej)
+        case acc: Accepted            => Json.toJson(acc)
+        case rej: Rejected            => Json.toJson(rej)
         case error: RejectedWithError => Json.toJson(error)
       }
     }

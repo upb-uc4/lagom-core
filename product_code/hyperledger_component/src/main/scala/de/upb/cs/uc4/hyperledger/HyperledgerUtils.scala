@@ -10,7 +10,7 @@ object HyperledgerUtils {
 
     def toCustomException: CustomException = {
       exception match {
-        case hyperledgerEx: HyperledgerExceptionTrait =>
+        case _: HyperledgerExceptionTrait =>
           CustomException.InternalServerError
         case transactionEx: TransactionExceptionTrait =>
           errorMatching(Json.parse(transactionEx.payload).as[CustomError])
@@ -21,10 +21,10 @@ object HyperledgerUtils {
   private def errorMatching(customError: CustomError): CustomException = {
     customError match {
       case genericError: GenericError => genericError.`type` match {
-        case "hl: unknown transactionId" => new CustomException(500, genericError)
-        case "hl: unprocessable entity" => new CustomException(422, genericError)
-        case "hl: not found" => new CustomException(404, genericError)
-        case "hl: conflict" => new CustomException(409, genericError)
+        case "hl: unknown transactionId"      => new CustomException(500, genericError)
+        case "hl: unprocessable entity"       => new CustomException(422, genericError)
+        case "hl: not found"                  => new CustomException(404, genericError)
+        case "hl: conflict"                   => new CustomException(409, genericError)
         case "hl: unprocessable ledger state" => new CustomException(500, genericError)
       }
       case detailedError: DetailedError => detailedError.`type` match {

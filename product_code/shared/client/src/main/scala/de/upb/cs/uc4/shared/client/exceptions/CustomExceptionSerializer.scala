@@ -56,7 +56,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     if ((messageJson \ "type").isDefined && (messageJson \ "title").isDefined) {
       val customError = Json.fromJson[CustomError](messageJson) match {
         case JsSuccess(error, _) => error
-        case JsError(_) => throw CustomException.InternalDeserializationError
+        case JsError(_)          => throw CustomException.InternalDeserializationError
       }
       fromCodeAndMessageCustom(message.errorCode, customError)
     }
@@ -68,7 +68,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
       } yield new ExceptionMessage(name, detail)
       val exceptionMessage = jsonParseResult match {
         case JsSuccess(m, _) => m
-        case JsError(_) => new ExceptionMessage("deserialization exception", message.message.utf8String)
+        case JsError(_)      => new ExceptionMessage("deserialization exception", message.message.utf8String)
       }
       fromCodeAndMessage(message.errorCode, exceptionMessage)
     }
@@ -84,9 +84,10 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     * @param exceptionMessage   The exception message.
     * @return The exception.
     */
-  override def fromCodeAndMessage(transportErrorCode: TransportErrorCode,
-                                  exceptionMessage: ExceptionMessage
-                                 ): Throwable = TransportException.fromCodeAndMessage(transportErrorCode, exceptionMessage)
+  override def fromCodeAndMessage(
+      transportErrorCode: TransportErrorCode,
+      exceptionMessage: ExceptionMessage
+  ): Throwable = TransportException.fromCodeAndMessage(transportErrorCode, exceptionMessage)
 
   /** Used to deserialize our CustomExceptions.
     *
@@ -94,8 +95,9 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     * @param customError        The detailed Error.
     * @return The exception.
     */
-  def fromCodeAndMessageCustom(transportErrorCode: TransportErrorCode,
-                               customError: CustomError
-                              ): Throwable = new CustomException(transportErrorCode, customError)
+  def fromCodeAndMessageCustom(
+      transportErrorCode: TransportErrorCode,
+      customError: CustomError
+  ): Throwable = new CustomException(transportErrorCode, customError)
 }
 

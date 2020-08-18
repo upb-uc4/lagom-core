@@ -11,14 +11,17 @@ import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
-import de.upb.cs.uc4.hyperledger.api.HyperLedgerService
+import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
+import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
+import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation }
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student }
+import org.hyperledger.fabric.gateway.{ Contract, Gateway }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -120,57 +123,59 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
           override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { _ => Future.successful(Done) }
         }
 
-        override lazy val hyperLedgerService: HyperLedgerService = new HyperLedgerService {
-          private var jsonStringList: List[String] = List()
+        override val actorFactory: MatriculationBehaviour = new MatriculationBehaviour(config) {
+          override protected def createConnection: ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
+            private var jsonStringList: Seq[String] = List()
 
-          override def write(transactionId: String): ServiceCall[Seq[String], Done] = ServiceCall { seq =>
-            transactionId match {
-              case "addMatriculationData" =>
-                jsonStringList ++= seq
-                Future.successful(Done)
-              case "addEntryToMatriculationData" =>
-                val matriculationID = seq.head
-                val fieldOfStudy = seq.apply(1)
-                val semester = seq.apply(2)
-                var data = Json.parse(jsonStringList.find(json => json.contains(matriculationID)).get).as[ImmatriculationData]
-
-                val optSubject = data.matriculationStatus.find(_.fieldOfStudy == fieldOfStudy)
-
-                if (optSubject.isDefined) {
-                  data = data.copy(matriculationStatus = data.matriculationStatus.map { subject =>
-                    if (subject != optSubject.get) {
-                      subject
-                    }
-                    else {
-                      subject.copy(semesters = subject.semesters :+ semester)
-                    }
-                  })
-                }
-                else {
-                  data = data.copy(matriculationStatus = data.matriculationStatus :+ SubjectMatriculation(fieldOfStudy, Seq(semester)))
-                }
-
-                jsonStringList = jsonStringList.filter(json => !json.contains(matriculationID)) :+ Json.stringify(Json.toJson(data))
-                Future.successful(Done)
-              case _ => Future.successful(Done)
+            override def addMatriculationData(jsonMatriculationData: String): String = {
+              jsonStringList :+= jsonMatriculationData
+              ""
             }
-          }
 
-          override def read(transactionId: String): ServiceCall[Seq[String], String] = ServiceCall { seq =>
-            transactionId match {
-              case "getMatriculationData" =>
-                val mat = jsonStringList.find(json => json.contains(seq.head))
-                if (mat.isDefined) {
-                  Future.successful(mat.get)
-                }
-                else {
-                  Future.failed(CustomException.NotFound)
-                }
-              case _ => Future.successful("")
+            override def addEntryToMatriculationData(matriculationId: String, fieldOfStudy: String, semester: String): String = {
+              var data = Json.parse(jsonStringList.find(json => json.contains(matriculationId)).get).as[ImmatriculationData]
+              val optSubject = data.matriculationStatus.find(_.fieldOfStudy == fieldOfStudy)
+
+              if (optSubject.isDefined) {
+                data = data.copy(matriculationStatus = data.matriculationStatus.map { subject =>
+                  if (subject != optSubject.get) {
+                    subject
+                  }
+                  else {
+                    subject.copy(semesters = subject.semesters :+ semester)
+                  }
+                })
+              }
+              else {
+                data = data.copy(matriculationStatus = data.matriculationStatus :+ SubjectMatriculation(fieldOfStudy, Seq(semester)))
+              }
+
+              jsonStringList = jsonStringList.filter(json => !json.contains(matriculationId)) :+ Json.stringify(Json.toJson(data))
+              ""
             }
-          }
 
-          override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+            override def updateMatriculationData(jSonMatriculationData: String): String = "???"
+
+            override def getMatriculationData(matId: String): String = {
+              val mat = jsonStringList.find(json => json.contains(matId))
+              if (mat.isDefined) {
+                mat.get
+              }
+              else {
+                throw new TransactionExceptionTrait() {
+                  override val transactionId: String = "getMatriculationData"
+                  override val payload: String =
+                    """{
+                    |  "type": "hl: not found",
+                    |  "title": "There is no MatriculationData for the given matriculationId."
+                    |}""".stripMargin
+                }
+              }
+            }
+
+            override val contract: Contract = null
+            override val gateway: Gateway = null
+          }
         }
       }
     }

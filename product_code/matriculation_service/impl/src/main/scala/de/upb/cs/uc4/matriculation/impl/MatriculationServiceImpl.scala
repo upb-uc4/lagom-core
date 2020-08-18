@@ -93,7 +93,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
           }
           userService.getStudent(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { student =>
             entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo)).map {
-              case Success(data) => (ResponseHeader(200, MessageProtocol.empty, List()), data)
+              case Success(data)      => (ResponseHeader(200, MessageProtocol.empty, List()), data)
               case Failure(exception) => throw exception
             }
           }

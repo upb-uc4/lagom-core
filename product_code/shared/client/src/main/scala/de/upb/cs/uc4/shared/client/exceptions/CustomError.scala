@@ -11,15 +11,15 @@ trait CustomError {
 object CustomError {
   implicit val format: Format[CustomError] = new Format[CustomError] {
     override def reads(json: JsValue): JsResult[CustomError] = json match {
-        case json if (json \ "invalidParams").isDefined => Json.fromJson[DetailedError](json)
-        case json if (json \ "transactionId").isDefined => Json.fromJson[TransactionError](json)
-        case json if (json \ "information").isDefined => Json.fromJson[InformativeError](json)
-        case json => Json.fromJson[GenericError](json)
-      }
+      case json if (json \ "invalidParams").isDefined => Json.fromJson[DetailedError](json)
+      case json if (json \ "transactionId").isDefined => Json.fromJson[TransactionError](json)
+      case json if (json \ "information").isDefined => Json.fromJson[InformativeError](json)
+      case json => Json.fromJson[GenericError](json)
+    }
 
     override def writes(o: CustomError): JsValue = o match {
-      case dErr: DetailedError => Json.toJson(dErr)
-      case gErr: GenericError  => Json.toJson(gErr)
+      case dErr: DetailedError    => Json.toJson(dErr)
+      case gErr: GenericError     => Json.toJson(gErr)
       case tErr: TransactionError => Json.toJson(tErr)
       case iErr: InformativeError => Json.toJson(iErr)
     }
