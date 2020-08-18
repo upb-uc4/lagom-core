@@ -62,13 +62,11 @@ val defaultPersistenceKafkaDependencies = Seq(
 lazy val lagom = (project in file("."))
   .aggregate(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
-    //hl_course_service_api, hl_course_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service)
   .dependsOn(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
-    //hl_course_service_api, hl_course_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service)
@@ -137,24 +135,6 @@ lazy val course_service = (project in file("course_service/impl"))
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
   .dependsOn(course_service_api, shared_server)
-/*
-lazy val hl_course_service_api = (project in file("hl_course_service/api"))
-  .settings(
-    libraryDependencies ++= apiDefaultDependencies
-  )
-  .settings(commonSettings("hl_course_service_api"))
-  .dependsOn(course_service_api)
-
-lazy val hl_course_service = (project in file("hl_course_service/impl"))
-  .enablePlugins(LagomScala)
-  .settings(
-    libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies += uuid
-  )
-  .settings(commonSettings("hl_course_service"))
-  .settings(dockerSettings)
-  .settings(version := "v0.5.0")
-  .dependsOn(hl_course_service_api, shared_server)*/
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
   .settings(
