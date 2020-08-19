@@ -2,6 +2,7 @@
 ## Feature
  - Added custom deserialization exception
 ## Refactor
+ - Adapted to Hyperleger-API v.0.6.1 The new building blocks of the Hyperledger communication are the `HyperledgerComponent`, `HyperledgerActorFactory` as well as several helper methods bundled in `HyperledgerUtils`.
 ## Bugfix
 
 

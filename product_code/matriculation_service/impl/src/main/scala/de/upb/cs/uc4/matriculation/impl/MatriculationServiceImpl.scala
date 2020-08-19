@@ -11,19 +11,32 @@ import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation }
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.hyperledger.HyperLedgerSession
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.MatriculationUpdate
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
+import akka.util.Timeout
+import de.upb.cs.uc4.hyperledger.commands.HyperledgerCommand
+import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
+import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntryToMatriculationData, AddMatriculationData, GetMatriculationData }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
+import scala.util.{ Failure, Success, Try }
 
 /** Implementation of the MatriculationService */
-class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userService: UserService)(implicit ec: ExecutionContext, auth: AuthenticationService, materializer: Materializer)
+class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: UserService)(implicit ec: ExecutionContext, auth: AuthenticationService, materializer: Materializer)
   extends MatriculationService {
 
-  def getAuthHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
+  def addAuthenticationHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
     origin => origin.addHeader("authorization", serviceHeader.headerMap("authorization").head._2)
   }
+
+  /** Looks up the entity for the given ID */
+  private def entityRef: EntityRef[HyperledgerCommand] =
+    clusterSharding.entityRefFor(MatriculationBehaviour.typeKey, MatriculationBehaviour.entityId)
+
+  implicit val timeout: Timeout = Timeout(15.seconds)
 
   /** Immatriculates a student */
   override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculationData, Done] =
@@ -34,31 +47,36 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
         if (validationList.nonEmpty) {
           throw new CustomException(422, DetailedError("validation error", validationList))
         }
-        userService.getStudent(username).handleRequestHeader(getAuthHeader(header)).invoke()
+        userService.getStudent(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
           .flatMap { student =>
-            hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", student.matriculationId)
-              .flatMap { _ =>
-                hyperLedgerSession.write[String](
-                  "addEntryToMatriculationData", Seq(
+            entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo))
+              .flatMap {
+                case Success(_) =>
+                  entityRef.ask[Confirmation](replyTo => AddEntryToMatriculationData(
                     student.matriculationId,
                     message.fieldOfStudy,
-                    message.semester
-                  )
-                ).map { _ =>
-                    userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
-                    (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    message.semester,
+                    replyTo
+                  )).map {
+                    case Accepted =>
+                      userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    case RejectedWithError(statusCode, reason) => throw new CustomException(statusCode, reason)
                   }
-              }
-              .recoverWith {
-                case _: Exception =>
-                  val data = ImmatriculationData(
-                    student.matriculationId, student.firstName, student.lastName, student.birthDate,
-                    Seq(SubjectMatriculation(message.fieldOfStudy, Seq(message.semester)))
-                  )
-                  hyperLedgerSession.write[ImmatriculationData]("addMatriculationData", data).map { _ =>
-                    userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
-                    (ResponseHeader(201, MessageProtocol.empty,
-                      List(("Location", s"$pathPrefix/history/${student.username}"))), Done)
+                case Failure(exception) =>
+                  exception match {
+                    case customException: CustomException if customException.getErrorCode.http == 404 =>
+                      val data = ImmatriculationData(
+                        student.matriculationId, student.firstName, student.lastName, student.birthDate,
+                        Seq(SubjectMatriculation(message.fieldOfStudy, Seq(message.semester)))
+                      )
+                      entityRef.ask[Confirmation](replyTo => AddMatriculationData(data, replyTo)).map {
+                        case Accepted =>
+                          userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
+                          (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/${student.username}"))), Done)
+                        case RejectedWithError(statusCode, reason) => throw new CustomException(statusCode, reason)
+                      }
+                    case exception: Exception => throw exception
                   }
               }
           }
@@ -73,9 +91,10 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
           if (role != AuthenticationRole.Admin && authUsername != username) {
             throw CustomException.OwnerMismatch
           }
-          userService.getStudent(username).handleRequestHeader(getAuthHeader(header)).invoke().flatMap { student =>
-            hyperLedgerSession.read[ImmatriculationData]("getMatriculationData", student.matriculationId).map {
-              data => (ResponseHeader(200, MessageProtocol.empty, List()), data)
+          userService.getStudent(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { student =>
+            entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo)).map {
+              case Success(data)      => (ResponseHeader(200, MessageProtocol.empty, List()), data)
+              case Failure(exception) => throw exception
             }
           }
         }

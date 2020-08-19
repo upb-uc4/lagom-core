@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.docker.DockerChmodType
 organization in ThisBuild := "de.upb.cs.uc4"
 lagomServiceEnableSsl in ThisBuild := true
 coverageEnabled in ThisBuild := true
-val hyperledgerApiVersion = "v0.5.4"
+val hyperledgerApiVersion = "v0.6.1"
 
 // The project uses PostgreSQL
 lagomCassandraEnabled in ThisBuild := false
@@ -60,17 +60,13 @@ val defaultPersistenceKafkaDependencies = Seq(
 
 // Projects
 lazy val lagom = (project in file("."))
-  .aggregate(shared_client, shared_server,
+  .aggregate(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
-    hl_course_service_api, hl_course_service,
-    hyperledger_service_api, hyperledger_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service)
-  .dependsOn(shared_client, shared_server,
+  .dependsOn(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
-    hl_course_service_api, hl_course_service,
-    hyperledger_service_api, hyperledger_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service)
@@ -85,7 +81,6 @@ lazy val shared_client = (project in file("shared/client"))
   )
   .settings(commonSettings("shared_client"))
 
-
 lazy val shared_server = (project in file("shared/server"))
   .settings(
     libraryDependencies ++= Seq(
@@ -99,29 +94,28 @@ lazy val shared_server = (project in file("shared/server"))
     )
   )
   .settings(commonSettings("shared_server"))
-  .dependsOn(authentication_service_api, hyperledger_service_api, shared_client)
+  .dependsOn(authentication_service_api, shared_client)
 
-lazy val hyperledger_service_api = (project in file("hyperledger_service/api"))
+lazy val hyperledger_component = (project in file("hyperledger_component"))
   .settings(
-    libraryDependencies ++= apiDefaultDependencies
+    libraryDependencies ++= Seq(
+      lagomScaladslServer,
+      lagomScaladslCluster,
+      lagomScaladslTestKit,
+      scalaTest,
+      flexmark,
+      macwire
+    )
   )
-  .settings(commonSettings("hyperledger_service_api"))
-  .dependsOn(shared_client)
+  .settings(commonSettings("hyperledger_component"))
+  .dependsOn(shared_server, hyperledger_api)
 
-lazy val hyperledger_service = (project in file("hyperledger_service/impl"))
-  .enablePlugins(LagomScala)
-  .settings(
-    libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies += lagomScaladslCluster,
+/*
     mappings in Docker += file("hyperledger_service/impl/src/main/resources/hyperledger_assets/connection_profile_release.yaml")
       -> "opt/docker/share/hyperledger_assets/connection_profile.yaml",
     mappings in Docker += file("hyperledger_service/impl/src/main/resources/hyperledger_assets/wallet/cli.id")
       -> "opt/docker/share/hyperledger_assets/wallet/cli.id",
-  )
-  .settings(commonSettings("hyperledger_service"))
-  .settings(dockerSettings)
-  .settings(version := "v0.5.0")
-  .dependsOn(hyperledger_api, hyperledger_service_api, shared_server)
+ */
 
 lazy val course_service_api = (project in file("course_service/api"))
   .settings(
@@ -141,24 +135,6 @@ lazy val course_service = (project in file("course_service/impl"))
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
   .dependsOn(course_service_api, shared_server)
-
-lazy val hl_course_service_api = (project in file("hl_course_service/api"))
-  .settings(
-    libraryDependencies ++= apiDefaultDependencies
-  )
-  .settings(commonSettings("hl_course_service_api"))
-  .dependsOn(course_service_api)
-
-lazy val hl_course_service = (project in file("hl_course_service/impl"))
-  .enablePlugins(LagomScala)
-  .settings(
-    libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies += uuid
-  )
-  .settings(commonSettings("hl_course_service"))
-  .settings(dockerSettings)
-  .settings(version := "v0.5.0")
-  .dependsOn(hl_course_service_api, shared_server)
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
   .settings(
@@ -212,4 +188,4 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .settings(commonSettings("matriculation_service"))
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
-  .dependsOn(user_service_api, shared_server, shared_client, matriculation_service_api)
+  .dependsOn(user_service_api, shared_server, shared_client, matriculation_service_api, hyperledger_component)
