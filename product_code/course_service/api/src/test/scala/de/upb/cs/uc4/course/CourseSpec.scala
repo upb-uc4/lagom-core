@@ -1,6 +1,5 @@
-package de.upb.cs.uc4.course.impl
+package de.upb.cs.uc4.course
 
-import com.fasterxml.uuid.Generators
 import de.upb.cs.uc4.course.model.Course
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -8,7 +7,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class CourseSpec extends AnyWordSpecLike with Matchers {
 
   val genericString: String = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut l"
-  val courseValid: Course = Course(Generators.timeBasedGenerator().generate().toString, "Name", "Lecture", "2020-04-01", "2020-09-30", 7, "aLecturer", 50, 0, "English", "This is Analysis")
+  val courseValid: Course = Course("550e8400-e29b-11d4-a716-446655440000", "Name", "Lecture", "2020-04-01", "2020-09-30", 7, "aLecturer", 50, 0, "English", "This is Analysis")
 
   "A Course" should {
     "be validated" in {
