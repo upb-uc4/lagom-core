@@ -49,7 +49,7 @@ case class Lecturer(
       errors :+= SimpleError("freeText", "Free text must contain 0 to 10000 characters.")
     }
     if (!researchAreaRegex.matches(researchArea)) {
-      errors :+= SimpleError("researchArea", "Research area must contain 0 to 10000 characters.")
+      errors :+= SimpleError("researchArea", "Research area must contain 0 to 200 characters.")
     }
     errors
   }
