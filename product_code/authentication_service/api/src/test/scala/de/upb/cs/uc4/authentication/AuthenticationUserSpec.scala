@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.authentication.impl
+package de.upb.cs.uc4.authentication
 
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import org.scalatest.matchers.should.Matchers
@@ -26,6 +26,7 @@ class AuthenticationUserSpec extends AnyWordSpecLike with Matchers {
       val errorVariables = errors.map(error => error.name)
       errorVariables should contain theSameElementsAs Seq("username")
     }
+
     //PASSWORD
     "return a validation error for empty password" in {
       val errors = authUserValid.copy(password = "").validate

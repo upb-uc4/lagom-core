@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.user.impl
+package de.upb.cs.uc4.user
 
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student }
 import de.upb.cs.uc4.user.model.{ Address, Role }
@@ -19,6 +19,7 @@ class UserSpec extends AnyWordSpecLike with Matchers {
       val errors = adminValid.validate
       errors shouldBe empty
     }
+
     //USERNAME
     "return a validation error for incorrect length in username" in {
       val errors = adminValid.copy(username = "Ben").validate
