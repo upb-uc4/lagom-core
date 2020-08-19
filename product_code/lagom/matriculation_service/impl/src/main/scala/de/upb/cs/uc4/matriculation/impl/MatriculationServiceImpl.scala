@@ -23,7 +23,12 @@ class MatriculationServiceImpl(hyperLedgerSession: HyperLedgerSession, userServi
   extends MatriculationService {
 
   def getAuthHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
-    origin => origin.addHeader("authorization", serviceHeader.headerMap("authorization").head._2)
+    origin => {
+      serviceHeader.getHeader("Authorization") match {
+        case Some(basicAuth) => origin.addHeader("authorization", basicAuth)
+        case None => throw CustomException.AuthorizationError
+      }
+    }
   }
 
   /** Immatriculates a student */
