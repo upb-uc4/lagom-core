@@ -22,7 +22,7 @@ case class CourseState(optCourse: Option[Course]) {
       case CreateCourse(courseRaw, replyTo) =>
 
         val course = courseRaw.trim
-        val validationErrors = course.validateCourseSyntax
+        val validationErrors = course.validate
         if (optCourse.isEmpty) {
           if (validationErrors.isEmpty) {
             Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
@@ -38,7 +38,7 @@ case class CourseState(optCourse: Option[Course]) {
       case UpdateCourse(courseRaw, replyTo) =>
 
         val course = courseRaw.trim
-        val validationErrors = course.validateCourseSyntax
+        val validationErrors = course.validate
         if (optCourse.isDefined) {
           if (validationErrors.isEmpty) {
             Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted }
