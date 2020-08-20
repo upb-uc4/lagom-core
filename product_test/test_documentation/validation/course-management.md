@@ -3,12 +3,6 @@ Every invalid equivalence class returns an error. Every valid class returns an e
 
 ## Course
 
-### Street (String)
-$\textsf{validCharactersStreet} := \textsf{Letters} \cup \textsf{Umlauts} \cup \{\textsf{'ß'}\} \cup \textsf{Digits} \cup \textsf{Whitespace} \cup \{\textsf{'.', ',', '-'}\}$
-- vStreet1: street.length $\in$ [1,50] AND street has only characters defined in $\textsf{validCharactersStreet}$
-- iStreet1: street.length $\notin$ [1,50] 
-- iStreet2: street contains characters not defined in $\textsf{validCharactersStreet}$
-
 ### courseId (String)
 Not validated, as it is a generated UUID.
 
