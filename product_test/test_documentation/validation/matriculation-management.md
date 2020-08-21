@@ -1,20 +1,13 @@
 # MatriculationData Validation Tests
 Every invalid equivalence class returns an error. Every valid class returns an empty sequence.
 
-## AuthenticationUser
-$\textsf{validCharactersUsername} := \textsf{Letters} \cup \textsf{Digits} \cup \{\textsf{'-'}\}$
 ### fieldOfStudy (String)
-$\begin{aligned}\textsf{validFieldsOfStudies} := \{
-&\textsf{"Computer Science", "Philosophy", "Media Sciences", "Economics",}\\
-&\textsf{"Mathematics", "Physics","Chemistry", "Education", "Sports Science",}\\
-&\textsf{"Japanology", "Spanish Culture", "Pedagogy", "Business Informatics",}\\
-&\textsf{"Linguistics"}
-\}\end{aligned}$
-- vFieldOfStudy1: fieldOfStudy $\in$ validFieldsOfStudies
-- vFieldOfStudy1: fieldOfStudy $\notin$ validFieldsOfStudies
+*validFieldsOfStudies* := {"Computer Science", "Philosophy", "Media Sciences", "Economics", "Mathematics", "Physics","Chemistry", "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics"}
+- vFieldOfStudy1: fieldOfStudy ∈ *validFieldsOfStudies*
+- vFieldOfStudy1: fieldOfStudy ∉ *validFieldsOfStudies*
 
 ### semester (String)
-$\textsf{Semesters} := \{\textsf{"SS1000"}, \textsf{"WS1000/01"}, ..., \textsf{"SS9998"}, \textsf{"WS9999/00"}\}$
-- vSemester1: latestImmatriculation $\in$ Semesters
-- vSemester2: latestImmatriculation is the empty String
-- iSemester1: latestImmatriculation $\neq$ "" AND latestImmatriculation $\notin$ Semesters
+Valid semesters are of the form "SS2016" and "WS2017/18"
+- vSemester1: semester is of a valid format for semesters
+- iSemester1: semester is the empty String
+- iSemester2: semester is not the empty String AND semester is not in a valid format for semesters
