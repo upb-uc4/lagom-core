@@ -30,8 +30,8 @@ Valid house numbers are of the form "42", "42b", and "53a-c". Letters may be low
 ### country (String)
 *Countries* := {"Germany", "United States", "Italy", "France", "United Kingdom", "Belgium", "Netherlands","Spain","Austria", "Switzerland", "Poland"}
 
-- vCountry1: country ∈ Countries
-- iCountry1: country ∉ Countries
+- vCountry1: country ∈ *Countries*
+- iCountry1: country ∉ *Countries*
 
 ## User
 *validCharactersUsername* := Letters ∪ Digits ∪ {'-'}
