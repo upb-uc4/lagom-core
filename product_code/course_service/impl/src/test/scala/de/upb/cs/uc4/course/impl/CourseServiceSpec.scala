@@ -2,14 +2,12 @@ package de.upb.cs.uc4.course.impl
 
 import java.util.Base64
 
-import akka.{ Done, NotUsed }
-import com.lightbend.lagom.scaladsl.api.ServiceCall
+import akka.Done
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
-import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.authentication.test.AuthenticationServiceStub
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
@@ -18,8 +16,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Minutes, Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
-
-import scala.concurrent.Future
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
@@ -31,19 +27,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       .withJdbc()
   ) { ctx =>
       new CourseApplication(ctx) with LocalServiceLocator {
-        override lazy val authenticationService: AuthenticationService = new AuthenticationService {
-          override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
-            _ => Future.successful("admin", AuthenticationRole.Admin)
-          }
-
-          override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-
-          override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
-
-          override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] = ServiceCall { _ => Future.successful(Done) }
-
-          override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-        }
+        override lazy val authenticationService: AuthenticationService = new AuthenticationServiceStub
       }
     }
 

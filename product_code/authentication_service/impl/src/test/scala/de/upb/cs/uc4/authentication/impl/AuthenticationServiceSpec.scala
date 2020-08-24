@@ -2,8 +2,7 @@ package de.upb.cs.uc4.authentication.impl
 
 import java.util.Base64
 
-import akka.{ Done, NotUsed }
-import com.lightbend.lagom.scaladsl.api.ServiceCall
+import akka.NotUsed
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
@@ -13,9 +12,8 @@ import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUs
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
-import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student }
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate }
+import de.upb.cs.uc4.user.model.JsonUsername
+import de.upb.cs.uc4.user.test.UserServiceStub
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
@@ -45,7 +43,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
         deletionStub = internDeletionStub
 
         // Create a userService with ProducerStub as topic
-        override lazy val userService: UserServiceStub = new UserServiceStub(internDeletionStub)
+        override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
       }
     }
 
@@ -141,49 +139,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   }
 }
 
-class UserServiceStub(deletionStub: ProducerStub[JsonUsername]) extends UserService {
-
-  override def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse] = ServiceCall { _ => Future.successful(null) }
-
-  override def deleteUser(username: String): ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-
-  override def getAllStudents(usernames: Option[String]): ServiceCall[NotUsed, Seq[Student]] = ServiceCall { _ => Future.successful(Seq()) }
-
-  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServiceCall { _ => Future.successful(null) }
-
-  override def getStudent(username: String): ServiceCall[NotUsed, Student] = ServiceCall { _ => Future.successful(null) }
-
-  override def updateStudent(username: String): ServiceCall[Student, Done] = ServiceCall { _ => Future.successful(Done) }
-
-  override def getAllLecturers(usernames: Option[String]): ServiceCall[NotUsed, Seq[Lecturer]] = ServiceCall { _ => Future.successful(Seq()) }
-
-  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServiceCall { _ => Future.successful(null) }
-
-  override def getLecturer(username: String): ServiceCall[NotUsed, Lecturer] = ServiceCall { _ => Future.successful(null) }
-
-  override def updateLecturer(username: String): ServiceCall[Lecturer, Done] = ServiceCall { _ => Future.successful(Done) }
-
-  override def getAllAdmins(usernames: Option[String]): ServiceCall[NotUsed, Seq[Admin]] = ServiceCall { _ => Future.successful(Seq()) }
-
-  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServiceCall { _ => Future.successful(null) }
-
-  override def getAdmin(username: String): ServiceCall[NotUsed, Admin] = ServiceCall { _ => Future.successful(null) }
-
-  override def updateAdmin(username: String): ServiceCall[Admin, Done] = ServiceCall { _ => Future.successful(Done) }
-
-  override def getRole(username: String): ServiceCall[NotUsed, JsonRole] = ServiceCall { _ => Future.successful(null) }
-
-  override def allowedGetPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-
-  override def allowedGetPost: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-
-  override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-
-  override def allowedDelete: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+class UserServiceStubWithTopic(deletionStub: ProducerStub[JsonUsername]) extends UserServiceStub {
 
   override def userDeletedTopic(): Topic[JsonUsername] = deletionStub.topic
 
-  override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
-
-  override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { _ => Future.successful(Done) }
 }
