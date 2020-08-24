@@ -85,25 +85,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       }
     }
 
-  /** Get a specific student */
-  override def getStudent(username: String): ServiceCall[NotUsed, Student] =
-    identifiedAuthenticated(AuthenticationRole.All: _*) {
-      (authUsername, role) =>
-        ServerServiceCall { _ =>
-
-          getUser(username).invoke().map(user => user.role match {
-            case Role.Student =>
-              if (role != AuthenticationRole.Admin && username != authUsername) {
-                user.toPublic.asInstanceOf[Student]
-              }
-              else {
-                user.asInstanceOf[Student]
-              }
-            case _ => throw CustomException.NotFound
-          })
-        }
-    }
-
   /** Update an existing student */
   override def updateStudent(username: String): ServiceCall[Student, Done] =
     ServerServiceCall { (header, user) =>
@@ -123,24 +104,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
           getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
       }
-    }
-
-  /** Get a specific lecturer */
-  override def getLecturer(username: String): ServiceCall[NotUsed, Lecturer] =
-    identifiedAuthenticated(AuthenticationRole.All: _*) {
-      (authUsername, role) =>
-        ServerServiceCall { _ =>
-          getUser(username).invoke().map(user => user.role match {
-            case Role.Lecturer =>
-              if (role != AuthenticationRole.Admin && username != authUsername) {
-                user.toPublic.asInstanceOf[Lecturer]
-              }
-              else {
-                user.asInstanceOf[Lecturer]
-              }
-            case _ => throw CustomException.NotFound
-          })
-        }
     }
 
   /** Update an existing lecturer */
@@ -164,24 +127,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       }
     }
 
-  /** Get a specific admin */
-  override def getAdmin(username: String): ServiceCall[NotUsed, Admin] =
-    identifiedAuthenticated(AuthenticationRole.All: _*) {
-      (authUsername, role) =>
-        ServerServiceCall { _ =>
-          getUser(username).invoke().map(user => user.role match {
-            case Role.Admin =>
-              if (role != AuthenticationRole.Admin && username != authUsername) {
-                user.toPublic.asInstanceOf[Admin]
-              }
-              else {
-                user.asInstanceOf[Admin]
-              }
-            case _ => throw CustomException.NotFound
-          })
-        }
-    }
-
   /** Update an existing admin */
   override def updateAdmin(username: String): ServiceCall[Admin, Done] =
     ServerServiceCall { (header, user) =>
@@ -190,8 +135,12 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** Get role of the user */
   override def getRole(username: String): ServiceCall[NotUsed, JsonRole] =
-    authenticated[NotUsed, JsonRole](AuthenticationRole.All: _*) { _ =>
-      getUser(username).invoke().map(user => JsonRole(user.role))
+    authenticated[NotUsed, JsonRole](AuthenticationRole.All: _*) {
+      ServerServiceCall { (header, _) =>
+        getUser(username).invokeWithHeaders(header, NotUsed).map {
+          case (_, user) => (ResponseHeader(200, MessageProtocol.empty, List()), JsonRole(user.role))
+        }
+      }
     }
 
   /** Allows GET, PUT */
@@ -213,7 +162,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
   private def updateUser(username: String): ServerServiceCall[User, Done] =
     identifiedAuthenticated(AuthenticationRole.All: _*) {
       (authUsername, role) =>
-        ServerServiceCall { (_, user) =>
+        ServerServiceCall { (header, user) =>
           // Check, if the username in path is different than the username in the object
           if (username != user.username.trim) {
             throw CustomException.PathParameterMismatch
@@ -224,12 +173,13 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           }
 
           // We need to know what role the user has, because their editable fields are different
-          getUser(username).invoke().map { oldUser =>
-            var err = oldUser.checkUneditableFields(user)
-            if (role != AuthenticationRole.Admin) {
-              err ++= oldUser.checkProtectedFields(user)
-            }
-            err
+          getUser(username).invokeWithHeaders(header, NotUsed).map {
+            case (_, oldUser) =>
+              var err = oldUser.checkUneditableFields(user)
+              if (role != AuthenticationRole.Admin) {
+                err ++= oldUser.checkProtectedFields(user)
+              }
+              err
           }
             .flatMap { editErrors =>
               // Other users than admins can only edit specified fields
@@ -250,16 +200,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
             }
         }
     }
-
-  /** Helper method for getting a generic User, independent of the role */
-  private def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ =>
-    val ref = entityRef(username)
-
-    ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
-      case Some(user) => user
-      case None       => throw CustomException.NotFound
-    }
-  }
 
   /** Helper method for getting all Users */
   private def getAll(role: Role): Future[Seq[User]] = {
@@ -295,40 +235,25 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     }
   }
 
-  /*/** Add a new student to the database */
-  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postMessageStudentRaw) =>
-    val postMessageStudent = postMessageStudentRaw.copy(authUser = postMessageStudentRaw.authUser.clean, student = postMessageStudentRaw.student.clean)
-    addUser(postMessageStudent.authUser).invokeWithHeaders(header, postMessageStudent.student).map {
-      case (header, user) =>
-        (
-          header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
-          user.asInstanceOf[Student]
-        )
-    }
-  }
+  /** Get a specific admin */
+  override def getUser(username: String): ServerServiceCall[NotUsed, User] =
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
+        ServerServiceCall { _ =>
+          val ref = entityRef(username)
 
-  /** Add a new lecturer to the database */
-  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, postMessageLecturerRaw) =>
-    val postMessageLecturer = postMessageLecturerRaw.copy(authUser = postMessageLecturerRaw.authUser.clean, lecturer = postMessageLecturerRaw.lecturer.clean)
-    addUser(postMessageLecturer.authUser).invokeWithHeaders(header, postMessageLecturer.lecturer).map {
-      case (header, user) =>
-        (
-          header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
-          user.asInstanceOf[Lecturer]
-        )
+          ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
+            case Some(user) =>
+              if (role != AuthenticationRole.Admin && username != authUsername) {
+                user.toPublic
+              }
+              else {
+                user
+              }
+            case None => throw CustomException.NotFound
+          }
+        }
     }
-  }
-  /** Add a new admin to the database */
-  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, postMessageAdminRaw) =>
-    val postMessageAdmin = postMessageAdminRaw.copy(authUser = postMessageAdminRaw.authUser.clean, admin = postMessageAdminRaw.admin.clean)
-    addUser(postMessageAdmin.authUser).invokeWithHeaders(header, postMessageAdmin.admin).map {
-      case (header, user) =>
-        (
-          header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
-          user.asInstanceOf[Admin]
-        )
-    }
-  }*/
 
   /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
   override def addUser: ServerServiceCall[PostMessageUser, User] = authenticated(AuthenticationRole.Admin) {

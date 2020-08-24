@@ -9,7 +9,7 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, GenericError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.MatriculationUpdate
@@ -19,6 +19,7 @@ import de.upb.cs.uc4.hyperledger.commands.HyperledgerCommand
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntryToMatriculationData, AddMatriculationData, GetMatriculationData }
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
+import de.upb.cs.uc4.user.model.user.Student
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
@@ -47,8 +48,14 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
         if (validationList.nonEmpty) {
           throw new CustomException(422, DetailedError("validation error", validationList))
         }
-        userService.getStudent(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-          .flatMap { student =>
+        userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+          .flatMap { user =>
+            if (!user.isInstanceOf[Student]) {
+              //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
+              throw CustomException.NotFound
+            }
+            val student = user.asInstanceOf[Student]
+
             entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo))
               .flatMap {
                 case Success(_) =>
@@ -89,9 +96,14 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
       (authUsername, role) =>
         ServerServiceCall { (header, _) =>
           if (role != AuthenticationRole.Admin && authUsername != username) {
+            //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
             throw CustomException.OwnerMismatch
           }
-          userService.getStudent(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { student =>
+          userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { user =>
+            if (!user.isInstanceOf[Student]) {
+              throw CustomException.InternalServerError
+            }
+            val student = user.asInstanceOf[Student]
             entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo)).map {
               case Success(data)      => (ResponseHeader(200, MessageProtocol.empty, List()), data)
               case Failure(exception) => throw exception

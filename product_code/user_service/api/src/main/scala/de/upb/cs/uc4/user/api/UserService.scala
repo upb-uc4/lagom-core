@@ -26,6 +26,9 @@ trait UserService extends UC4Service {
   /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
   def addUser(): ServiceCall[PostMessageUser, User]
 
+  /** Get a specific user with the username */
+  def getUser(username: String): ServiceCall[NotUsed, User]
+
   /** Get all users from the database */
   def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse]
 
@@ -37,8 +40,8 @@ trait UserService extends UC4Service {
   /** Get all students from the database */
   def getAllStudents(usernames: Option[String]): ServiceCall[NotUsed, Seq[Student]]
 
-  /** Get a specific student */
-  def getStudent(username: String): ServiceCall[NotUsed, Student]
+  ///** Get a specific student */
+  //def getStudent(username: String): ServiceCall[NotUsed, Student]
 
   /** Update an existing student */
   def updateStudent(username: String): ServiceCall[Student, Done]
@@ -48,8 +51,8 @@ trait UserService extends UC4Service {
   /** Get all lecturers from the database */
   def getAllLecturers(usernames: Option[String]): ServiceCall[NotUsed, Seq[Lecturer]]
 
-  /** Get a specific lecturer */
-  def getLecturer(username: String): ServiceCall[NotUsed, Lecturer]
+  ///** Get a specific lecturer */
+  //def getLecturer(username: String): ServiceCall[NotUsed, Lecturer]
 
   /** Update an existing lecturer */
   def updateLecturer(username: String): ServiceCall[Lecturer, Done]
@@ -59,8 +62,8 @@ trait UserService extends UC4Service {
   /** Get all admins from the database */
   def getAllAdmins(usernames: Option[String]): ServiceCall[NotUsed, Seq[Admin]]
 
-  /** Get a specific admin */
-  def getAdmin(username: String): ServiceCall[NotUsed, Admin]
+  ///** Get a specific admin */
+  //def getAdmin(username: String): ServiceCall[NotUsed, Admin]
 
   /** Update an existing admin */
   def updateAdmin(username: String): ServiceCall[Admin, Done]
@@ -98,27 +101,29 @@ trait UserService extends UC4Service {
         restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDelete _),
         restCall(Method.POST, pathPrefix + "/users", addUser _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
 
+        restCall(Method.GET, pathPrefix + "/users/:username", getUser _),
+
         restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
 
         restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
         restCall(Method.GET, pathPrefix + "/students?usernames", getAllStudents _),
         //restCall(Method.POST, pathPrefix + "/students", addStudent _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
+        //restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
         restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/lecturers?usernames", getAllLecturers _),
         //restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
+        //restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
         restCall(Method.PUT, pathPrefix + "/lecturers/:username", updateLecturer _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/admins?usernames", getAllAdmins _),
         //restCall(Method.POST, pathPrefix + "/admins", addAdmin _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
+        //restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
         restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGetPost _)

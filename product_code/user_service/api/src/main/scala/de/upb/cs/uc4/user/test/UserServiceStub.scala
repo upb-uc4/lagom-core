@@ -28,11 +28,22 @@ class UserServiceStub extends UserService with DefaultTestUsers {
 
   override def getAllStudents(usernames: Option[String]): ServiceCall[NotUsed, Seq[Student]] = ServiceCall { _ => Future.successful(null) }
 
-  override def getStudent(username: String): ServiceCall[NotUsed, Student] = ServiceCall { _ =>
+  /*override def getStudent(username: String): ServiceCall[NotUsed, Student] = ServiceCall { _ =>
     val optStudent = students.find(_.username == username)
 
     if (optStudent.isDefined) {
       Future.successful(optStudent.get)
+    }
+    else {
+      throw CustomException.NotFound
+    }
+  }*/
+
+  override def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ =>
+    val optUsers = students.find(_.username == username)
+
+    if (optUsers.isDefined) {
+      Future.successful(optUsers.get)
     }
     else {
       throw CustomException.NotFound
@@ -43,13 +54,13 @@ class UserServiceStub extends UserService with DefaultTestUsers {
 
   override def getAllLecturers(usernames: Option[String]): ServiceCall[NotUsed, Seq[Lecturer]] = ServiceCall { _ => Future.successful(null) }
 
-  override def getLecturer(username: String): ServiceCall[NotUsed, Lecturer] = ServiceCall { _ => Future.successful(null) }
+  //override def getLecturer(username: String): ServiceCall[NotUsed, Lecturer] = ServiceCall { _ => Future.successful(null) }
 
   override def updateLecturer(username: String): ServiceCall[Lecturer, Done] = ServiceCall { _ => Future.successful(Done) }
 
   override def getAllAdmins(usernames: Option[String]): ServiceCall[NotUsed, Seq[Admin]] = ServiceCall { _ => Future.successful(null) }
 
-  override def getAdmin(username: String): ServiceCall[NotUsed, Admin] = ServiceCall { _ => Future.successful(null) }
+  //override def getAdmin(username: String): ServiceCall[NotUsed, Admin] = ServiceCall { _ => Future.successful(null) }
 
   override def updateAdmin(username: String): ServiceCall[Admin, Done] = ServiceCall { _ => Future.successful(null) }
 
