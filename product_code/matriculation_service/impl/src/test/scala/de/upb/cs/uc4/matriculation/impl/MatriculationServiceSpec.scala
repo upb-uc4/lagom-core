@@ -9,10 +9,10 @@ import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
-import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation}
-import de.upb.cs.uc4.user.{DefaultTestUsers, UserServiceStub}
-import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
-import org.hyperledger.fabric.gateway.{Contract, Gateway}
+import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation }
+import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
+import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
+import org.hyperledger.fabric.gateway.{ Contract, Gateway }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec

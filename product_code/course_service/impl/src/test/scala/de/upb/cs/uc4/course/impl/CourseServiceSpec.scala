@@ -7,13 +7,13 @@ import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.course.api.CourseService
-import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
+import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
-import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
+import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Minutes, Seconds, Span}
+import org.scalatest.time.{ Minutes, Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
 /** Tests for the CourseService

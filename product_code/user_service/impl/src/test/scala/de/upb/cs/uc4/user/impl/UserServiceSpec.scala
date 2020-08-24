@@ -5,21 +5,21 @@ import java.util.Calendar
 import akka.stream.scaladsl.Source
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
+import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, JsonUsername}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError}
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
-import de.upb.cs.uc4.user.model.user.{Lecturer, Student}
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, Role}
-import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
+import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
+import de.upb.cs.uc4.user.model.user.{ Lecturer, Student }
+import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, Role }
+import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Minutes, Span}
+import org.scalatest.time.{ Minutes, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
 /** Tests for the CourseService
@@ -31,10 +31,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-      override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
+      new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
+        override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
+      }
     }
-  }
 
   val client: UserService = server.serviceClient.implement[UserService]
   val deletionTopic: Source[JsonUsername, _] = client.userDeletedTopic().subscribe.atMostOnceSource
@@ -45,10 +45,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
     var role = AuthenticationRole.Admin
 
-    if(username.contains("student")) {
+    if (username.contains("student")) {
       role = AuthenticationRole.Student
     }
-    else if(username.contains("lecturer")) {
+    else if (username.contains("lecturer")) {
       role = AuthenticationRole.Lecturer
     }
 

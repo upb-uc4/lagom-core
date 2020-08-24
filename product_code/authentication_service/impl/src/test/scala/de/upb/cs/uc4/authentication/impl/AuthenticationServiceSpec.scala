@@ -1,24 +1,24 @@
 package de.upb.cs.uc4.authentication.impl
 
-import java.util.{Base64, Calendar}
+import java.util.{ Base64, Calendar }
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
+import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest }
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser, JsonUsername}
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.UserServiceStub
 import de.upb.cs.uc4.user.api.UserService
-import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
+import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Minutes, Span}
+import org.scalatest.time.{ Minutes, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
@@ -36,19 +36,19 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new AuthenticationApplication(ctx) with LocalServiceLocator {
-      // Declaration as lazy values forces right execution order
-      lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
-      lazy val internDeletionStub: ProducerStub[JsonUsername] =
-        stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
+      new AuthenticationApplication(ctx) with LocalServiceLocator {
+        // Declaration as lazy values forces right execution order
+        lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
+        lazy val internDeletionStub: ProducerStub[JsonUsername] =
+          stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
 
-      deletionStub = internDeletionStub
-      applicationConfig = config
+        deletionStub = internDeletionStub
+        applicationConfig = config
 
-      // Create a userService with ProducerStub as topic
-      override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
+        // Create a userService with ProducerStub as topic
+        override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
+      }
     }
-  }
 
   private val client: AuthenticationService = server.serviceClient.implement[AuthenticationService]
 
@@ -136,7 +136,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .signWith(SignatureAlgorithm.HS256, "changeme")
           .compact()
 
-      val thrown = the [CustomException] thrownBy serviceCall.handleRequestHeader(addTokenHeader(token)).invoke()
+      val thrown = the[CustomException] thrownBy serviceCall.handleRequestHeader(addTokenHeader(token)).invoke()
       thrown.getErrorCode.http should ===(403)
     }
 
