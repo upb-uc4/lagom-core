@@ -196,7 +196,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     }
 
     if (userPw.isEmpty) {
-      throw CustomException.AuthorizationError
+      throw CustomException.BasicAuthorizationError
     }
     else {
       userPw.get
