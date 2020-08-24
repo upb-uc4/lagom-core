@@ -113,7 +113,7 @@ trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
     * @param connection the current active connection
     * @param command which should get executed
     */
-  protected def applyCommand(connection: Connection, command: HyperledgerCommand)
+  protected def applyCommand(connection: Connection, command: HyperledgerCommand): Unit
 }
 
 trait HyperledgerActorObject {
