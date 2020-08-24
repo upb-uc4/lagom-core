@@ -4,7 +4,6 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, ServiceCall }
-import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationUser
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
@@ -18,9 +17,6 @@ trait AuthenticationService extends UC4Service {
   override val pathPrefix: String = "/authentication-management"
   override val name: String = "authentication"
   override val autoAcl: Boolean = false
-
-  /** Checks if the username and password pair exists */
-  def check(token: String): ServiceCall[NotUsed, (String, AuthenticationRole)]
 
   /** Sets the authentication data of a user */
   def setAuthentication(): ServiceCall[AuthenticationUser, Done]
@@ -44,7 +40,6 @@ trait AuthenticationService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/users?token", check _),
         restCall(Method.POST, pathPrefix + "/users", setAuthentication _),
 
         restCall(Method.PUT, pathPrefix + "/users/:username", changePassword _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),

@@ -15,7 +15,6 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, AuthenticationState }
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
-import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError }
 import de.upb.cs.uc4.shared.server.Hashing
@@ -35,23 +34,6 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     clusterSharding.entityRefFor(AuthenticationState.typeKey, id)
 
   implicit val timeout: Timeout = Timeout(5.seconds)
-
-  /** Checks if the username and password pair exists */
-  override def check(token: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall { _ =>
-    try {
-      val claims = Jwts.parser().setSigningKey(config.getString("play.http.secret.key")).parseClaimsJws(token).getBody
-      val username = claims.get("username", classOf[String])
-      val authenticationRole = claims.get("authenticationRole", classOf[String])
-
-      Future.successful((username, AuthenticationRole.withName(authenticationRole)))
-    }
-    catch {
-      case _: ExpiredJwtException   => throw CustomException.LoginTokenExpired
-      case _: MalformedJwtException => throw CustomException.MalformedLoginToken
-      case _: SignatureException    => throw CustomException.LoginTokenSignatureError
-      case _: Exception             => throw CustomException.InternalServerError
-    }
-  }
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
@@ -88,7 +70,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
                 throw new CustomException(code, errorResponse)
             }
         }
-    }(this, ec)
+    }(config, ec)
 
   /** Logins a user and return a refresh and a login token in the header */
   override def login: ServiceCall[NotUsed, Done] = ServerServiceCall { (header, _) =>
