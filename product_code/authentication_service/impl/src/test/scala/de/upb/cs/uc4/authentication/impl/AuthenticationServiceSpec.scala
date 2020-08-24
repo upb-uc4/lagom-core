@@ -1,24 +1,24 @@
 package de.upb.cs.uc4.authentication.impl
 
-import java.util.{ Base64, Calendar }
+import java.util.{Base64, Calendar, Date}
 
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
+import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, ResponseHeader}
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest }
+import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
+import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser, JsonUsername}
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.UserServiceStub
 import de.upb.cs.uc4.user.api.UserService
-import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
+import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{ Minutes, Span }
+import org.scalatest.time.{Minutes, Span}
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
@@ -36,19 +36,19 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-      new AuthenticationApplication(ctx) with LocalServiceLocator {
-        // Declaration as lazy values forces right execution order
-        lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
-        lazy val internDeletionStub: ProducerStub[JsonUsername] =
-          stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
+    new AuthenticationApplication(ctx) with LocalServiceLocator {
+      // Declaration as lazy values forces right execution order
+      lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
+      lazy val internDeletionStub: ProducerStub[JsonUsername] =
+        stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
 
-        deletionStub = internDeletionStub
-        applicationConfig = config
+      deletionStub = internDeletionStub
+      applicationConfig = config
 
-        // Create a userService with ProducerStub as topic
-        override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
-      }
+      // Create a userService with ProducerStub as topic
+      override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
     }
+  }
 
   private val client: AuthenticationService = server.serviceClient.implement[AuthenticationService]
 
@@ -58,8 +58,31 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString(s"$user:$pw".getBytes()))
   }
 
-  def addTokenHeader(token: String): RequestHeader => RequestHeader = { header =>
-    header.withHeader("Cookie", s"login=$token")
+  def addTokenHeader(token: String, cookie: String = "login"): RequestHeader => RequestHeader = { header =>
+    header.withHeader("Cookie", s"$cookie=$token")
+  }
+
+  private def getTokens(responseHeader: ResponseHeader): (String, String) = {
+    responseHeader.getHeaders("Set-Cookie") match {
+      case Seq(
+      s"refresh=$refresh;$_",
+      s"login=$login;$_"
+      ) => (refresh, login)
+    }
+  }
+
+  private def checkDate(date: Date, expectedDate: Date) = {
+    val afterDate = Calendar.getInstance()
+    afterDate.setTime(expectedDate)
+    afterDate.add(Calendar.MINUTE, 1)
+
+    date.before(afterDate.getTime) shouldBe true
+
+    val beforeDate = Calendar.getInstance()
+    beforeDate.setTime(expectedDate)
+    beforeDate.add(Calendar.MINUTE, -1)
+
+    date.after(beforeDate.getTime) shouldBe true
   }
 
   /** Tests only working if the whole instance is started */
@@ -116,6 +139,124 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     "detect a wrong password" in {
       client.login.handleRequestHeader(addLoginHeader("student", "studenta")).invoke().failed.map {
         answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+      }
+    }
+
+    "generates two correct tokens" in {
+      client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+        case (header: ResponseHeader, _) =>
+          val (refresh, login) = getTokens(header)
+
+          val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+          val refreshUsername = refreshClaims.get("username", classOf[String])
+          val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
+          val refreshExpirationDate = refreshClaims.getExpiration
+
+          val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+          val loginUsername = loginClaims.get("username", classOf[String])
+          val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
+          val loginExpirationDate = loginClaims.getExpiration
+
+          refreshUsername should ===("admin")
+          refreshAuthenticationRole should ===("Admin")
+          loginUsername should ===("admin")
+          loginAuthenticationRole should ===("Admin")
+
+          val refreshExpected = Calendar.getInstance()
+          refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
+          checkDate(refreshExpirationDate, refreshExpected.getTime)
+
+          val loginExpected = Calendar.getInstance()
+          loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
+          checkDate(loginExpirationDate, loginExpected.getTime)
+      }
+    }
+
+    "refresh a login token" in {
+      val time = Calendar.getInstance()
+      time.add(Calendar.DATE, 1)
+
+      val token =
+        Jwts.builder()
+          .setSubject("refresh")
+          .setExpiration(time.getTime)
+          .claim("username", "daniel")
+          .claim("authenticationRole", "Student")
+          .signWith(SignatureAlgorithm.HS256, "changeme")
+          .compact()
+
+      client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().map { answer =>
+        answer.username should ===("daniel")
+      }
+    }
+
+    "detect that a refresh token is expired" in {
+      val time = Calendar.getInstance()
+      time.add(Calendar.DATE, -1)
+
+      val token =
+        Jwts.builder()
+          .setSubject("refresh")
+          .setExpiration(time.getTime)
+          .claim("username", "lars")
+          .claim("authenticationRole", "Student")
+          .signWith(SignatureAlgorithm.HS256, "changeme")
+          .compact()
+
+      client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+      }
+    }
+
+    "detect that a refresh token is malformed" in {
+      val time = Calendar.getInstance()
+      time.add(Calendar.DATE, 1)
+
+      val token =
+        Jwts.builder()
+          .setSubject("refresh")
+          .setExpiration(time.getTime)
+          .claim("username", "lars")
+          .claim("authenticationRole", "Student")
+          .signWith(SignatureAlgorithm.HS256, "changeme")
+          .compact().replaceFirst(".", ",")
+
+      client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(400)
+      }
+    }
+
+    "detect that a refresh token has a wrong signature" in {
+      val time = Calendar.getInstance()
+      time.add(Calendar.DATE, 1)
+
+      val token =
+        Jwts.builder()
+          .setSubject("refresh")
+          .setExpiration(time.getTime)
+          .claim("username", "lars")
+          .claim("authenticationRole", "Student")
+          .signWith(SignatureAlgorithm.HS256, "changemeagain")
+          .compact()
+
+      client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+      }
+    }
+
+    "detect that a refresh token is missing" in {
+      client.refresh.invoke().failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+      }
+    }
+
+    "log a user out" in {
+      client.logout.withResponseHeader.invoke().map {
+        case (header: ResponseHeader, _) =>
+          val cookies = header.getHeaders("Set-Cookie")
+          cookies should have size 2
+          exactly(1, cookies) should include("refresh=;")
+          exactly(1, cookies) should include("login=;")
       }
     }
 
