@@ -62,7 +62,7 @@ Address equivalance classes defined as above.
 - iPicture1: picture.length > 200
 
 ### email (String)
-- vEmail1: email is of the correct E-Mail format ("example@mail.com")
+- vEmail1: email is of the correct E-Mail format ("<span>example@mail.</span>com")
 - iEmail1: email is not of the correct E-Mail format 
 
 ### phoneNumber (String)
