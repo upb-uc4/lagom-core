@@ -11,14 +11,14 @@ import scala.concurrent.Future
 class AuthenticationServiceStub extends AuthenticationService {
 
   /** Checks if the username and password pair exists */
-  override def check(user: String, pw: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
+  override def check(token: String): ServiceCall[NotUsed, (String, AuthenticationRole)] = ServiceCall {
     _ =>
-      if (user.contains("student")) {
-        Future.successful(user, AuthenticationRole.Student)
+      if (token.contains("student")) {
+        Future.successful(token, AuthenticationRole.Student)
       }
       else {
-        if (user.contains("lecturer")) {
-          Future.successful(user, AuthenticationRole.Lecturer)
+        if (token.contains("lecturer")) {
+          Future.successful(token, AuthenticationRole.Lecturer)
         }
         else {
           Future.successful("admin", AuthenticationRole.Admin)
@@ -37,4 +37,13 @@ class AuthenticationServiceStub extends AuthenticationService {
 
   /** This Methods needs to allow a GET-Method */
   override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  /** Logins a user and return a refresh and a login token in the header */
+  override def login: ServiceCall[NotUsed, Done] = ???
+
+  /** Generates a new login token out of a refresh token */
+  override def refresh: ServiceCall[NotUsed, Done] = ???
+
+  /** Allows GET */
+  override def allowedGet: ServiceCall[NotUsed, Done] = ???
 }

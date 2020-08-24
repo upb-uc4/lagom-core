@@ -1,14 +1,12 @@
 package de.upb.cs.uc4.shared.server
 
-import java.util.Base64
-
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, GenericError }
+import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.annotation.varargs
@@ -39,9 +37,9 @@ object ServiceCallFactory {
   @varargs
   def authenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: ServerServiceCall[Request, Response])(implicit auth: AuthenticationService, ec: ExecutionContext): ServerServiceCall[Request, Response] = {
     ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
-      val (user, pw) = getUserAndPassword(requestHeader)
+      val token = getLoginToken(requestHeader)
 
-      auth.check(user, pw).invoke().map {
+      auth.check(token).invoke().map {
         case (_, role) =>
           if (!roles.contains(role)) {
             throw CustomException.NotEnoughPrivileges
@@ -61,9 +59,9 @@ object ServiceCallFactory {
   @varargs
   def identifiedAuthenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: (String, AuthenticationRole) => ServerServiceCall[Request, Response])(implicit auth: AuthenticationService, ec: ExecutionContext): ServerServiceCall[Request, Response] = {
     ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
-      val (user, pw) = getUserAndPassword(requestHeader)
+      val token = getLoginToken(requestHeader)
 
-      auth.check(user, pw).invoke().map {
+      auth.check(token).invoke().map {
         case (username, role) =>
           if (!roles.contains(role)) {
             throw CustomException.NotEnoughPrivileges
@@ -73,26 +71,18 @@ object ServiceCallFactory {
     }
   }
 
-  /** Reads username and password out of the header
+  /** Reads the login token out of the header
     *
-    * @param requestHeader with the an authentication header
-    * @return an Option with a String tuple
+    * @param requestHeader with the a cookie header
+    * @return the token as string
     */
-  def getUserAndPassword(requestHeader: RequestHeader): (String, String) = {
-    val userPw = requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
-      case Array("Basic", userAndPass) =>
-        new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":") match {
-          case Array(user, password) => Option(user, password)
-          case _                     => None
-        }
-      case _ => None
-    }
-
-    if (userPw.isEmpty) {
-      throw CustomException.AuthorizationError
-    }
-    else {
-      userPw.get
+  def getLoginToken(requestHeader: RequestHeader): String = {
+    requestHeader.getHeader("Cookie") match {
+      case Some(cookies) => cookies.split(";").map(_.trim).find(_.startsWith("login=")) match {
+        case Some(s"login=$token") => token
+        case _                     => throw CustomException.AuthorizationError
+      }
+      case _ => throw CustomException.AuthorizationError
     }
   }
 
