@@ -13,7 +13,6 @@ import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation }
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
-import de.upb.cs.uc4.user.test.UserServiceStub
 import org.hyperledger.fabric.gateway.{ Contract, Gateway }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers

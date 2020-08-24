@@ -135,7 +135,7 @@ lazy val course_service = (project in file("course_service/impl"))
   .settings(commonSettings("course_service"))
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
-  .dependsOn(course_service_api, shared_server)
+  .dependsOn(course_service_api, authentication_service_api % "compile->compile;test->test", shared_server)
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
   .settings(
@@ -153,7 +153,7 @@ lazy val authentication_service = (project in file("authentication_service/impl"
   .settings(commonSettings("authentication_service"))
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
-  .dependsOn(authentication_service_api, user_service_api, shared_server)
+  .dependsOn(authentication_service_api, user_service_api % "compile->compile;test->test", shared_server)
 
 lazy val user_service_api = (project in file("user_service/api"))
   .settings(
@@ -171,7 +171,7 @@ lazy val user_service = (project in file("user_service/impl"))
   .settings(commonSettings("user_service"))
   .settings(dockerSettings)
   .settings(version := "v0.5.1")
-  .dependsOn(user_service_api, shared_server, shared_client)
+  .dependsOn(user_service_api % "compile->compile;test->test", authentication_service_api % "compile->compile;test->test", shared_server, shared_client)
 
 lazy val matriculation_service_api = (project in file("matriculation_service/api"))
   .settings(
@@ -189,4 +189,4 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .settings(commonSettings("matriculation_service"))
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
-  .dependsOn(user_service_api, shared_server, shared_client, matriculation_service_api, hyperledger_component)
+  .dependsOn(user_service_api % "compile->compile;test->test", authentication_service_api % "compile->compile;test->test", shared_server, shared_client, matriculation_service_api, hyperledger_component)
