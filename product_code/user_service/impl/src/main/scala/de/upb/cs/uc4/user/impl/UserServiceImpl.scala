@@ -20,7 +20,7 @@ import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{ OnLatestMatriculationUpdate, OnUserDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
+import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate, Role }
 
@@ -85,18 +85,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       }
     }
 
-  /** Add a new student to the database */
-  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postMessageStudentRaw) =>
-    val postMessageStudent = postMessageStudentRaw.copy(authUser = postMessageStudentRaw.authUser.clean, student = postMessageStudentRaw.student.clean)
-    addUser(postMessageStudent.authUser).invokeWithHeaders(header, postMessageStudent.student).map {
-      case (header, user) =>
-        (
-          header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
-          user.asInstanceOf[Student]
-        )
-    }
-  }
-
   /** Get a specific student */
   override def getStudent(username: String): ServiceCall[NotUsed, Student] =
     identifiedAuthenticated(AuthenticationRole.All: _*) {
@@ -137,18 +125,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       }
     }
 
-  /** Add a new lecturer to the database */
-  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, postMessageLecturerRaw) =>
-    val postMessageLecturer = postMessageLecturerRaw.copy(authUser = postMessageLecturerRaw.authUser.clean, lecturer = postMessageLecturerRaw.lecturer.clean)
-    addUser(postMessageLecturer.authUser).invokeWithHeaders(header, postMessageLecturer.lecturer).map {
-      case (header, user) =>
-        (
-          header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
-          user.asInstanceOf[Lecturer]
-        )
-    }
-  }
-
   /** Get a specific lecturer */
   override def getLecturer(username: String): ServiceCall[NotUsed, Lecturer] =
     identifiedAuthenticated(AuthenticationRole.All: _*) {
@@ -187,18 +163,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
       }
     }
-
-  /** Add a new admin to the database */
-  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, postMessageAdminRaw) =>
-    val postMessageAdmin = postMessageAdminRaw.copy(authUser = postMessageAdminRaw.authUser.clean, admin = postMessageAdminRaw.admin.clean)
-    addUser(postMessageAdmin.authUser).invokeWithHeaders(header, postMessageAdmin.admin).map {
-      case (header, user) =>
-        (
-          header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
-          user.asInstanceOf[Admin]
-        )
-    }
-  }
 
   /** Get a specific admin */
   override def getAdmin(username: String): ServiceCall[NotUsed, Admin] =
@@ -244,72 +208,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
-
-  /** Helper method for adding a generic User, independent of the role */
-  private def addUser(authenticationUser: AuthenticationUser): ServerServiceCall[User, User] = authenticated(AuthenticationRole.Admin) {
-    ServerServiceCall { (_, user) =>
-
-      val userTypeString = user match {
-        case _: Student  => "student"
-        case _: Lecturer => "lecturer"
-        case _: Admin    => "admin"
-      }
-      if (authenticationUser.username != user.username) {
-        throw new CustomException(
-          422,
-          DetailedError("validation error", Seq(
-            SimpleError("authUser.username", "Username in authUser must match username in user"),
-            SimpleError(userTypeString + ".username", "Username in user must match username in authUser")
-          ))
-        )
-      }
-
-      if (user.username.trim.isEmpty) {
-        throw new CustomException(
-          422,
-          DetailedError("validation error", Seq(
-            SimpleError("authUser.username", "Username must not be empty"),
-            SimpleError(userTypeString + ".username", "Username must not be empty")
-          ))
-        )
-      }
-
-      val ref = entityRef(user.username)
-
-      ref.ask[Confirmation](replyTo => CreateUser(user, replyTo))
-        .flatMap {
-          case Accepted => // Creation Successful
-            auth.setAuthentication().invoke(authenticationUser)
-              .map { _ =>
-                (ResponseHeader(201, MessageProtocol.empty, List()), user)
-              }
-              //In case the password cant be saved
-              .recoverWith {
-                case authenticationException: CustomException =>
-                  ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
-                    .map[(ResponseHeader, User)] { _ =>
-                      //the deletion of the user was successful after the error in the authentication service
-                      if (authenticationException.getPossibleErrorResponse.`type` == "validation error") {
-                        val detailedError = authenticationException.getPossibleErrorResponse.asInstanceOf[DetailedError]
-                        throw new CustomException(
-                          authenticationException.getErrorCode,
-                          detailedError.copy(invalidParams = detailedError
-                            .invalidParams.map(error => error.copy(name = "authUser. " + error.name)))
-                        )
-                      }
-                      else {
-                        throw authenticationException
-                      }
-                    }
-                    .recover {
-                      case deletionException: Exception => throw deletionException //the deletion didnt work, a ghost user does now exist
-                    }
-              }
-          case RejectedWithError(code, errorResponse) =>
-            throw new CustomException(code, errorResponse)
-        }
-    }
-  }
 
   /** Helper method for updating a generic User, independent of the role */
   private def updateUser(username: String): ServerServiceCall[User, Done] =
@@ -394,6 +292,112 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
     ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
       case Accepted => Done
       case RejectedWithError(error, reason) => throw new CustomException(error, reason)
+    }
+  }
+
+  /*/** Add a new student to the database */
+  override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServerServiceCall { (header, postMessageStudentRaw) =>
+    val postMessageStudent = postMessageStudentRaw.copy(authUser = postMessageStudentRaw.authUser.clean, student = postMessageStudentRaw.student.clean)
+    addUser(postMessageStudent.authUser).invokeWithHeaders(header, postMessageStudent.student).map {
+      case (header, user) =>
+        (
+          header.addHeader("Location", s"$pathPrefix/users/students/${user.username}"),
+          user.asInstanceOf[Student]
+        )
+    }
+  }
+
+  /** Add a new lecturer to the database */
+  override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServerServiceCall { (header, postMessageLecturerRaw) =>
+    val postMessageLecturer = postMessageLecturerRaw.copy(authUser = postMessageLecturerRaw.authUser.clean, lecturer = postMessageLecturerRaw.lecturer.clean)
+    addUser(postMessageLecturer.authUser).invokeWithHeaders(header, postMessageLecturer.lecturer).map {
+      case (header, user) =>
+        (
+          header.addHeader("Location", s"$pathPrefix/users/lecturers/${user.username}"),
+          user.asInstanceOf[Lecturer]
+        )
+    }
+  }
+  /** Add a new admin to the database */
+  override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServerServiceCall { (header, postMessageAdminRaw) =>
+    val postMessageAdmin = postMessageAdminRaw.copy(authUser = postMessageAdminRaw.authUser.clean, admin = postMessageAdminRaw.admin.clean)
+    addUser(postMessageAdmin.authUser).invokeWithHeaders(header, postMessageAdmin.admin).map {
+      case (header, user) =>
+        (
+          header.addHeader("Location", s"$pathPrefix/users/admins/${user.username}"),
+          user.asInstanceOf[Admin]
+        )
+    }
+  }*/
+
+  /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
+  override def addUser: ServerServiceCall[PostMessageUser, User] = authenticated(AuthenticationRole.Admin) {
+    ServerServiceCall { (_, postMessageUserRaw) =>
+
+      val postMessageUser = postMessageUserRaw.clean
+
+      val userTypeString = postMessageUser match {
+        case _: PostMessageStudent  => "student"
+        case _: PostMessageLecturer => "lecturer"
+        case _: PostMessageAdmin    => "admin"
+      }
+
+      if (postMessageUser.authUser.username != postMessageUser.getUser.username) {
+        throw new CustomException(
+          422,
+          DetailedError("validation error", Seq(
+            SimpleError("authUser.username", "Username in authUser must match username in user"),
+            SimpleError(userTypeString + ".username", "Username in user must match username in authUser")
+          ))
+        )
+      }
+
+      if (postMessageUser.getUser.username.isEmpty) {
+        throw new CustomException(
+          422,
+          DetailedError("validation error", Seq(
+            SimpleError("authUser.username", "Username must not be empty"),
+            SimpleError(userTypeString + ".username", "Username must not be empty")
+          ))
+        )
+      }
+
+      val ref = entityRef(postMessageUser.getUser.username)
+
+      ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
+        .flatMap {
+          case Accepted => // Creation Successful
+            auth.setAuthentication().invoke(postMessageUser.authUser)
+              .map { _ =>
+                val header = ResponseHeader(201, MessageProtocol.empty, List())
+                  .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
+                (header, postMessageUser.getUser)
+              }
+              //In case the password cant be saved
+              .recoverWith {
+                case authenticationException: CustomException =>
+                  ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+                    .map[(ResponseHeader, User)] { _ =>
+                      //the deletion of the user was successful after the error in the authentication service
+                      if (authenticationException.getPossibleErrorResponse.`type` == "validation error") {
+                        val detailedError = authenticationException.getPossibleErrorResponse.asInstanceOf[DetailedError]
+                        throw new CustomException(
+                          authenticationException.getErrorCode,
+                          detailedError.copy(invalidParams = detailedError
+                            .invalidParams.map(error => error.copy(name = "authUser. " + error.name)))
+                        )
+                      }
+                      else {
+                        throw authenticationException
+                      }
+                    }
+                    .recover {
+                      case deletionException: Exception => throw deletionException //the deletion didnt work, a ghost user does now exist
+                    }
+              }
+          case RejectedWithError(code, errorResponse) =>
+            throw new CustomException(code, errorResponse)
+        }
     }
   }
 }

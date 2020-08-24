@@ -66,7 +66,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add a student" in {
-      client.addStudent().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageStudent(student0Auth, student0))
+      client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageStudent(student0Auth, student0))
       eventually(timeout(Span(2, Minutes))) {
         client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
           answer should contain(student0)
@@ -75,7 +75,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add a lecturer" in {
-      client.addLecturer().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageLecturer(lecturer0Auth, lecturer0))
+      client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageLecturer(lecturer0Auth, lecturer0))
       eventually(timeout(Span(2, Minutes))) {
         client.getAllLecturers(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
           answer should contain(lecturer0)
@@ -84,7 +84,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add an admin" in {
-      client.addAdmin().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageAdmin(admin0Auth, admin0))
+      client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageAdmin(admin0Auth, admin0))
       eventually(timeout(Span(2, Minutes))) {
         client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
           answer should contain(admin0)
@@ -177,7 +177,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "throw an exception on adding a user with different username in authUser" in {
-      client.addAdmin().handleRequestHeader(addAuthorizationHeader("admin"))
+      client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
         .failed.map {
           answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
@@ -231,7 +231,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "add an already existing user" in {
-      client.addAdmin().handleRequestHeader(addAuthorizationHeader("admin"))
+      client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.map { answer =>
           answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
         }

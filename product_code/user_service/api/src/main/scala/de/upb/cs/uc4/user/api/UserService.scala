@@ -7,8 +7,8 @@ import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
-import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
-import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student }
+import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate }
 
 /** The UserService interface.
@@ -23,20 +23,19 @@ trait UserService extends UC4Service {
   override val name = "user"
 
   // USER
+  /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
+  def addUser(): ServiceCall[PostMessageUser, User]
 
   /** Get all users from the database */
   def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse]
 
-  /** Delete a users from the database */
+  /** Delete a user from the database */
   def deleteUser(username: String): ServiceCall[NotUsed, Done]
 
   // STUDENT
 
   /** Get all students from the database */
   def getAllStudents(usernames: Option[String]): ServiceCall[NotUsed, Seq[Student]]
-
-  /** Add a new student to the database */
-  def addStudent(): ServiceCall[PostMessageStudent, Student]
 
   /** Get a specific student */
   def getStudent(username: String): ServiceCall[NotUsed, Student]
@@ -49,9 +48,6 @@ trait UserService extends UC4Service {
   /** Get all lecturers from the database */
   def getAllLecturers(usernames: Option[String]): ServiceCall[NotUsed, Seq[Lecturer]]
 
-  /** Add a new lecturer to the database */
-  def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer]
-
   /** Get a specific lecturer */
   def getLecturer(username: String): ServiceCall[NotUsed, Lecturer]
 
@@ -62,9 +58,6 @@ trait UserService extends UC4Service {
 
   /** Get all admins from the database */
   def getAllAdmins(usernames: Option[String]): ServiceCall[NotUsed, Seq[Admin]]
-
-  /** Add a new admin to the database */
-  def addAdmin(): ServiceCall[PostMessageAdmin, Admin]
 
   /** Get a specific admin */
   def getAdmin(username: String): ServiceCall[NotUsed, Admin]
@@ -103,27 +96,28 @@ trait UserService extends UC4Service {
         restCall(Method.DELETE, pathPrefix + "/users/:username", deleteUser _),
         restCall(Method.OPTIONS, pathPrefix + "/users", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDelete _),
+        restCall(Method.POST, pathPrefix + "/users", addUser _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
 
         restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
 
         restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
         restCall(Method.GET, pathPrefix + "/students?usernames", getAllStudents _),
-        restCall(Method.POST, pathPrefix + "/students", addStudent _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        //restCall(Method.POST, pathPrefix + "/students", addStudent _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/students/:username", getStudent _),
         restCall(Method.PUT, pathPrefix + "/students/:username", updateStudent _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/students/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/lecturers?usernames", getAllLecturers _),
-        restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        //restCall(Method.POST, pathPrefix + "/lecturers", addLecturer _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/lecturers/:username", getLecturer _),
         restCall(Method.PUT, pathPrefix + "/lecturers/:username", updateLecturer _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers/:username", allowedGetPut _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/admins?usernames", getAllAdmins _),
-        restCall(Method.POST, pathPrefix + "/admins", addAdmin _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        //restCall(Method.POST, pathPrefix + "/admins", addAdmin _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/admins/:username", getAdmin _),
         restCall(Method.PUT, pathPrefix + "/admins/:username", updateAdmin _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/admins/:username", allowedGetPut _),
