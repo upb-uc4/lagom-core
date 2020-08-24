@@ -6,14 +6,14 @@ import akka.stream.scaladsl.Source
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
+import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.test.AuthenticationServiceStub
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
+import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
 import de.upb.cs.uc4.user.model.user.{ Lecturer, Student }
 import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonUsername, Role }
-import de.upb.cs.uc4.user.test.DefaultTestUsers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers

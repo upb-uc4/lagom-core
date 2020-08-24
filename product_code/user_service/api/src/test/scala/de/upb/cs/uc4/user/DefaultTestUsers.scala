@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.user.test
+package de.upb.cs.uc4.user
 
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student }
