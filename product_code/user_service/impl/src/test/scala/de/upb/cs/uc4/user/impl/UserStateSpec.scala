@@ -75,19 +75,6 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 404)
     }
 
-    "not update a user with invalid data" in {
-      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4.1")))
-
-      val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(lecturer0, probe1.ref)
-      probe1.expectMessage(Accepted)
-
-      val probe2 = createTestProbe[Confirmation]()
-      ref ! UpdateUser(emptyLecturer, probe2.ref)
-      val message = probe2.receiveMessage()
-      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 422)
-    }
-
     "update an existing user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-5")))
 
