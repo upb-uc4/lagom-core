@@ -11,7 +11,7 @@ import com.lightbend.lagom.scaladsl.persistence.{ EventStreamElement, Persistent
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }

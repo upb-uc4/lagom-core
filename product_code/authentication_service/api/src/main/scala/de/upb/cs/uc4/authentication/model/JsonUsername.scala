@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.user.model
+package de.upb.cs.uc4.authentication.model
 
 import play.api.libs.json.{ Format, Json }
 

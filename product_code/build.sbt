@@ -97,7 +97,7 @@ lazy val shared_server = (project in file("shared/server"))
     )
   )
   .settings(commonSettings("shared_server"))
-  .dependsOn(authentication_service_api, shared_client)
+  .dependsOn(shared_client, authentication_service_api)
 
 lazy val hyperledger_component = (project in file("hyperledger_component"))
   .settings(
@@ -137,7 +137,7 @@ lazy val course_service = (project in file("course_service/impl"))
   .settings(commonSettings("course_service"))
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
-  .dependsOn(course_service_api, authentication_service_api % withTests, shared_server)
+  .dependsOn(course_service_api, shared_server)
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
   .settings(
@@ -162,7 +162,7 @@ lazy val user_service_api = (project in file("user_service/api"))
     libraryDependencies ++= apiDefaultDependencies
   )
   .settings(commonSettings("user_service_api"))
-  .dependsOn(authentication_service_api, matriculation_service_api, shared_client)
+  .dependsOn(authentication_service_api % withTests, matriculation_service_api, shared_client)
 
 lazy val user_service = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
@@ -173,14 +173,14 @@ lazy val user_service = (project in file("user_service/impl"))
   .settings(commonSettings("user_service"))
   .settings(dockerSettings)
   .settings(version := "v0.5.1")
-  .dependsOn(user_service_api % withTests, authentication_service_api % withTests, shared_server, shared_client)
+  .dependsOn(user_service_api % withTests, shared_server, shared_client)
 
 lazy val matriculation_service_api = (project in file("matriculation_service/api"))
   .settings(
     libraryDependencies ++= apiDefaultDependencies
   )
   .settings(commonSettings("matriculation_service_api"))
-  .dependsOn(authentication_service_api, shared_client)
+  .dependsOn(shared_client)
 
 lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .enablePlugins(LagomScala)
@@ -191,4 +191,4 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .settings(commonSettings("matriculation_service"))
   .settings(dockerSettings)
   .settings(version := "v0.5.0")
-  .dependsOn(user_service_api % withTests, authentication_service_api % withTests, shared_server, shared_client, matriculation_service_api, hyperledger_component)
+  .dependsOn(user_service_api % withTests, shared_server, shared_client, matriculation_service_api, hyperledger_component)

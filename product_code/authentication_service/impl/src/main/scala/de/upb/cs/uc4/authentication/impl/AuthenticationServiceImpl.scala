@@ -15,7 +15,7 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, AuthenticationState }
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
@@ -121,7 +121,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
   }
 
   /** Generates a new login token out of a refresh token */
-  override def refresh: ServiceCall[NotUsed, Done] = ServerServiceCall { (header, _) =>
+  override def refresh: ServiceCall[NotUsed, JsonUsername] = ServerServiceCall { (header, _) =>
     header.getHeader("Cookie") match {
       case Some(cookies) => cookies.split(";").map(_.trim).find(_.startsWith("refresh=")) match {
         case Some(s"refresh=$token") =>
@@ -146,7 +146,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
             Future.successful(
               (ResponseHeader(200, MessageProtocol.empty, List(
                 ("Set-Cookie", s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=${logoutTimer * 60}")
-              )), Done)
+              )), JsonUsername(username))
             )
           }
           catch {
@@ -159,6 +159,19 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       }
       case _ => throw CustomException.AuthorizationError
     }
+  }
+
+  /** Logs the user out */
+  override def logout: ServiceCall[NotUsed, Done] = ServerServiceCall { (_, _) =>
+    val dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
+    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
+
+    Future.successful(
+      (ResponseHeader(200, MessageProtocol.empty, List(
+        ("Set-Cookie", s"refresh=; SameSite=Strict; Secure; HttpOnly; Expires=${dateFormat.format(Calendar.getInstance().getTime)} ;;" +
+          s"login=; SameSite=Strict; Secure; HttpOnly; Max-Age=0")
+      )), Done)
+    )
   }
 
   /** Allows PUT */

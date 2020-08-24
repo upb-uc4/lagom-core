@@ -1,13 +1,14 @@
 package de.upb.cs.uc4.user
 
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
+import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
-import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student }
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate }
+import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
+import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, MatriculationUpdate}
 
 import scala.concurrent.Future
 
