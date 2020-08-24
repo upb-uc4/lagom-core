@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.authentication.test
+package de.upb.cs.uc4.authentication
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall

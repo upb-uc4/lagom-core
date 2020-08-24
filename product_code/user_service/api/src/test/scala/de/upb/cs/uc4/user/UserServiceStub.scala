@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.user.test
+package de.upb.cs.uc4.user
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
