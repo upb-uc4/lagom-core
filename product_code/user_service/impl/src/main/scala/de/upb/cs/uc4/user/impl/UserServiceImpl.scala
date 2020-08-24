@@ -10,19 +10,19 @@ import com.lightbend.lagom.scaladsl.broker.TopicProducer
 import com.lightbend.lagom.scaladsl.persistence.{ EventStreamElement, PersistentEntityRegistry, ReadSide }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError }
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, InformativeError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{ OnLatestMatriculationUpdate, OnUserDelete, UserEvent }
+import de.upb.cs.uc4.user.impl.events.{ OnUserDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
+import de.upb.cs.uc4.user.model._
+import de.upb.cs.uc4.user.model.post.PostMessageUser
 import de.upb.cs.uc4.user.model.user._
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate, Role }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -39,6 +39,26 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
+  /** Get the specified user */
+  override def getUser(username: String): ServerServiceCall[NotUsed, User] =
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
+        ServerServiceCall { _ =>
+          val ref = entityRef(username)
+
+          ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
+            case Some(user) =>
+              if (role != AuthenticationRole.Admin && username != authUsername) {
+                user.toPublic
+              }
+              else {
+                user
+              }
+            case None => throw CustomException.NotFound
+          }
+        }
+    }
+
   /** Get all users from the database */
   override def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse] =
     authenticated[NotUsed, GetAllUsersResponse](AuthenticationRole.All: _*) {
@@ -53,6 +73,103 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         )
 
       }
+    }
+
+  /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
+  override def addUser(): ServerServiceCall[PostMessageUser, User] = authenticated(AuthenticationRole.Admin) {
+    ServerServiceCall { (_, postMessageUserRaw) =>
+
+      val postMessageUser = postMessageUserRaw.clean
+
+      //Validate PostMessage
+      val validationErrors = postMessageUser.validate
+      if (validationErrors.nonEmpty) {
+        throw new CustomException(422, DetailedError("validation error", validationErrors))
+      }
+
+      val ref = entityRef(postMessageUser.getUser.username)
+
+      ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
+        .flatMap {
+          case Accepted => // Creation Successful
+            auth.setAuthentication().invoke(postMessageUser.authUser)
+              .map { _ =>
+                val header = ResponseHeader(201, MessageProtocol.empty, List())
+                  .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
+                (header, postMessageUser.getUser)
+              }
+              //In case the password cant be saved
+              .recoverWith {
+                case authenticationException: CustomException =>
+                  ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+                    .map[(ResponseHeader, User)] { _ =>
+                      throw authenticationException
+                    }
+                    .recover {
+                      case deletionException: Exception => throw deletionException //the deletion didn't work, a ghost user does now exist
+                    }
+              }
+          case RejectedWithError(code, errorResponse) =>
+            throw new CustomException(code, errorResponse)
+        }
+    }
+  }
+
+  /** Helper method for updating a generic User, independent of the role */
+  override def updateUser(username: String): ServerServiceCall[User, Done] =
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUsername, role) =>
+        ServerServiceCall { (header, userRaw) =>
+          val user = userRaw.clean
+          // Check, if the username in path is different than the username in the object
+          if (username != user.username.trim) {
+            throw CustomException.PathParameterMismatch
+          }
+
+          // If invoked by a non-Admin, check if the manipulated object is owned by the user
+          if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
+            throw CustomException.OwnerMismatch
+          }
+
+          //validate new user
+          val validationErrors = user.validate
+          if (validationErrors.nonEmpty) {
+            throw new CustomException(422, DetailedError("validation error", validationErrors))
+          }
+
+          // We need to know what role the user has, because their editable fields are different
+          getUser(username).invokeWithHeaders(header, NotUsed).map {
+            case (_, oldUser) =>
+              oldUser match {
+                case _: Student if !user.isInstanceOf[Student] => throw new CustomException(400, InformativeError("wrong object", "Expected Student, but received non-Student"))
+                case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new CustomException(400, InformativeError("wrong object", "Expected Lecturer, but received non-Lecturer"))
+                case _: Admin if !user.isInstanceOf[Admin] => throw new CustomException(400, InformativeError("wrong object", "Expected Admin, but received non-Admin"))
+                case _ =>
+              }
+              var err = oldUser.checkUneditableFields(user)
+              if (role != AuthenticationRole.Admin) {
+                err ++= oldUser.checkProtectedFields(user)
+              }
+              err
+          }
+            .flatMap { editErrors =>
+              // Other users than admins can only edit specified fields
+              if (editErrors.nonEmpty) {
+                throw new CustomException(422, DetailedError("uneditable fields", editErrors))
+              }
+              else {
+                val ref = entityRef(user.username)
+
+                ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
+                  .map {
+                    case Accepted => // Update successful
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    case RejectedWithError(code, errorResponse) => //Update failed
+                      throw new CustomException(code, errorResponse)
+                  }
+              }
+            }
+        }
     }
 
   /** Delete a users from the database */
@@ -85,12 +202,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       }
     }
 
-  /** Update an existing student */
-  override def updateStudent(username: String): ServiceCall[Student, Done] =
-    ServerServiceCall { (header, user) =>
-      updateUser(username).invokeWithHeaders(header, user)
-    }
-
   /** Get all lecturers from the database */
   def getAllLecturers(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Lecturer]] =
     identifiedAuthenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.All: _*) { (_, role) => _ =>
@@ -104,12 +215,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
         case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
           getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
       }
-    }
-
-  /** Update an existing lecturer */
-  override def updateLecturer(username: String): ServiceCall[Lecturer, Done] =
-    ServerServiceCall { (header, user) =>
-      updateUser(username).invokeWithHeaders(header, user)
     }
 
   /** Get all admins from the database */
@@ -127,80 +232,6 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       }
     }
 
-  /** Update an existing admin */
-  override def updateAdmin(username: String): ServiceCall[Admin, Done] =
-    ServerServiceCall { (header, user) =>
-      updateUser(username).invokeWithHeaders(header, user)
-    }
-
-  /** Get role of the user */
-  override def getRole(username: String): ServiceCall[NotUsed, JsonRole] =
-    authenticated[NotUsed, JsonRole](AuthenticationRole.All: _*) {
-      ServerServiceCall { (header, _) =>
-        getUser(username).invokeWithHeaders(header, NotUsed).map {
-          case (_, user) => (ResponseHeader(200, MessageProtocol.empty, List()), JsonRole(user.role))
-        }
-      }
-    }
-
-  /** Allows GET, PUT */
-  override def allowedGetPut: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT")
-
-  /** Allows GET, POST */
-  override def allowedGetPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
-
-  /** Allows GET */
-  override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
-
-  /** Allows DELETE */
-  override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
-
-  /** This Methods needs to allow a GET-Method */
-  override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
-
-  /** Helper method for updating a generic User, independent of the role */
-  private def updateUser(username: String): ServerServiceCall[User, Done] =
-    identifiedAuthenticated(AuthenticationRole.All: _*) {
-      (authUsername, role) =>
-        ServerServiceCall { (header, user) =>
-          // Check, if the username in path is different than the username in the object
-          if (username != user.username.trim) {
-            throw CustomException.PathParameterMismatch
-          }
-          // If invoked by a non-Admin, check if the manipulated object is owned by the user
-          if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
-            throw CustomException.OwnerMismatch
-          }
-
-          // We need to know what role the user has, because their editable fields are different
-          getUser(username).invokeWithHeaders(header, NotUsed).map {
-            case (_, oldUser) =>
-              var err = oldUser.checkUneditableFields(user)
-              if (role != AuthenticationRole.Admin) {
-                err ++= oldUser.checkProtectedFields(user)
-              }
-              err
-          }
-            .flatMap { editErrors =>
-              // Other users than admins can only edit specified fields
-              if (editErrors.nonEmpty) {
-                throw new CustomException(422, DetailedError("uneditable fields", editErrors))
-              }
-              else {
-                val ref = entityRef(user.username)
-
-                ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
-                  .map {
-                    case Accepted => // Update successful
-                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case RejectedWithError(code, errorResponse) => //Update failed
-                      throw new CustomException(code, errorResponse)
-                  }
-              }
-            }
-        }
-    }
-
   /** Helper method for getting all Users */
   private def getAll(role: Role): Future[Seq[User]] = {
     database.getAll(role)
@@ -212,6 +243,25 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
           .filter(opt => opt.isDefined) //Get only existing users
           .map(opt => opt.get) //Future[Seq[User]]
         ))
+  }
+
+  /** Get role of the user */
+  override def getRole(username: String): ServiceCall[NotUsed, JsonRole] =
+    authenticated[NotUsed, JsonRole](AuthenticationRole.All: _*) {
+      ServerServiceCall { (header, _) =>
+        getUser(username).invokeWithHeaders(header, NotUsed).map {
+          case (_, user) => (ResponseHeader(200, MessageProtocol.empty, List()), JsonRole(user.role))
+        }
+      }
+    }
+
+  /** Update latestMatriculation */
+  override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { matriculationUpdate =>
+    val ref = entityRef(matriculationUpdate.username)
+    ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
+      case Accepted => Done
+      case RejectedWithError(error, reason) => throw new CustomException(error, reason)
+    }
   }
 
   /** Publishes every deletion of a user */
@@ -226,103 +276,15 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       }
   }
 
-  /** Update latestMatriculation */
-  override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { matriculationUpdate =>
-    val ref = entityRef(matriculationUpdate.username)
-    ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
-      case Accepted => Done
-      case RejectedWithError(error, reason) => throw new CustomException(error, reason)
-    }
-  }
+  /** Allows GET, POST */
+  override def allowedGetPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
 
-  /** Get a specific admin */
-  override def getUser(username: String): ServerServiceCall[NotUsed, User] =
-    identifiedAuthenticated(AuthenticationRole.All: _*) {
-      (authUsername, role) =>
-        ServerServiceCall { _ =>
-          val ref = entityRef(username)
+  /** Allows GET */
+  override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
-          ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
-            case Some(user) =>
-              if (role != AuthenticationRole.Admin && username != authUsername) {
-                user.toPublic
-              }
-              else {
-                user
-              }
-            case None => throw CustomException.NotFound
-          }
-        }
-    }
+  /** Allows DELETE, GET, PUT */
+  override def allowedDeleteGetPut: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE, GET, PUT")
 
-  /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
-  override def addUser: ServerServiceCall[PostMessageUser, User] = authenticated(AuthenticationRole.Admin) {
-    ServerServiceCall { (_, postMessageUserRaw) =>
-
-      val postMessageUser = postMessageUserRaw.clean
-
-      val userTypeString = postMessageUser match {
-        case _: PostMessageStudent  => "student"
-        case _: PostMessageLecturer => "lecturer"
-        case _: PostMessageAdmin    => "admin"
-      }
-
-      if (postMessageUser.authUser.username != postMessageUser.getUser.username) {
-        throw new CustomException(
-          422,
-          DetailedError("validation error", Seq(
-            SimpleError("authUser.username", "Username in authUser must match username in user"),
-            SimpleError(userTypeString + ".username", "Username in user must match username in authUser")
-          ))
-        )
-      }
-
-      if (postMessageUser.getUser.username.isEmpty) {
-        throw new CustomException(
-          422,
-          DetailedError("validation error", Seq(
-            SimpleError("authUser.username", "Username must not be empty"),
-            SimpleError(userTypeString + ".username", "Username must not be empty")
-          ))
-        )
-      }
-
-      val ref = entityRef(postMessageUser.getUser.username)
-
-      ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
-        .flatMap {
-          case Accepted => // Creation Successful
-            auth.setAuthentication().invoke(postMessageUser.authUser)
-              .map { _ =>
-                val header = ResponseHeader(201, MessageProtocol.empty, List())
-                  .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
-                (header, postMessageUser.getUser)
-              }
-              //In case the password cant be saved
-              .recoverWith {
-                case authenticationException: CustomException =>
-                  ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
-                    .map[(ResponseHeader, User)] { _ =>
-                      //the deletion of the user was successful after the error in the authentication service
-                      if (authenticationException.getPossibleErrorResponse.`type` == "validation error") {
-                        val detailedError = authenticationException.getPossibleErrorResponse.asInstanceOf[DetailedError]
-                        throw new CustomException(
-                          authenticationException.getErrorCode,
-                          detailedError.copy(invalidParams = detailedError
-                            .invalidParams.map(error => error.copy(name = "authUser. " + error.name)))
-                        )
-                      }
-                      else {
-                        throw authenticationException
-                      }
-                    }
-                    .recover {
-                      case deletionException: Exception => throw deletionException //the deletion didnt work, a ghost user does now exist
-                    }
-              }
-          case RejectedWithError(code, errorResponse) =>
-            throw new CustomException(code, errorResponse)
-        }
-    }
-  }
+  /** This Methods needs to allow a GET-Method */
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 }

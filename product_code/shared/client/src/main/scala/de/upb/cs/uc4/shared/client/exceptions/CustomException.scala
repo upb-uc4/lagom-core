@@ -20,6 +20,7 @@ class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: Cust
 object CustomException {
   //400
   val DeserializationError = new CustomException(400, GenericError("deserialization error"))
+  val WrongObject = new CustomException(400, GenericError("wrong object"))
   //401
   val AuthorizationError = new CustomException(401, GenericError("authorization error"))
   //403

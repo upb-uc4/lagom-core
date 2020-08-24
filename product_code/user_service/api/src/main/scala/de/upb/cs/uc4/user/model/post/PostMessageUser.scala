@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.user.model.post
 
 import de.upb.cs.uc4.authentication.model.AuthenticationUser
-import de.upb.cs.uc4.shared.client.exceptions.CustomException
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, SimpleError }
 import de.upb.cs.uc4.user.model.user.User
 import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
@@ -11,6 +11,13 @@ trait PostMessageUser {
   def copyPostMessageUser(
       authUser: AuthenticationUser = this.authUser
   ): PostMessageUser
+
+  def validate: Seq[SimpleError] = {
+    authUser.validate.map {
+      simpleError =>
+        SimpleError("authUser." + simpleError.name, simpleError.reason)
+    }
+  }
 
   def getUser: User = {
     this match {

@@ -44,9 +44,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   }
 
   //Additional variables needed for some tests
-  val student0UpdatedUneditable: Student = student0.copy(role = Role.Lecturer, latestImmatriculation = "SS2012")
+  val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012")
   val student0UpdatedProtected: Student = student0UpdatedUneditable.copy(firstName = "Dieter", lastName = "Dietrich", birthDate = "1996-12-11", matriculationId = "1333337")
-  val uneditableErrorSize: Int = 2
+  val uneditableErrorSize: Int = 1
   val protectedErrorSize: Int = 4 + uneditableErrorSize
 
   val lecturer0Updated: Lecturer = lecturer0.copy(picture = "aBetterPicture", email = "noreply@scam.ng", address = address1, freeText = "Morgen kommt der große Gauss.", researchArea = "Physics")
@@ -210,23 +210,22 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "update a non-existing student" in {
-      client.updateStudent("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin"))
-        .invoke(student0.copy(username = "Guten Abend")).failed.map { answer =>
-          println("-------------------------------------" + answer.getStackTrace)
+      client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader("admin"))
+        .invoke(student0.copy(username = "GutenAbend")).failed.map { answer =>
           answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
         }
     }
 
     "update a non-existing lecturer" in {
-      client.updateLecturer("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin"))
-        .invoke(lecturer0.copy(username = "Guten Abend")).failed.map { answer =>
+      client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader("admin"))
+        .invoke(lecturer0.copy(username = "GutenAbend")).failed.map { answer =>
           answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
         }
     }
 
     "update a non-existing admin" in {
-      client.updateAdmin("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin"))
-        .invoke(admin0.copy(username = "Guten Abend")).failed.map { answer =>
+      client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader("admin"))
+        .invoke(admin0.copy(username = "GutenAbend")).failed.map { answer =>
           answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
         }
     }
@@ -239,7 +238,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "update a user as an admin" in {
-      client.updateAdmin(admin0.username).handleRequestHeader(addAuthorizationHeader("admin"))
+      client.updateUser(admin0.username).handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(admin0.copy(firstName = "KLAUS")).flatMap { _ =>
           client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
         }.map { answer =>
@@ -254,7 +253,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "update a user as the user himself" in {
-      client.updateLecturer(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
+      client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
         .invoke(lecturer0Updated).flatMap { _ =>
           client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
         }.map { answer =>
@@ -263,7 +262,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "not update uneditable fields as an admin" in {
-      client.updateStudent(student0UpdatedUneditable.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedUneditable.username))
+      client.updateUser(student0UpdatedUneditable.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedUneditable.username))
         .invoke(student0UpdatedUneditable).failed.map { answer =>
           answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
             have length uneditableErrorSize
@@ -271,7 +270,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     "not update protected fields as the user himself" in {
-      client.updateStudent(student0UpdatedProtected.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedProtected.username))
+      client.updateUser(student0UpdatedProtected.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedProtected.username))
         .invoke(student0UpdatedProtected).failed.map { answer =>
           answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
             have length protectedErrorSize

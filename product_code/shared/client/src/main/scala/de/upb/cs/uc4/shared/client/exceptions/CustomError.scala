@@ -32,6 +32,7 @@ object CustomError {
       //400
       case "deserialization error" => "Syntax of the provided json object was incorrect"
       case "json validation error" => "The provided json object did not validate"
+      case "wrong object" => "Received object differs from expected object" // InformativeError
       //401
       case "authorization error" => "Username and password combination does not exist"
       //403

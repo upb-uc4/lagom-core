@@ -24,46 +24,16 @@ case class UserState(optUser: Option[User]) {
       case GetUser(replyTo) => Effect.reply(replyTo)(optUser)
 
       case CreateUser(user, replyTo) =>
-
-        val trimmedUser = user.trim
-        var validationErrors = trimmedUser.validate.map(
-          error =>
-            user match {
-              case _: Student  => SimpleError("student." + error.name, error.reason)
-              case _: Lecturer => SimpleError("lecturer." + error.name, error.reason)
-              case _: Admin    => SimpleError("admin." + error.name, error.reason)
-            }
-        )
-        //A student cannot be created with latestImmatriculation already set
-        user match {
-          case student: Student if student.latestImmatriculation != "" =>
-            validationErrors +:= SimpleError("student." + "latestImmatriculation", "Latest Immatriculation must not be set upon creation.")
-          case _ =>
-        }
-
         if (optUser.isEmpty) {
-          if (validationErrors.isEmpty) {
-            Effect.persist(OnUserCreate(trimmedUser)).thenReply(replyTo) { _ => Accepted }
-          }
-          else {
-            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
-          }
+          Effect.persist(OnUserCreate(user)).thenReply(replyTo) { _ => Accepted }
         }
         else {
           Effect.reply(replyTo)(RejectedWithError(409, GenericError("key value error", "Username is already taken")))
         }
 
       case UpdateUser(user, replyTo) =>
-        val trimmedUser = user.trim
-        val validationErrors = trimmedUser.validate
-
         if (optUser.isDefined) {
-          if (validationErrors.isEmpty) {
-            Effect.persist(OnUserUpdate(trimmedUser)).thenReply(replyTo) { _ => Accepted }
-          }
-          else {
-            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
-          }
+          Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
         }
         else {
           Effect.reply(replyTo)(RejectedWithError(404, GenericError("key value error", "Username not found")))
