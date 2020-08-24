@@ -97,7 +97,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     entityRef(Hashing.sha256(username)).ask[Option[AuthenticationEntry]](replyTo => GetAuthentication(replyTo)).map {
       case Some(entry) =>
         if (entry.password != Hashing.sha256(entry.salt + password)) {
-          throw CustomException.AuthorizationError
+          throw CustomException.BasicAuthorizationError
         }
         else {
           val key = config.getString("play.http.secret.key")
@@ -134,7 +134,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
           )), Done)
         }
       case None =>
-        throw CustomException.AuthorizationError
+        throw CustomException.BasicAuthorizationError
     }
   }
 
