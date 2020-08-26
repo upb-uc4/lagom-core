@@ -120,7 +120,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     }
   }
 
-  /** Generates a new login token out of a refresh token */
+  /** Generates a new login token from a refresh token */
   override def refresh: ServiceCall[NotUsed, JsonUsername] = ServerServiceCall { (header, _) =>
     header.getHeader("Cookie") match {
       case Some(cookies) => cookies.split(";").map(_.trim).find(_.startsWith("refresh=")) match {
