@@ -180,7 +180,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
-  /** Reads username and password out of the header
+  /** Reads username and password from the header
     *
     * @param requestHeader with the an authentication header
     * @return an Option with a String tuple
