@@ -6,7 +6,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.impl.actor.UserBehaviour
-import de.upb.cs.uc4.user.impl.commands.{ CreateUser, DeleteUser, GetUser, UpdateLatestMatriculation, UpdateUser }
+import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{ Address, Role }
 import org.scalatest.matchers.should.Matchers

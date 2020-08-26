@@ -1,8 +1,7 @@
 package de.upb.cs.uc4.user.model.post
 
 import de.upb.cs.uc4.authentication.model.AuthenticationUser
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError }
-import de.upb.cs.uc4.user.model.Role
+import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.user.Student
 import play.api.libs.json.{ Format, Json }
 

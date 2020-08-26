@@ -2,15 +2,15 @@ package de.upb.cs.uc4.user.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, GenericError, SimpleError }
+import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
+import de.upb.cs.uc4.shared.client.exceptions.GenericError
 import de.upb.cs.uc4.shared.server.messages._
 import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events._
 import de.upb.cs.uc4.user.model.Role
-import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
+import de.upb.cs.uc4.user.model.user.{ Student, User }
 import play.api.libs.json.{ Format, Json }
-import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 
 /** The current state of a User */
 case class UserState(optUser: Option[User]) {

@@ -1,10 +1,10 @@
 package de.upb.cs.uc4.user.model.user
 
+import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, SimpleError }
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
 import play.api.libs.json.{ Format, Json }
-import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 
 case class Student(
     username: String,

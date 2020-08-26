@@ -11,8 +11,8 @@ import com.lightbend.lagom.scaladsl.persistence.{ EventStreamElement, Persistent
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError, InformativeError}
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, InformativeError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -24,7 +24,6 @@ import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.PostMessageUser
 import de.upb.cs.uc4.user.model.user._
-import de.upb.cs.uc4.user.model._
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -97,7 +96,7 @@ class UserServiceImpl(
       ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
         .flatMap {
           case Accepted => // Creation Successful
-            auth.setAuthentication().invoke(postMessageUser.authUser)
+            authentication.setAuthentication().invoke(postMessageUser.authUser)
               .map { _ =>
                 val header = ResponseHeader(201, MessageProtocol.empty, List())
                   .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
