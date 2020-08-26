@@ -84,6 +84,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
 
             override val contract: Contract = null
             override val gateway: Gateway = null
+            override val contractName: String = "matriculation"
           }
         }
       }

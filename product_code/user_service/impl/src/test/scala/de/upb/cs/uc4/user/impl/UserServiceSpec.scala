@@ -42,7 +42,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
   val client: UserService = server.serviceClient.implement[UserService]
 
-
   val deletionTopic: Source[JsonUsername, _] = client.userDeletedTopic().subscribe.atMostOnceSource
 
   override protected def afterAll(): Unit = server.stop()
@@ -73,30 +72,29 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     header.withHeader("Cookie", s"login=$token")
   }
 
-
-  def prepare(users: Seq[User]): Unit ={
-    users.foreach{ user =>
+  def prepare(users: Seq[User]): Unit = {
+    users.foreach { user =>
       val postMessage = user match {
-        case s: Student => PostMessageStudent(AuthenticationUser(s.username, s.username, AuthenticationRole.Student), s)
+        case s: Student  => PostMessageStudent(AuthenticationUser(s.username, s.username, AuthenticationRole.Student), s)
         case l: Lecturer => PostMessageLecturer(AuthenticationUser(l.username, l.username, AuthenticationRole.Lecturer), l)
-        case a: Admin => PostMessageAdmin(AuthenticationUser(a.username, a.username, AuthenticationRole.Admin), a)
+        case a: Admin    => PostMessageAdmin(AuthenticationUser(a.username, a.username, AuthenticationRole.Admin), a)
       }
       assert(Await.result(client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(postMessage), 5.seconds).isInstanceOf[User])
     }
-    eventually(timeout(Span(2,Minutes))){
+    eventually(timeout(Span(2, Minutes))) {
       client.getAllUsers(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
-        val userList: Seq[User]= answer.students ++ answer.lecturers ++ answer.admins
+        val userList: Seq[User] = answer.students ++ answer.lecturers ++ answer.admins
         assert(users.forall(userList.contains(_)))
       }
     }
   }
 
-  def cleanup(users: Seq[User]): Unit ={
-    users.foreach{
+  def cleanup(users: Seq[User]): Unit = {
+    users.foreach {
       user =>
         assert(Await.result(client.deleteUser(user.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke(), 5.seconds).isInstanceOf[Done])
     }
-    eventually(timeout(Span(2,Minutes))){
+    eventually(timeout(Span(2, Minutes))) {
       client.getAllUsers(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
         assert(checkUserDeletion(users))
       }
@@ -119,9 +117,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     )
 
   }
-
-
-
 
   //Additional variables needed for some tests
   val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012")
@@ -160,17 +155,17 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
         .failed.map {
-        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
-      }
+          answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+        }
     }
 
     "fail on adding an already existing User" in {
       prepare(Seq(admin0))
       client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.map { answer =>
-        cleanup(Seq(admin0))
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
-      }
+          cleanup(Seq(admin0))
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
+        }
     }
 
     //GET TESTS
@@ -248,7 +243,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       }
     }
 
-
     //UPDATE TESTS
     "not update a non-existing User" in {
       client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader("admin"))
@@ -269,10 +263,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "update a user as the user himself" in {
       client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
         .invoke(lecturer0Updated).flatMap { _ =>
-        client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
-      }.map { answer =>
-        answer should ===(lecturer0Updated)
-      }
+          client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
+        }.map { answer =>
+          answer should ===(lecturer0Updated)
+        }
     }
 
     "not update uneditable fields as an admin" in {
@@ -290,7 +284,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
             have length protectedErrorSize
         }
     }
-
 
     //DELETE TESTS
     "delete a non-existing user" in {
