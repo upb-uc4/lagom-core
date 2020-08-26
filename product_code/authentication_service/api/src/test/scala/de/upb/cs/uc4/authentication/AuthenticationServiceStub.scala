@@ -21,7 +21,7 @@ class AuthenticationServiceStub extends AuthenticationService {
   /** This Methods needs to allow a GET-Method */
   override def allowedPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
-  /** Logins a user and return a refresh and a login token in the header */
+  /** Logs a user in and returns a refresh and a login token in the header */
   override def login: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
   /** Allows GET */
