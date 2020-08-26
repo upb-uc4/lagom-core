@@ -2,23 +2,28 @@ package de.upb.cs.uc4.user.impl
 
 import java.util.Base64
 
+import akka.Done
 import akka.stream.scaladsl.Source
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
-import de.upb.cs.uc4.user.model.user.{ Lecturer, Student }
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonUsername, Role }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Minutes, Span }
 import org.scalatest.wordspec.AsyncWordSpec
+
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future }
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
@@ -35,6 +40,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
   val client: UserService = server.serviceClient.implement[UserService]
+
+
   val deletionTopic: Source[JsonUsername, _] = client.userDeletedTopic().subscribe.atMostOnceSource
 
   override protected def afterAll(): Unit = server.stop()
@@ -42,6 +49,56 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   def addAuthorizationHeader(username: String): RequestHeader => RequestHeader = { header =>
     header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString(s"$username:$username".getBytes()))
   }
+
+
+  def prepare(users: Seq[User]): Unit ={
+    users.foreach{ user =>
+      val postMessage = user match {
+        case s: Student => PostMessageStudent(AuthenticationUser(s.username, s.username, AuthenticationRole.Student), s)
+        case l: Lecturer => PostMessageLecturer(AuthenticationUser(l.username, l.username, AuthenticationRole.Lecturer), l)
+        case a: Admin => PostMessageAdmin(AuthenticationUser(a.username, a.username, AuthenticationRole.Admin), a)
+      }
+      assert(Await.result(client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(postMessage), 5.seconds).isInstanceOf[User])
+    }
+    eventually(timeout(Span(2,Minutes))){
+      client.getAllUsers(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
+        val userList: Seq[User]= answer.students ++ answer.lecturers ++ answer.admins
+        assert(users.forall(userList.contains(_)))
+      }
+    }
+  }
+
+  def cleanup(users: Seq[User]): Unit ={
+    users.foreach{
+      user =>
+        assert(Await.result(client.deleteUser(user.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke(), 5.seconds).isInstanceOf[Done])
+    }
+    eventually(timeout(Span(2,Minutes))){
+      client.getAllUsers(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
+        assert(checkUserDeletion(users))
+      }
+    }
+  }
+
+  def checkUserDeletion(users: Seq[User]): Boolean = {
+    val searchList = users.map(user => user.username)
+
+    Await.result(
+      for {
+        studentList <- server.application.database.getAll(Role.Student)
+        lecturerList <- server.application.database.getAll(Role.Lecturer)
+        adminList <- server.application.database.getAll(Role.Admin)
+      } yield {
+        val allUsernames = studentList ++ lecturerList ++ adminList
+        searchList.forall(!allUsernames.contains(_))
+      },
+      5.seconds
+    )
+
+  }
+
+
+
 
   //Additional variables needed for some tests
   val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012")
@@ -65,73 +122,54 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       }
     }
 
+    //ADD TESTS
     "add a student" in {
       client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageStudent(student0Auth, student0))
       eventually(timeout(Span(2, Minutes))) {
         client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
+          cleanup(Seq(student0))
           answer should contain(student0)
         }
       }
     }
 
-    "add a lecturer" in {
-      client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageLecturer(lecturer0Auth, lecturer0))
-      eventually(timeout(Span(2, Minutes))) {
-        client.getAllLecturers(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
-          answer should contain(lecturer0)
-        }
+    "fail on adding a user with different username in authUser" in {
+      client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
+        .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
+        .failed.map {
+        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
       }
     }
 
-    "add an admin" in {
-      client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageAdmin(admin0Auth, admin0))
-      eventually(timeout(Span(2, Minutes))) {
-        client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
-          answer should contain(admin0)
-        }
+    "fail on adding an already existing User" in {
+      prepare(Seq(admin0))
+      client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
+        .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.map { answer =>
+        cleanup(Seq(admin0))
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
       }
     }
 
-    "fetch the information of a Student as an Admin" in {
+    //GET TESTS
+    "fetch the information of a User as an Admin" in {
+      prepare(Seq(student0))
       client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
+        cleanup(Seq(student0))
         answer should ===(student0)
       }
     }
-    "fetch the information of a Lecturer as an Admin" in {
-      client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
-        answer should ===(lecturer0)
-      }
-    }
-    "fetch the information of an Admin as an Admin" in {
-      client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
-        answer should ===(admin0)
-      }
-    }
 
-    "fetch the information of a Student as the student himself" in {
+    "fetch the information of a User as the User (non-Admin) himself" in {
+      prepare(Seq(student0))
       client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map { answer =>
+        cleanup(Seq(student0))
         answer should ===(student0)
       }
     }
-    "fetch the information of a Lecturer as the lecturer himself" in {
-      client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().map { answer =>
-        answer should ===(lecturer0)
-      }
-    }
 
-    "fetch the public information of a Student as another student" in {
+    "fetch the public information of a User as another User (non-Admin)" in {
       client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader("student")).invoke().map { answer =>
         answer should ===(student0.toPublic)
-      }
-    }
-    "fetch the public information of a Lecturer as a student" in {
-      client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader("student")).invoke().map { answer =>
-        answer should ===(lecturer0.toPublic)
-      }
-    }
-    "fetch the public information of an Admin as a lecturer" in {
-      client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader("lecturer")).invoke().map { answer =>
-        answer should ===(admin0.toPublic)
       }
     }
 
@@ -170,70 +208,29 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         answer should ===(GetAllUsersResponse(Seq(student0.toPublic), Seq(lecturer0.toPublic), Seq(admin0.toPublic)))
       }
     }
-    "fetch the information of all specified Users, as a non-Admin" in {
+    "fetch the information of all specified Users, as an Admin" in {
       client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username)).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
         answer should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
       }
     }
-
-    "throw an exception on adding a user with different username in authUser" in {
-      client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
-        .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
-        .failed.map {
-          answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
-        }
-    }
-
-    "delete a non-existing user" in {
-      client.deleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed.map {
-        answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
-    }
-
-    "find a non-existing student" in {
+    "find a non-existing User" in {
       client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed.map { answer =>
         answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
       }
     }
 
-    "find a non-existing lecturer" in {
-      client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+    "get the role of a user" in {
+      client.getRole(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
+        answer.role shouldBe Role.Lecturer
       }
     }
 
-    "find a non-existing admin" in {
-      client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
-    }
 
-    "update a non-existing student" in {
+    //UPDATE TESTS
+    "not update a non-existing User" in {
       client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader("admin"))
         .invoke(student0.copy(username = "GutenAbend")).failed.map { answer =>
           answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-        }
-    }
-
-    "update a non-existing lecturer" in {
-      client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader("admin"))
-        .invoke(lecturer0.copy(username = "GutenAbend")).failed.map { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-        }
-    }
-
-    "update a non-existing admin" in {
-      client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader("admin"))
-        .invoke(admin0.copy(username = "GutenAbend")).failed.map { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-        }
-    }
-
-    "add an already existing user" in {
-      client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
-        .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.map { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
         }
     }
 
@@ -246,19 +243,13 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         }
     }
 
-    "get a role of a user" in {
-      client.getRole(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
-        answer.role shouldBe Role.Lecturer
-      }
-    }
-
     "update a user as the user himself" in {
       client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
         .invoke(lecturer0Updated).flatMap { _ =>
-          client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
-        }.map { answer =>
-          answer should ===(lecturer0Updated)
-        }
+        client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
+      }.map { answer =>
+        answer should ===(lecturer0Updated)
+      }
     }
 
     "not update uneditable fields as an admin" in {
@@ -277,6 +268,14 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         }
     }
 
+
+    //DELETE TESTS
+    "delete a non-existing user" in {
+      client.deleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+      }
+    }
     "delete a user" in {
       client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { _ =>
         client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed

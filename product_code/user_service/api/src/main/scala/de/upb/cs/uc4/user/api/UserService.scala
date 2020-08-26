@@ -4,7 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
+import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, ServiceCall }
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
@@ -21,6 +21,7 @@ trait UserService extends UC4Service {
   override val pathPrefix = "/user-management"
   /** The name of the service */
   override val name = "user"
+  override val autoAcl: Boolean = false
 
   // USER
   /** Get a specific user with the username */
@@ -85,8 +86,6 @@ trait UserService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
 
-        restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
-
         restCall(Method.GET, pathPrefix + "/students?usernames", getAllStudents _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGet _),
 
@@ -94,11 +93,37 @@ trait UserService extends UC4Service {
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGet _),
 
         restCall(Method.GET, pathPrefix + "/admins?usernames", getAllAdmins _),
-        restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGet _)
+        restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGet _),
+
+        //Not exposed
+        restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _)
+      )
+      .addAcls(
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users\\E" + "(\\?([^\\/\\?]+))?"),
+        ServiceAcl.forMethodAndPathRegex(Method.POST, "\\Q" + pathPrefix + "/users\\E"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users\\E" + "(\\?([^\\/\\?]+))?"),
+
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
+        ServiceAcl.forMethodAndPathRegex(Method.DELETE, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
+        ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
+
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/role/\\E" + "([^/]+)"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/role/\\E" + "([^/]+)"),
+
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/students\\E" + "(\\?([^\\/\\?]+))?"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/students\\E" + "(\\?([^\\/\\?]+))?"),
+
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/lecturers\\E" + "(\\?([^\\/\\?]+))?"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/lecturers\\E" + "(\\?([^\\/\\?]+))?"),
+
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?")
       )
       .withTopics(
         topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)
       )
+
   }
 }
 
