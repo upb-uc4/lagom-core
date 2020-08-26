@@ -27,7 +27,7 @@ trait AuthenticationService extends UC4Service {
   /** Logs a user in and returns a refresh and a login token in the header */
   def login: ServiceCall[NotUsed, Done]
 
-  /** Generates a new login token out of a refresh token */
+  /** Generates a new login token from a refresh token */
   def refresh: ServiceCall[NotUsed, JsonUsername]
 
   /** Logs the user out */
