@@ -1,14 +1,14 @@
 package de.upb.cs.uc4.shared.server
 
-import java.util.Base64
-
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
-import de.upb.cs.uc4.authentication.api.AuthenticationService
+import com.typesafe.config.Config
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, GenericError }
+import de.upb.cs.uc4.shared.client.exceptions.CustomException
+import io.jsonwebtoken.{ ExpiredJwtException, Jwts, MalformedJwtException, SignatureException }
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.annotation.varargs
@@ -37,17 +37,13 @@ object ServiceCallFactory {
     * @return finished [[com.lightbend.lagom.scaladsl.server.ServerServiceCall]]
     */
   @varargs
-  def authenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: ServerServiceCall[Request, Response])(implicit auth: AuthenticationService, ec: ExecutionContext): ServerServiceCall[Request, Response] = {
-    ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
-      val (user, pw) = getUserAndPassword(requestHeader)
-
-      auth.check(user, pw).invoke().map {
-        case (_, role) =>
-          if (!roles.contains(role)) {
-            throw CustomException.NotEnoughPrivileges
-          }
-          serviceCall
+  def authenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: ServerServiceCall[Request, Response])(implicit config: Config, ec: ExecutionContext): ServerServiceCall[Request, Response] = {
+    ServerServiceCall.compose[Request, Response] { requestHeader =>
+      val (_, role) = checkLoginToken(getLoginToken(requestHeader))
+      if (!roles.contains(role)) {
+        throw CustomException.NotEnoughPrivileges
       }
+      serviceCall
     }
   }
 
@@ -59,40 +55,44 @@ object ServiceCallFactory {
     * @return finished [[com.lightbend.lagom.scaladsl.server.ServerServiceCall]]
     */
   @varargs
-  def identifiedAuthenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: (String, AuthenticationRole) => ServerServiceCall[Request, Response])(implicit auth: AuthenticationService, ec: ExecutionContext): ServerServiceCall[Request, Response] = {
-    ServerServiceCall.composeAsync[Request, Response] { requestHeader =>
-      val (user, pw) = getUserAndPassword(requestHeader)
-
-      auth.check(user, pw).invoke().map {
-        case (username, role) =>
-          if (!roles.contains(role)) {
-            throw CustomException.NotEnoughPrivileges
-          }
-          serviceCall(username, role)
+  def identifiedAuthenticated[Request, Response](roles: AuthenticationRole*)(serviceCall: (String, AuthenticationRole) => ServerServiceCall[Request, Response])(implicit config: Config, ec: ExecutionContext): ServerServiceCall[Request, Response] = {
+    ServerServiceCall.compose[Request, Response] { requestHeader =>
+      val (username, role) = checkLoginToken(getLoginToken(requestHeader))
+      if (!roles.contains(role)) {
+        throw CustomException.NotEnoughPrivileges
       }
+      serviceCall(username, role)
     }
   }
 
-  /** Reads username and password out of the header
-    *
-    * @param requestHeader with the an authentication header
-    * @return an Option with a String tuple
-    */
-  def getUserAndPassword(requestHeader: RequestHeader): (String, String) = {
-    val userPw = requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
-      case Array("Basic", userAndPass) =>
-        new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":") match {
-          case Array(user, password) => Option(user, password)
-          case _                     => None
-        }
-      case _ => None
-    }
+  private def checkLoginToken(token: String)(implicit config: Config): (String, AuthenticationRole) = {
+    try {
+      val claims = Jwts.parser().setSigningKey(config.getString("play.http.secret.key")).parseClaimsJws(token).getBody
+      val username = claims.get("username", classOf[String])
+      val authenticationRole = claims.get("authenticationRole", classOf[String])
 
-    if (userPw.isEmpty) {
-      throw CustomException.AuthorizationError
+      (username, AuthenticationRole.withName(authenticationRole))
     }
-    else {
-      userPw.get
+    catch {
+      case _: ExpiredJwtException   => throw CustomException.LoginTokenExpired
+      case _: MalformedJwtException => throw CustomException.MalformedLoginToken
+      case _: SignatureException    => throw CustomException.LoginTokenSignatureError
+      case _: Exception             => throw CustomException.InternalServerError
+    }
+  }
+
+  /** Reads the login token out of the header
+    *
+    * @param requestHeader with the a cookie header
+    * @return the token as string
+    */
+  private def getLoginToken(requestHeader: RequestHeader): String = {
+    requestHeader.getHeader("Cookie") match {
+      case Some(cookies) => cookies.split(";").map(_.trim).find(_.startsWith("login=")) match {
+        case Some(s"login=$token") => token
+        case _                     => throw CustomException.AuthorizationError
+      }
+      case _ => throw CustomException.AuthorizationError
     }
   }
 

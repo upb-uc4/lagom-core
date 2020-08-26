@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.impl
 
-import java.util.Base64
+import java.util.Calendar
 
 import akka.Done
 import akka.stream.scaladsl.Source
@@ -9,13 +9,15 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonUsername, Role }
+import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, Role }
+import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -35,7 +37,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       .withJdbc()
   ) { ctx =>
       new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-        override lazy val authenticationService: AuthenticationService = new AuthenticationServiceStub()
+        override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
       }
     }
 
@@ -47,7 +49,29 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   override protected def afterAll(): Unit = server.stop()
 
   def addAuthorizationHeader(username: String): RequestHeader => RequestHeader = { header =>
-    header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString(s"$username:$username".getBytes()))
+
+    var role = AuthenticationRole.Admin
+
+    if (username.contains("student")) {
+      role = AuthenticationRole.Student
+    }
+    else if (username.contains("lecturer")) {
+      role = AuthenticationRole.Lecturer
+    }
+
+    val time = Calendar.getInstance()
+    time.add(Calendar.DATE, 1)
+
+    val token =
+      Jwts.builder()
+        .setSubject("login")
+        .setExpiration(time.getTime)
+        .claim("username", username)
+        .claim("authenticationRole", role.toString)
+        .signWith(SignatureAlgorithm.HS256, "changeme")
+        .compact()
+
+    header.withHeader("Cookie", s"login=$token")
   }
 
 

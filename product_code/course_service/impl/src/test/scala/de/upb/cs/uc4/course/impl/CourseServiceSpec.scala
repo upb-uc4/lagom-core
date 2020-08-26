@@ -1,16 +1,15 @@
 package de.upb.cs.uc4.course.impl
 
-import java.util.Base64
+import java.util.Calendar
 
 import akka.Done
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
-import de.upb.cs.uc4.authentication.AuthenticationServiceStub
-import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
+import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -26,9 +25,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-      new CourseApplication(ctx) with LocalServiceLocator {
-        override lazy val authenticationService: AuthenticationService = new AuthenticationServiceStub
-      }
+      new CourseApplication(ctx) with LocalServiceLocator
     }
 
   val client: CourseService = server.serviceClient.implement[CourseService]
@@ -42,7 +39,19 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   override protected def afterAll(): Unit = server.stop()
 
   def addAuthorizationHeader(): RequestHeader => RequestHeader = { header =>
-    header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString("MOCK:MOCK".getBytes()))
+    val time = Calendar.getInstance()
+    time.add(Calendar.DATE, 1)
+
+    val token =
+      Jwts.builder()
+        .setSubject("login")
+        .setExpiration(time.getTime)
+        .claim("username", "admin")
+        .claim("authenticationRole", "Admin")
+        .signWith(SignatureAlgorithm.HS256, "changeme")
+        .compact()
+
+    header.withHeader("Cookie", s"login=$token")
   }
 
   /** Tests only working if the whole instance is started */

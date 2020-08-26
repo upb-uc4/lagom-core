@@ -14,10 +14,10 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationBehaviour, AuthenticationState }
 import de.upb.cs.uc4.authentication.impl.commands.DeleteAuthentication
 import de.upb.cs.uc4.authentication.impl.readside.{ AuthenticationDatabase, AuthenticationEventProcessor }
+import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.JsonUsername
 import play.api.db.HikariCPComponents
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc.EssentialFilter

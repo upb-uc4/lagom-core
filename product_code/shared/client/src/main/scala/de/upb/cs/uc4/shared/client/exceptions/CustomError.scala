@@ -33,8 +33,13 @@ object CustomError {
       case "deserialization error" => "Syntax of the provided json object was incorrect"
       case "json validation error" => "The provided json object did not validate"
       case "wrong object" => "Received object differs from expected object" // InformativeError
+      case "malformed refresh token" => "The long term token is malformed"
+      case "malformed login token" => "The login token is malformed"
       //401
-      case "authorization error" => "Username and password combination does not exist"
+      case "basic authorization error" => "Username and password combination does not exist"
+      case "jwt authorization error" => "Authorization token missing"
+      case "refresh token expired" => "Your long term session expired"
+      case "login token expired" => "Your session expired"
       //403
       case "not enough privileges" => "Insufficient privileges for this action"
       case "owner mismatch" => "You are not allowed to modify the resource"
@@ -48,6 +53,8 @@ object CustomError {
       case "path parameter mismatch" => "Parameter specified in path and in object do not match"
       case "validation error" => "Your request parameters did not validate" //In a DetailedError
       case "uneditable fields" => "Attempted to change uneditable fields" //In a DetailedError
+      case "refresh token signature invalid" => "The long term token has a wrong signature"
+      case "login token signature invalid" => "The login term token has a wrong signature"
       //500
       case "internal server error" => "An internal server error has occurred"
       case "undeserializable exception" => "Internal error while deserializing Exception"

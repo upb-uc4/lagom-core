@@ -1,18 +1,17 @@
 package de.upb.cs.uc4.matriculation.impl
 
-import java.util.Base64
+import java.util.Calendar
 
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
-import de.upb.cs.uc4.authentication.AuthenticationServiceStub
-import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation }
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
+import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.hyperledger.fabric.gateway.{ Contract, Gateway }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -29,7 +28,6 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     ServiceTest.defaultSetup.withCluster()
   ) { ctx =>
       new MatriculationApplication(ctx) with LocalServiceLocator {
-        override lazy val authenticationService: AuthenticationService = new AuthenticationServiceStub
         override lazy val userService: UserServiceStub = new UserServiceStub
 
         userService.resetToDefaults()
@@ -95,17 +93,29 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
 
   override protected def afterAll(): Unit = server.stop()
 
-  def addAuthenticationHeader(): RequestHeader => RequestHeader = { header =>
-    header.withHeader("Authorization", "Basic " + Base64.getEncoder.encodeToString("MOCK:MOCK".getBytes()))
+  def addAuthorizationHeader(): RequestHeader => RequestHeader = { header =>
+    val time = Calendar.getInstance()
+    time.add(Calendar.DATE, 1)
+
+    val token =
+      Jwts.builder()
+        .setSubject("login")
+        .setExpiration(time.getTime)
+        .claim("username", "admin")
+        .claim("authenticationRole", "Admin")
+        .signWith(SignatureAlgorithm.HS256, "changeme")
+        .compact()
+
+    header.withHeader("Cookie", s"login=$token")
   }
 
   /** Tests only working if the whole instance is started */
   "MatriculationService service" should {
 
     "add matriculation data for a student" in {
-      client.addMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader())
+      client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(PutMessageMatriculationData("Computer Science", "SS2020")).flatMap { _ =>
-          client.getMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader()).invoke().map {
+          client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
             answer =>
               answer.matriculationId should ===(student0.matriculationId)
               answer.matriculationStatus should contain theSameElementsAs
@@ -115,9 +125,9 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     }
 
     "extend matriculation data of an already existing field of study" in {
-      client.addMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader())
+      client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(PutMessageMatriculationData("Computer Science", "WS2020/21")).flatMap { _ =>
-          client.getMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader()).invoke().map {
+          client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
             answer =>
               answer.matriculationId should ===(student0.matriculationId)
               answer.matriculationStatus should contain theSameElementsAs
@@ -127,9 +137,9 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     }
 
     "extend matriculation data of a non-existing field of study" in {
-      client.addMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader())
+      client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(PutMessageMatriculationData("Mathematics", "WS2020/21")).flatMap { _ =>
-          client.getMatriculationData(student0.username).handleRequestHeader(addAuthenticationHeader()).invoke().map {
+          client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
             answer =>
               answer.matriculationId should ===(student0.matriculationId)
               answer.matriculationStatus should contain theSameElementsAs
