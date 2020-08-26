@@ -50,7 +50,7 @@ trait AuthenticationService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/refresh", refresh _),
         restCall(Method.GET, pathPrefix + "/logout", logout _),
 
-        restCall(Method.OPTIONS, pathPrefix + "/users", allowedPut _),
+        restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedPut _),
         restCall(Method.OPTIONS, pathPrefix + "/login", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/refresh", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/logout", allowedGet _)
