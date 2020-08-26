@@ -27,7 +27,7 @@ class AuthenticationServiceStub extends AuthenticationService {
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
-  /** Generates a new login token out of a refresh token */
+  /** Generates a new login token from a refresh token */
   override def refresh: ServiceCall[NotUsed, JsonUsername] = ServiceCall { _ => Future.successful(JsonUsername("MOCK")) }
 
   /** Logs the user out */
