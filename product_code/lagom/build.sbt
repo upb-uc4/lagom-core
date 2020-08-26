@@ -12,8 +12,7 @@ scalaVersion in ThisBuild := "2.13.0"
 
 
 def commonSettings(project: String) = Seq(
-  testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test_reports/" + project),
-  coverageEnabled in Test := true
+  testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-h", "target/test_reports/" + project)
 )
 
 // Docker
