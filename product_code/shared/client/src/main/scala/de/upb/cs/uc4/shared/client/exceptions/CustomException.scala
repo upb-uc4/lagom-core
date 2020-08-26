@@ -13,6 +13,7 @@ class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: Cust
   def getErrorCode: TransportErrorCode = {
     errorCode
   }
+
   def getPossibleErrorResponse: CustomError = {
     possibleErrorResponse
   }
@@ -20,8 +21,13 @@ class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: Cust
 object CustomException {
   //400
   val DeserializationError = new CustomException(400, GenericError("deserialization error"))
+  val MalformedRefreshToken = new CustomException(400, GenericError("malformed refresh token"))
+  val MalformedLoginToken = new CustomException(400, GenericError("malformed login token"))
   //401
-  val AuthorizationError = new CustomException(401, GenericError("authorization error"))
+  val AuthorizationError = new CustomException(401, GenericError("jwt authorization error"))
+  val BasicAuthorizationError = new CustomException(401, GenericError("basic authorization error"))
+  val RefreshTokenExpired = new CustomException(401, GenericError("refresh token expired"))
+  val LoginTokenExpired = new CustomException(401, GenericError("login token expired"))
   //403
   val NotEnoughPrivileges = new CustomException(403, GenericError("not enough privileges"))
   val OwnerMismatch = new CustomException(403, GenericError("owner mismatch"))
@@ -31,6 +37,8 @@ object CustomException {
   val Duplicate = new CustomException(409, GenericError("key duplicate"))
   //422
   val PathParameterMismatch = new CustomException(422, GenericError("path parameter mismatch"))
+  val RefreshTokenSignatureError = new CustomException(422, GenericError("refresh token signature invalid"))
+  val LoginTokenSignatureError = new CustomException(422, GenericError("login token signature invalid"))
   //500
   val InternalServerError = new CustomException(500, GenericError("internal server error"))
   val InternalDeserializationError = new CustomException(500, GenericError("undeserializable exception"))

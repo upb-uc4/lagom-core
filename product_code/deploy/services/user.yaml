@@ -26,7 +26,7 @@ spec:
             - name: APPLICATION_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: user-application-secret
+                  name: application-secret
                   key: secret
             - name: POSTGRESQL_URL
               value: "jdbc:postgresql://postgres.postgres/uc4user"

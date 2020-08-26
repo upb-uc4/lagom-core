@@ -6,6 +6,7 @@ import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplication, LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
+import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.shared.server.AuthenticationComponent
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{ UserBehaviour, UserState }
@@ -30,6 +31,9 @@ abstract class UserApplication(context: LagomApplicationContext)
 
   // Set HttpFilter to the default CorsFilter
   override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
+
+  // Bind the authentication service
+  lazy val authentication: AuthenticationService = serviceClient.implement[AuthenticationService]
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[UserService](wire[UserServiceImpl])

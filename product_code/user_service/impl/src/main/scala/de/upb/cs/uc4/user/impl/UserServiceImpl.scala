@@ -9,28 +9,32 @@ import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
 import com.lightbend.lagom.scaladsl.persistence.{ EventStreamElement, PersistentEntityRegistry, ReadSide }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
+import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{ OnLatestMatriculationUpdate, OnUserDelete, UserEvent }
+import de.upb.cs.uc4.user.impl.events.{ OnUserDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
 import de.upb.cs.uc4.user.model.user._
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate, Role }
+import de.upb.cs.uc4.user.model._
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the UserService */
-class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
-    readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase)(implicit ec: ExecutionContext, auth: AuthenticationService) extends UserService {
+class UserServiceImpl(
+    clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
+    readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase,
+    authentication: AuthenticationService
+)(implicit ec: ExecutionContext, config: Config) extends UserService {
   readSide.register(processor)
 
   /** Looks up the entity for the given ID */
@@ -279,7 +283,7 @@ class UserServiceImpl(clusterSharding: ClusterSharding, persistentEntityRegistry
       ref.ask[Confirmation](replyTo => CreateUser(user, replyTo))
         .flatMap {
           case Accepted => // Creation Successful
-            auth.setAuthentication().invoke(authenticationUser)
+            authentication.setAuthentication().invoke(authenticationUser)
               .map { _ =>
                 (ResponseHeader(201, MessageProtocol.empty, List()), user)
               }
