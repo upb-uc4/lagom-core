@@ -72,7 +72,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
         }
     }(config, ec)
 
-  /** Logins a user and return a refresh and a login token in the header */
+  /** Logs a user in and returns a refresh and a login token in the header */
   override def login: ServiceCall[NotUsed, Done] = ServerServiceCall { (header, _) =>
     val (username, password) = getUserAndPassword(header)
 
