@@ -24,7 +24,7 @@ trait AuthenticationService extends UC4Service {
   /** Changes the password of the given user */
   def changePassword(username: String): ServiceCall[AuthenticationUser, Done]
 
-  /** Logins a user and return a refresh and a login token in the header */
+  /** Logs a user in and returns a refresh and a login token in the header */
   def login: ServiceCall[NotUsed, Done]
 
   /** Generates a new login token out of a refresh token */
