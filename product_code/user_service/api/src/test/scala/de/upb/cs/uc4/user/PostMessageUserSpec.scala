@@ -29,7 +29,6 @@ class PostMessageUserSpec extends AnyWordSpecLike with Matchers with DefaultTest
     }
   }
 
-
   "A PostMessageLecturer" should {
     "be validated" in {
       val errors = postMessageLecturerValid.validate
@@ -42,7 +41,6 @@ class PostMessageUserSpec extends AnyWordSpecLike with Matchers with DefaultTest
       errorVariables should contain theSameElementsAs Seq("authUser.username", "lecturer.username")
     }
   }
-
 
   "A PostMessageAdmin" should {
     "be validated" in {
