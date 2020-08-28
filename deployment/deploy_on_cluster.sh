@@ -1,4 +1,5 @@
 #!/bin/bash
+echo
 echo "##############################"
 echo "#      Starting Traefik      #"
 echo "##############################"
