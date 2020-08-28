@@ -52,15 +52,15 @@ echo
 echo "##############################"
 echo "#     Starting Services      #"
 echo "##############################"
-kubectl create secret generic application-secret --from-literal=secret="test" -n uc4-lagom
+kubectl create secret generic application-secret --from-literal=secret="$(openssl rand -base64 48)" -n uc4-lagom
 
-kubectl create secret generic postgres-user --from-literal=username="uc4user" --from-literal=password="uc4user" -n uc4-lagom
+kubectl apply -f secrets/user.yaml
 kubectl apply -f services/user.yaml
 
-kubectl create secret generic postgres-authentication --from-literal=username="uc4authentication" --from-literal=password="uc4authentication" -n uc4-lagom
+kubectl apply -f secrets/authentication.yaml
 kubectl apply -f services/authentication.yaml
 
-kubectl create secret generic postgres-course --from-literal=username="uc4course" --from-literal=password="uc4course" -n uc4-lagom
+kubectl apply -f secrets/course.yaml
 kubectl apply -f services/course.yaml
 
 kubectl apply -f services/matriculation.yaml
