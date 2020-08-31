@@ -16,7 +16,7 @@ import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, Authentica
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError, ErrorType }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
@@ -58,7 +58,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
             throw CustomException.OwnerMismatch
           }
           if (role != user.role) {
-            throw new CustomException(422, DetailedError("uneditable fields", List(SimpleError("role", "Role may not be manually changed."))))
+            throw new CustomException(422, DetailedError(ErrorType.UneditableFields, List(SimpleError("role", "Role may not be manually changed."))))
           }
           val ref = entityRef(Hashing.sha256(user.username))
 

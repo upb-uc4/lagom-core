@@ -2,7 +2,7 @@ package de.upb.cs.uc4.user.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, GenericError, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, GenericError, SimpleError, ErrorType }
 import de.upb.cs.uc4.shared.server.messages._
 import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands._
@@ -46,11 +46,11 @@ case class UserState(optUser: Option[User]) {
             Effect.persist(OnUserCreate(trimmedUser)).thenReply(replyTo) { _ => Accepted }
           }
           else {
-            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
+            Effect.reply(replyTo)(RejectedWithError(422, DetailedError(ErrorType.Validation, "Your request parameters did not validate", validationErrors)))
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(409, GenericError("key value error", "Username is already taken")))
+          Effect.reply(replyTo)(RejectedWithError(409, GenericError(ErrorType.KeyDuplicate, "Username is already taken")))
         }
 
       case UpdateUser(user, replyTo) =>
@@ -62,11 +62,11 @@ case class UserState(optUser: Option[User]) {
             Effect.persist(OnUserUpdate(trimmedUser)).thenReply(replyTo) { _ => Accepted }
           }
           else {
-            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
+            Effect.reply(replyTo)(RejectedWithError(422, DetailedError(ErrorType.Validation, "Your request parameters did not validate", validationErrors)))
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(404, GenericError("key value error", "Username not found")))
+          Effect.reply(replyTo)(RejectedWithError(404, GenericError(ErrorType.KeyNotFound, "Username not found")))
         }
 
       case UpdateLatestMatriculation(semester, replyTo) =>
@@ -80,7 +80,7 @@ case class UserState(optUser: Option[User]) {
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(500, GenericError("internal server error")))
+          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
         }
 
       case DeleteUser(replyTo) =>

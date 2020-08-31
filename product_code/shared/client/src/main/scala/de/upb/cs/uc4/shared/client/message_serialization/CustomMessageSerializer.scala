@@ -4,7 +4,7 @@ import akka.util.ByteString
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer.{ NegotiatedDeserializer, NegotiatedSerializer }
 import com.lightbend.lagom.scaladsl.api.deser.{ MessageSerializer, StrictMessageSerializer }
 import com.lightbend.lagom.scaladsl.api.transport.{ DeserializationException, MessageProtocol, SerializationException }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, SimpleError, ErrorType }
 import de.upb.cs.uc4.shared.client.exceptions
 import play.api.libs.json._
 
@@ -62,7 +62,7 @@ object CustomMessageSerializer {
                   list.head.message.replaceFirst("error.", "")
                 )
             }.toList
-            throw new CustomException(400, exceptions.DetailedError("json validation error", errorList))
+            throw new CustomException(400, exceptions.DetailedError(ErrorType.JsonValidation, errorList))
         }
       }
     }

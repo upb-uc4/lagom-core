@@ -12,7 +12,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError, ErrorType }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -261,7 +261,7 @@ class UserServiceImpl(
       if (authenticationUser.username != user.username) {
         throw new CustomException(
           422,
-          DetailedError("validation error", Seq(
+          DetailedError(ErrorType.Validation, Seq(
             SimpleError("authUser.username", "Username in authUser must match username in user"),
             SimpleError(userTypeString + ".username", "Username in user must match username in authUser")
           ))
@@ -271,7 +271,7 @@ class UserServiceImpl(
       if (user.username.trim.isEmpty) {
         throw new CustomException(
           422,
-          DetailedError("validation error", Seq(
+          DetailedError(ErrorType.Validation, Seq(
             SimpleError("authUser.username", "Username must not be empty"),
             SimpleError(userTypeString + ".username", "Username must not be empty")
           ))
@@ -293,7 +293,7 @@ class UserServiceImpl(
                   ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
                     .map[(ResponseHeader, User)] { _ =>
                       //the deletion of the user was successful after the error in the authentication service
-                      if (authenticationException.getPossibleErrorResponse.`type` == "validation error") {
+                      if (authenticationException.getPossibleErrorResponse.`type` == ErrorType.Validation) {
                         val detailedError = authenticationException.getPossibleErrorResponse.asInstanceOf[DetailedError]
                         throw new CustomException(
                           authenticationException.getErrorCode,
@@ -340,7 +340,7 @@ class UserServiceImpl(
             .flatMap { editErrors =>
               // Other users than admins can only edit specified fields
               if (editErrors.nonEmpty) {
-                throw new CustomException(422, DetailedError("uneditable fields", editErrors))
+                throw new CustomException(422, DetailedError(ErrorType.UneditableFields, editErrors))
               }
               else {
                 val ref = entityRef(user.username)

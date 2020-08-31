@@ -14,7 +14,7 @@ import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntryToMatriculationData, AddMatriculationData, GetMatriculationData }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -45,7 +45,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
         val message = rawMessage.trim
         val validationList = message.validate
         if (validationList.nonEmpty) {
-          throw new CustomException(422, DetailedError("validation error", validationList))
+          throw new CustomException(422, DetailedError(ErrorType.Validation, validationList))
         }
         userService.getStudent(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
           .flatMap { student =>

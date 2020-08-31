@@ -5,7 +5,7 @@ import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.authentication.impl.AuthenticationApplication
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.events.{ AuthenticationEvent, OnDelete, OnSet }
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, SimpleError, ErrorType }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected, RejectedWithError }
 import play.api.libs.json.{ Format, Json }
@@ -28,7 +28,7 @@ case class AuthenticationState(optEntry: Option[AuthenticationEntry]) {
           Effect.persist(OnSet(user)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", "Your request parameters did not validate", validationErrors)))
+          Effect.reply(replyTo)(RejectedWithError(422, DetailedError(ErrorType.Validation, "Your request parameters did not validate", validationErrors)))
         }
 
       case DeleteAuthentication(replyTo) => optEntry match {
