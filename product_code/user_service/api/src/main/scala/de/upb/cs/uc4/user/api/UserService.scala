@@ -84,8 +84,8 @@ trait UserService extends UC4Service {
         restCall(Method.PUT, pathPrefix + "/users/:username", updateUser _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDeleteGetPut _),
 
-        restCall(Method.GET, pathPrefix + "/role/:username", getRole _),
-        restCall(Method.OPTIONS, pathPrefix + "/role/:username", allowedGet _),
+        restCall(Method.GET, pathPrefix + "/users/:username/role", getRole _),
+        restCall(Method.OPTIONS, pathPrefix + "/users/:username/role", allowedGet _),
 
         restCall(Method.GET, pathPrefix + "/students?usernames", getAllStudents _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGet _),
@@ -109,8 +109,8 @@ trait UserService extends UC4Service {
         ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
 
-        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/role/\\E" + "([^/]+)"),
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/role/\\E" + "([^/]+)"),
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/role"""),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/role"""),
 
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/students\\E" + "(\\?([^\\/\\?]+))?"),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/students\\E" + "(\\?([^\\/\\?]+))?"),
