@@ -6,15 +6,22 @@ import akka.Done
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
+import org.scalatest.events.TestFailed
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{ Minutes, Seconds, Span }
+import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatest.{ Assertion, BeforeAndAfterAll }
+
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future }
+import scala.util.{ Failure, Success, Try }
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
@@ -38,7 +45,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
   override protected def afterAll(): Unit = server.stop()
 
-  def addAuthorizationHeader(): RequestHeader => RequestHeader = { header =>
+  def addAuthorizationHeader(username: String = "username", role: AuthenticationRole = AuthenticationRole.Admin): RequestHeader => RequestHeader = { header =>
     val time = Calendar.getInstance()
     time.add(Calendar.DATE, 1)
 
@@ -46,16 +53,57 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       Jwts.builder()
         .setSubject("login")
         .setExpiration(time.getTime)
-        .claim("username", "admin")
-        .claim("authenticationRole", "Admin")
+        .claim("username", username)
+        .claim("authenticationRole", role.toString)
         .signWith(SignatureAlgorithm.HS256, "changeme")
         .compact()
 
     header.withHeader("Cookie", s"login=$token")
   }
 
+  def prepare(courses: Seq[Course]): Future[Seq[Course]] = {
+    val createdCourses: Seq[Course] = courses.map { course =>
+      Await.result(client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course), 15.seconds)
+    }
+
+    eventually(timeout(Span(15, Seconds))) {
+      for {
+        courseIdsDatabase <- server.application.database.getAll
+      } yield {
+        courseIdsDatabase should contain theSameElementsAs createdCourses.map(_.courseId)
+      }
+    }.map(_ => createdCourses)
+  }
+
+  def deleteAllCourses(): Future[Assertion] = {
+    server.application.database.getAll.map(
+      _.map { courseId =>
+        val result = Await.result(client.deleteCourse(courseId).handleRequestHeader(addAuthorizationHeader()).invoke(), 5.seconds)
+        assert(result == Done)
+        result
+      }
+    ).flatMap { _ =>
+        eventually(timeout(Span(15, Seconds))) {
+          for {
+            courseNames <- server.application.database.getAll
+          } yield {
+            courseNames shouldBe empty
+          }
+        }
+      }
+  }
+
+  def cleanup[A](): PartialFunction[Try[A], Future[A]] = PartialFunction.fromFunction {
+    case Success(value) => deleteAllCourses().map { _ =>
+      value
+    }
+    case Failure(throwable) => deleteAllCourses().map { _ =>
+      throw throwable
+    }
+  }
+
   /** Tests only working if the whole instance is started */
-  "CourseService service" should {
+  "CourseService" should {
 
     "get all courses with no courses" in {
       client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
@@ -63,38 +111,38 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       }
     }
 
-    "create three courses" in {
-      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0).map {
-        answer => course0 = answer
-      }
-      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course1).map {
-        answer => course1 = answer
-      }
-      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course2).map {
-        answer => course2 = answer
-      }
-      eventually(timeout(Span(2, Minutes))) {
-        client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-          answer should contain allOf (course0, course1, course2)
-        }
+    "create a course" in {
+      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0).flatMap { createdCourse =>
+
+        eventually(timeout(Span(15, Seconds))) {
+          client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+            answer should contain theSameElementsAs Seq(createdCourse)
+          }
+        }.andThen(cleanup())
       }
     }
 
     "get all courses with matching names" in {
-      client.getAllCourses(Some("Course 1"), None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer should contain only (course1, course2)
+      prepare(Seq(course0, course1, course2)).flatMap { createdCourses =>
+        client.getAllCourses(Some("Course 1"), None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+          answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1, course2)
+        }.andThen(cleanup())
       }
     }
 
     "get all courses with matching lecturerIds" in {
-      client.getAllCourses(None, Some("11")).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer should contain only (course0, course1)
+      prepare(Seq(course0, course1, course2)).flatMap { createdCourses =>
+        client.getAllCourses(None, Some("11")).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+          answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course0, course1)
+        }.andThen(cleanup())
       }
     }
 
     "get all courses with matching names and lecturerIds" in {
-      client.getAllCourses(Some("Course 1"), Some("11")).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer should contain only course1
+      prepare(Seq(course0, course1, course2)).flatMap { createdCourses =>
+        client.getAllCourses(Some("Course 1"), Some("11")).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+          answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1)
+        }.andThen(cleanup())
       }
     }
 
@@ -106,12 +154,15 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "delete an existing course" in {
-      client.deleteCourse(course0.courseId).handleRequestHeader(addAuthorizationHeader()).invoke()
-        .map(answer => answer shouldBe ===(Done))
-      eventually(timeout(Span(2, Minutes))) {
-        client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-          answer should not contain course0
-        }
+      prepare(Seq(course2)).flatMap { createdCourses =>
+        client.deleteCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+              answer should not contain createdCourses.head
+            }
+          }
+        }.andThen(cleanup())
       }
     }
 
@@ -122,8 +173,10 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "find an existing course" in {
-      client.findCourseByCourseId(course1.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer should ===(course1)
+      prepare(Seq(course1)).flatMap { createdCourses =>
+        client.findCourseByCourseId(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+          answer should ===(createdCourses.head)
+        }.andThen(cleanup())
       }
     }
 
@@ -135,15 +188,17 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "update an existing course" in {
-      val course4 = course2.copy(courseDescription = "CHANGED DESCRIPTION")
-      client.updateCourse(course2.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course4).map { answer =>
-        answer should ===(Done)
-      }
-      eventually(timeout(Span(30, Seconds))) {
-        client.findCourseByCourseId(course4.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-          answer should ===(course4)
+      prepare(Seq(course2)).flatMap { createdCourses =>
+        val course4 = createdCourses.head.copy(courseDescription = "CHANGED DESCRIPTION")
+        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course4).flatMap { _ =>
+          eventually(timeout(Span(30, Seconds))) {
+            client.findCourseByCourseId(course4.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+              answer should ===(course4)
+            }
+          }.andThen(cleanup())
         }
       }
     }
+
   }
 }
