@@ -111,8 +111,8 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
           dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
 
           (ResponseHeader(200, MessageProtocol.empty, List(
-            ("Set-Cookie", s"refresh=$refreshToken; SameSite=Strict; Secure; HttpOnly; Expires=${dateFormat.format(nowRefresh.getTime)} ;;" +
-              s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=${logoutTimer * 60}")
+            ("Set-Cookie", s"refresh=$refreshToken; SameSite=Lax; Secure; HttpOnly; Expires=${dateFormat.format(nowRefresh.getTime)} ;;" +
+              s"login=$loginToken; SameSite=Lax; Secure; HttpOnly; Max-Age=${logoutTimer * 60}")
           )), Done)
         }
       case None =>
@@ -145,7 +145,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
 
             Future.successful(
               (ResponseHeader(200, MessageProtocol.empty, List(
-                ("Set-Cookie", s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=${logoutTimer * 60}")
+                ("Set-Cookie", s"login=$loginToken; SameSite=Lax; Secure; HttpOnly; Max-Age=${logoutTimer * 60}")
               )), JsonUsername(username))
             )
           }

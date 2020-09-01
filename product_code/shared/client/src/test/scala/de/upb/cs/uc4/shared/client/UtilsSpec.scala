@@ -24,6 +24,7 @@ class UtilsSpec extends AnyWordSpecLike with Matchers with PrivateMethodTester {
     "validate correct semester strings" in {
       "SS2020".validateSemester shouldBe empty
       "WS2020/21".validateSemester shouldBe empty
+      "WS2099/00".validateSemester shouldBe empty
     }
 
     "not validate incorrect semester strings" in {

@@ -1,4 +1,4 @@
-# [v.0.6.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.6.0...user-v0.6.1) (2020-XX-XX)
+# [v.0.7.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.6.0...user-v0.7.0) (2020-09-01)
 ## Feature
  - Added custom deserialization exception
  - Merged most endpoints in "students", "lecturers" and "admins" into "users"
@@ -15,7 +15,7 @@
 - Added phone number field to all users
 - Added latestImmatriculation to student
 - Added function to update latestImmatriculation
-- Removed now obsolet fields (fieldOfStudy, semesterCount, immatriculationStatus)
+- Removed now obsolete fields (fieldOfStudy, semesterCount, immatriculationStatus)
 ## Refactor
 - Splitted editableFields method into two methods, one for permission check, one for possibility check
 ## Bugfix
@@ -28,4 +28,6 @@
 ## Refactor
 - Changed exceptions to use these standard exceptions wherever possible
 ## Bugfix
+- Fixed a bug that allowed houseNumbers to be empty
+- Fixed a bug that allowed "01" and "001" as matriculationId's, while not recognising them as the same number
 - Fixed ambigous endpoints caused by UC4Service Trait

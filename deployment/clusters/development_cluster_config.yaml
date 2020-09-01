@@ -5,10 +5,14 @@ nodes:
   extraMounts:
     - hostPath: /data/development/database
       containerPath: /mnt/database
+    - hostPath: /data/development/hyperledger
+      containerPath: /mnt/hyperledger  
 - role: control-plane
   extraMounts:
     - hostPath: /data/development/database
       containerPath: /mnt/database
+    - hostPath: /data/development/hyperledger
+      containerPath: /mnt/hyperledger    
   extraPortMappings:
   - containerPort: 30000
     hostPort: 9002

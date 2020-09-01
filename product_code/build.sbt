@@ -2,7 +2,6 @@ import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
 lagomServiceEnableSsl in ThisBuild := true
-coverageEnabled in ThisBuild := true
 val hyperledgerApiVersion = "v0.6.1"
 
 // The project uses PostgreSQL
@@ -136,7 +135,7 @@ lazy val course_service = (project in file("course_service/impl"))
   )
   .settings(commonSettings("course_service"))
   .settings(dockerSettings)
-  .settings(version := "v0.5.0")
+  .settings(version := "v0.7.0")
   .dependsOn(course_service_api, shared_server)
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
@@ -154,7 +153,7 @@ lazy val authentication_service = (project in file("authentication_service/impl"
   )
   .settings(commonSettings("authentication_service"))
   .settings(dockerSettings)
-  .settings(version := "v0.5.0")
+  .settings(version := "v0.7.1")
   .dependsOn(authentication_service_api, user_service_api % withTests, shared_server)
 
 lazy val user_service_api = (project in file("user_service/api"))
@@ -172,7 +171,7 @@ lazy val user_service = (project in file("user_service/impl"))
   )
   .settings(commonSettings("user_service"))
   .settings(dockerSettings)
-  .settings(version := "v0.5.1")
+  .settings(version := "v0.7.0")
   .dependsOn(user_service_api % withTests, shared_server, shared_client)
 
 lazy val matriculation_service_api = (project in file("matriculation_service/api"))
@@ -190,5 +189,5 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   )
   .settings(commonSettings("matriculation_service"))
   .settings(dockerSettings)
-  .settings(version := "v0.5.0")
+  .settings(version := "v0.7.0")
   .dependsOn(user_service_api % withTests, shared_server, shared_client, matriculation_service_api, hyperledger_component)
