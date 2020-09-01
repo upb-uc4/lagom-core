@@ -1,7 +1,7 @@
 name: Lagom Deployment Pipeline
 
 on:
-  push:
+  create:
     tags: [ '*-v*' ]
 
 jobs:
@@ -27,14 +27,14 @@ jobs:
     #change .sbtopts
     - name: Add -J to .sbtops
       run: |
-        pushd ./product_code/lagom
+        pushd ./product_code
         echo "-J-Xms512M -J-Xmx4096M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
         popd
     
     # run sbt docker publish
     - name: Deploy
       run: |
-        pushd ./product_code/lagom
+        pushd ./product_code
         tag=${GITHUB_REF#refs/tags/}
         tag=${tag%-v*}
         echo "##########################"

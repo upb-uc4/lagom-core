@@ -1,0 +1,83 @@
+apiVersion: "apps/v1"
+kind: Deployment
+metadata:
+  namespace: uc4-lagom
+  name: user
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: user
+
+  template:
+    metadata:
+      namespace: uc4-lagom
+      labels:
+        app: user
+    spec:
+      containers:
+        - name: user
+          image: "uc4official/user_service:latest"
+          imagePullPolicy: Always
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf"
+            - name: APPLICATION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: application-secret
+                  key: secret
+            - name: POSTGRESQL_URL
+              value: "jdbc:postgresql://postgres.postgres/uc4user"
+            - name: POSTGRESQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-user
+                  key: username
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-user
+                  key: password
+            - name: KAFKA_SERVICE_NAME
+              value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
+            - name: REQUIRED_CONTACT_POINT_NR
+              value: "1"
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 0.25
+              memory: 512M
+          ports:
+            - name: management
+              containerPort: 8558
+          readinessProbe:
+            httpGet:
+              path: "/ready"
+              port: management
+            periodSeconds: 10
+            failureThreshold: 10
+            initialDelaySeconds: 20
+          livenessProbe:
+            httpGet:
+              path: "/alive"
+              port: management
+            periodSeconds: 10
+            failureThreshold: 10
+            initialDelaySeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: uc4-lagom
+  name: user
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 9000
+  selector:
+    app: user
+  type: LoadBalancer
