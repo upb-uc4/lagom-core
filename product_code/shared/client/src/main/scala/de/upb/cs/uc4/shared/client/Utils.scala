@@ -21,9 +21,9 @@ object Utils {
         errors :+= SimpleError("semester", "Semester must be of the format \"SSyyyy\" for summer, \"WSyyyy/yy\" for winter.")
       }
       else {
-        semester match{
+        semester match {
           //Check, if in WSYYXX/ZZ it holds, that ZZ = XX+1. No such check for SS necessary
-          case s"WS${x}/${y}" if(x.toInt+1) % 100 != y.toInt =>
+          case s"WS${ x }/${ y }" if (x.toInt + 1) % 100 != y.toInt =>
             errors :+= SimpleError("semester", "Winter semester must consist of two consecutive years.")
           case _ =>
         }
