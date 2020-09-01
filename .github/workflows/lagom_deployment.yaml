@@ -2,9 +2,7 @@ name: Lagom Deployment Pipeline
 
 on:
   push:
-    tags:
-      - v0
-      - v1
+    tags: [ '*-v*' ]
 
 jobs:
   deploy:
@@ -16,12 +14,6 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: Check out source repository
       uses: actions/checkout@v2
-    
-    # Set up Node
-    - name: Set up Node
-      uses: actions/setup-node@v1
-      with:
-        node-version: '12'
         
     # Set up JDK
     - name: Set up JDK 1.8
@@ -43,12 +35,10 @@ jobs:
     - name: Deploy
       run: |
         pushd ./product_code/lagom
+        tag=${GITHUB_REF#refs/tags/}
+        tag=${tag%-v*}
         echo "##########################"
-        echo "#   deploy services      #"
+        echo "    deploy ${tag}    "
         echo "##########################"
-        sbt authentication_service/docker:publish
-        sbt user_service/docker:publish
-        sbt course_service/docker:publish
-        sbt hyperledger_service/docker:publish
-        sbt hl_course_service/docker:publish
+        sbt ${tag}_service/docker:publish
         popd

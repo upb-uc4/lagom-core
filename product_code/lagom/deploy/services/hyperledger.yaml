@@ -1,6 +1,7 @@
 apiVersion: "apps/v1"
 kind: Deployment
 metadata:
+  namespace: uc4-lagom
   name: hyperledger
 spec:
   replicas: 1
@@ -11,12 +12,14 @@ spec:
 
   template:
     metadata:
+      namespace: uc4-lagom
       labels:
         app: hyperledger
     spec:
       containers:
         - name: hyperledger
           image: "uc4official/hyperledger_service:latest"
+          imagePullPolicy: Always
           env:
             - name: JAVA_OPTS
               value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf"
@@ -60,6 +63,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: uc4-lagom
   name: hyperledger
 spec:
   ports:

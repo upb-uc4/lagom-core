@@ -11,16 +11,25 @@ case class Admin(username: String,
                  lastName: String,
                  picture: String,
                  email: String,
+                 phoneNumber: String,
                  birthDate: String) extends User {
 
-  def trim: Admin = {
-    copy(username.trim, role, address.trim, firstName.trim, lastName.trim,
-      picture.trim, email.trim, birthDate.trim)
-  }
+  def copyUser(username: String = this.username,
+               role: Role = this.role,
+               address: Address = this.address,
+               firstName: String = this.firstName,
+               lastName: String = this.lastName,
+               picture: String = this.picture,
+               email: String = this.email,
+               phoneNumber: String = this.phoneNumber,
+               birthDate: String = this.birthDate): Admin =
+    copy(username, role, address, firstName, lastName, picture, email, phoneNumber, birthDate)
 
-  def clean: Admin = {
-    trim.copy(email = email.toLowerCase)
-  }
+  override def trim: Admin = super.trim.asInstanceOf[Admin]
+
+  override def toPublic: Admin = super.toPublic.asInstanceOf[Admin]
+
+  override def clean: Admin = super.clean.asInstanceOf[Admin]
 }
 
 object Admin {

@@ -15,7 +15,7 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.{PostMessageAdmin, PostMessageLecturer, PostMessageStudent}
 import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student}
-import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername}
+import de.upb.cs.uc4.user.model.{GetAllUsersResponse, JsonRole, JsonUsername, MatriculationUpdate}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
@@ -141,11 +141,11 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
 class UserServiceStub(deletionStub: ProducerStub[JsonUsername]) extends UserService {
 
-  override def getAllUsers: ServiceCall[NotUsed, GetAllUsersResponse] = ServiceCall { _ => Future.successful(null) }
+  override def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse] = ServiceCall { _ => Future.successful(null) }
 
   override def deleteUser(username: String): ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
-  override def getAllStudents: ServiceCall[NotUsed, Seq[Student]] = ServiceCall { _ => Future.successful(Seq()) }
+  override def getAllStudents(usernames: Option[String]): ServiceCall[NotUsed, Seq[Student]] = ServiceCall { _ => Future.successful(Seq()) }
 
   override def addStudent(): ServiceCall[PostMessageStudent, Student] = ServiceCall { _ => Future.successful(null) }
 
@@ -153,7 +153,7 @@ class UserServiceStub(deletionStub: ProducerStub[JsonUsername]) extends UserServ
 
   override def updateStudent(username: String): ServiceCall[Student, Done] = ServiceCall { _ => Future.successful(Done) }
 
-  override def getAllLecturers: ServiceCall[NotUsed, Seq[Lecturer]] = ServiceCall { _ => Future.successful(Seq()) }
+  override def getAllLecturers(usernames: Option[String]): ServiceCall[NotUsed, Seq[Lecturer]] = ServiceCall { _ => Future.successful(Seq()) }
 
   override def addLecturer(): ServiceCall[PostMessageLecturer, Lecturer] = ServiceCall { _ => Future.successful(null) }
 
@@ -161,7 +161,7 @@ class UserServiceStub(deletionStub: ProducerStub[JsonUsername]) extends UserServ
 
   override def updateLecturer(username: String): ServiceCall[Lecturer, Done] = ServiceCall { _ => Future.successful(Done) }
 
-  override def getAllAdmins: ServiceCall[NotUsed, Seq[Admin]] = ServiceCall { _ => Future.successful(Seq()) }
+  override def getAllAdmins(usernames: Option[String]): ServiceCall[NotUsed, Seq[Admin]] = ServiceCall { _ => Future.successful(Seq()) }
 
   override def addAdmin(): ServiceCall[PostMessageAdmin, Admin] = ServiceCall { _ => Future.successful(null) }
 
@@ -182,4 +182,6 @@ class UserServiceStub(deletionStub: ProducerStub[JsonUsername]) extends UserServ
   override def userDeletedTopic(): Topic[JsonUsername] = deletionStub.topic
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { _ => Future.successful(Done) }
 }

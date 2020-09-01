@@ -47,7 +47,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
         )
       )
       .map(seq => seq
-        .filter(course => courseName.isEmpty || course.courseName == courseName.get)
+        .filter { course =>
+          //If courseName query is set, we check that every whitespace seperated parameter is contained
+          courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
+        }
         .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
       )
   }
@@ -58,7 +61,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
       (username, role) =>
         ServerServiceCall { (_, courseProposal) =>
           if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username){
-            throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
+            throw CustomException.OwnerMismatch
           }
           // Generate unique ID for the course to add
           val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
@@ -70,7 +73,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
               case Accepted => // Creation Successful
                 (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
               case RejectedWithError(code, errorResponse) =>
-                throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                throw new CustomException(code, errorResponse)
             }
         }
     }
@@ -84,21 +87,18 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).flatMap {
             case Some(course) =>
               if (role == AuthenticationRole.Lecturer && username != course.lecturerId) {
-                throw new CustomException(TransportErrorCode(403, 1003, "Error"),
-                  GenericError("owner mismatch"))
+                throw CustomException.OwnerMismatch
               } else {
                 entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
                   .map {
                     case Accepted => // OK
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case Rejected(reason) => // Not Found
-                      throw new CustomException(TransportErrorCode(500, 1003, "Error"),
-                        GenericError("internal server error"))
+                    case Rejected(_) => // Not Found
+                      throw CustomException.InternalServerError
                   }
               }
             case None =>
-              throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-                GenericError("key not found"))
+              throw CustomException.NotFound
           }
         }
     }
@@ -107,8 +107,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
-      case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"),
-        GenericError("key not found"))
+      case None => throw CustomException.NotFound
     }
   }
 
@@ -120,8 +119,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
           (_, updatedCourse) =>
             // Look up the sharded entity (aka the aggregate instance) for the given ID.
             if (id != updatedCourse.courseId) {
-              throw new CustomException(TransportErrorCode(400, 1003, "Error"),
-                GenericError("path parameter mismatch"))
+              throw CustomException.PathParameterMismatch
             }
 
             val ref = entityRef(id)
@@ -130,7 +128,7 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
             courseBefore.flatMap{
               case Some(course) =>
                 if(role == AuthenticationRole.Lecturer && course.lecturerId != username){
-                  throw new CustomException(TransportErrorCode(403, 1003, "Error"), GenericError("owner mismatch"))
+                  throw CustomException.OwnerMismatch
                 }
                 else{
                   ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
@@ -138,10 +136,10 @@ class CourseServiceImpl(clusterSharding: ClusterSharding,
                       case Accepted => // Update Successful
                         (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                       case RejectedWithError(code, errorResponse) =>
-                        throw new CustomException(TransportErrorCode(code, 1003, "Error"), errorResponse)
+                        throw new CustomException(code, errorResponse)
                     }
                 }
-              case None => throw new CustomException(TransportErrorCode(404, 1003, "Error"), GenericError("key not found"))
+              case None => throw CustomException.NotFound
             }
         }
     }
