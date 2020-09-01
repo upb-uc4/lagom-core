@@ -13,18 +13,20 @@ import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUs
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
+import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, Role }
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{ Minutes, Span }
+import org.scalatest.time.{ Minutes, Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ Assertion, BeforeAndAfterAll }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
+import scala.util.{ Failure, Success, Try }
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
@@ -46,7 +48,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
   override protected def afterAll(): Unit = server.stop()
 
-  def addAuthorizationHeader(username: String): RequestHeader => RequestHeader = { header =>
+  def addAuthorizationHeader(username: String = "admin"): RequestHeader => RequestHeader = { header =>
 
     var role = AuthenticationRole.Admin
 
@@ -72,18 +74,19 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     header.withHeader("Cookie", s"login=$token")
   }
 
-  def prepare(users: Seq[User]): Future[Assertion] = {
-    users.foreach { user =>
+  def prepare(users: Seq[User]): Future[Seq[User]] = {
+    val createdUsers = users.map { user =>
+      val newUsername = user.username
       val postMessage = user match {
-        case s: Student  => PostMessageStudent(AuthenticationUser(s.username, s.username, AuthenticationRole.Student), s)
-        case l: Lecturer => PostMessageLecturer(AuthenticationUser(l.username, l.username, AuthenticationRole.Lecturer), l)
-        case a: Admin    => PostMessageAdmin(AuthenticationUser(a.username, a.username, AuthenticationRole.Admin), a)
+        case s: Student  => PostMessageStudent(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), s.copy(username = newUsername))
+        case l: Lecturer => PostMessageLecturer(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Lecturer), l.copy(username = newUsername))
+        case a: Admin    => PostMessageAdmin(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), a.copy(username = newUsername))
       }
-      Await.result(client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(postMessage), 5.seconds) shouldBe a[User]
+      Await.result(client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(postMessage), 5.seconds)
     }
     eventually(timeout(Span(2, Minutes))) {
-      checkUserCreation(users)
-    }
+      checkUserCreation(createdUsers)
+    }.map { _ => createdUsers }
   }
 
   def checkUserCreation(users: Seq[User]): Future[Assertion] = {
@@ -112,42 +115,45 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
   }
 
-  def cleanup(users: Seq[User]): Future[Assertion] = {
-    users.foreach {
-      user =>
-        Await.result(client.deleteUser(user.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke(), 5.seconds) should ===(Done)
-    }
-    eventually(timeout(Span(2, Minutes))) {
-      checkUserDeletionDatabase(users)
+  def resetUserDatabase(): Future[Assertion] = {
+    //Start deletion process
+    resetUserTable(Role.Student)
+    resetUserTable(Role.Lecturer)
+    resetUserTable(Role.Admin)
+
+    //Check for 15 seconds, if the deletion was successful
+    eventually(timeout(Span(15, Seconds))) {
+
+      for {
+        usernamesStudent <- server.application.database.getAll(Role.Student)
+        usernamesLecturer <- server.application.database.getAll(Role.Lecturer)
+        usernamesAdmin <- server.application.database.getAll(Role.Admin)
+      } yield {
+        usernamesStudent ++ usernamesLecturer ++ usernamesAdmin should contain theSameElementsAs Seq("student", "lecturer", "admin")
+      }
     }
   }
 
-  def checkUserDeletionDatabase(users: Seq[User]): Future[Assertion] = {
-    val searchList = users.map(user => user.username)
+  def resetUserTable(role: Role): Future[Seq[Done]] = {
+    val roleString = role.toString.toLowerCase
+    server.application.database.getAll(role).map(
+      _.filter(_ != roleString).map { username =>
+        val result = Await.result(client.deleteUser(username).handleRequestHeader(addAuthorizationHeader()).invoke(), 5.seconds)
+        assert(result == Done)
+        result
+      }
+    )
+  }
 
-    for {
-      studentList <- if (users.exists(_.role == Role.Student)) {
-        server.application.database.getAll(Role.Student)
+  def cleanup[Assertion](): PartialFunction[Try[Assertion], Future[Assertion]] = PartialFunction.fromFunction {
+    case Success(value) =>
+      resetUserDatabase().map { _ =>
+        value
       }
-      else {
-        Future.successful(Seq())
+    case Failure(throwable) =>
+      resetUserDatabase().map { _ =>
+        throw throwable
       }
-      lecturerList <- if (users.exists(_.role == Role.Lecturer)) {
-        server.application.database.getAll(Role.Lecturer)
-      }
-      else {
-        Future.successful(Seq())
-      }
-      adminList <- if (users.exists(_.role == Role.Admin)) {
-        server.application.database.getAll(Role.Admin)
-      }
-      else {
-        Future.successful(Seq())
-      }
-    } yield {
-      val allUsernames = studentList ++ lecturerList ++ adminList
-      allUsernames should contain noElementsOf searchList
-    }
   }
 
   //Additional variables needed for some tests
@@ -162,7 +168,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   "UserService service" should {
 
     "get all users with default users" in {
-      eventually(timeout(Span(2, Minutes))) {
+      eventually(timeout(Span(15, Seconds))) {
         client.getAllUsers(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
 
           answer.admins should have size 1
@@ -175,14 +181,11 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     //ADD TESTS
     "add a student" in {
       client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(PostMessageStudent(student0Auth, student0))
-      eventually(timeout(Span(2, Minutes))) {
+      eventually(timeout(Span(15, Seconds))) {
         client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
           answer should contain(student0)
         }
-      }.flatMap {
-        result =>
-          cleanup(Seq(student0)).map(_ => result)
-      }
+      }.andThen(cleanup())
     }
 
     "fail on adding a user with different username in authUser" in {
@@ -190,122 +193,116 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
         .failed.map {
           answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
-        }
+        }.andThen(cleanup())
     }
 
     "fail on adding an already existing User" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
           .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
-            cleanup(Seq(admin0)).map { _ =>
-              answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
-            }
+            answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
           }
-      }
+      }.andThen(cleanup())
     }
 
     //GET TESTS
     "fetch the information of a User as an Admin" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { answer =>
-          cleanup(Seq(student0)).map { _ =>
-            answer should ===(student0)
-          }
+          answer should ===(student0)
         }
-      }
+      }.andThen(cleanup())
     }
 
     "fetch the information of a User as the User (non-Admin) himself" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().flatMap { answer =>
-          cleanup(Seq(student0)).map { _ =>
-            answer should ===(student0)
-          }
+
+          answer should ===(student0)
+
         }
-      }
+      }.andThen(cleanup())
     }
 
     "fetch the public information of a User as another User (non-Admin)" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
-          cleanup(Seq(student0)).map { _ =>
-            answer should ===(student0.toPublic)
-          }
+
+          answer should ===(student0.toPublic)
+
         }
-      }
+      }.andThen(cleanup())
     }
 
     "fetch the public information of all specified Students, as a non-Admin" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.getAllStudents(Some(student0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
-          cleanup(Seq(student0)).map { _ =>
-            answer should contain theSameElementsAs Seq(student0.toPublic)
-          }
+
+          answer should contain theSameElementsAs Seq(student0.toPublic)
+
         }
-      }
+      }.andThen(cleanup())
     }
     "fetch the public information of all specified Lecturers, as a non-Admin" in {
       prepare(Seq(lecturer0)).flatMap { _ =>
         client.getAllLecturers(Some(lecturer0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
-          cleanup(Seq(lecturer0)).map { _ =>
-            answer should contain theSameElementsAs Seq(lecturer0.toPublic)
-          }
+
+          answer should contain theSameElementsAs Seq(lecturer0.toPublic)
+
         }
-      }
+      }.andThen(cleanup())
     }
     "fetch the public information of all specified Admins, as a non-Admin" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.getAllAdmins(Some(admin0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
-          cleanup(Seq(admin0)).map { _ =>
-            answer should contain theSameElementsAs Seq(admin0.toPublic)
-          }
+
+          answer should contain theSameElementsAs Seq(admin0.toPublic)
+
         }
-      }
+      }.andThen(cleanup())
     }
     "fetch the information of all specified Students, as an Admin" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.getAllStudents(Some(student0.username)).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { answer =>
-          cleanup(Seq(student0)).map { _ =>
-            answer should contain theSameElementsAs Seq(student0)
-          }
+
+          answer should contain theSameElementsAs Seq(student0)
+
         }
-      }
+      }.andThen(cleanup())
     }
     "fetch the information of all specified Lecturers, as an Admin" in {
       prepare(Seq(lecturer0)).flatMap { _ =>
         client.getAllLecturers(Some(lecturer0.username)).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { answer =>
-          cleanup(Seq(lecturer0)).map { _ =>
-            answer should contain theSameElementsAs Seq(lecturer0)
-          }
+
+          answer should contain theSameElementsAs Seq(lecturer0)
+
         }
-      }
+      }.andThen(cleanup())
     }
     "fetch the information of all specified Admins, as an Admin" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.getAllAdmins(Some(admin0.username)).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { answer =>
-          cleanup(Seq(admin0)).map { _ =>
-            answer should contain theSameElementsAs Seq(admin0)
-          }
+          answer should contain theSameElementsAs Seq(admin0)
         }
-      }
+      }.andThen(cleanup())
     }
     "fetch the public information of all specified Users, as a non-Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
         client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
-          cleanup(Seq(student0, lecturer0, admin0)).map { _ =>
-            answer should ===(GetAllUsersResponse(Seq(student0.toPublic), Seq(lecturer0.toPublic), Seq(admin0.toPublic)))
-          }
+
+          answer should ===(GetAllUsersResponse(Seq(student0.toPublic), Seq(lecturer0.toPublic), Seq(admin0.toPublic)))
+
         }
-      }
+      }.andThen(cleanup())
     }
     "fetch the information of all specified Users, as an Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
         client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username)).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { answer =>
-          cleanup(Seq(student0, lecturer0, admin0)).map { _ =>
-            answer should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
-          }
+
+          answer should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
+
         }
-      }
+      }.andThen(cleanup())
     }
     "find a non-existing User" in {
       client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed.map { answer =>
@@ -316,11 +313,11 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "get the role of a user" in {
       prepare(Seq(lecturer0)).flatMap { _ =>
         client.getRole(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { answer =>
-          cleanup(Seq(lecturer0)).map { _ =>
-            answer.role shouldBe Role.Lecturer
-          }
+
+          answer.role shouldBe Role.Lecturer
+
         }
-      }
+      }.andThen(cleanup())
     }
 
     //UPDATE TESTS
@@ -337,11 +334,11 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           .invoke(admin0.copy(firstName = "KLAUS")).flatMap { _ =>
             client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
           }.flatMap { answer =>
-            cleanup(Seq(admin0)).map { _ =>
-              answer.firstName shouldBe "KLAUS"
-            }
+
+            answer.firstName shouldBe "KLAUS"
+
           }
-      }
+      }.andThen(cleanup())
     }
 
     "update a user as the user himself" in {
@@ -350,35 +347,35 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           .invoke(lecturer0Updated).flatMap { _ =>
             client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
           }.flatMap { answer =>
-            cleanup(Seq(lecturer0)).map { _ =>
-              answer should ===(lecturer0Updated)
-            }
+
+            answer should ===(lecturer0Updated)
+
           }
-      }
+      }.andThen(cleanup())
     }
 
     "not update uneditable fields as an admin" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedUneditable.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedUneditable.username))
           .invoke(student0UpdatedUneditable).failed.flatMap { answer =>
-            cleanup(Seq(student0)).map { _ =>
-              answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
-                have length uneditableErrorSize
-            }
+
+            answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+              have length uneditableErrorSize
+
           }
-      }
+      }.andThen(cleanup())
     }
 
     "not update protected fields as the user himself" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedProtected.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedProtected.username))
           .invoke(student0UpdatedProtected).failed.flatMap { answer =>
-            cleanup(Seq(student0)).map { _ =>
-              answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
-                have length protectedErrorSize
-            }
+
+            answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+              have length protectedErrorSize
+
           }
-      }
+      }.andThen(cleanup())
     }
 
     //DELETE TESTS
@@ -395,7 +392,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         }.map { answer =>
           answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
         }
-      }
+      }.andThen(cleanup())
     }
   }
 }
