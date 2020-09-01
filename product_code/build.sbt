@@ -153,7 +153,7 @@ lazy val authentication_service = (project in file("authentication_service/impl"
   )
   .settings(commonSettings("authentication_service"))
   .settings(dockerSettings)
-  .settings(version := "v0.7.0")
+  .settings(version := "v0.7.1")
   .dependsOn(authentication_service_api, user_service_api % withTests, shared_server)
 
 lazy val user_service_api = (project in file("user_service/api"))
