@@ -12,7 +12,7 @@
 - Added phone number field to all users
 - Added latestImmatriculation to student
 - Added function to update latestImmatriculation
-- Removed now obsolet fields (fieldOfStudy, semesterCount, immatriculationStatus)
+- Removed now obsolete fields (fieldOfStudy, semesterCount, immatriculationStatus)
 ## Refactor
 - Splitted editableFields method into two methods, one for permission check, one for possibility check
 ## Bugfix
@@ -25,4 +25,6 @@
 ## Refactor
 - Changed exceptions to use these standard exceptions wherever possible
 ## Bugfix
+- Fixed a bug that allowed houseNumbers to be empty
+- Fixed a bug that allowed "01" and "001" as matriculationId's, while not recognising them as the same number
 - Fixed ambigous endpoints caused by UC4Service Trait

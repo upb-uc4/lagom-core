@@ -49,7 +49,7 @@ jobs:
         echo "##################################"
         echo "#  Starting Tests with Coverage  #"
         echo "##################################"
-        sbt test coverageReport coverageAggregate 
+        sbt coverage test coverageReport coverageAggregate 
         popd
         
     - name: Scalatest multiproject HTML merger
