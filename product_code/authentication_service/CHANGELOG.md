@@ -1,4 +1,4 @@
-# [v.0.6.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.6.0...authentication-v0.6.1) (2020-XX-XX)
+# [v.0.7.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.6.0...authentication-v0.7.0) (2020-09-01)
 ## Feature
  - Added custom deserialization exceptions
  - Switch to JWT Token
