@@ -110,6 +110,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
           val dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
           dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
 
+          // SameSite restriction set to strict
           (ResponseHeader(200, MessageProtocol.empty, List(
             ("Set-Cookie", s"refresh=$refreshToken; SameSite=Strict; Secure; HttpOnly; Expires=${dateFormat.format(nowRefresh.getTime)} ;;" +
               s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=${logoutTimer * 60}")
