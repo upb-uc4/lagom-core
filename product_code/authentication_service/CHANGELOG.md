@@ -1,6 +1,6 @@
 # [v.0.7.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.7.0...authentication-v0.7.1) (2020-09-01)
 ## Feature
- - JWT Token uses now Lax Same Site restrictuin
+ - JWT Token uses now Strict Same Site restriction again
 ## Refactor
 ## Bugfix
 
