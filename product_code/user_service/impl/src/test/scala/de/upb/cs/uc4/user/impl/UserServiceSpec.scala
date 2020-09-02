@@ -22,16 +22,15 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Minutes, Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.{ Assertion, BeforeAndAfterAll }
+import org.scalatest.{ Assertion, BeforeAndAfterAll, BeforeAndAfterEach }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
-import scala.util.{ Failure, Success, Try }
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
   */
-class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
+class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers with BeforeAndAfterEach {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -45,6 +44,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val client: UserService = server.serviceClient.implement[UserService]
 
   val deletionTopic: Source[JsonUsername, _] = client.userDeletedTopic().subscribe.atMostOnceSource
+
+  //override protected def afterEach(): Unit = Await.result(cleanup2(), 5.seconds)
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -117,42 +118,53 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
   def resetUserDatabase(): Future[Assertion] = {
     //Start deletion process
-    resetUserTable(Role.Student)
-    resetUserTable(Role.Lecturer)
-    resetUserTable(Role.Admin)
-
-    //Check for 15 seconds, if the deletion was successful
-    eventually(timeout(Span(15, Seconds))) {
-
-      for {
-        usernamesStudent <- server.application.database.getAll(Role.Student)
-        usernamesLecturer <- server.application.database.getAll(Role.Lecturer)
-        usernamesAdmin <- server.application.database.getAll(Role.Admin)
-      } yield {
-        usernamesStudent ++ usernamesLecturer ++ usernamesAdmin should contain theSameElementsAs Seq("student", "lecturer", "admin")
+    val a = for {
+      _ <- resetUserTable(Role.Student)
+      _ <- resetUserTable(Role.Lecturer)
+      _ <- resetUserTable(Role.Admin)
+    } yield {
+      eventually(timeout(Span(15, Seconds))) {
+        for {
+          usernamesStudent <- server.application.database.getAll(Role.Student)
+          usernamesLecturer <- server.application.database.getAll(Role.Lecturer)
+          usernamesAdmin <- server.application.database.getAll(Role.Admin)
+        } yield {
+          usernamesStudent ++ usernamesLecturer ++ usernamesAdmin should contain theSameElementsAs Seq("student", "lecturer", "admin")
+        }
       }
     }
+    a.flatMap(result => result)
   }
 
   def resetUserTable(role: Role): Future[Seq[Done]] = {
+    // When role is set to Role.Student, we don't want to delete the default student with username "student"
+    // For Lecturer and Admin as well
     val roleString = role.toString.toLowerCase
-    server.application.database.getAll(role).map(
-      _.filter(_ != roleString).map { username =>
-        val result = Await.result(client.deleteUser(username).handleRequestHeader(addAuthorizationHeader()).invoke(), 5.seconds)
-        assert(result == Done)
-        result
+    server.application.database.getAll(role)
+    val futureUserList: Future[Seq[User]] = role match {
+      case Role.Student  => client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
+      case Role.Lecturer => client.getAllLecturers(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
+      case Role.Admin    => client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke()
+    }
+    futureUserList.map {
+      _.filter(_.username != roleString).map { user =>
+        client.deleteUser(user.username).handleRequestHeader(addAuthorizationHeader()).invoke()
       }
-    )
+    }.flatMap { list =>
+      Future.sequence(list)
+    }
   }
 
-  def cleanup[Assertion](): PartialFunction[Try[Assertion], Future[Assertion]] = PartialFunction.fromFunction {
-    case Success(value) =>
-      resetUserDatabase().map { _ =>
-        value
+  def cleanupOnFailure(): PartialFunction[Throwable, Future[Assertion]] = PartialFunction.fromFunction { x =>
+    resetUserDatabase()
+      .map { _ =>
+        throw x
       }
-    case Failure(throwable) =>
-      resetUserDatabase().map { _ =>
-        throw throwable
+  }
+  def cleanupOnSuccess(value: Assertion): Future[Assertion] = {
+    resetUserDatabase()
+      .map { _ =>
+        value
       }
   }
 
@@ -185,7 +197,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader("admin")).invoke().map { answer =>
           answer should contain(student0)
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "fail on adding a user with different username in authUser" in {
@@ -193,7 +206,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
         .failed.map {
           answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
-        }.andThen(cleanup())
+        }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "fail on adding an already existing User" in {
@@ -202,7 +216,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
             answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
           }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+
     }
 
     //GET TESTS
@@ -211,7 +227,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { answer =>
           answer should ===(student0)
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "fetch the information of a User as the User (non-Admin) himself" in {
@@ -221,7 +238,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer should ===(student0)
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "fetch the public information of a User as another User (non-Admin)" in {
@@ -231,7 +249,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer should ===(student0.toPublic)
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "fetch the public information of all specified Students, as a non-Admin" in {
@@ -241,7 +260,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer should contain theSameElementsAs Seq(student0.toPublic)
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
     "fetch the public information of all specified Lecturers, as a non-Admin" in {
       prepare(Seq(lecturer0)).flatMap { _ =>
@@ -250,7 +270,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer should contain theSameElementsAs Seq(lecturer0.toPublic)
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
     "fetch the public information of all specified Admins, as a non-Admin" in {
       prepare(Seq(admin0)).flatMap { _ =>
@@ -259,7 +280,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer should contain theSameElementsAs Seq(admin0.toPublic)
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
     "fetch the information of all specified Students, as an Admin" in {
       prepare(Seq(student0)).flatMap { _ =>
@@ -268,7 +290,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer should contain theSameElementsAs Seq(student0)
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
     "fetch the information of all specified Lecturers, as an Admin" in {
       prepare(Seq(lecturer0)).flatMap { _ =>
@@ -277,14 +300,16 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer should contain theSameElementsAs Seq(lecturer0)
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
     "fetch the information of all specified Admins, as an Admin" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.getAllAdmins(Some(admin0.username)).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { answer =>
           answer should contain theSameElementsAs Seq(admin0)
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
     "fetch the public information of all specified Users, as a non-Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
@@ -293,7 +318,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer should ===(GetAllUsersResponse(Seq(student0.toPublic), Seq(lecturer0.toPublic), Seq(admin0.toPublic)))
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
     "fetch the information of all specified Users, as an Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
@@ -302,7 +328,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
     "find a non-existing User" in {
       client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed.map { answer =>
@@ -317,7 +344,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           answer.role shouldBe Role.Lecturer
 
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     //UPDATE TESTS
@@ -338,7 +366,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
             answer.firstName shouldBe "KLAUS"
 
           }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "update a user as the user himself" in {
@@ -351,7 +380,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
             answer should ===(lecturer0Updated)
 
           }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "not update uneditable fields as an admin" in {
@@ -363,7 +393,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
               have length uneditableErrorSize
 
           }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "not update protected fields as the user himself" in {
@@ -375,7 +406,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
               have length protectedErrorSize
 
           }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     //DELETE TESTS
@@ -388,11 +420,12 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "delete a user" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().flatMap { _ =>
-          client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed
-        }.map { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+          client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader("admin")).invoke().failed.map { answer =>
+            answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+          }
         }
-      }.andThen(cleanup())
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
   }
 }
