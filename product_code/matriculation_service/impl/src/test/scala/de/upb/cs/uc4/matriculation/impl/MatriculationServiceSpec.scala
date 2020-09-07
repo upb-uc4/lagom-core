@@ -75,7 +75,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
                   override val transactionId: String = "getMatriculationData"
                   override val payload: String =
                     """{
-                    |  "type": "hl: not found",
+                    |  "type": "HLNotFound",
                     |  "title": "There is no MatriculationData for the given matriculationId."
                     |}""".stripMargin
                 }
