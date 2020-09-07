@@ -153,16 +153,16 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
   }
 
-  def cleanupOnFailure(): PartialFunction[Throwable, Future[Assertion]] = PartialFunction.fromFunction { x =>
+  def cleanupOnFailure(): PartialFunction[Throwable, Future[Assertion]] = PartialFunction.fromFunction { exception =>
     resetUserDatabase()
       .map { _ =>
-        throw x
+        throw exception
       }
   }
-  def cleanupOnSuccess(value: Assertion): Future[Assertion] = {
+  def cleanupOnSuccess(assertion: Assertion): Future[Assertion] = {
     resetUserDatabase()
       .map { _ =>
-        value
+        assertion
       }
   }
 
