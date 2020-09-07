@@ -24,8 +24,7 @@ import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ Assertion, BeforeAndAfterAll, BeforeAndAfterEach }
 
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Future
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
@@ -44,8 +43,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val client: UserService = server.serviceClient.implement[UserService]
 
   val deletionTopic: Source[JsonUsername, _] = client.userDeletedTopic().subscribe.atMostOnceSource
-
-  //override protected def afterEach(): Unit = Await.result(cleanup2(), 5.seconds)
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -76,18 +73,19 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   }
 
   def prepare(users: Seq[User]): Future[Seq[User]] = {
-    val createdUsers = users.map { user =>
+    Future.sequence(users.map { user =>
       val newUsername = user.username
       val postMessage = user match {
         case s: Student  => PostMessageStudent(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), s.copy(username = newUsername))
         case l: Lecturer => PostMessageLecturer(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Lecturer), l.copy(username = newUsername))
         case a: Admin    => PostMessageAdmin(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), a.copy(username = newUsername))
       }
-      Await.result(client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(postMessage), 5.seconds)
+      client.addUser().handleRequestHeader(addAuthorizationHeader("admin")).invoke(postMessage)
+    }).flatMap { createdUsers =>
+      eventually(timeout(Span(30, Seconds))) {
+        checkUserCreation(createdUsers)
+      }.map { _ => createdUsers }
     }
-    eventually(timeout(Span(30, Seconds))) {
-      checkUserCreation(createdUsers)
-    }.map { _ => createdUsers }
   }
 
   def checkUserCreation(users: Seq[User]): Future[Assertion] = {
