@@ -91,16 +91,16 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
   }
 
-  def cleanupOnFailure(): PartialFunction[Throwable, Future[Assertion]] = PartialFunction.fromFunction { x =>
+  def cleanupOnFailure(): PartialFunction[Throwable, Future[Assertion]] = PartialFunction.fromFunction { throwable =>
     deleteAllCourses()
       .map { _ =>
-        throw x
+        throw throwable
       }
   }
-  def cleanupOnSuccess(value: Assertion): Future[Assertion] = {
+  def cleanupOnSuccess(assertion: Assertion): Future[Assertion] = {
     deleteAllCourses()
       .map { _ =>
-        value
+        assertion
       }
   }
 
