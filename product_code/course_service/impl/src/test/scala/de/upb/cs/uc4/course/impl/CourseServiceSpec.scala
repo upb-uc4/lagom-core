@@ -10,24 +10,24 @@ import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
-import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
+import de.upb.cs.uc4.course.model.{Course, CourseLanguage, CourseType}
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
-import de.upb.cs.uc4.user.UserServiceStub
+import de.upb.cs.uc4.user.{DefaultTestUsers, UserServiceStub}
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.User
-import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
+import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{ Seconds, Span }
+import org.scalatest.time.{Seconds, Span}
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.{ Assertion, BeforeAndAfterAll }
+import org.scalatest.{Assertion, BeforeAndAfterAll}
 
 import scala.concurrent.Future
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
   */
-class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually {
+class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -36,7 +36,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       new CourseApplication(ctx) with LocalServiceLocator {
 
         override lazy val userService: UserService = new UserServiceStub() {
-          override def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ => null }
+          override def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ => Future.successful(lecturer0) }
         }
       }
     }
