@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.course.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
@@ -13,18 +13,19 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
-import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
+import de.upb.cs.uc4.course.impl.readside.{CourseDatabase, CourseEventProcessor}
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected, RejectedWithError}
+import de.upb.cs.uc4.user.api.UserService
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(
-    clusterSharding: ClusterSharding,
+    clusterSharding: ClusterSharding, userService: UserService,
     readSide: ReadSide, processor: CourseEventProcessor, database: CourseDatabase
 )(implicit ec: ExecutionContext, config: Config) extends CourseService {
   readSide.register(processor)
@@ -32,6 +33,10 @@ class CourseServiceImpl(
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CourseCommand] =
     clusterSharding.entityRefFor(CourseState.typeKey, id)
+
+  def addAuthenticationHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
+    origin => origin.addHeader("Cookie", serviceHeader.headerMap("Cookie").head._2)
+  }
 
   implicit val timeout: Timeout = Timeout(15.seconds)
 
@@ -58,22 +63,25 @@ class CourseServiceImpl(
   override def addCourse(): ServiceCall[Course, Course] =
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
-        ServerServiceCall { (_, courseProposal) =>
+        ServerServiceCall { (header, courseProposal) =>
           if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username) {
             throw CustomException.OwnerMismatch
           }
-          // Generate unique ID for the course to add
-          val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
-          // Look up the sharded entity (aka the aggregate instance) for the given ID.
-          val ref = entityRef(courseToAdd.courseId)
+          // Check if the lecturer does exist
+          userService.getUser(courseProposal.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { _ =>
+            // Generate unique ID for the course to add
+            val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
+            // Look up the sharded entity (aka the aggregate instance) for the given ID.
+            val ref = entityRef(courseToAdd.courseId)
 
-          ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
-            .map {
-              case Accepted => // Creation Successful
-                (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
-              case RejectedWithError(code, errorResponse) =>
-                throw new CustomException(code, errorResponse)
-            }
+            ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
+              .map {
+                case Accepted => // Creation Successful
+                  (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
+                case RejectedWithError(code, errorResponse) =>
+                  throw new CustomException(code, errorResponse)
+              }
+          }
         }
     }
 
@@ -116,30 +124,33 @@ class CourseServiceImpl(
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
         ServerServiceCall {
-          (_, updatedCourse) =>
+          (header, updatedCourse) =>
             // Look up the sharded entity (aka the aggregate instance) for the given ID.
             if (id != updatedCourse.courseId) {
               throw CustomException.PathParameterMismatch
             }
 
-            val ref = entityRef(id)
+            // Check if the lecturer does exist
+            userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { _ =>
+              val ref = entityRef(id)
 
-            val courseBefore = ref.ask[Option[Course]](replyTo => GetCourse(replyTo))
-            courseBefore.flatMap {
-              case Some(course) =>
-                if (role == AuthenticationRole.Lecturer && course.lecturerId != username) {
-                  throw CustomException.OwnerMismatch
-                }
-                else {
-                  ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
-                    .map {
-                      case Accepted => // Update Successful
-                        (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                      case RejectedWithError(code, errorResponse) =>
-                        throw new CustomException(code, errorResponse)
-                    }
-                }
-              case None => throw CustomException.NotFound
+              val courseBefore = ref.ask[Option[Course]](replyTo => GetCourse(replyTo))
+              courseBefore.flatMap {
+                case Some(course) =>
+                  if (role == AuthenticationRole.Lecturer && course.lecturerId != username) {
+                    throw CustomException.OwnerMismatch
+                  }
+                  else {
+                    ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
+                      .map {
+                        case Accepted => // Update Successful
+                          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                        case RejectedWithError(code, errorResponse) =>
+                          throw new CustomException(code, errorResponse)
+                      }
+                  }
+                case None => throw CustomException.NotFound
+              }
             }
         }
     }
