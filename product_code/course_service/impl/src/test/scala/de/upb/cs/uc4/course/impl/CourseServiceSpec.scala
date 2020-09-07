@@ -59,24 +59,27 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   }
 
   def prepare(courses: Seq[Course]): Future[Seq[Course]] = {
-    val createdCourses: Seq[Course] = courses.map { course =>
-      Await.result(client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course), 15.seconds)
+    Future.sequence(courses.map { course =>
+      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course)
+    }).flatMap { createdCourses =>
+      eventually(timeout(Span(15, Seconds))) {
+        for {
+          courseIdsDatabase <- server.application.database.getAll
+        } yield {
+          courseIdsDatabase should contain theSameElementsAs createdCourses.map(_.courseId)
+        }
+      }.map(_ => createdCourses)
     }
-
-    eventually(timeout(Span(15, Seconds))) {
-      for {
-        courseIdsDatabase <- server.application.database.getAll
-      } yield {
-        courseIdsDatabase should contain theSameElementsAs createdCourses.map(_.courseId)
-      }
-    }.map(_ => createdCourses)
   }
 
   def deleteAllCourses(): Future[Assertion] = {
-    client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-      _.map { course =>
-        Await.result(client.deleteCourse(course.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(), 5.seconds)
-      }
+    client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap {
+      list =>
+        Future.sequence(
+          list.map { course =>
+            client.deleteCourse(course.courseId).handleRequestHeader(addAuthorizationHeader()).invoke()
+          }
+        )
     }.flatMap { _ =>
       eventually(timeout(Span(15, Seconds))) {
         for {
