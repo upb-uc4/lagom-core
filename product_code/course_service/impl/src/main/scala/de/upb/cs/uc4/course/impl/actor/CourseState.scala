@@ -6,7 +6,7 @@ import de.upb.cs.uc4.course.impl.CourseApplication
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.events.{ CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate }
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, GenericError }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, GenericError, ErrorType }
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected, RejectedWithError }
 import play.api.libs.json.{ Format, Json }
 
@@ -28,11 +28,11 @@ case class CourseState(optCourse: Option[Course]) {
             Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
           }
           else {
-            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", validationErrors)))
+            Effect.reply(replyTo)(RejectedWithError(422, DetailedError(ErrorType.Validation, validationErrors)))
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(409, GenericError("key duplicate")))
+          Effect.reply(replyTo)(RejectedWithError(409, GenericError(ErrorType.KeyDuplicate)))
         }
 
       case UpdateCourse(courseRaw, replyTo) =>
@@ -44,11 +44,11 @@ case class CourseState(optCourse: Option[Course]) {
             Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted }
           }
           else {
-            Effect.reply(replyTo)(RejectedWithError(422, DetailedError("validation error", validationErrors)))
+            Effect.reply(replyTo)(RejectedWithError(422, DetailedError(ErrorType.Validation, validationErrors)))
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(404, GenericError("key not found")))
+          Effect.reply(replyTo)(RejectedWithError(404, GenericError(ErrorType.KeyDuplicate)))
         }
 
       case GetCourse(replyTo) =>
