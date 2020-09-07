@@ -24,7 +24,6 @@ import org.scalatest.{ Assertion, BeforeAndAfterAll }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
-import scala.util.{ Failure, Success, Try }
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
@@ -70,44 +69,49 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   }
 
   def prepare(courses: Seq[Course]): Future[Seq[Course]] = {
-    val createdCourses: Seq[Course] = courses.map { course =>
-      Await.result(client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course), 15.seconds)
+    Future.sequence(courses.map { course =>
+      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course)
+    }).flatMap { createdCourses =>
+      eventually(timeout(Span(15, Seconds))) {
+        for {
+          courseIdsDatabase <- server.application.database.getAll
+        } yield {
+          courseIdsDatabase should contain theSameElementsAs createdCourses.map(_.courseId)
+        }
+      }.map(_ => createdCourses)
     }
-
-    eventually(timeout(Span(15, Seconds))) {
-      for {
-        courseIdsDatabase <- server.application.database.getAll
-      } yield {
-        courseIdsDatabase should contain theSameElementsAs createdCourses.map(_.courseId)
-      }
-    }.map(_ => createdCourses)
   }
 
   def deleteAllCourses(): Future[Assertion] = {
-    server.application.database.getAll.map(
-      _.map { courseId =>
-        val result = Await.result(client.deleteCourse(courseId).handleRequestHeader(addAuthorizationHeader()).invoke(), 5.seconds)
-        assert(result == Done)
-        result
-      }
-    ).flatMap { _ =>
-        eventually(timeout(Span(15, Seconds))) {
-          for {
-            courseNames <- server.application.database.getAll
-          } yield {
-            courseNames shouldBe empty
+    client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap {
+      list =>
+        Future.sequence(
+          list.map { course =>
+            client.deleteCourse(course.courseId).handleRequestHeader(addAuthorizationHeader()).invoke()
           }
+        )
+    }.flatMap { _ =>
+      eventually(timeout(Span(15, Seconds))) {
+        for {
+          courseNames <- server.application.database.getAll
+        } yield {
+          courseNames shouldBe empty
         }
       }
+    }
   }
 
-  def cleanup[A](): PartialFunction[Try[A], Future[A]] = PartialFunction.fromFunction {
-    case Success(value) => deleteAllCourses().map { _ =>
-      value
-    }
-    case Failure(throwable) => deleteAllCourses().map { _ =>
-      throw throwable
-    }
+  def cleanupOnFailure(): PartialFunction[Throwable, Future[Assertion]] = PartialFunction.fromFunction { throwable =>
+    deleteAllCourses()
+      .map { _ =>
+        throw throwable
+      }
+  }
+  def cleanupOnSuccess(assertion: Assertion): Future[Assertion] = {
+    deleteAllCourses()
+      .map { _ =>
+        assertion
+      }
   }
 
   /** Tests only working if the whole instance is started */
@@ -116,7 +120,8 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "get all courses with no courses" in {
       client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
         answer shouldBe empty
-      }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "create a course" in {
@@ -126,32 +131,36 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
           client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
             answer should contain theSameElementsAs Seq(createdCourse)
           }
-        }.andThen(cleanup())
-      }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "get all courses with matching names" in {
-      prepare(Seq(course0, course1, course2)).flatMap { createdCourses =>
+      prepare(Seq(course0, course1, course2)).flatMap { _ =>
         client.getAllCourses(Some("Course 1"), None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
           answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1, course2)
-        }.andThen(cleanup())
-      }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "get all courses with matching lecturerIds" in {
-      prepare(Seq(course0, course1, course2)).flatMap { createdCourses =>
+      prepare(Seq(course0, course1, course2)).flatMap { _ =>
         client.getAllCourses(None, Some("11")).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
           answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course0, course1)
-        }.andThen(cleanup())
-      }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "get all courses with matching names and lecturerIds" in {
-      prepare(Seq(course0, course1, course2)).flatMap { createdCourses =>
+      prepare(Seq(course0, course1, course2)).flatMap { _ =>
         client.getAllCourses(Some("Course 1"), Some("11")).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
           answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1)
-        }.andThen(cleanup())
-      }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "delete a non-existing course" in {
@@ -170,8 +179,9 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
               answer should not contain createdCourses.head
             }
           }
-        }.andThen(cleanup())
-      }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "find a non-existing course" in {
@@ -184,8 +194,9 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       prepare(Seq(course1)).flatMap { createdCourses =>
         client.findCourseByCourseId(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
           answer should ===(createdCourses.head)
-        }.andThen(cleanup())
-      }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "update a non-existing course" in {
@@ -203,9 +214,10 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
             client.findCourseByCourseId(course4.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
               answer should ===(course4)
             }
-          }.andThen(cleanup())
+          }
         }
-      }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
   }
