@@ -2,7 +2,7 @@ package de.upb.cs.uc4.course.impl
 
 import java.util.Calendar
 
-import akka.{ Done, NotUsed }
+import akka.NotUsed
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
@@ -22,8 +22,7 @@ import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ Assertion, BeforeAndAfterAll }
 
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Future
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
