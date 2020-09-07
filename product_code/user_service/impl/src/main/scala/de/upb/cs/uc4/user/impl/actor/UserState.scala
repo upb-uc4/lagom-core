@@ -3,7 +3,7 @@ package de.upb.cs.uc4.user.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
-import de.upb.cs.uc4.shared.client.exceptions.GenericError
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError }
 import de.upb.cs.uc4.shared.server.messages._
 import de.upb.cs.uc4.user.impl.UserApplication
 import de.upb.cs.uc4.user.impl.commands._

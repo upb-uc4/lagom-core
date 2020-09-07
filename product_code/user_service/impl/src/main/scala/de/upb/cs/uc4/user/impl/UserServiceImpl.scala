@@ -12,7 +12,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError, ErrorType, InformativeError }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, InformativeError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -88,7 +88,7 @@ class UserServiceImpl(
       //Validate PostMessage
       val validationErrors = postMessageUser.validate
       if (validationErrors.nonEmpty) {
-        throw new CustomException(422, DetailedError("validation error", validationErrors))
+        throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
       }
 
       val ref = entityRef(postMessageUser.getUser.username)
@@ -138,16 +138,16 @@ class UserServiceImpl(
           //validate new user
           val validationErrors = user.validate
           if (validationErrors.nonEmpty) {
-            throw new CustomException(422, DetailedError("validation error", validationErrors))
+            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
           }
 
           // We need to know what role the user has, because their editable fields are different
           getUser(username).invokeWithHeaders(header, NotUsed).map {
             case (_, oldUser) =>
               oldUser match {
-                case _: Student if !user.isInstanceOf[Student] => throw new CustomException(400, InformativeError("wrong object", "Expected Student, but received non-Student"))
-                case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new CustomException(400, InformativeError("wrong object", "Expected Lecturer, but received non-Lecturer"))
-                case _: Admin if !user.isInstanceOf[Admin] => throw new CustomException(400, InformativeError("wrong object", "Expected Admin, but received non-Admin"))
+                case _: Student if !user.isInstanceOf[Student] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
+                case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
+                case _: Admin if !user.isInstanceOf[Admin] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Admin, but received non-Admin"))
                 case _ =>
               }
               var err = oldUser.checkUneditableFields(user)
@@ -159,7 +159,7 @@ class UserServiceImpl(
             .flatMap { editErrors =>
               // Other users than admins can only edit specified fields
               if (editErrors.nonEmpty) {
-                throw new CustomException(422, DetailedError("uneditable fields", editErrors))
+                throw new CustomException(422, DetailedError(ErrorType.UneditableFields, editErrors))
               }
               else {
                 val ref = entityRef(user.username)
