@@ -24,17 +24,17 @@ object HyperledgerUtils {
   private def errorMatching(customError: CustomError): CustomException = {
     customError match {
       case genericError: GenericError => genericError.`type` match {
-        case "hl: unknown transactionId"      => new CustomException(500, genericError)
-        case "hl: unprocessable entity"       => new CustomException(422, genericError)
-        case "hl: not found"                  => new CustomException(404, genericError)
-        case "hl: conflict"                   => new CustomException(409, genericError)
-        case "hl: unprocessable ledger state" => new CustomException(500, genericError)
+        case ErrorType.HLUnknownTransactionId     => new CustomException(500, genericError)
+        case ErrorType.HLUnprocessableEntity      => new CustomException(422, genericError)
+        case ErrorType.HLNotFound                 => new CustomException(404, genericError)
+        case ErrorType.HLConflict                 => new CustomException(409, genericError)
+        case ErrorType.HLUnprocessableLedgerState => new CustomException(500, genericError)
       }
       case detailedError: DetailedError => detailedError.`type` match {
-        case "hl: unprocessable field" => new CustomException(422, detailedError)
+        case ErrorType.HLUnprocessableField => new CustomException(422, detailedError)
       }
       case transactionError: TransactionError => transactionError.`type` match {
-        case "hl: invalid transaction call" => new CustomException(500, transactionError)
+        case ErrorType.HLInvalidTransactionCall => new CustomException(500, transactionError)
       }
     }
   }
