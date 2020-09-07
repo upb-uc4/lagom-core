@@ -3,8 +3,8 @@ package de.upb.cs.uc4.shared.client
 import de.upb.cs.uc4.shared.client.Utils._
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import org.scalatest.PrivateMethodTester
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class UtilsSpec extends AnyWordSpecLike with Matchers with PrivateMethodTester {
 
@@ -24,6 +24,7 @@ class UtilsSpec extends AnyWordSpecLike with Matchers with PrivateMethodTester {
     "validate correct semester strings" in {
       "SS2020".validateSemester shouldBe empty
       "WS2020/21".validateSemester shouldBe empty
+      "WS2099/00".validateSemester shouldBe empty
     }
 
     "not validate incorrect semester strings" in {
