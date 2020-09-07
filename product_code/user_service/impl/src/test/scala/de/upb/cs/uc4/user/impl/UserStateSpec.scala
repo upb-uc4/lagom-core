@@ -6,7 +6,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.impl.actor.UserBehaviour
-import de.upb.cs.uc4.user.impl.commands.{ CreateUser, DeleteUser, GetUser, UpdateLatestMatriculation, UpdateUser }
+import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.model.user._
 import de.upb.cs.uc4.user.model.{ Address, Role }
 import org.scalatest.matchers.should.Matchers
@@ -65,15 +65,6 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 409)
     }
 
-    "not add a User that does not validate" in {
-      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
-
-      val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(emptyLecturer, probe1.ref)
-      val message = probe1.receiveMessage()
-      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 422)
-    }
-
     //UPDATE
     "not update a non-existing user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4")))
@@ -82,19 +73,6 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       ref ! UpdateUser(lecturer0, probe1.ref)
       val message = probe1.receiveMessage()
       assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 404)
-    }
-
-    "not update a user with invalid data" in {
-      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4.1")))
-
-      val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(lecturer0, probe1.ref)
-      probe1.expectMessage(Accepted)
-
-      val probe2 = createTestProbe[Confirmation]()
-      ref ! UpdateUser(emptyLecturer, probe2.ref)
-      val message = probe2.receiveMessage()
-      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 422)
     }
 
     "update an existing user" in {

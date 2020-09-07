@@ -32,6 +32,7 @@ object CustomError {
       //400
       case "deserialization error" => "Syntax of the provided json object was incorrect"
       case "json validation error" => "The provided json object did not validate"
+      case "wrong object" => "Received object differs from expected object" // InformativeError
       case "malformed refresh token" => "The long term token is malformed"
       case "malformed login token" => "The login token is malformed"
       //401
