@@ -79,7 +79,7 @@ spec:
       volumes:
         - name: hyperledgerdata
           persistentVolumeClaim:
-          claimName: matriculation-pv-claim
+            claimName: matriculation-pv-claim
 ---
 apiVersion: v1
 kind: Service
