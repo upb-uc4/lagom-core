@@ -3,6 +3,7 @@
  - Added full deployment support
 ## Refactor
 ## Bugfix
+ - Fix wrong forwarding of cookie header
 
 # [v.0.7.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.6.0...matriculation-v0.7.0) (2020-09-01)
 ## Feature
