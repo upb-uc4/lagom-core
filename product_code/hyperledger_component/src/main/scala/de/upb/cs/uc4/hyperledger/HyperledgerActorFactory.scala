@@ -1,14 +1,14 @@
 package de.upb.cs.uc4.hyperledger
 
 import java.io.File
-import java.nio.file.{Path, Paths}
+import java.nio.file.{ Path, Paths }
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import com.typesafe.config.Config
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
-import de.upb.cs.uc4.hyperledger.commands.{HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown}
+import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
 import de.upb.cs.uc4.shared.server.messages.RejectedWithError
@@ -98,7 +98,7 @@ trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
   protected def retrieveFolderPathWithCreation(key: String, fallback: String): Path = {
     if (config.hasPath(key)) {
       val directory = new File(config.getString(key))
-      if(!directory.exists()) {
+      if (!directory.exists()) {
         directory.mkdirs()
       }
       Paths.get(config.getString(key))
