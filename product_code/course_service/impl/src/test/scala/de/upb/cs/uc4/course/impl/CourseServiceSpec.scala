@@ -188,7 +188,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "not create a course as an Admin with a non existing lecturer" in {
-      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0.copy(lecturerId = "nonExisting")).failed.map{
+      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0.copy(lecturerId = "nonExisting")).failed.map {
         answer =>
           answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
       }.flatMap(cleanupOnSuccess)
@@ -200,11 +200,11 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         .invoke(course0.copy(lecturerId = lecturer1.username)).failed.map { answer =>
           answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
         }.flatMap(cleanupOnSuccess)
-          .recoverWith(cleanupOnFailure())
+        .recoverWith(cleanupOnFailure())
     }
 
     "not create an invalid course" in {
-      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0.copy(startDate = "ab15-37-42")).failed.map{
+      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0.copy(startDate = "ab15-37-42")).failed.map {
         answer =>
           answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
       }.flatMap(cleanupOnSuccess)
