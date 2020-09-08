@@ -35,7 +35,7 @@ class CourseServiceImpl(
     clusterSharding.entityRefFor(CourseState.typeKey, id)
 
   def addAuthenticationHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
-    origin => origin.addHeader("Cookie", serviceHeader.headerMap("Cookie").head._2)
+    origin => origin.addHeader("Cookie", serviceHeader.getHeader("Cookie").getOrElse(""))
   }
 
   implicit val timeout: Timeout = Timeout(15.seconds)
@@ -161,17 +161,6 @@ class CourseServiceImpl(
             }
         }
     }
-
-  /** @inheritdoc */
-  override def allowedMethods: ServiceCall[NotUsed, Done] = ServerServiceCall {
-    (_, _) =>
-      Future.successful {
-        (ResponseHeader(200, MessageProtocol.empty, List(
-          ("Allow", "GET, POST, OPTIONS, PUT, DELETE"),
-          ("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
-        )), Done)
-      }
-  }
 
   /** @inheritdoc */
   override def allowedMethodsGETPOST: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")

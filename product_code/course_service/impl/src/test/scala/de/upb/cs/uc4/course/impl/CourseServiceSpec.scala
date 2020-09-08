@@ -115,87 +115,98 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   "CourseService" should {
 
     "get all courses with no courses" in {
-      client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-        answer shouldBe empty
-      }.flatMap(cleanupOnSuccess)
+      client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader())
+        .invoke().map { answer =>
+          answer shouldBe empty
+        }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
     "get all courses with matching names" in {
       prepare(Seq(course0, course1, course2)).flatMap { _ =>
-        client.getAllCourses(Some("Course 1"), None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-          answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1, course2)
-        }
+        client.getAllCourses(Some("Course 1"), None).handleRequestHeader(addAuthorizationHeader())
+          .invoke().map { answer =>
+            answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1, course2)
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
     "get all courses with matching lecturerIds" in {
       prepare(Seq(course0, course1, course2)).flatMap { _ =>
-        client.getAllCourses(None, Some(lecturer0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-          answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course0, course1)
-        }
+        client.getAllCourses(None, Some(lecturer0.username)).handleRequestHeader(addAuthorizationHeader())
+          .invoke().map { answer =>
+            answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course0, course1)
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
     "get all courses with matching names and lecturerIds" in {
       prepare(Seq(course0, course1, course2)).flatMap { _ =>
-        client.getAllCourses(Some("Course 1"), Some(lecturer0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-          answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1)
-        }
+        client.getAllCourses(Some("Course 1"), Some(lecturer0.username)).handleRequestHeader(addAuthorizationHeader())
+          .invoke().map { answer =>
+            answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1)
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
     "fail in finding a non-existing course" in {
-      client.findCourseByCourseId("42").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
+      client.findCourseByCourseId("42").handleRequestHeader(addAuthorizationHeader())
+        .invoke().failed.map { answer =>
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+        }
     }
 
     "find an existing course" in {
       prepare(Seq(course1)).flatMap { createdCourses =>
-        client.findCourseByCourseId(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-          answer should ===(createdCourses.head)
-        }
+        client.findCourseByCourseId(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
+          .invoke().map { answer =>
+            answer should ===(createdCourses.head)
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
     "create a course as an Admin" in {
-      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0).flatMap { createdCourse =>
+      client.addCourse().handleRequestHeader(addAuthorizationHeader())
+        .invoke(course0).flatMap { createdCourse =>
 
-        eventually(timeout(Span(15, Seconds))) {
-          client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-            answer should contain theSameElementsAs Seq(createdCourse)
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader())
+              .invoke().map { answer =>
+                answer should contain theSameElementsAs Seq(createdCourse)
+              }
           }
-        }
-      }.flatMap(cleanupOnSuccess)
+        }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
     "create a course as a lecturer" in {
-      client.addCourse().handleRequestHeader(addAuthorizationHeader(lecturer0.username, AuthenticationRole.Lecturer)).invoke(course0.copy(lecturerId = lecturer0.username)).flatMap { createdCourse =>
+      client.addCourse().handleRequestHeader(addAuthorizationHeader(lecturer0.username, AuthenticationRole.Lecturer))
+        .invoke(course0.copy(lecturerId = lecturer0.username)).flatMap { createdCourse =>
 
-        eventually(timeout(Span(15, Seconds))) {
-          client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-            answer should contain theSameElementsAs Seq(createdCourse)
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader())
+              .invoke().map { answer =>
+                answer should contain theSameElementsAs Seq(createdCourse)
+              }
           }
-        }
-      }.flatMap(cleanupOnSuccess)
+        }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
     "not create a course as an Admin with a non existing lecturer" in {
-      client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0.copy(lecturerId = "nonExisting")).failed.map {
-        answer =>
-          answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
-      }.flatMap(cleanupOnSuccess)
+      client.addCourse().handleRequestHeader(addAuthorizationHeader())
+        .invoke(course0.copy(lecturerId = "nonExisting")).failed.map {
+          answer =>
+            answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
+        }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
-    "not create a course for a lecturer, as another lecturer" in {
+    "not create a course for another lecturer, as a lecturer" in {
       client.addCourse().handleRequestHeader(addAuthorizationHeader(lecturer0.username, AuthenticationRole.Lecturer))
         .invoke(course0.copy(lecturerId = lecturer1.username)).failed.map { answer =>
           answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
@@ -212,22 +223,25 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "delete a non-existing course" in {
-      client.deleteCourse("42").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
-        answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
+      client.deleteCourse("42").handleRequestHeader(addAuthorizationHeader())
+        .invoke().failed.map {
+          answer =>
+            answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+        }
     }
 
     "delete an existing course" in {
       prepare(Seq(course2)).flatMap { createdCourses =>
-        client.deleteCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+        client.deleteCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
+          .invoke().flatMap { _ =>
 
-          eventually(timeout(Span(15, Seconds))) {
-            client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-              answer should not contain createdCourses.head
+            eventually(timeout(Span(15, Seconds))) {
+              client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader())
+                .invoke().map { answer =>
+                  answer should not contain createdCourses.head
+                }
             }
           }
-        }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -239,12 +253,35 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       }
     }
 
+    "not update a course of another lecturer, as a lecturer" in {
+      prepare(Seq(course0)).flatMap { createdCourses =>
+        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader(lecturer1.username, AuthenticationRole.Lecturer))
+          .invoke(createdCourses.head.copy(startDate = "1996-05-21")).failed.map {
+            answer =>
+              answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
     "not update a course with a non-existing lecturer" in {
       prepare(Seq(course0)).flatMap { createdCourses =>
-        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(createdCourses.head.copy(lecturerId = "nonExisting")).failed.map {
-          answer =>
-            answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
-        }
+        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
+          .invoke(createdCourses.head.copy(lecturerId = "nonExisting")).failed.map {
+            answer =>
+              answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not update with an invalid course" in {
+      prepare(Seq(course0)).flatMap { createdCourses =>
+        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
+          .invoke(createdCourses.head.copy(endDate = "15a68d42")).failed.map {
+            answer =>
+              answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -252,13 +289,15 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "update an existing course" in {
       prepare(Seq(course2)).flatMap { createdCourses =>
         val course4 = createdCourses.head.copy(courseDescription = "CHANGED DESCRIPTION")
-        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader()).invoke(course4).flatMap { _ =>
-          eventually(timeout(Span(30, Seconds))) {
-            client.findCourseByCourseId(course4.courseId).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-              answer should ===(course4)
+        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
+          .invoke(course4).flatMap { _ =>
+            eventually(timeout(Span(30, Seconds))) {
+              client.findCourseByCourseId(course4.courseId).handleRequestHeader(addAuthorizationHeader())
+                .invoke().map { answer =>
+                  answer should ===(course4)
+                }
             }
           }
-        }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
