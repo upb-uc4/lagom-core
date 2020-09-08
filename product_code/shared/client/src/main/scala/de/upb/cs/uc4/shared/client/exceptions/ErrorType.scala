@@ -29,10 +29,10 @@ object ErrorType extends Enumeration {
       //If not stated otherwise, the type is contained in a  GenericError
       //400
       case Deserialization => "Syntax of the provided json object was incorrect"
-      case JsonValidation => "The provided json object did not validate"
+      case JsonValidation => "The provided json object did not validate" //In a DetailedError
       case MalformedRefreshToken => "The long term token is malformed"
       case MalformedLoginToken => "The login token is malformed"
-      case UnexpectedEntity => "Expected another entity"
+      case UnexpectedEntity => "Expected another entity" //In an InformativeError
       //401
       case BasicAuthorization => "Username and password combination does not exist"
       case JwtAuthorization => "Authorization token missing"

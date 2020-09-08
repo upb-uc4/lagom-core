@@ -21,7 +21,6 @@ class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: Cust
 object CustomException {
   //400
   val DeserializationError = new CustomException(400, GenericError(ErrorType.Deserialization))
-  val WrongObject = new CustomException(400, GenericError(ErrorType.UnexpectedEntity))
   val MalformedRefreshToken = new CustomException(400, GenericError(ErrorType.MalformedRefreshToken))
   val MalformedLoginToken = new CustomException(400, GenericError(ErrorType.MalformedLoginToken))
   //401
