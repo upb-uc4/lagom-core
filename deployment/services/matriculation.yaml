@@ -49,7 +49,7 @@ spec:
             - name: HYPERLEDGER_CHAINCODE
               value: uc4-cc
             - name: HYPERLEDGER_CA_URL
-              value: "rca-org1.hlf-production-network:7054"
+              value: "https://rca-org1.hlf-production-network:7054"
           resources:
             limits:
               memory: 512Mi
