@@ -32,6 +32,24 @@ spec:
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
+            - name: HYPERLEDGER_WALLET_PATH
+              value: /var/lib/hyperledger/wallet_path
+            - name: HYPERLEDGER_NETWORK_DESCRIPTION_PATH
+              value: /var/lib/hyperledger/data/api/connection_profile_kubernetes.yaml
+            - name: HYPERLEDGER_TLC_CERT
+              value: /var/lib/hyperledger/data/api/ca-cert.pm
+            - name: HYPERLEDGER_USERNAME
+              value: scala-admin-org1
+            - name: HYPERLEDGER_PASSWORD
+              value: scalaAdminPW
+            - name: HYPERLEDGER_ORGANISATION_ID
+              value: org1MSP
+            - name: HYPERLEDGER_CHANNEL
+              value: mychannel
+            - name: HYPERLEDGER_CHAINCODE
+              value: uc4-cc
+            - name: HYPERLEDGER_CA_URL
+              value: "rca-org1.hlf-production-network:7054"
           resources:
             limits:
               memory: 512Mi
@@ -43,7 +61,7 @@ spec:
               containerPort: 8558
           volumeMounts:
             - name: hyperledgerdata
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/hyperledger/data
           readinessProbe:
             httpGet:
               path: "/ready"
