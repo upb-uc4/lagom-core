@@ -23,7 +23,7 @@ trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
   /** The companion object */
   val companionObject: HyperledgerActorObject
 
-  protected val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.wallet", "/hyperledger_assets/wallet/")
+  protected val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
   protected val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile.yaml")
   protected val tlsCert: Path = retrievePath("uc4.hyperledger.tlsCert", "")
 
