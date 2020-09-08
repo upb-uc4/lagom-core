@@ -14,13 +14,13 @@ import scala.concurrent.Future
 
 class UserServiceStub extends UserService with DefaultTestUsers {
 
-  private var students: Seq[Student] = Seq()
+  private var users: Seq[User] = Seq()
 
   def resetToDefaults(): Unit = {
-    students = Seq(student0, student1, student2)
+    users = Seq(student0, student1, student2, lecturer0, lecturer1, lecturer2, admin0, admin1, admin2)
   }
   def resetToEmpty(): Unit = {
-    students = Seq()
+    users = Seq()
   }
 
   override def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse] = ServiceCall { _ => Future.successful(null) }
@@ -30,13 +30,13 @@ class UserServiceStub extends UserService with DefaultTestUsers {
   override def getAllStudents(usernames: Option[String]): ServiceCall[NotUsed, Seq[Student]] = ServiceCall { _ => Future.successful(null) }
 
   override def getUser(username: String): ServiceCall[NotUsed, User] = ServiceCall { _ =>
-    val optUsers = students.find(_.username == username)
+    val optUsers = users.find(_.username == username)
 
     if (optUsers.isDefined) {
       Future.successful(optUsers.get)
     }
     else {
-      throw CustomException.NotFound
+      Future.failed(CustomException.NotFound)
     }
   }
 

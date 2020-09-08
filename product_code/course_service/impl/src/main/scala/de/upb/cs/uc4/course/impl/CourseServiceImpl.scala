@@ -72,7 +72,6 @@ class CourseServiceImpl(
             //If the lecturer does not exist, we throw a validation error, containing that info
             case ex: CustomException if ex.getErrorCode.http == 404 =>
               throw new CustomException(422, DetailedError(ErrorType.Validation, courseProposal.validate :+ SimpleError("lecturerId", "Lecturer does not exist")))
-            case e: Throwable => throw e
           }.flatMap { _ =>
             // Generate unique ID for the course to add
             val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
@@ -136,11 +135,9 @@ class CourseServiceImpl(
             }
 
             // Check if the lecturer does exist
-            userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recoverWith {
-              //If the lecturer does not exist, we throw a validation error, containing that info
+            userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
               case ex: CustomException if ex.getErrorCode.http == 404 =>
                 throw new CustomException(422, DetailedError(ErrorType.Validation, updatedCourse.validate :+ SimpleError("lecturerId", "Lecturer does not exist")))
-              case e: Throwable => throw e
             }.flatMap { _ =>
               val ref = entityRef(id)
 
