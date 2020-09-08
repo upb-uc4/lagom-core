@@ -33,7 +33,7 @@ spec:
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
             - name: HYPERLEDGER_WALLET_PATH
-              value: /var/lib/hyperledger/wallet_path
+              value: /opt/docker/share/hyperledger/wallet_path
             - name: HYPERLEDGER_NETWORK_DESCRIPTION_PATH
               value: /var/lib/hyperledger/data/api/connection_profile_kubernetes.yaml
             - name: HYPERLEDGER_TLS_CERT
