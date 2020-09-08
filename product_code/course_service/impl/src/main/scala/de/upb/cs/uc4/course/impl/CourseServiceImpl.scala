@@ -15,7 +15,7 @@ import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.exceptions.CustomException
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, SimpleError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -68,7 +68,12 @@ class CourseServiceImpl(
             throw CustomException.OwnerMismatch
           }
           // Check if the lecturer does exist
-          userService.getUser(courseProposal.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { _ =>
+          userService.getUser(courseProposal.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recoverWith {
+            //If the lecturer does not exist, we throw a validation error, containing that info
+            case ex: CustomException if ex.getErrorCode.http == 404 =>
+              throw new CustomException(422, DetailedError(ErrorType.Validation, courseProposal.validate :+ SimpleError("lecturerId", "Lecturer does not exist")))
+            case e: Throwable => throw e
+          }.flatMap { _ =>
             // Generate unique ID for the course to add
             val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
             // Look up the sharded entity (aka the aggregate instance) for the given ID.
@@ -131,7 +136,12 @@ class CourseServiceImpl(
             }
 
             // Check if the lecturer does exist
-            userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { _ =>
+            userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recoverWith {
+              //If the lecturer does not exist, we throw a validation error, containing that info
+              case ex: CustomException if ex.getErrorCode.http == 404 =>
+                throw new CustomException(422, DetailedError(ErrorType.Validation, updatedCourse.validate :+ SimpleError("lecturerId", "Lecturer does not exist")))
+              case e: Throwable => throw e
+            }.flatMap { _ =>
               val ref = entityRef(id)
 
               val courseBefore = ref.ask[Option[Course]](replyTo => GetCourse(replyTo))
