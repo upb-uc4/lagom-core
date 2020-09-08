@@ -1,13 +1,14 @@
 package de.upb.cs.uc4.hyperledger
 
-import java.nio.file.{ Path, Paths }
+import java.io.File
+import java.nio.file.{Path, Paths}
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import com.typesafe.config.Config
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown }
+import de.upb.cs.uc4.hyperledger.commands.{HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown}
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
 import de.upb.cs.uc4.shared.server.messages.RejectedWithError
@@ -22,7 +23,7 @@ trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
   /** The companion object */
   val companionObject: HyperledgerActorObject
 
-  protected val walletPath: Path = retrievePath("uc4.hyperledger.wallet", "/hyperledger_assets/wallet/")
+  protected val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.wallet", "/hyperledger_assets/wallet/")
   protected val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile.yaml")
   protected val tlsCert: Path = retrievePath("uc4.hyperledger.tlsCert", "")
 
@@ -80,6 +81,26 @@ trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
     */
   protected def retrievePath(key: String, fallback: String): Path = {
     if (config.hasPath(key)) {
+      Paths.get(config.getString(key))
+    }
+    else {
+      Paths.get(getClass.getResource(fallback).toURI)
+    }
+  }
+
+  /** Retrieves the path from the key out of the configuration and
+    * creates the folder if it does not exist.
+    *
+    * @param key in the configuration
+    * @param fallback the path as string if the key does not exist
+    * @return the retrieved path
+    */
+  protected def retrieveFolderPathWithCreation(key: String, fallback: String): Path = {
+    if (config.hasPath(key)) {
+      val directory = new File(config.getString(key))
+      if(!directory.exists()) {
+        directory.mkdirs()
+      }
       Paths.get(config.getString(key))
     }
     else {

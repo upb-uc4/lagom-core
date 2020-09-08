@@ -20,7 +20,6 @@ spec:
         - name: matriculation
           image: "uc4official/matriculation_service:latest"
           imagePullPolicy: Always
-          command: ["bash", "mkdir", "/var/lib/hyperledger/wallet_path"]
           env:
             - name: JAVA_OPTS
               value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf"
