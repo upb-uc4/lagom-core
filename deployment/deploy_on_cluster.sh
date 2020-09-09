@@ -64,4 +64,5 @@ kubectl apply -f services/authentication.yaml
 kubectl apply -f secrets/course.yaml
 kubectl apply -f services/course.yaml
 
+kubectl apply -f services/matriculation-storage.yaml
 kubectl apply -f services/matriculation.yaml

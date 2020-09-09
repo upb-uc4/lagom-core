@@ -1,7 +1,12 @@
+# [v.0.7.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.7.0...user-v0.7.1) (2020-09-08)
+## Feature
+ - Merged most endpoints in "students", "lecturers" and "admins" into "users"
+## Refactor
+## Bugfix
+
 # [v.0.7.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.6.0...user-v0.7.0) (2020-09-01)
 ## Feature
  - Added custom deserialization exception
- - Merged most endpoints in "students", "lecturers" and "admins" into "users"
 ## Refactor
  - Added ServiceStub for testing to reduce code duplication
  - Added default Users for easier maintainability in testing

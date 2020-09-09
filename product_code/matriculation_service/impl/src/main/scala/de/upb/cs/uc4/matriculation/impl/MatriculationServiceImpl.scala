@@ -30,7 +30,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
   extends MatriculationService {
 
   def addAuthenticationHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
-    origin => origin.addHeader("Cookie", serviceHeader.headerMap("Cookie").head._2)
+    origin => origin.addHeader("Cookie", serviceHeader.getHeader("Cookie").getOrElse(""))
   }
 
   /** Looks up the entity for the given ID */
