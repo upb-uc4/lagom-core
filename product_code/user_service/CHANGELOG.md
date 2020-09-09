@@ -1,3 +1,9 @@
+# [v.0.7.2-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.7.1...user-v0.7.2) (2020-XX-XX)
+## Feature
+## Refactor
+## Bugfix
+- Fixed admins being able to create courses with invalid lecturers
+
 # [v.0.7.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.7.0...user-v0.7.1) (2020-09-08)
 ## Feature
  - Merged most endpoints in "students", "lecturers" and "admins" into "users"
