@@ -17,6 +17,11 @@ class UtilsSpec extends AnyWordSpecLike with Matchers with PrivateMethodTester {
       Utils invokePrivate semesterToNumber("WS2021/22") shouldBe 2021.5
       Utils invokePrivate semesterToNumber("") shouldBe Double.MinValue
     }
+
+    "find the latest semester" in {
+      val semesterList = Seq("SS2020", "WS2019/20", "SS2020", "WS2020/21", "SS2019")
+      findLatestSemester(semesterList) should ===("WS2020/21")
+    }
   }
 
   "SemesterUtils" should {
