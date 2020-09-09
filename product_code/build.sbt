@@ -136,7 +136,7 @@ lazy val course_service = (project in file("course_service/impl"))
   .settings(commonSettings("course_service"))
   .settings(dockerSettings)
   .settings(version := "v0.7.0")
-  .dependsOn(course_service_api, shared_server)
+  .dependsOn(course_service_api, user_service_api % withTests, shared_server)
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
   .settings(

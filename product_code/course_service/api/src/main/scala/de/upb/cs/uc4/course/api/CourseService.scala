@@ -37,9 +37,6 @@ trait CourseService extends UC4Service {
   /** Update an existing course */
   def updateCourse(id: String): ServiceCall[Course, Done]
 
-  /** Allows GET, POST, PUT, DELETE */
-  def allowedMethods: ServiceCall[NotUsed, Done]
-
   /** Allows GET POST */
   def allowedMethodsGETPOST: ServiceCall[NotUsed, Done]
 
