@@ -17,10 +17,9 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import play.api.libs.json.Json
+import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
 
 /** Tests for the MatriculationService
-  *
-  * All tests need to be started in the defined order
   */
 class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with DefaultTestUsers {
 
@@ -32,9 +31,10 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
 
         userService.resetToDefaults()
 
+        var jsonStringList: Seq[String] = List()
+
         override def createActorFactory: MatriculationBehaviour = new MatriculationBehaviour(config) {
           override protected def createConnection: ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
-            private var jsonStringList: Seq[String] = List()
 
             override def addMatriculationData(jsonMatriculationData: String): String = {
               jsonStringList :+= jsonMatriculationData
@@ -84,6 +84,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
 
             override val contract: Contract = null
             override val gateway: Gateway = null
+            val contractName: String = ""
           }
         }
       }
@@ -109,7 +110,14 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     header.withHeader("Cookie", s"login=$token")
   }
 
-  /** Tests only working if the whole instance is started */
+  def prepare(matriculations: Seq[ImmatriculationData]): Unit = {
+    server.application.jsonStringList ++= matriculations.map(_.toJson)
+  }
+
+  def cleanup(): Unit = {
+    server.application.jsonStringList = List()
+  }
+
   "MatriculationService service" should {
 
     "add matriculation data for a student" in {
@@ -121,33 +129,56 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               answer.matriculationStatus should contain theSameElementsAs
                 Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
           }
+        }.andThen {
+          case _ => cleanup()
         }
+
     }
 
     "extend matriculation data of an already existing field of study" in {
+      prepare(Seq(
+        ImmatriculationData(
+          student0.matriculationId,
+          student0.firstName,
+          student0.lastName,
+          student0.birthDate,
+          Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
+        )
+      ))
       client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(PutMessageMatriculationData("Computer Science", "WS2020/21")).flatMap { _ =>
           client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
             answer =>
-              answer.matriculationId should ===(student0.matriculationId)
               answer.matriculationStatus should contain theSameElementsAs
                 Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
           }
+        }.andThen {
+          case _ => cleanup()
         }
     }
 
     "extend matriculation data of a non-existing field of study" in {
+      prepare(Seq(
+        ImmatriculationData(
+          student0.matriculationId,
+          student0.firstName,
+          student0.lastName,
+          student0.birthDate,
+          Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
+        )
+      ))
       client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(PutMessageMatriculationData("Mathematics", "WS2020/21")).flatMap { _ =>
           client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
             answer =>
-              answer.matriculationId should ===(student0.matriculationId)
               answer.matriculationStatus should contain theSameElementsAs
                 Seq(
                   SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")),
                   SubjectMatriculation("Mathematics", Seq("WS2020/21"))
                 )
           }
+        }.andThen {
+          case _ => cleanup()
         }
     }
   }
