@@ -12,8 +12,9 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.hyperledger.commands.HyperledgerCommand
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
-import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntryToMatriculationData, AddMatriculationData, GetMatriculationData }
-import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData, SubjectMatriculation }
+import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData }
+import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
+import de.upb.cs.uc4.shared.client.Utils
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
@@ -40,8 +41,8 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
   implicit val timeout: Timeout = Timeout(15.seconds)
 
   /** Immatriculates a student */
-  override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculationData, Done] =
-    authenticated[PutMessageMatriculationData, Done](AuthenticationRole.Admin) {
+  override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done] =
+    authenticated[PutMessageMatriculation, Done](AuthenticationRole.Admin) {
       ServerServiceCall { (header, rawMessage) =>
         val message = rawMessage.trim
         val validationList = message.validate
@@ -59,30 +60,39 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
             entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo))
               .flatMap {
                 case Success(_) =>
-                  entityRef.ask[Confirmation](replyTo => AddEntryToMatriculationData(
+                  entityRef.ask[Confirmation](replyTo => AddEntriesToMatriculationData(
                     student.matriculationId,
-                    message.fieldOfStudy,
-                    message.semester,
+                    message.matriculation,
                     replyTo
                   )).map {
                     case Accepted =>
-                      userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
+                      userService.updateLatestMatriculation().invoke(MatriculationUpdate(
+                        username,
+                        Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
+                      ))
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+
                     case RejectedWithError(statusCode, reason) => throw new CustomException(statusCode, reason)
                   }
+
                 case Failure(exception) =>
                   exception match {
                     case customException: CustomException if customException.getErrorCode.http == 404 =>
                       val data = ImmatriculationData(
                         student.matriculationId, student.firstName, student.lastName, student.birthDate,
-                        Seq(SubjectMatriculation(message.fieldOfStudy, Seq(message.semester)))
+                        message.matriculation
                       )
                       entityRef.ask[Confirmation](replyTo => AddMatriculationData(data, replyTo)).map {
                         case Accepted =>
-                          userService.updateLatestMatriculation().invoke(MatriculationUpdate(username, message.semester))
+                          userService.updateLatestMatriculation().invoke(MatriculationUpdate(
+                            username,
+                            Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
+                          ))
                           (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/${student.username}"))), Done)
+
                         case RejectedWithError(statusCode, reason) => throw new CustomException(statusCode, reason)
                       }
+
                     case exception: Exception => throw exception
                   }
               }
