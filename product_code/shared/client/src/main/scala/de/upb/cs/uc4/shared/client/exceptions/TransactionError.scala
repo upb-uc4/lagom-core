@@ -1,14 +1,15 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
+import de.upb.cs.uc4.shared.client.exceptions.ErrorType.ErrorType
 import play.api.libs.json._
 
-case class TransactionError(`type`: String, title: String, transactionId: String) extends CustomError
+case class TransactionError(`type`: ErrorType, title: String, transactionId: String) extends CustomError
 
 object TransactionError {
   implicit val format: Format[TransactionError] = Json.format
 
-  def apply(`type`: String, transactionId: String): TransactionError = {
-    val title = CustomError.getTitle(`type`)
+  def apply(`type`: ErrorType, transactionId: String): TransactionError = {
+    val title = ErrorType.getTitle(`type`)
     new TransactionError(`type`, title, transactionId)
   }
 }

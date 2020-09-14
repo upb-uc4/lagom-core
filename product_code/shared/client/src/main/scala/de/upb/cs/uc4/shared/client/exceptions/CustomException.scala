@@ -20,26 +20,26 @@ class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: Cust
 }
 object CustomException {
   //400
-  val DeserializationError = new CustomException(400, GenericError("deserialization error"))
-  val MalformedRefreshToken = new CustomException(400, GenericError("malformed refresh token"))
-  val MalformedLoginToken = new CustomException(400, GenericError("malformed login token"))
+  val DeserializationError = new CustomException(400, GenericError(ErrorType.Deserialization))
+  val MalformedRefreshToken = new CustomException(400, GenericError(ErrorType.MalformedRefreshToken))
+  val MalformedLoginToken = new CustomException(400, GenericError(ErrorType.MalformedLoginToken))
   //401
-  val AuthorizationError = new CustomException(401, GenericError("jwt authorization error"))
-  val BasicAuthorizationError = new CustomException(401, GenericError("basic authorization error"))
-  val RefreshTokenExpired = new CustomException(401, GenericError("refresh token expired"))
-  val LoginTokenExpired = new CustomException(401, GenericError("login token expired"))
+  val AuthorizationError = new CustomException(401, GenericError(ErrorType.JwtAuthorization))
+  val BasicAuthorizationError = new CustomException(401, GenericError(ErrorType.BasicAuthorization))
+  val RefreshTokenExpired = new CustomException(401, GenericError(ErrorType.RefreshTokenExpired))
+  val LoginTokenExpired = new CustomException(401, GenericError(ErrorType.LoginTokenExpired))
   //403
-  val NotEnoughPrivileges = new CustomException(403, GenericError("not enough privileges"))
-  val OwnerMismatch = new CustomException(403, GenericError("owner mismatch"))
+  val NotEnoughPrivileges = new CustomException(403, GenericError(ErrorType.NotEnoughPrivileges))
+  val OwnerMismatch = new CustomException(403, GenericError(ErrorType.OwnerMismatch))
   //404
-  val NotFound = new CustomException(404, GenericError("key not found"))
+  val NotFound = new CustomException(404, GenericError(ErrorType.KeyNotFound))
   //409
-  val Duplicate = new CustomException(409, GenericError("key duplicate"))
+  val Duplicate = new CustomException(409, GenericError(ErrorType.KeyDuplicate))
   //422
-  val PathParameterMismatch = new CustomException(422, GenericError("path parameter mismatch"))
-  val RefreshTokenSignatureError = new CustomException(422, GenericError("refresh token signature invalid"))
-  val LoginTokenSignatureError = new CustomException(422, GenericError("login token signature invalid"))
+  val PathParameterMismatch = new CustomException(422, GenericError(ErrorType.PathParameterMismatch))
+  val RefreshTokenSignatureError = new CustomException(422, GenericError(ErrorType.RefreshTokenSignatureInvalid))
+  val LoginTokenSignatureError = new CustomException(422, GenericError(ErrorType.LoginTokenSignatureInvalid))
   //500
-  val InternalServerError = new CustomException(500, GenericError("internal server error"))
-  val InternalDeserializationError = new CustomException(500, GenericError("undeserializable exception"))
+  val InternalServerError = new CustomException(500, GenericError(ErrorType.InternalServer))
+  val InternalDeserializationError = new CustomException(500, GenericError(ErrorType.UndeserializableException))
 }

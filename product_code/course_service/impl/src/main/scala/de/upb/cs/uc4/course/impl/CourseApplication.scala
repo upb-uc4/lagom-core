@@ -11,6 +11,7 @@ import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.{ CourseBehaviour, CourseState }
 import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
 import de.upb.cs.uc4.shared.server.AuthenticationComponent
+import de.upb.cs.uc4.user.api.UserService
 import play.api.db.HikariCPComponents
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc.EssentialFilter
@@ -38,6 +39,8 @@ abstract class CourseApplication(context: LagomApplicationContext)
 
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = CourseSerializerRegistry
+
+  lazy val userService: UserService = serviceClient.implement[UserService]
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
   // a given sharding entity typeKey.
