@@ -9,10 +9,10 @@ import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
-import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, SubjectMatriculation }
-import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
-import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
-import org.hyperledger.fabric.gateway.{ Contract, Gateway }
+import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculation, SubjectMatriculation}
+import de.upb.cs.uc4.user.{DefaultTestUsers, UserServiceStub}
+import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
+import org.hyperledger.fabric.gateway.{Contract, Gateway}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -41,22 +41,26 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               ""
             }
 
-            override def addEntryToMatriculationData(matriculationId: String, fieldOfStudy: String, semester: String): String = {
+            override def addEntriesToMatriculationData(matriculationId: String, subjectMatriculationList: String): String = {
               var data = Json.parse(jsonStringList.find(json => json.contains(matriculationId)).get).as[ImmatriculationData]
-              val optSubject = data.matriculationStatus.find(_.fieldOfStudy == fieldOfStudy)
+              val matriculationList = Json.parse(subjectMatriculationList).as[Seq[SubjectMatriculation]]
 
-              if (optSubject.isDefined) {
-                data = data.copy(matriculationStatus = data.matriculationStatus.map { subject =>
-                  if (subject != optSubject.get) {
-                    subject
-                  }
-                  else {
-                    subject.copy(semesters = subject.semesters :+ semester)
-                  }
-                })
-              }
-              else {
-                data = data.copy(matriculationStatus = data.matriculationStatus :+ SubjectMatriculation(fieldOfStudy, Seq(semester)))
+              for(subjectMatriculation: SubjectMatriculation <- matriculationList) {
+                val optSubject = data.matriculationStatus.find(_.fieldOfStudy == subjectMatriculation.fieldOfStudy)
+
+                if (optSubject.isDefined) {
+                  data = data.copy(matriculationStatus = data.matriculationStatus.map { subject =>
+                    if (subject != optSubject.get) {
+                      subject
+                    }
+                    else {
+                      subject.copy(semesters = (subject.semesters :++ subjectMatriculation.semesters).distinct)
+                    }
+                  })
+                }
+                else {
+                  data = data.copy(matriculationStatus = data.matriculationStatus :+ SubjectMatriculation(subjectMatriculation.fieldOfStudy, subjectMatriculation.semesters))
+                }
               }
 
               jsonStringList = jsonStringList.filter(json => !json.contains(matriculationId)) :+ Json.stringify(Json.toJson(data))
@@ -84,7 +88,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
 
             override val contract: Contract = null
             override val gateway: Gateway = null
-            val contractName: String = ""
+            override val contractName: String = ""
           }
         }
       }
@@ -118,11 +122,13 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     server.application.jsonStringList = List()
   }
 
+  private def createSingleMatriculation(field: String, semester: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester))))
+
   "MatriculationService service" should {
 
     "add matriculation data for a student" in {
       client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
-        .invoke(PutMessageMatriculationData("Computer Science", "SS2020")).flatMap { _ =>
+        .invoke(PutMessageMatriculation(Seq(SubjectMatriculation("Computer Science", Seq("SS2020"))))).flatMap { _ =>
           client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
             answer =>
               answer.matriculationId should ===(student0.matriculationId)
@@ -146,7 +152,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         )
       ))
       client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
-        .invoke(PutMessageMatriculationData("Computer Science", "WS2020/21")).flatMap { _ =>
+        .invoke(createSingleMatriculation("Computer Science", "WS2020/21")).flatMap { _ =>
           client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
             answer =>
               answer.matriculationStatus should contain theSameElementsAs
@@ -168,13 +174,13 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         )
       ))
       client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
-        .invoke(PutMessageMatriculationData("Mathematics", "WS2020/21")).flatMap { _ =>
+        .invoke(createSingleMatriculation("Mathematics", "WS2021/22")).flatMap { _ =>
           client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
             answer =>
               answer.matriculationStatus should contain theSameElementsAs
                 Seq(
                   SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")),
-                  SubjectMatriculation("Mathematics", Seq("WS2020/21"))
+                  SubjectMatriculation("Mathematics", Seq("WS2021/22"))
                 )
           }
         }.andThen {

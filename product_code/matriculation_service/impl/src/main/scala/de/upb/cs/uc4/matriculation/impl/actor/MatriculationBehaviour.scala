@@ -30,7 +30,7 @@ class MatriculationBehaviour(val config: Config) extends HyperledgerActorFactory
   override protected def applyCommand(connection: ConnectionMatriculationTrait, command: HyperledgerCommand): Unit = command match {
 
     case AddEntriesToMatriculationData(matriculationId, matriculation, replyTo) =>
-      connection.addEntriesToMatriculationData(matriculationId, matriculation)
+      connection.addEntriesToMatriculationData(matriculationId, matriculation.toJson)
       replyTo ! Accepted
 
     case AddMatriculationData(data, replyTo) =>
