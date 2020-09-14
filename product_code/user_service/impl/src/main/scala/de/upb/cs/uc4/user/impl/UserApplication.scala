@@ -15,6 +15,7 @@ import play.api.db.HikariCPComponents
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc.EssentialFilter
 import play.filters.cors.CORSComponents
+import play.filters.gzip.GzipFilterComponents
 
 abstract class UserApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
@@ -23,6 +24,7 @@ abstract class UserApplication(context: LagomApplicationContext)
   with HikariCPComponents
   with CORSComponents
   with AhcWSComponents
+  with GzipFilterComponents
   with AuthenticationComponent {
 
   // Create ReadSide
@@ -30,7 +32,7 @@ abstract class UserApplication(context: LagomApplicationContext)
   lazy val processor: UserEventProcessor = wire[UserEventProcessor]
 
   // Set HttpFilter to the default CorsFilter
-  override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
+  override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter, gzipFilter)
 
   // Bind the authentication service
   lazy val authentication: AuthenticationService = serviceClient.implement[AuthenticationService]
