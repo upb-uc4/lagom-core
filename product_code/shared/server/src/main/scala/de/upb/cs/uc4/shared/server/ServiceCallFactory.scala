@@ -8,7 +8,7 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
-import io.jsonwebtoken.{ ExpiredJwtException, Jwts, MalformedJwtException, SignatureException }
+import io.jsonwebtoken.{ ExpiredJwtException, Jwts, MalformedJwtException, SignatureException, UnsupportedJwtException }
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.annotation.varargs
@@ -85,10 +85,13 @@ object ServiceCallFactory {
       (username, AuthenticationRole.withName(authenticationRole))
     }
     catch {
-      case _: ExpiredJwtException   => throw CustomException.LoginTokenExpired
-      case _: MalformedJwtException => throw CustomException.MalformedLoginToken
-      case _: SignatureException    => throw CustomException.LoginTokenSignatureError
-      case _: Exception             => throw CustomException.InternalServerError
+      case _: ExpiredJwtException      => throw CustomException.RefreshTokenExpired
+      case _: UnsupportedJwtException  => throw CustomException.MalformedRefreshToken
+      case _: MalformedJwtException    => throw CustomException.MalformedRefreshToken
+      case _: SignatureException       => throw CustomException.RefreshTokenSignatureError
+      case _: IllegalArgumentException => throw CustomException.AuthorizationError
+      case ce: CustomException         => throw ce
+      case _: Exception                => throw CustomException.InternalServerError
     }
   }
 

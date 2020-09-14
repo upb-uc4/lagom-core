@@ -287,11 +287,13 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       (loginToken, logoutTimer * 60, username)
     }
     catch {
-      case _: ExpiredJwtException   => throw CustomException.RefreshTokenExpired
-      case _: MalformedJwtException => throw CustomException.MalformedRefreshToken
-      case _: SignatureException    => throw CustomException.RefreshTokenSignatureError
-      case ce: CustomException      => throw ce
-      case _: Exception             => throw CustomException.InternalServerError
+      case _: ExpiredJwtException      => throw CustomException.RefreshTokenExpired
+      case _: UnsupportedJwtException  => throw CustomException.MalformedRefreshToken
+      case _: MalformedJwtException    => throw CustomException.MalformedRefreshToken
+      case _: SignatureException       => throw CustomException.RefreshTokenSignatureError
+      case _: IllegalArgumentException => throw CustomException.AuthorizationError
+      case ce: CustomException         => throw ce
+      case _: Exception                => throw CustomException.InternalServerError
     }
   }
 }
