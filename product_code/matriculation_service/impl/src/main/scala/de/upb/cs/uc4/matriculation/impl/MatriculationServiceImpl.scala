@@ -30,10 +30,6 @@ import scala.util.{ Failure, Success, Try }
 class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: UserService)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
   extends MatriculationService {
 
-  def addAuthenticationHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
-    origin => origin.addHeader("Cookie", serviceHeader.getHeader("Cookie").getOrElse(""))
-  }
-
   /** Looks up the entity for the given ID */
   private def entityRef: EntityRef[HyperledgerCommand] =
     clusterSharding.entityRefFor(MatriculationBehaviour.typeKey, MatriculationBehaviour.entityId)

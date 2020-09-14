@@ -1,8 +1,8 @@
 package de.upb.cs.uc4.shared.client
 
-import akka.{ Done, NotUsed }
-import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, ServiceCall }
+import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.transport.{Method, RequestHeader}
+import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceAcl, ServiceCall}
 import de.upb.cs.uc4.shared.client.exceptions.CustomExceptionSerializer
 import play.api.Environment
 
@@ -46,5 +46,12 @@ trait UC4Service extends Service {
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/version\\E")
       )
     }
+  }
+
+  protected def addAuthenticationHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
+    origin =>
+      origin
+        .addHeader("Cookie", serviceHeader.getHeader("Cookie").getOrElse(""))
+        .addHeader("Authorization", serviceHeader.getHeader("Authorization").getOrElse(""))
   }
 }
