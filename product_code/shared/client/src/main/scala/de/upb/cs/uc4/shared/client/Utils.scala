@@ -47,6 +47,18 @@ object Utils {
         semesterToNumber(semester).compareTo(semesterToNumber(other))
       }
     }
+
+  }
+
+  /** Finds the latest semester in a list of semesters
+    * @param semesters is a list of valid semesters
+    * @return the latest semester
+    */
+  def findLatestSemester(semesters: Seq[String]): String = {
+    if (semesters.forall(_.validateSemester.nonEmpty)) {
+      throw CustomException.InternalServerError
+    }
+    semesters.distinct.sortWith((a, b) => a.compareSemester(b) != 1).last
   }
 
   private def semesterToNumber(semester: String): Double = {

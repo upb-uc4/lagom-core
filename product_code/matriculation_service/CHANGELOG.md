@@ -1,3 +1,9 @@
+# [v.0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.7.1...matriculation-v0.8.1) (2020-09-14)
+## Feature
+ - Added support for sending multiple field of studies
+## Refactor
+## Bugfix
+
 # [v.0.7.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.7.0...matriculation-v0.7.1) (2020-09-08)
 ## Feature
  - Added full deployment support
