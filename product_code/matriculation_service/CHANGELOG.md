@@ -1,3 +1,9 @@
+# [WIP v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.8.1...matriculation-v0.8.2) (2020-XX-XX)
+## Feature
+- Supports Bearer Authentication with JWT token
+## Refactor
+## Bugfix
+
 # [v.0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.7.1...matriculation-v0.8.1) (2020-09-14)
 ## Feature
  - Added support for sending multiple field of studies
