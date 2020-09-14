@@ -9,10 +9,10 @@ import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
-import de.upb.cs.uc4.matriculation.model.{ImmatriculationData, PutMessageMatriculation, SubjectMatriculation}
-import de.upb.cs.uc4.user.{DefaultTestUsers, UserServiceStub}
-import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
-import org.hyperledger.fabric.gateway.{Contract, Gateway}
+import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
+import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
+import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
+import org.hyperledger.fabric.gateway.{ Contract, Gateway }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -45,7 +45,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               var data = Json.parse(jsonStringList.find(json => json.contains(matriculationId)).get).as[ImmatriculationData]
               val matriculationList = Json.parse(subjectMatriculationList).as[Seq[SubjectMatriculation]]
 
-              for(subjectMatriculation: SubjectMatriculation <- matriculationList) {
+              for (subjectMatriculation: SubjectMatriculation <- matriculationList) {
                 val optSubject = data.matriculationStatus.find(_.fieldOfStudy == subjectMatriculation.fieldOfStudy)
 
                 if (optSubject.isDefined) {
