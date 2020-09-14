@@ -266,6 +266,11 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       val claims = Jwts.parser().setSigningKey(key).parseClaimsJws(refreshToken).getBody
       val username = claims.get("username", classOf[String])
       val authenticationRole = claims.get("authenticationRole", classOf[String])
+      val subject = claims.getSubject
+
+      if (subject != "refresh") {
+        throw CustomException.AuthorizationError
+      }
 
       val now = Calendar.getInstance()
       val logoutTimer = config.getInt("uc4.authentication.login")
@@ -285,6 +290,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       case _: ExpiredJwtException   => throw CustomException.RefreshTokenExpired
       case _: MalformedJwtException => throw CustomException.MalformedRefreshToken
       case _: SignatureException    => throw CustomException.RefreshTokenSignatureError
+      case ce: CustomException      => throw ce
       case _: Exception             => throw CustomException.InternalServerError
     }
   }

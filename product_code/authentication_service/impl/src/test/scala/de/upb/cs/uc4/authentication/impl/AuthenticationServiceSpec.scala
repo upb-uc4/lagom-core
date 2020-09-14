@@ -9,7 +9,7 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest }
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens }
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
 import de.upb.cs.uc4.shared.server.ServiceCallFactory
 import de.upb.cs.uc4.user.UserServiceStub
@@ -60,6 +60,10 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
   def addTokenHeader(token: String, cookie: String = "login"): RequestHeader => RequestHeader = { header =>
     header.withHeader("Cookie", s"$cookie=$token")
+  }
+
+  def addBearerToken(token: String): RequestHeader => RequestHeader = { header =>
+    header.withHeader("Authorization", s"Bearer $token")
   }
 
   private def getTokens(responseHeader: ResponseHeader): (String, String) = {
@@ -142,7 +146,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "generates two correct tokens" in {
+    "generates two correct header tokens" in {
       client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
         case (header: ResponseHeader, _) =>
           val (refresh, login) = getTokens(header)
@@ -172,7 +176,38 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "refresh a login token" in {
+    "generates two correct machine tokens" in {
+      client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+        case (header: ResponseHeader, tokens: Tokens) =>
+          val refresh = tokens.refresh
+          val login = tokens.login
+
+          val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+          val refreshUsername = refreshClaims.get("username", classOf[String])
+          val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
+          val refreshExpirationDate = refreshClaims.getExpiration
+
+          val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+          val loginUsername = loginClaims.get("username", classOf[String])
+          val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
+          val loginExpirationDate = loginClaims.getExpiration
+
+          refreshUsername should ===("admin")
+          refreshAuthenticationRole should ===("Admin")
+          loginUsername should ===("admin")
+          loginAuthenticationRole should ===("Admin")
+
+          val refreshExpected = Calendar.getInstance()
+          refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
+          checkDate(refreshExpirationDate, refreshExpected.getTime)
+
+          val loginExpected = Calendar.getInstance()
+          loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
+          checkDate(loginExpirationDate, loginExpected.getTime)
+      }
+    }
+
+    "refresh a header login token" in {
       val time = Calendar.getInstance()
       time.add(Calendar.DATE, 1)
 
@@ -190,7 +225,25 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "detect that a refresh token is expired" in {
+    "refresh a machine login token" in {
+      val time = Calendar.getInstance()
+      time.add(Calendar.DATE, 1)
+
+      val token =
+        Jwts.builder()
+          .setSubject("refresh")
+          .setExpiration(time.getTime)
+          .claim("username", "daniel")
+          .claim("authenticationRole", "Student")
+          .signWith(SignatureAlgorithm.HS256, "changeme")
+          .compact()
+
+      client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().map { answer =>
+        answer.username should ===("daniel")
+      }
+    }
+
+    "detect that a header refresh token is expired" in {
       val time = Calendar.getInstance()
       time.add(Calendar.DATE, -1)
 
@@ -208,7 +261,25 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "detect that a refresh token is malformed" in {
+    "detect that a machine refresh token is expired" in {
+      val time = Calendar.getInstance()
+      time.add(Calendar.DATE, -1)
+
+      val token =
+        Jwts.builder()
+          .setSubject("refresh")
+          .setExpiration(time.getTime)
+          .claim("username", "lars")
+          .claim("authenticationRole", "Student")
+          .signWith(SignatureAlgorithm.HS256, "changeme")
+          .compact()
+
+      client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+      }
+    }
+
+    "detect that a header refresh token is malformed" in {
       val time = Calendar.getInstance()
       time.add(Calendar.DATE, 1)
 
@@ -226,7 +297,25 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "detect that a refresh token has a wrong signature" in {
+    "detect that a machine refresh token is malformed" in {
+      val time = Calendar.getInstance()
+      time.add(Calendar.DATE, 1)
+
+      val token =
+        Jwts.builder()
+          .setSubject("refresh")
+          .setExpiration(time.getTime)
+          .claim("username", "lars")
+          .claim("authenticationRole", "Student")
+          .signWith(SignatureAlgorithm.HS256, "changeme")
+          .compact().replaceFirst(".", ",")
+
+      client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(400)
+      }
+    }
+
+    "detect that a header refresh token has a wrong signature" in {
       val time = Calendar.getInstance()
       time.add(Calendar.DATE, 1)
 
@@ -244,8 +333,32 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "detect that a refresh token is missing" in {
+    "detect that a machine refresh token has a wrong signature" in {
+      val time = Calendar.getInstance()
+      time.add(Calendar.DATE, 1)
+
+      val token =
+        Jwts.builder()
+          .setSubject("refresh")
+          .setExpiration(time.getTime)
+          .claim("username", "lars")
+          .claim("authenticationRole", "Student")
+          .signWith(SignatureAlgorithm.HS256, "changemeagain")
+          .compact()
+
+      client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+      }
+    }
+
+    "detect that a header refresh token is missing" in {
       client.refresh.invoke().failed.map { answer =>
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+      }
+    }
+
+    "detect that a machine refresh token is missing" in {
+      client.refreshMachineUser.invoke().failed.map { answer =>
         answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
       }
     }

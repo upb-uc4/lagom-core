@@ -76,6 +76,11 @@ object ServiceCallFactory {
       val claims = Jwts.parser().setSigningKey(config.getString("play.http.secret.key")).parseClaimsJws(token).getBody
       val username = claims.get("username", classOf[String])
       val authenticationRole = claims.get("authenticationRole", classOf[String])
+      val subject = claims.getSubject
+
+      if (subject != "login") {
+        throw CustomException.AuthorizationError
+      }
 
       (username, AuthenticationRole.withName(authenticationRole))
     }
