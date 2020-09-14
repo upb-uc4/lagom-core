@@ -1,4 +1,4 @@
-# [v.0.7.2-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.7.1...user-v0.7.2) (2020-XX-XX)
+# [v.0.8.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.7.1...user-v0.8.0) (2020-09-14)
 ## Feature
 ## Refactor
 ## Bugfix
