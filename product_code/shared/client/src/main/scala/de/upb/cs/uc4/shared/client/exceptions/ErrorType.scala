@@ -4,7 +4,7 @@ import play.api.libs.json.{ Format, Json }
 
 object ErrorType extends Enumeration {
   type ErrorType = Value
-  val Deserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, //400
+  val Deserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
   BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, //401
   NotEnoughPrivileges, OwnerMismatch, //403
   KeyNotFound, //404
@@ -13,7 +13,7 @@ object ErrorType extends Enumeration {
   PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, //422
   Validation, UneditableFields, //422 In a DetailedError
   InternalServer, UndeserializableException, //500
-  HLInternal, //500 In an InformativeError
+  HLInternal, //In an InformativeError
   HLUnknownTransactionId, HLUnprocessableEntity, HLNotFound, HLConflict, HLUnprocessableLedgerState, //In a GenericError
   HLUnprocessableField, //In a DetailedError
   HLInvalidTransactionCall //In a TransactionError
@@ -33,6 +33,7 @@ object ErrorType extends Enumeration {
       case MalformedRefreshToken => "The long term token is malformed"
       case MalformedLoginToken => "The login token is malformed"
       case UnexpectedEntity => "Expected another entity" //In an InformativeError
+      case MultipleAuthorization => "Multiple authorization given"
       //401
       case BasicAuthorization => "Username and password combination does not exist"
       case JwtAuthorization => "Authorization token missing"

@@ -23,6 +23,7 @@ object CustomException {
   val DeserializationError = new CustomException(400, GenericError(ErrorType.Deserialization))
   val MalformedRefreshToken = new CustomException(400, GenericError(ErrorType.MalformedRefreshToken))
   val MalformedLoginToken = new CustomException(400, GenericError(ErrorType.MalformedLoginToken))
+  val MultipleAuthorizationError = new CustomException(400, GenericError(ErrorType.MultipleAuthorization))
   //401
   val AuthorizationError = new CustomException(401, GenericError(ErrorType.JwtAuthorization))
   val BasicAuthorizationError = new CustomException(401, GenericError(ErrorType.BasicAuthorization))

@@ -15,8 +15,9 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, AuthenticationState }
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, SimpleError, ErrorType }
+import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, SimpleError }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
@@ -82,37 +83,12 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
           throw CustomException.BasicAuthorizationError
         }
         else {
-          val key = config.getString("play.http.secret.key")
-
-          val nowRefresh = Calendar.getInstance()
-          nowRefresh.add(Calendar.DATE, config.getInt("uc4.authentication.refresh"))
-          val refreshToken =
-            Jwts.builder()
-              .setSubject("refresh")
-              .setExpiration(nowRefresh.getTime)
-              .claim("username", username)
-              .claim("authenticationRole", entry.role.toString)
-              .signWith(SignatureAlgorithm.HS256, key)
-              .compact()
-
-          val nowLogin = Calendar.getInstance()
-          val logoutTimer = config.getInt("uc4.authentication.login")
-          nowLogin.add(Calendar.MINUTE, logoutTimer)
-          val loginToken =
-            Jwts.builder()
-              .setSubject("login")
-              .setExpiration(nowLogin.getTime)
-              .claim("username", username)
-              .claim("authenticationRole", entry.role.toString)
-              .signWith(SignatureAlgorithm.HS256, key)
-              .compact()
-
-          val dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
-          dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
+          val (refreshToken, date) = createRefreshToken(username, entry.role)
+          val (loginToken, logoutTimer) = createLoginToken(username, entry.role)
 
           (ResponseHeader(200, MessageProtocol.empty, List(
-            ("Set-Cookie", s"refresh=$refreshToken; SameSite=Strict; Secure; HttpOnly; Expires=${dateFormat.format(nowRefresh.getTime)} ;;" +
-              s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=${logoutTimer * 60}")
+            ("Set-Cookie", s"refresh=$refreshToken; SameSite=Strict; Secure; HttpOnly; Expires=$date ;;" +
+              s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=$logoutTimer")
           )), Done)
         }
       case None =>
@@ -125,40 +101,47 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     header.getHeader("Cookie") match {
       case Some(cookies) => cookies.split(";").map(_.trim).find(_.startsWith("refresh=")) match {
         case Some(s"refresh=$token") =>
-          try {
-            val key = config.getString("play.http.secret.key")
-            val claims = Jwts.parser().setSigningKey(key).parseClaimsJws(token).getBody
-            val username = claims.get("username", classOf[String])
-            val authenticationRole = claims.get("authenticationRole", classOf[String])
+          val (loginToken, logoutTimer, username) = createLoginTokenFromRefreshToken(token)
 
-            val now = Calendar.getInstance()
-            val logoutTimer = config.getInt("uc4.authentication.login")
-            now.add(Calendar.MINUTE, logoutTimer)
-            val loginToken =
-              Jwts.builder()
-                .setSubject("login")
-                .setExpiration(now.getTime)
-                .claim("username", username)
-                .claim("authenticationRole", authenticationRole)
-                .signWith(SignatureAlgorithm.HS256, key)
-                .compact()
-
-            Future.successful(
-              (ResponseHeader(200, MessageProtocol.empty, List(
-                ("Set-Cookie", s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=${logoutTimer * 60}")
-              )), JsonUsername(username))
-            )
-          }
-          catch {
-            case _: ExpiredJwtException   => throw CustomException.RefreshTokenExpired
-            case _: MalformedJwtException => throw CustomException.MalformedRefreshToken
-            case _: SignatureException    => throw CustomException.RefreshTokenSignatureError
-            case _: Exception             => throw CustomException.InternalServerError
-          }
+          Future.successful(
+            (ResponseHeader(200, MessageProtocol.empty, List(
+              ("Set-Cookie", s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=$logoutTimer")
+            )), JsonUsername(username))
+          )
         case _ => throw CustomException.AuthorizationError
       }
       case _ => throw CustomException.AuthorizationError
     }
+  }
+
+  /** Logs a user in and returns a refresh and a login token in the body */
+  override def loginMachineUser: ServiceCall[NotUsed, Tokens] = ServerServiceCall { (header, _) =>
+    val (username, password) = getUserAndPassword(header)
+
+    entityRef(Hashing.sha256(username)).ask[Option[AuthenticationEntry]](replyTo => GetAuthentication(replyTo)).map {
+      case Some(entry) =>
+        if (entry.password != Hashing.sha256(entry.salt + password)) {
+          throw CustomException.BasicAuthorizationError
+        }
+        else {
+          val (refreshToken, _) = createRefreshToken(username, entry.role)
+          val (loginToken, _) = createLoginToken(username, entry.role)
+
+          (ResponseHeader(200, MessageProtocol.empty, List()), Tokens(loginToken, refreshToken))
+        }
+      case None =>
+        throw CustomException.BasicAuthorizationError
+    }
+  }
+
+  /** Generates a new login token from a refresh token in the bearer header */
+  override def refreshMachineUser: ServiceCall[NotUsed, RefreshToken] = ServerServiceCall { (header, _) =>
+    val refreshToken = getBearerToken(header)
+    val (loginToken, _, username) = createLoginTokenFromRefreshToken(refreshToken)
+
+    Future.successful(
+      (ResponseHeader(200, MessageProtocol.empty, List()), RefreshToken(loginToken, username))
+    )
   }
 
   /** Logs the user out */
@@ -183,7 +166,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
   /** Reads username and password from the header
     *
     * @param requestHeader with the an authentication header
-    * @return an Option with a String tuple
+    * @return a String tuple with username and password
     */
   private def getUserAndPassword(requestHeader: RequestHeader): (String, String) = {
     val userPw = requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
@@ -200,6 +183,109 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     }
     else {
       userPw.get
+    }
+  }
+
+  /** Reads bearer token from the header
+    *
+    * @param requestHeader with the an authentication header
+    * @return the token as a string
+    */
+  private def getBearerToken(requestHeader: RequestHeader): String = {
+    val token = requestHeader.getHeader("Authorization").getOrElse("").split("\\s+") match {
+      case Array("Bearer", token) => Some(token)
+      case _ => None
+    }
+
+    if (token.isEmpty) {
+      throw CustomException.AuthorizationError
+    }
+    else {
+      token.get
+    }
+  }
+
+  /** Create a refresh token out of the given parameters
+    *
+    * @param username of the token owner
+    * @param role of the token owner
+    * @return a String tuple with the token as a string and the formatted expiration date
+    */
+  private def createRefreshToken(username: String, role: AuthenticationRole): (String, String) = {
+    val key = config.getString("play.http.secret.key")
+
+    val nowRefresh = Calendar.getInstance()
+    nowRefresh.add(Calendar.DATE, config.getInt("uc4.authentication.refresh"))
+
+    val dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
+    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"))
+
+    val refreshToken = Jwts.builder()
+      .setSubject("refresh")
+      .setExpiration(nowRefresh.getTime)
+      .claim("username", username)
+      .claim("authenticationRole", role.toString)
+      .signWith(SignatureAlgorithm.HS256, key)
+      .compact()
+
+    (refreshToken, dateFormat.format(nowRefresh.getTime))
+  }
+
+  /** Create a login token out of the given parameters
+    *
+    * @param username of the token owner
+    * @param role of the token owner
+    * @return a tuple with the token as a string and the expiration time in minutes
+    */
+  private def createLoginToken(username: String, role: AuthenticationRole): (String, Int) = {
+    val key = config.getString("play.http.secret.key")
+
+    val now = Calendar.getInstance()
+    val logoutTimer = config.getInt("uc4.authentication.login")
+    now.add(Calendar.MINUTE, logoutTimer)
+
+    val loginToken = Jwts.builder()
+      .setSubject("login")
+      .setExpiration(now.getTime)
+      .claim("username", username)
+      .claim("authenticationRole", role.toString)
+      .signWith(SignatureAlgorithm.HS256, key)
+      .compact()
+
+    (loginToken, logoutTimer * 60)
+  }
+
+  /** Create a login token out of the given refresh token
+    *
+    * @param refreshToken of the token owner
+    * @return a tuple with the token as a string, the expiration time in minutes and the username of the token owner
+    */
+  private def createLoginTokenFromRefreshToken(refreshToken: String): (String, Int, String) = {
+    try {
+      val key = config.getString("play.http.secret.key")
+      val claims = Jwts.parser().setSigningKey(key).parseClaimsJws(refreshToken).getBody
+      val username = claims.get("username", classOf[String])
+      val authenticationRole = claims.get("authenticationRole", classOf[String])
+
+      val now = Calendar.getInstance()
+      val logoutTimer = config.getInt("uc4.authentication.login")
+      now.add(Calendar.MINUTE, logoutTimer)
+      val loginToken =
+        Jwts.builder()
+          .setSubject("login")
+          .setExpiration(now.getTime)
+          .claim("username", username)
+          .claim("authenticationRole", authenticationRole)
+          .signWith(SignatureAlgorithm.HS256, key)
+          .compact()
+
+      (loginToken, logoutTimer * 60, username)
+    }
+    catch {
+      case _: ExpiredJwtException   => throw CustomException.RefreshTokenExpired
+      case _: MalformedJwtException => throw CustomException.MalformedRefreshToken
+      case _: SignatureException    => throw CustomException.RefreshTokenSignatureError
+      case _: Exception             => throw CustomException.InternalServerError
     }
   }
 }

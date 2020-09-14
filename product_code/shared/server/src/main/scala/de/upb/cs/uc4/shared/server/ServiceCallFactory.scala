@@ -65,6 +65,12 @@ object ServiceCallFactory {
     }
   }
 
+  /** Checks if a token is a valid token
+    *
+    * @param token to check
+    * @param config configuration of the application
+    * @return the username and the authentication role of the owner of the token
+    */
   private def checkLoginToken(token: String)(implicit config: Config): (String, AuthenticationRole) = {
     try {
       val claims = Jwts.parser().setSigningKey(config.getString("play.http.secret.key")).parseClaimsJws(token).getBody
@@ -83,16 +89,38 @@ object ServiceCallFactory {
 
   /** Reads the login token out of the header
     *
-    * @param requestHeader with the a cookie header
+    * @param requestHeader with the a cookie header or an authorization header
     * @return the token as string
     */
   private def getLoginToken(requestHeader: RequestHeader): String = {
-    requestHeader.getHeader("Cookie") match {
+    val cookieToken = requestHeader.getHeader("Cookie") match {
       case Some(cookies) => cookies.split(";").map(_.trim).find(_.startsWith("login=")) match {
-        case Some(s"login=$token") => token
-        case _                     => throw CustomException.AuthorizationError
+        case Some(s"login=$token") => Some(token)
+        case _                     => None
       }
-      case _ => throw CustomException.AuthorizationError
+      case _ => None
+    }
+
+    val authorizationToken = requestHeader.getHeader("Authorization") match {
+      case Some(header) =>
+        header.split("\\s+") match {
+          case Array("Bearer", token) => Some(token)
+          case _ => None
+        }
+      case _ => None
+    }
+
+    if (cookieToken.isDefined && authorizationToken.isDefined) {
+      throw CustomException.MultipleAuthorizationError
+    }
+    else if (cookieToken.isDefined) {
+      cookieToken.get
+    }
+    else if (authorizationToken.isDefined) {
+      authorizationToken.get
+    }
+    else {
+      throw CustomException.AuthorizationError
     }
   }
 
@@ -110,5 +138,4 @@ object ServiceCallFactory {
         )), Done)
       }
   }
-
 }
