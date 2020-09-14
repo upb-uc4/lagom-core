@@ -8,10 +8,10 @@ import play.filters.gzip.GzipFilterComponents
 
 abstract class UC4Application(context: LagomApplicationContext)
   extends LagomApplication(context)
-    with CORSComponents
-    with GzipFilterComponents
-    with AhcWSComponents
-    with AuthenticationComponent {
+  with CORSComponents
+  with GzipFilterComponents
+  with AhcWSComponents
+  with AuthenticationComponent {
 
   // Set HttpFilter to the default CorsFilter and GzipFilter
   override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter, gzipFilter)
