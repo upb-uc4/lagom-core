@@ -280,6 +280,32 @@ class UserServiceImpl(
       }
   }
 
+  /** Gets the image of the user */
+  override def getImage(username: String): ServiceCall[NotUsed, Array[Byte]] = authenticated[NotUsed, Array[Byte]](AuthenticationRole.All: _*) {
+    ServerServiceCall { (_, _) =>
+      database.getImage(username).map {
+        case Some(array) => (ResponseHeader(200, MessageProtocol.empty, List()), array)
+        case None        => throw CustomException.NotFound
+      }
+    }
+  }
+
+  /** Sets the image of the user */
+  override def setImage(username: String): ServiceCall[Array[Byte], Done] =
+    identifiedAuthenticated[Array[Byte], Done](AuthenticationRole.All: _*) { (authUsername, role) =>
+      ServerServiceCall { (_, image) =>
+        if (role != AuthenticationRole.Admin && authUsername != username) {
+          throw CustomException.OwnerMismatch
+        }
+
+        val ref = entityRef(username)
+        ref.ask[Confirmation](replyTo => SetImage(image, replyTo)).map {
+          case Accepted => (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+          case RejectedWithError(error, reason) => throw new CustomException(error, reason)
+        }
+      }
+    }
+
   /** Allows GET, POST */
   override def allowedGetPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
 

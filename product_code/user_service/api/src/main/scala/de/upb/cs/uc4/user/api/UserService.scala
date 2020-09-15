@@ -58,6 +58,12 @@ trait UserService extends UC4Service {
   /** Update latestMatriculation */
   def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done]
 
+  /** Gets the image of the user */
+  def getImage(username: String): ServiceCall[NotUsed, Array[Byte]]
+
+  /** Sets the image of the user */
+  def setImage(username: String): ServiceCall[Array[Byte], Done]
+
   // OPTIONS
   /** Allows GET, POST */
   def allowedGetPost: ServiceCall[NotUsed, Done]
@@ -96,6 +102,10 @@ trait UserService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/admins?usernames", getAllAdmins _),
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGet _),
 
+        restCall(Method.GET, pathPrefix + "/users/:username/image", getImage _),
+        restCall(Method.PUT, pathPrefix + "/users/:username/image", setImage _),
+        restCall(Method.OPTIONS, pathPrefix + "/users/:username/image", allowedDeleteGetPut _),
+
         //Not exposed
         restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _)
       )
@@ -119,7 +129,12 @@ trait UserService extends UC4Service {
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/lecturers\\E" + "(\\?([^\\/\\?]+))?"),
 
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?"),
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?")
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?"),
+
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image"""),
+        ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image"""),
+        ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/image\\E"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image""")
       )
       .withTopics(
         topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)

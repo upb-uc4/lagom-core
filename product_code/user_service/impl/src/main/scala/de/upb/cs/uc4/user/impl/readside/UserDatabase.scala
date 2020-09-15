@@ -34,16 +34,32 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
 
   // Specific tables
   class AdminTable(tag: Tag) extends UserTable(tag, "Admin")
+
   class LecturerTable(tag: Tag) extends UserTable(tag, "Lecturer")
+
   class StudentTable(tag: Tag) extends UserTable(tag, "Student")
+
+  /** Entry definition of the image table */
+  case class ImageEntry(username: String, image: Array[Byte])
+
+  /** Table definition of the image table */
+  class ImageTable(tag: Tag) extends Table[ImageEntry](tag, s"uc4ImageTable") {
+    def username: Rep[String] = column[String]("username", O.PrimaryKey)
+
+    def image: Rep[Array[Byte]] = column[Array[Byte]]("image")
+
+    override def * : ProvenShape[ImageEntry] = (username, image) <> ((ImageEntry.apply _).tupled, ImageEntry.unapply)
+  }
 
   val admins = TableQuery[AdminTable]
   val lecturers = TableQuery[LecturerTable]
   val students = TableQuery[StudentTable]
+  val images = TableQuery[ImageTable]
 
   /** Creates all needed tables for the different roles */
   def createTable(): DBIOAction[Unit, NoStream, Effect.Schema] = {
-    admins.schema.createIfNotExists >> //AND THEN
+    images.schema.createIfNotExists >> //AND THEN
+      admins.schema.createIfNotExists >> //AND THEN
       lecturers.schema.createIfNotExists >> //AND THEN
       students.schema.createIfNotExists.andFinally(DBIO.successful {
         //Add default users
@@ -101,6 +117,24 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       .transactionally
   }
 
+  /** Returns an option of the image of a user
+    *
+    * @param username of the owner of the image
+    */
+  def getImage(username: String): Future[Option[Array[Byte]]] =
+    database.run(findImageByUsernameQuery(username))
+
+  /** Creates or updates the image of a user
+    *
+    * @param username of the owner of the image
+    * @param newImage as byte array
+    */
+  def setImage(username: String, newImage: Array[Byte]): DBIO[Done] =
+    images
+      .insertOrUpdate(ImageEntry(username, newImage))
+      .map(_ => Done)
+      .transactionally
+
   /** Returns the table for the specific role
     *
     * @param role to specify the table
@@ -122,11 +156,22 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
   /** Returns the query to find a user by his username
     *
     * @param username of the user
-    * @param table on which the query is executed
+    * @param table    on which the query is executed
     */
   private def findByUsernameQuery(username: String, table: TableQuery[_ <: UserTable]): DBIO[Option[String]] =
     table
       .filter(_.username === username)
       .result
       .headOption
+
+  /** Returns the query to find an image by a username
+    *
+    * @param username of the owner of the image
+    */
+  private def findImageByUsernameQuery(username: String): DBIO[Option[Array[Byte]]] =
+    images
+      .filter(_.username === username)
+      .result
+      .headOption
+      .map(_.map(_.image))
 }

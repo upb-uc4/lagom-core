@@ -27,7 +27,7 @@ abstract class UserApplication(context: LagomApplicationContext)
   lazy val authentication: AuthenticationService = serviceClient.implement[AuthenticationService]
 
   // Bind the service that this server provides
-  override lazy val lagomServer: LagomServer = serverFor[UserService](wire[UserServiceImpl])
+  override lazy val lagomServer: LagomServer = serverFor[UserService](wire[UserServiceImpl]).additionalRouter(wire[ImageUploadRouter].router)
 
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = UserSerializerRegistry
