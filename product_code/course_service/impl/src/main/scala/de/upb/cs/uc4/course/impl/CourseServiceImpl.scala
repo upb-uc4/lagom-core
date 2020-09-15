@@ -34,10 +34,6 @@ class CourseServiceImpl(
   private def entityRef(id: String): EntityRef[CourseCommand] =
     clusterSharding.entityRefFor(CourseState.typeKey, id)
 
-  def addAuthenticationHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
-    origin => origin.addHeader("Cookie", serviceHeader.getHeader("Cookie").getOrElse(""))
-  }
-
   implicit val timeout: Timeout = Timeout(15.seconds)
 
   /** @inheritdoc */
