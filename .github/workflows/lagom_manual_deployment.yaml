@@ -1,4 +1,4 @@
-name: Lagom Deployment Pipeline
+name: Lagom Manual Deployment Pipeline
 
 on:
   # manual triggers with parameters
