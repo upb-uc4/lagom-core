@@ -1,8 +1,10 @@
-# [WIP v.0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.7.1...course-v0.8.1) (2020-XX-XX)
+# [v.0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.7.1...course-v0.8.1) (2020-09-15)
 ## Feature
 - Supports Bearer Authentication with JWT token
+ - Enabling Gzipping
 ## Refactor
 ## Bugfix
+ - Fix hard coded HTTP Secret
 
 # [v.0.7.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.7.0...course-v0.7.1) (2020-09-01)
 ## Feature
