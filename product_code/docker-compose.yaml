@@ -9,3 +9,11 @@ services:
       - "POSTGRES_PASSWORD=admin"
     ports:
       - "5432:5432"
+  nginx:
+    image: nginx:latest
+    container_name: imagenginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/images:/data/images
+    ports:
+      - "9050:80"
