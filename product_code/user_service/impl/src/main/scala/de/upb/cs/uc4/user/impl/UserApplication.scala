@@ -4,33 +4,24 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{ LagomApplication, LagomApplicationContext, LagomServer }
+import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.shared.server.AuthenticationComponent
+import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{ UserBehaviour, UserState }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import play.api.db.HikariCPComponents
-import play.api.libs.ws.ahc.AhcWSComponents
-import play.api.mvc.EssentialFilter
-import play.filters.cors.CORSComponents
 
 abstract class UserApplication(context: LagomApplicationContext)
-  extends LagomApplication(context)
+  extends UC4Application(context)
   with SlickPersistenceComponents
   with JdbcPersistenceComponents
-  with HikariCPComponents
-  with CORSComponents
-  with AhcWSComponents
-  with AuthenticationComponent {
+  with HikariCPComponents {
 
   // Create ReadSide
   lazy val database: UserDatabase = wire[UserDatabase]
   lazy val processor: UserEventProcessor = wire[UserEventProcessor]
-
-  // Set HttpFilter to the default CorsFilter
-  override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
 
   // Bind the authentication service
   lazy val authentication: AuthenticationService = serviceClient.implement[AuthenticationService]

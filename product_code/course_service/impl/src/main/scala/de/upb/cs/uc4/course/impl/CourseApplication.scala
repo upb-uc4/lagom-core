@@ -5,34 +5,25 @@ import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{ LagomApplication, LagomApplicationContext, LagomServer }
+import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.{ CourseBehaviour, CourseState }
 import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
-import de.upb.cs.uc4.shared.server.AuthenticationComponent
+import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.user.api.UserService
 import play.api.db.HikariCPComponents
-import play.api.libs.ws.ahc.AhcWSComponents
-import play.api.mvc.EssentialFilter
-import play.filters.cors.CORSComponents
 
 abstract class CourseApplication(context: LagomApplicationContext)
-  extends LagomApplication(context)
+  extends UC4Application(context)
   with SlickPersistenceComponents
   with JdbcPersistenceComponents
   with HikariCPComponents
-  with LagomKafkaComponents
-  with CORSComponents
-  with AhcWSComponents
-  with AuthenticationComponent {
+  with LagomKafkaComponents {
 
   // Create ReadSide
   lazy val database: CourseDatabase = wire[CourseDatabase]
   lazy val processor: CourseEventProcessor = wire[CourseEventProcessor]
-
-  // Set HttpFilter to the default CorsFilter
-  override val httpFilters: Seq[EssentialFilter] = Seq(corsFilter)
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CourseService](wire[CourseServiceImpl])
