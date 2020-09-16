@@ -81,17 +81,22 @@ class UserServiceImpl(
 
   /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
   override def addUser(): ServerServiceCall[PostMessageUser, User] = authenticated(AuthenticationRole.Admin) {
-    ServerServiceCall { (_, postMessageUserRaw) =>
+    ServerServiceCall { (header, postMessageUserRaw) =>
 
       val postMessageUser = postMessageUserRaw.clean
+      val ref = entityRef(postMessageUser.getUser.username)
+
+      ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
+        case Some(user) =>
+          throw CustomException.Duplicate
+        case None =>
+      }
 
       //Validate PostMessage
       val validationErrors = postMessageUser.validate
       if (validationErrors.nonEmpty) {
         throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
       }
-
-      val ref = entityRef(postMessageUser.getUser.username)
 
       ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
         .flatMap {
@@ -134,6 +139,7 @@ class UserServiceImpl(
           if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
             throw CustomException.OwnerMismatch
           }
+          //TODO add check, if user does not exist, since that should happen BEFORE validation. Check from state already removed/changed
 
           //validate new user
           val validationErrors = user.validate
