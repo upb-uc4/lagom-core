@@ -61,9 +61,9 @@ case class UserState(optUser: Option[User]) {
           Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))
         }
 
-      case SetImage(image, replyTo) =>
+      case SetImage(imagePath, replyTo) =>
         if (optUser.isDefined) {
-          Effect.persist(OnImageSet(optUser.get.username, image)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnImageSet(optUser.get.username, imagePath)).thenReply(replyTo) { _ => Accepted }
         }
         else {
           Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))

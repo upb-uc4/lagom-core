@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.user.impl
 
+import java.io.{ BufferedInputStream, File, FileInputStream }
+
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
@@ -24,6 +26,7 @@ import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.PostMessageUser
 import de.upb.cs.uc4.user.model.user._
+import play.api.http.HeaderNames
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -284,23 +287,23 @@ class UserServiceImpl(
   override def getImage(username: String): ServiceCall[NotUsed, Array[Byte]] = authenticated[NotUsed, Array[Byte]](AuthenticationRole.All: _*) {
     ServerServiceCall { (_, _) =>
       database.getImage(username).map {
-        case Some(array) => (ResponseHeader(200, MessageProtocol.empty, List()), array)
+        case Some(array) => (ResponseHeader(200, MessageProtocol.apply(contentType = Some("image/jpg")), List()), array)
         case None        => throw CustomException.NotFound
       }
     }
   }
 
   /** Sets the image of the user */
-  override def setImage(username: String): ServiceCall[Array[Byte], Done] =
-    identifiedAuthenticated[Array[Byte], Done](AuthenticationRole.All: _*) { (authUsername, role) =>
-      ServerServiceCall { (_, image) =>
+  override def setImage(username: String): ServiceCall[String, Done] =
+    identifiedAuthenticated[String, Done](AuthenticationRole.All: _*) { (authUsername, role) =>
+      ServerServiceCall { (_, imagePath) =>
         if (role != AuthenticationRole.Admin && authUsername != username) {
           throw CustomException.OwnerMismatch
         }
 
         val ref = entityRef(username)
-        ref.ask[Confirmation](replyTo => SetImage(image, replyTo)).map {
-          case Accepted => (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+        ref.ask[Confirmation](replyTo => SetImage(imagePath, replyTo)).map {
+          case Accepted => (ResponseHeader(200, MessageProtocol.empty, List()).addHeader(HeaderNames.CONTENT_DISPOSITION, "attachment; filename=\"ben.jpg\""), Done)
           case RejectedWithError(error, reason) => throw new CustomException(error, reason)
         }
       }

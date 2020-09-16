@@ -19,7 +19,7 @@ class UserEventProcessor(readSide: SlickReadSide, database: UserDatabase)
         database.removeUser(envelope.event.user)
       }
       .setEventHandler[OnImageSet] { envelope =>
-        database.setImage(envelope.event.username, envelope.event.image)
+        database.setImage(envelope.event.username, envelope.event.imagePath)
       }
       .build()
 

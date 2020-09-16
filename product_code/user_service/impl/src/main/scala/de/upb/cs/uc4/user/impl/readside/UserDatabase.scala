@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.user.impl.readside
 
+import java.io.{ BufferedInputStream, File, FileInputStream }
+
 import akka.Done
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
@@ -127,13 +129,16 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
   /** Creates or updates the image of a user
     *
     * @param username of the owner of the image
-    * @param newImage as byte array
+    * @param newImagePath as byte array
     */
-  def setImage(username: String, newImage: Array[Byte]): DBIO[Done] =
+  def setImage(username: String, newImagePath: String): DBIO[Done] = {
+    val bis = new BufferedInputStream(new FileInputStream(new File(newImagePath)))
+    val image: Array[Byte] = LazyList.continually(bis.read).takeWhile(_ != -1).map(_.toByte).toArray
     images
-      .insertOrUpdate(ImageEntry(username, newImage))
+      .insertOrUpdate(ImageEntry(username, image))
       .map(_ => Done)
       .transactionally
+  }
 
   /** Returns the table for the specific role
     *
