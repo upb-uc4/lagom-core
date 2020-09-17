@@ -83,9 +83,14 @@ class UserServiceImpl(
   override def addUser(): ServerServiceCall[PostMessageUser, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, postMessageUserRaw) =>
       val postMessageUser = postMessageUserRaw.clean
+      val ref = entityRef(postMessageUser.getUser.username)
 
-      //Validate PostMessage
-      val validationErrorsFuture = postMessageUser match {
+      ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
+        case Some(_) =>
+          throw CustomException.Duplicate
+        case None =>
+          //Validate PostMessage
+          val validationErrorsFuture = postMessageUser match {
         case postMessageStudent: PostMessageStudent =>
           var studentValidationErrors = postMessageStudent.validate
           val student = postMessageUser.getUser.asInstanceOf[Student]
@@ -106,7 +111,7 @@ class UserServiceImpl(
             throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
           }
 
-          val ref = entityRef(postMessageUser.getUser.username)
+
 
           ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
             .flatMap {
@@ -142,24 +147,24 @@ class UserServiceImpl(
         ServerServiceCall { (header, userRaw) =>
           val user = userRaw.clean
           // Check, if the username in path is different than the username in the object
-          if (username != user.username.trim) {
+          if (username != user.username) {
             throw CustomException.PathParameterMismatch
           }
 
           // If invoked by a non-Admin, check if the manipulated object is owned by the user
-          if (role != AuthenticationRole.Admin && authUsername != user.username.trim) {
+          if (role != AuthenticationRole.Admin && authUsername != user.username) {
             throw CustomException.OwnerMismatch
-          }
-
-          //validate new user
-          val validationErrors = user.validate
-          if (validationErrors.nonEmpty) {
-            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
           }
 
           // We need to know what role the user has, because their editable fields are different
           getUser(username).invokeWithHeaders(header, NotUsed).map {
             case (_, oldUser) =>
+              //validate new user
+              val validationErrors = user.validate
+              if (validationErrors.nonEmpty) {
+                throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+              }
+
               oldUser match {
                 case _: Student if !user.isInstanceOf[Student] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
                 case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
@@ -179,7 +184,6 @@ class UserServiceImpl(
               }
               else {
                 val ref = entityRef(user.username)
-
                 ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
                   .map {
                     case Accepted => // Update successful
