@@ -1,7 +1,5 @@
 package de.upb.cs.uc4.user.impl
 
-import java.io.{ BufferedInputStream, File, FileInputStream }
-
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
@@ -26,7 +24,6 @@ import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.PostMessageUser
 import de.upb.cs.uc4.user.model.user._
-import play.api.http.HeaderNames
 
 import scala.collection.immutable
 import scala.concurrent.duration._

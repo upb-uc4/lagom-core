@@ -9,6 +9,7 @@ object ErrorType extends Enumeration {
   NotEnoughPrivileges, OwnerMismatch, //403
   KeyNotFound, //404
   KeyDuplicate, //409
+  EntityTooLarge, //413
   Teapot, //418
   PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, //422
   Validation, UneditableFields, //422 In a DetailedError
@@ -46,6 +47,8 @@ object ErrorType extends Enumeration {
       case KeyNotFound => "Key value is not in use"
       //409
       case KeyDuplicate => "Key is already in use"
+      //413
+      case EntityTooLarge => "Entity is too large"
       //418
       case Teapot => "I'm a teapot"
       //422
