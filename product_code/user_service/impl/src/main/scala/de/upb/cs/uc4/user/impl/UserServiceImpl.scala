@@ -12,7 +12,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, InformativeError }
+import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -284,8 +284,9 @@ class UserServiceImpl(
   override def getImage(username: String): ServiceCall[NotUsed, ByteString] = authenticated[NotUsed, ByteString](AuthenticationRole.All: _*) {
     ServerServiceCall { (_, _) =>
       database.getImage(username).map {
-        case Some(array) => (ResponseHeader(200, MessageProtocol.apply(contentType = Some("image/jpeg; charset=UTF-8")), List()), ByteString.apply(array))
-        case None        => throw CustomException.NotFound
+        case Some((array, contentType)) =>
+          (ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
+        case None => throw CustomException.NotFound
       }
     }
   }
@@ -293,15 +294,24 @@ class UserServiceImpl(
   /** Sets the image of the user */
   override def setImage(username: String): ServerServiceCall[String, Done] =
     identifiedAuthenticated[String, Done](AuthenticationRole.All: _*) { (authUsername, role) =>
-      ServerServiceCall { (_, imagePath) =>
+      ServerServiceCall { (header, imagePath) =>
         if (role != AuthenticationRole.Admin && authUsername != username) {
           throw CustomException.OwnerMismatch
         }
 
-        val ref = entityRef(username)
-        ref.ask[Confirmation](replyTo => SetImage(imagePath, replyTo)).map {
-          case Accepted => (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
-          case RejectedWithError(error, reason) => throw new CustomException(error, reason)
+        header.getHeader("Content-Type") match {
+          case Some(contentType) =>
+            if (config.getStringList("uc4.image.supportedTypes").contains(contentType.trim)) {
+              val ref = entityRef(username)
+              ref.ask[Confirmation](replyTo => SetImage(imagePath, contentType, replyTo)).map {
+                case Accepted => (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                case RejectedWithError(error, reason) => throw new CustomException(error, reason)
+              }
+            }
+            else {
+              throw CustomException.UnsupportedMediaType
+            }
+          case None => throw new CustomException(400, DetailedError(ErrorType.MissingHeader, Seq(SimpleError("Content-Type", "Missing"))))
         }
       }
     }

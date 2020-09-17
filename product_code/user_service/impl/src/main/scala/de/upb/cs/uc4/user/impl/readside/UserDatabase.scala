@@ -42,7 +42,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
   class StudentTable(tag: Tag) extends UserTable(tag, "Student")
 
   /** Entry definition of the image table */
-  case class ImageEntry(username: String, image: Array[Byte])
+  case class ImageEntry(username: String, image: Array[Byte], contentType: String)
 
   /** Table definition of the image table */
   class ImageTable(tag: Tag) extends Table[ImageEntry](tag, s"uc4ImageTable") {
@@ -50,7 +50,9 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
 
     def image: Rep[Array[Byte]] = column[Array[Byte]]("image")
 
-    override def * : ProvenShape[ImageEntry] = (username, image) <> ((ImageEntry.apply _).tupled, ImageEntry.unapply)
+    def contentType: Rep[String] = column[String]("contentType")
+
+    override def * : ProvenShape[ImageEntry] = (username, image, contentType) <> ((ImageEntry.apply _).tupled, ImageEntry.unapply)
   }
 
   val admins = TableQuery[AdminTable]
@@ -66,9 +68,9 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       students.schema.createIfNotExists.andFinally(DBIO.successful {
         //Add default users
         val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
-        val student: User = Student("student", Role.Student, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1990-12-11", "", "7421769")
-        val lecturer: User = Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
-        val admin: User = Admin("admin", Role.Admin, address, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1992-12-10")
+        val student: User = Student("student", Role.Student, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1990-12-11", "", "7421769")
+        val lecturer: User = Lecturer("lecturer", Role.Lecturer, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+        val admin: User = Admin("admin", Role.Admin, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1992-12-10")
 
         addDefaultUser(student)
         addDefaultUser(lecturer)
@@ -123,7 +125,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
     *
     * @param username of the owner of the image
     */
-  def getImage(username: String): Future[Option[Array[Byte]]] =
+  def getImage(username: String): Future[Option[(Array[Byte], String)]] =
     database.run(findImageByUsernameQuery(username))
 
   /** Creates or updates the image of a user
@@ -131,11 +133,11 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
     * @param username of the owner of the image
     * @param newImagePath as byte array
     */
-  def setImage(username: String, newImagePath: String): DBIO[Done] = {
+  def setImage(username: String, newImagePath: String, contentType: String): DBIO[Done] = {
     val bis = new BufferedInputStream(new FileInputStream(new File(newImagePath)))
     val image: Array[Byte] = LazyList.continually(bis.read).takeWhile(_ != -1).map(_.toByte).toArray
     images
-      .insertOrUpdate(ImageEntry(username, image))
+      .insertOrUpdate(ImageEntry(username, image, contentType))
       .map(_ => Done)
       .transactionally
   }
@@ -173,10 +175,10 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
     *
     * @param username of the owner of the image
     */
-  private def findImageByUsernameQuery(username: String): DBIO[Option[Array[Byte]]] =
+  private def findImageByUsernameQuery(username: String): DBIO[Option[(Array[Byte], String)]] =
     images
       .filter(_.username === username)
       .result
       .headOption
-      .map(_.map(_.image))
+      .map(_.map(entry => (entry.image, entry.contentType)))
 }
