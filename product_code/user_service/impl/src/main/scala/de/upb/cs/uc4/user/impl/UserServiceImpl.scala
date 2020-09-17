@@ -91,27 +91,25 @@ class UserServiceImpl(
         case None =>
           //Validate PostMessage
           val validationErrorsFuture = postMessageUser match {
-        case postMessageStudent: PostMessageStudent =>
-          var studentValidationErrors = postMessageStudent.validate
-          val student = postMessageUser.getUser.asInstanceOf[Student]
-          getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
-            matDuplicate =>
-              if (matDuplicate) {
-                studentValidationErrors :+= SimpleError("student.matriculationId", "MatriculationID already in use.")
+            case postMessageStudent: PostMessageStudent =>
+              var studentValidationErrors = postMessageStudent.validate
+              val student = postMessageUser.getUser.asInstanceOf[Student]
+              getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
+                matDuplicate =>
+                  if (matDuplicate) {
+                    studentValidationErrors :+= SimpleError("student.matriculationId", "MatriculationID already in use.")
+                  }
+                  studentValidationErrors
               }
-              studentValidationErrors
+            case _ =>
+              Future.successful(postMessageUser.validate)
           }
-        case _ =>
-          Future.successful(postMessageUser.validate)
-      }
 
       validationErrorsFuture.flatMap {
         validationErrors =>
           if (validationErrors.nonEmpty) {
             throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
           }
-
-
 
           ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
             .flatMap {
@@ -136,6 +134,7 @@ class UserServiceImpl(
               case RejectedWithError(code, errorResponse) =>
                 throw new CustomException(code, errorResponse)
             }
+      }
       }
     }
   }
