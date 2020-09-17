@@ -104,11 +104,12 @@ trait UserService extends UC4Service {
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGet _),
 
         restCall(Method.GET, pathPrefix + "/users/:username/image", getImage _)(MessageSerializer.NotUsedMessageSerializer, MessageSerializer.NoopMessageSerializer),
-        restCall(Method.PUT, pathPrefix + "/users/:username/image", setImage _),
+
         restCall(Method.OPTIONS, pathPrefix + "/users/:username/image", allowedDeleteGetPut _),
 
         //Not exposed
-        restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _)
+        restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
+        restCall(Method.PUT, pathPrefix + "/image/:username", setImage _)
       )
       .addAcls(
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users\\E" + "(\\?([^\\/\\?]+))?"),
@@ -133,8 +134,7 @@ trait UserService extends UC4Service {
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?"),
 
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image"""),
-        ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image"""),
-        ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/image\\E"),
+        ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users\\E" + "([^/]+)" + """\/image"""),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image""")
       )
       .withTopics(
