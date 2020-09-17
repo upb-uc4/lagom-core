@@ -105,36 +105,36 @@ class UserServiceImpl(
               Future.successful(postMessageUser.validate)
           }
 
-      validationErrorsFuture.flatMap {
-        validationErrors =>
-          if (validationErrors.nonEmpty) {
-            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
-          }
+          validationErrorsFuture.flatMap {
+            validationErrors =>
+              if (validationErrors.nonEmpty) {
+                throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+              }
 
-          ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
-            .flatMap {
-              case Accepted => // Creation Successful
-                authentication.setAuthentication().invoke(postMessageUser.authUser)
-                  .map { _ =>
-                    val header = ResponseHeader(201, MessageProtocol.empty, List())
-                      .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
-                    (header, postMessageUser.getUser)
-                  }
-                  //In case the password cant be saved
-                  .recoverWith {
-                    case authenticationException: CustomException =>
-                      ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
-                        .map[(ResponseHeader, User)] { _ =>
-                          throw authenticationException
-                        }
-                        .recover {
-                          case deletionException: Exception => throw deletionException //the deletion didn't work, a ghost user does now exist
-                        }
-                  }
-              case RejectedWithError(code, errorResponse) =>
-                throw new CustomException(code, errorResponse)
-            }
-      }
+              ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
+                .flatMap {
+                  case Accepted => // Creation Successful
+                    authentication.setAuthentication().invoke(postMessageUser.authUser)
+                      .map { _ =>
+                        val header = ResponseHeader(201, MessageProtocol.empty, List())
+                          .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
+                        (header, postMessageUser.getUser)
+                      }
+                      //In case the password cant be saved
+                      .recoverWith {
+                        case authenticationException: CustomException =>
+                          ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+                            .map[(ResponseHeader, User)] { _ =>
+                              throw authenticationException
+                            }
+                            .recover {
+                              case deletionException: Exception => throw deletionException //the deletion didn't work, a ghost user does now exist
+                            }
+                      }
+                  case RejectedWithError(code, errorResponse) =>
+                    throw new CustomException(code, errorResponse)
+                }
+          }
       }
     }
   }
