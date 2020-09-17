@@ -52,7 +52,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       probe2.expectMessage(Some(student0))
     }
 
-    "not add an already existing user" in {
+    "throw an internal error when adding an already existing user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-3")))
 
       val probe1 = createTestProbe[Confirmation]()
@@ -62,17 +62,17 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val probe2 = createTestProbe[Confirmation]()
       ref ! CreateUser(admin1, probe2.ref)
       val message = probe2.receiveMessage()
-      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 409)
+      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 500)
     }
 
     //UPDATE
-    "not update a non-existing user" in {
+    "throw an internal error when updating a non-existing user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4")))
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! UpdateUser(lecturer0, probe1.ref)
       val message = probe1.receiveMessage()
-      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 404)
+      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 500)
     }
 
     "update an existing user" in {
