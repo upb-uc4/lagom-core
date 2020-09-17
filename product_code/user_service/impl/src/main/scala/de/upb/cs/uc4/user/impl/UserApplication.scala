@@ -1,12 +1,10 @@
 package de.upb.cs.uc4.user.impl
 
-import akka.Done
 import akka.cluster.sharding.typed.scaladsl.Entity
-import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer, ServerServiceCall }
+import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.shared.server.UC4Application
@@ -14,9 +12,6 @@ import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{ UserBehaviour, UserState }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import play.api.db.HikariCPComponents
-import play.api.mvc.{ DefaultActionBuilder, PlayBodyParsers, Results }
-import play.api.routing.Router
-import play.api.routing.sird._
 
 abstract class UserApplication(context: LagomApplicationContext)
   extends UC4Application(context)
@@ -32,29 +27,8 @@ abstract class UserApplication(context: LagomApplicationContext)
   lazy val authentication: AuthenticationService = serviceClient.implement[AuthenticationService]
 
   // Bind the service that this server provides
-  override lazy val lagomServer: LagomServer = serverFor[UserService](wire[UserServiceImpl]).additionalRouter(wire[ImageUploadRouterTest].router)
-  lazy val userService: UserService = lagomServer.serviceBinding.service.asInstanceOf[UserService]
-
-  class ImageUploadRouterTest(action: DefaultActionBuilder, parser: PlayBodyParsers) {
-    val router: Router = Router.from {
-      case PUT(p"/user-management/image") =>
-        action(parser.multipartFormData) { request =>
-
-          val serviceRequest = RequestHeader.Default.addHeader("Cookie", request.headers.get("Cookie").getOrElse(""))
-
-          val filePath: String = request.body.file("image").get.ref.getAbsolutePath
-
-          val username: String = request.body.dataParts("username").head
-
-          val serviceCall: ServerServiceCall[String, Done] = userService.setImage(username).asInstanceOf[ServerServiceCall[String, Done]]
-          serviceCall.invokeWithHeaders(serviceRequest, filePath)
-
-          val filePaths = request.body.files.map(_.ref.getAbsolutePath)
-          val data = request.body.dataParts.map(tuple => tuple._1 + " -> " + tuple._2.mkString("[", ",", "]"))
-          Results.Ok(filePaths.mkString("Uploaded[", ", ", "]") + "   " + data.mkString("Data[", ", ", "]") + s"   $filePath")
-        }
-    }
-  }
+  override lazy val lagomServer: LagomServer = serverFor[UserService](wire[UserServiceImpl])
+    .additionalRouter(new ImageUploadRouter(this.defaultActionBuilder, this.playBodyParsers, this).router)
 
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = UserSerializerRegistry

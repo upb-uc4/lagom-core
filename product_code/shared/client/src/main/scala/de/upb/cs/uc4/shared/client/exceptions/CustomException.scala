@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
 import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
+import play.api.libs.json.{ Format, JsValue, Json, Writes }
 
 class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: CustomError, cause: Throwable) extends Exception(possibleErrorResponse.title, null, true, true) {
 
@@ -43,4 +44,6 @@ object CustomException {
   //500
   val InternalServerError = new CustomException(500, GenericError(ErrorType.InternalServer))
   val InternalDeserializationError = new CustomException(500, GenericError(ErrorType.UndeserializableException))
+
+  implicit val writes: Writes[CustomException] = (o: CustomException) => Json.toJson(o.getPossibleErrorResponse)
 }

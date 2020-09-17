@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.user.api
 
+import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
@@ -59,7 +60,7 @@ trait UserService extends UC4Service {
   def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done]
 
   /** Gets the image of the user */
-  def getImage(username: String): ServiceCall[NotUsed, Array[Byte]]
+  def getImage(username: String): ServiceCall[NotUsed, ByteString]
 
   /** Sets the image of the user */
   def setImage(username: String): ServiceCall[String, Done]
@@ -102,7 +103,7 @@ trait UserService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/admins?usernames", getAllAdmins _),
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGet _),
 
-        restCall(Method.GET, pathPrefix + "/users/:username/image", getImage _),
+        restCall(Method.GET, pathPrefix + "/users/:username/image", getImage _)(MessageSerializer.NotUsedMessageSerializer, MessageSerializer.NoopMessageSerializer),
         restCall(Method.PUT, pathPrefix + "/users/:username/image", setImage _),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username/image", allowedDeleteGetPut _),
 

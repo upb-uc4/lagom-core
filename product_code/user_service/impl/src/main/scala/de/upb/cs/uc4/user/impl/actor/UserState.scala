@@ -66,7 +66,7 @@ case class UserState(optUser: Option[User]) {
           Effect.persist(OnImageSet(optUser.get.username, imagePath)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))
+          Effect.reply(replyTo)(RejectedWithError(404, GenericError(ErrorType.KeyNotFound)))
         }
 
       case _ =>
