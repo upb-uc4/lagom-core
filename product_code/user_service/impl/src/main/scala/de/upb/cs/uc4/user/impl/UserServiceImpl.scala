@@ -12,7 +12,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, InformativeError }
+import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -22,7 +22,7 @@ import de.upb.cs.uc4.user.impl.events.{ OnUserDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
-import de.upb.cs.uc4.user.model.post.PostMessageUser
+import de.upb.cs.uc4.user.model.post.{ PostMessageStudent, PostMessageUser }
 import de.upb.cs.uc4.user.model.user._
 
 import scala.collection.immutable
@@ -82,40 +82,56 @@ class UserServiceImpl(
   /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
   override def addUser(): ServerServiceCall[PostMessageUser, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, postMessageUserRaw) =>
-
       val postMessageUser = postMessageUserRaw.clean
 
       //Validate PostMessage
-      val validationErrors = postMessageUser.validate
-      if (validationErrors.nonEmpty) {
-        throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+      val validationErrorsFuture = postMessageUser match {
+        case postMessageStudent: PostMessageStudent =>
+          var studentValidationErrors = postMessageStudent.validate
+          val student = postMessageUser.getUser.asInstanceOf[Student]
+          getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
+            matDuplicate =>
+              if (matDuplicate) {
+                studentValidationErrors :+= SimpleError("student.matriculationId", "MatriculationID already in use.")
+              }
+              studentValidationErrors
+          }
+        case _ =>
+          Future.successful(postMessageUser.validate)
       }
 
-      val ref = entityRef(postMessageUser.getUser.username)
+      validationErrorsFuture.flatMap {
+        validationErrors =>
+          if (validationErrors.nonEmpty) {
+            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+          }
 
-      ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
-        .flatMap {
-          case Accepted => // Creation Successful
-            authentication.setAuthentication().invoke(postMessageUser.authUser)
-              .map { _ =>
-                val header = ResponseHeader(201, MessageProtocol.empty, List())
-                  .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
-                (header, postMessageUser.getUser)
-              }
-              //In case the password cant be saved
-              .recoverWith {
-                case authenticationException: CustomException =>
-                  ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
-                    .map[(ResponseHeader, User)] { _ =>
-                      throw authenticationException
-                    }
-                    .recover {
-                      case deletionException: Exception => throw deletionException //the deletion didn't work, a ghost user does now exist
-                    }
-              }
-          case RejectedWithError(code, errorResponse) =>
-            throw new CustomException(code, errorResponse)
-        }
+          val ref = entityRef(postMessageUser.getUser.username)
+
+          ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
+            .flatMap {
+              case Accepted => // Creation Successful
+                authentication.setAuthentication().invoke(postMessageUser.authUser)
+                  .map { _ =>
+                    val header = ResponseHeader(201, MessageProtocol.empty, List())
+                      .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
+                    (header, postMessageUser.getUser)
+                  }
+                  //In case the password cant be saved
+                  .recoverWith {
+                    case authenticationException: CustomException =>
+                      ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+                        .map[(ResponseHeader, User)] { _ =>
+                          throw authenticationException
+                        }
+                        .recover {
+                          case deletionException: Exception => throw deletionException //the deletion didn't work, a ghost user does now exist
+                        }
+                  }
+              case RejectedWithError(code, errorResponse) =>
+                throw new CustomException(code, errorResponse)
+            }
+      }
     }
   }
 
