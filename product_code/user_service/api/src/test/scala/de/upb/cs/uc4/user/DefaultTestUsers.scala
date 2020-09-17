@@ -11,7 +11,7 @@ trait DefaultTestUsers {
   val address1: Address = Address("Entenweg", "41b", "13342", "Gänsenhausen", "United States")
   val address2: Address = Address("Schwanen Straße", "40c", "13342", "Venice", "Italy")
 
-  val student0: Student = Student("student0", Role.Student, address0, "firstName", "LastName", "Picture", "example0@mail.de", "+49123456789", "1990-12-11", "", "7421769")
+  val student0: Student = Student("student0", Role.Student, address0, "firstName", "LastName", "Picture", "example0@mail.de", "+49123456789", "1990-12-11", "", "7426915")
   val student1: Student = Student("student1", Role.Student, address1, "Aname", "Bname", "cPicture", "exampleD@mail.de", "+49123486688", "1995-04-11", "", "7363186")
   val student2: Student = Student("student2", Role.Student, address2, "Volder", "Hahmer", "Picture", "example2@mail.de", "+49156879773", "2001-02-27", "", "4185966")
   val student0Auth: AuthenticationUser = AuthenticationUser(student0.username, student0.username, AuthenticationRole.Student)

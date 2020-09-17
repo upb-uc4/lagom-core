@@ -10,7 +10,7 @@ import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType }
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
@@ -223,6 +223,27 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
     }
 
+    "fail on adding an already existing User without showing validation errors" in {
+      prepare(Seq(admin0)).flatMap { _ =>
+        client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
+          .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter", birthDate = "asdaaff"))).failed.flatMap { answer =>
+            answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fail on adding a Student with a duplicate matriculationId" in {
+      prepare(Seq(student0)).flatMap { _ =>
+        client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
+          .invoke(PostMessageStudent(student0Auth.copy(username = "student7"), student0.copy(username = "student7"))).failed.flatMap { answer =>
+            answer.asInstanceOf[CustomException].getPossibleErrorResponse
+              .asInstanceOf[DetailedError].invalidParams.map(_.name) should contain theSameElementsAs (Seq("student.matriculationId"))
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
     //GET TESTS
     "fetch the information of a User as an Admin" in {
       prepare(Seq(student0)).flatMap { _ =>
@@ -381,6 +402,14 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
               have length protectedErrorSize
           }
       }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not update a non-existing user with NotFound as error, even if the user does not validate" in {
+      client.updateUser(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+        .invoke(student0.copy(email = "example.com")).failed.flatMap { answer =>
+          answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+        }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 

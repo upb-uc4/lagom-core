@@ -102,12 +102,12 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
       (authUsername, role) =>
         ServerServiceCall { (header, _) =>
           if (role != AuthenticationRole.Admin && authUsername != username) {
-            //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
             throw CustomException.OwnerMismatch
           }
           userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { user =>
             if (!user.isInstanceOf[Student]) {
-              throw CustomException.InternalServerError
+              //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
+              throw CustomException.NotFound
             }
             val student = user.asInstanceOf[Student]
             entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo)).map {
