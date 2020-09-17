@@ -1,7 +1,9 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
 import de.upb.cs.uc4.shared.client.exceptions.ErrorType.ErrorType
-import play.api.libs.json.{ Format, JsResult, JsValue, Json }
+import play.api.http.{ ContentTypeOf, ContentTypes, Writeable }
+import play.api.libs.json.{ Format, JsResult, JsValue, Json, Writes }
+import play.api.mvc.Codec
 
 trait CustomError {
   val `type`: ErrorType
@@ -25,4 +27,7 @@ object CustomError {
       case iErr: InformativeError => Json.toJson(iErr)
     }
   }
+
+  implicit def jsonWritable[A](implicit writes: Writes[A], codec: Codec): Writeable[A] =
+    Writeable(Writeable.writeableOf_JsValue.transform.compose(writes.writes))(ContentTypeOf[A](Some(ContentTypes.JSON)))
 }
