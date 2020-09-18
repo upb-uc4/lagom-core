@@ -142,7 +142,8 @@ object ServiceCallFactory {
       Future.successful {
         (ResponseHeader(200, MessageProtocol.empty, List(
           ("Allow", listOfOptions + ", OPTIONS"),
-          ("Access-Control-Allow-Methods", listOfOptions + ", OPTIONS")
+          ("Access-Control-Allow-Methods", listOfOptions + ", OPTIONS"),
+          ("Accept-Encoding", "gzip")
         )), Done)
       }
   }
