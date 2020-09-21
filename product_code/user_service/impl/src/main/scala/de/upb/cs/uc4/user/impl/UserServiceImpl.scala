@@ -22,7 +22,7 @@ import de.upb.cs.uc4.user.impl.events.{ OnUserDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
-import de.upb.cs.uc4.user.model.post.{ PostMessageStudent, PostMessageUser }
+import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
 import de.upb.cs.uc4.user.model.user._
 
 import scala.collection.immutable
@@ -83,57 +83,71 @@ class UserServiceImpl(
   override def addUser(): ServerServiceCall[PostMessageUser, User] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall { (_, postMessageUserRaw) =>
       val postMessageUser = postMessageUserRaw.clean
-      val ref = entityRef(postMessageUser.getUser.username)
 
-      ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
-        case Some(_) =>
-          throw CustomException.Duplicate
-        case None =>
-          //Validate PostMessage
-          val validationErrorsFuture = postMessageUser match {
-            case postMessageStudent: PostMessageStudent =>
-              var studentValidationErrors = postMessageStudent.validate
-              val student = postMessageUser.getUser.asInstanceOf[Student]
-              getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
-                matDuplicate =>
-                  if (matDuplicate) {
-                    studentValidationErrors :+= SimpleError("student.matriculationId", "MatriculationID already in use.")
-                  }
-                  studentValidationErrors
+      val userVariableName = postMessageUser match {
+        case _: PostMessageStudent  => "student"
+        case _: PostMessageLecturer => "lecturer"
+        case _: PostMessageAdmin    => "admin"
+      }
+
+      val validationErrorsFuture = postMessageUser match {
+        case postMessageStudent: PostMessageStudent =>
+          var studentValidationErrors = postMessageStudent.validate
+          val student = postMessageUser.getUser.asInstanceOf[Student]
+          getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
+            matDuplicate =>
+              if (matDuplicate) {
+                studentValidationErrors :+= SimpleError("student.matriculationId", "MatriculationID already in use.")
               }
-            case _ =>
-              Future.successful(postMessageUser.validate)
+              studentValidationErrors
+          }
+        case _ =>
+          Future.successful(postMessageUser.validate)
+      }
+
+      validationErrorsFuture.flatMap {
+        valErrors =>
+          var validationErrors = valErrors
+
+          // Check, if username errors exist, since entityRef might fail if username is incorrect
+          if (validationErrors.map(_.name).contains(userVariableName + ".username")) {
+            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
           }
 
-          validationErrorsFuture.flatMap {
-            validationErrors =>
-              if (validationErrors.nonEmpty) {
-                throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
-              }
+          val ref = entityRef(postMessageUser.getUser.username)
+          ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap { optUser =>
+            // If username is already in use, add that error to the validation list
+            if (optUser.isDefined) {
+              validationErrors :+= SimpleError(userVariableName + ".username", "Username already in use.")
+            }
 
-              ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
-                .flatMap {
-                  case Accepted => // Creation Successful
-                    authentication.setAuthentication().invoke(postMessageUser.authUser)
-                      .map { _ =>
-                        val header = ResponseHeader(201, MessageProtocol.empty, List())
-                          .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
-                        (header, postMessageUser.getUser)
-                      }
-                      //In case the password cant be saved
-                      .recoverWith {
-                        case authenticationException: CustomException =>
-                          ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
-                            .map[(ResponseHeader, User)] { _ =>
-                              throw authenticationException
-                            }
-                            .recover {
-                              case deletionException: Exception => throw deletionException //the deletion didn't work, a ghost user does now exist
-                            }
-                      }
-                  case RejectedWithError(code, errorResponse) =>
-                    throw new CustomException(code, errorResponse)
-                }
+            if (validationErrors.nonEmpty) {
+              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+            }
+
+            ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
+              .flatMap {
+                case Accepted => // Creation Successful
+                  authentication.setAuthentication().invoke(postMessageUser.authUser)
+                    .map { _ =>
+                      val header = ResponseHeader(201, MessageProtocol.empty, List())
+                        .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
+                      (header, postMessageUser.getUser)
+                    }
+                    // In case the password cant be saved
+                    .recoverWith {
+                      case authenticationException: CustomException =>
+                        ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+                          .map[(ResponseHeader, User)] { _ =>
+                            throw authenticationException
+                          }
+                          .recover {
+                            case deletionException: Exception => throw deletionException //the deletion didn't work, a ghost user does now exist
+                          }
+                    }
+                case RejectedWithError(code, errorResponse) =>
+                  throw new CustomException(code, errorResponse)
+              }
           }
       }
     }
@@ -155,43 +169,47 @@ class UserServiceImpl(
             throw CustomException.OwnerMismatch
           }
 
-          // We need to know what role the user has, because their editable fields are different
-          getUser(username).invokeWithHeaders(header, NotUsed).map {
-            case (_, oldUser) =>
-              //validate new user
-              val validationErrors = user.validate
-              if (validationErrors.nonEmpty) {
-                throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
-              }
-
-              oldUser match {
-                case _: Student if !user.isInstanceOf[Student] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
-                case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
-                case _: Admin if !user.isInstanceOf[Admin] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Admin, but received non-Admin"))
-                case _ =>
-              }
-              var err = oldUser.checkUneditableFields(user)
-              if (role != AuthenticationRole.Admin) {
-                err ++= oldUser.checkProtectedFields(user)
-              }
-              err
+          //validate new user and check, if username errors exist, since entityRef might fail if username is incorrect
+          var validationErrors = user.validate
+          if (validationErrors.map(_.name).contains("username")) {
+            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
           }
-            .flatMap { editErrors =>
-              // Other users than admins can only edit specified fields
-              if (editErrors.nonEmpty) {
-                throw new CustomException(422, DetailedError(ErrorType.UneditableFields, editErrors))
-              }
-              else {
-                val ref = entityRef(user.username)
-                ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
-                  .map {
-                    case Accepted => // Update successful
-                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case RejectedWithError(code, errorResponse) => //Update failed
-                      throw new CustomException(code, errorResponse)
-                  }
-              }
+
+          val ref = entityRef(user.username)
+          ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap { optUser =>
+            if (optUser.isEmpty) {
+              // Add to validation errors, and throw prematurely since uneditable fields are uncheckable
+              validationErrors :+= SimpleError("username", "Username not in use.")
+              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
             }
+            val oldUser = optUser.get
+            // Other users than admins can only edit specified fields
+            var editErrors = oldUser.checkUneditableFields(user)
+            if (role != AuthenticationRole.Admin) {
+              editErrors ++= oldUser.checkProtectedFields(user)
+            }
+            if (editErrors.nonEmpty) {
+              throw new CustomException(422, DetailedError(ErrorType.UneditableFields, editErrors))
+            }
+            if (validationErrors.nonEmpty) {
+              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+            }
+
+            oldUser match {
+              case _: Student if !user.isInstanceOf[Student] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
+              case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
+              case _: Admin if !user.isInstanceOf[Admin] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Admin, but received non-Admin"))
+              case _ =>
+            }
+
+            ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
+              .map {
+                case Accepted => // Update successful
+                  (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                case RejectedWithError(code, errorResponse) => //Update failed
+                  throw new CustomException(code, errorResponse)
+              }
+          }
         }
     }
 
