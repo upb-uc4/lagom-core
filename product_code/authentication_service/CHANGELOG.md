@@ -1,4 +1,4 @@
-# [WIP v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.1...authentication-v0.8.2) (2020-XX-XX)
+# [v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.1...authentication-v0.8.2) (2020-09-22)
 ## Feature
  - Added Gzipping in Options Header
 ## Refactor

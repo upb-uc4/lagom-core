@@ -1,4 +1,4 @@
-# [v.0.8.4](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.8.3...matriculation-v0.8.4) (2020-XX-XX)
+# [v.0.8.4](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.8.3...matriculation-v0.8.4) (2020-09-22)
 ## Feature
  - Added Gzipping in Options Header
 ## Refactor
