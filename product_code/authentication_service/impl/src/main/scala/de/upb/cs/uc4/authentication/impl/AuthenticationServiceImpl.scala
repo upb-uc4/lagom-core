@@ -108,9 +108,9 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
               ("Set-Cookie", s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=$logoutTimer")
             )), JsonUsername(username))
           )
-        case _ => throw CustomException.AuthorizationError
+        case _ => throw CustomException.RefreshTokenMissing
       }
-      case _ => throw CustomException.AuthorizationError
+      case _ => throw CustomException.RefreshTokenMissing
     }
   }
 
@@ -198,7 +198,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     }
 
     if (token.isEmpty) {
-      throw CustomException.AuthorizationError
+      throw CustomException.JwtAuthorizationError
     }
     else {
       token.get
@@ -269,7 +269,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       val subject = claims.getSubject
 
       if (subject != "refresh") {
-        throw CustomException.AuthorizationError
+        throw CustomException.RefreshTokenMissing
       }
 
       val now = Calendar.getInstance()
@@ -291,7 +291,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       case _: UnsupportedJwtException  => throw CustomException.MalformedRefreshToken
       case _: MalformedJwtException    => throw CustomException.MalformedRefreshToken
       case _: SignatureException       => throw CustomException.RefreshTokenSignatureError
-      case _: IllegalArgumentException => throw CustomException.AuthorizationError
+      case _: IllegalArgumentException => throw CustomException.JwtAuthorizationError
       case ce: CustomException         => throw ce
       case _: Exception                => throw CustomException.InternalServerError
     }
