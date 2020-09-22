@@ -32,7 +32,9 @@ Not validated, as it is a generated UUID.
 - iEcts1: ects ∉ [1, 999]
 
 ### lecturerId (String)
-No explicit validation.
+- vLecturerId1: lecturerId is not the empty String, and lecturerId ∈ ExistingUsernames
+- iLecturerId1: lecturerId is the empty String
+- iLecturerId2: lecturerId ∉ ExistingUsernames
 
 ### maxParticipants (Int)
 - vMaxParticipants1: maxParticipants ∈ [1, 9999]

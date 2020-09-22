@@ -65,6 +65,13 @@ class CourseSpec extends AnyWordSpecLike with Matchers {
       errorVariables should contain theSameElementsAs Seq("ects")
     }
 
+    //LECTURER ID
+    "return a validation error for empty lecturerId" in {
+      val errors = courseValid.copy(lecturerId = "").validate
+      val errorVariables = errors.map(error => error.name)
+      errorVariables should contain theSameElementsAs Seq("lecturerId")
+    }
+
     //MAX PARTICIPANTS
     "return a validation error for incorrect maxParticipants" in {
       val errors = courseValid.copy(maxParticipants = 0).validate
