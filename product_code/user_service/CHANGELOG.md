@@ -2,7 +2,10 @@
 ## Feature
  - Added Gzipping in Options Header
 ## Refactor
+ - NotFound in updateUser is now part validation
+ - Duplicate in addUser is now part validation
 ## Bugfix
+ - Fixed empty username causing a timeout
 
 # [v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.8.1...user-v0.8.2) (2020-09-17)
 ## Feature
