@@ -407,21 +407,5 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         .recoverWith(cleanupOnFailure())
     }
 
-    //IMAGE TEST
-    "set an Image for a user" in {
-      prepare(Seq(student0)).flatMap { createdUsers =>
-        val username = createdUsers.head.username
-        client.setImage(username).handleRequestHeader(addAuthorizationHeader().compose(_.addHeader("Content-Type", "image/jpeg")))
-          .invoke(picture).flatMap { _ =>
-            eventually(timeout(Span(15, Seconds))) {
-              client.getImage(username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
-                answer should ===(picture)
-              }
-            }
-          }.flatMap(cleanupOnSuccess)
-          .recoverWith(cleanupOnFailure())
-      }
-    }
-
   }
 }
