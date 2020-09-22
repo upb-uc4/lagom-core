@@ -16,7 +16,7 @@ import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, Authentica
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens }
+import de.upb.cs.uc4.authentication.model._
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, SimpleError }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._

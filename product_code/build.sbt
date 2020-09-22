@@ -2,7 +2,7 @@ import com.typesafe.sbt.packager.docker.DockerChmodType
 
 organization in ThisBuild := "de.upb.cs.uc4"
 lagomServiceEnableSsl in ThisBuild := true
-val hyperledgerApiVersion = "v0.8.0"
+val hyperledgerApiVersion = "v0.8.1"
 
 // The project uses PostgreSQL
 lagomCassandraEnabled in ThisBuild := false
@@ -191,3 +191,21 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .settings(dockerSettings)
   .settings(version := "v0.8.4")
   .dependsOn(user_service_api % withTests, shared_server, shared_client, matriculation_service_api, hyperledger_component)
+
+lazy val certificate_service_api = (project in file("certificate_service/api"))
+  .settings(
+    libraryDependencies ++= apiDefaultDependencies
+  )
+  .settings(commonSettings("certificate_service_api"))
+  .dependsOn(shared_client)
+
+lazy val certificate_service = (project in file("certificate_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= implDefaultDependencies,
+    libraryDependencies ++= defaultPersistenceKafkaDependencies,
+  )
+  .settings(commonSettings("certificate_service"))
+  .settings(dockerSettings)
+  .settings(version := "v0.8.1")
+  .dependsOn(certificate_service_api % withTests, user_service_api % withTests, shared_server, hyperledger_component)

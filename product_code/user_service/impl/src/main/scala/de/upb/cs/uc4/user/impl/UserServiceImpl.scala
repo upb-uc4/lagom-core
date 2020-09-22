@@ -13,12 +13,13 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{ OnUserDelete, UserEvent }
+import de.upb.cs.uc4.user.impl.events.{ OnUserCreate, OnUserDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
@@ -303,6 +304,18 @@ class UserServiceImpl(
       case Accepted => Done
       case RejectedWithError(error, reason) => throw new CustomException(error, reason)
     }
+  }
+
+  /** Publishes every new user */
+  override def userCreationTopic(): Topic[Usernames] = TopicProducer.singleStreamWithOffset { fromOffset =>
+    persistentEntityRegistry
+      .eventStream(UserEvent.Tag, fromOffset)
+      .mapConcat {
+        //Filter only OnUserCreate events
+        case EventStreamElement(_, OnUserCreate(user), offset) =>
+          immutable.Seq((Usernames(user.username, Hashing.sha256(user.username)), offset))
+        case _ => Nil
+      }
   }
 
   /** Publishes every deletion of a user */

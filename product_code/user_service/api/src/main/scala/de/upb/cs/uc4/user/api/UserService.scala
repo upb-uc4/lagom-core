@@ -10,7 +10,7 @@ import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 import de.upb.cs.uc4.user.model.post.PostMessageUser
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, MatriculationUpdate }
+import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, MatriculationUpdate, Usernames }
 
 /** The UserService interface.
   *
@@ -68,6 +68,9 @@ trait UserService extends UC4Service {
   /** Allows DELETE, GET, PUT */
   def allowedDeleteGetPut: ServiceCall[NotUsed, Done]
 
+  /** Publishes every new user */
+  def userCreationTopic(): Topic[Usernames]
+
   /** Publishes every deletion of a user */
   def userDeletedTopic(): Topic[JsonUsername]
 
@@ -121,13 +124,14 @@ trait UserService extends UC4Service {
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?"),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?")
       )
-      .withTopics(
+      .addTopics(
+        topic(UserService.ADD_TOPIC_NAME, userCreationTopic _),
         topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)
       )
-
   }
 }
 
 object UserService {
+  val ADD_TOPIC_NAME = "add"
   val DELETE_TOPIC_NAME = "delete"
 }

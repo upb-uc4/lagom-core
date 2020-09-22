@@ -8,7 +8,7 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
-import io.jsonwebtoken.{ ExpiredJwtException, Jwts, MalformedJwtException, SignatureException, UnsupportedJwtException }
+import io.jsonwebtoken._
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.annotation.varargs
