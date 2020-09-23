@@ -35,6 +35,7 @@ object CustomException {
   val OwnerMismatch = new CustomException(403, GenericError(ErrorType.OwnerMismatch))
   //404
   val NotFound = new CustomException(404, GenericError(ErrorType.KeyNotFound))
+  val NotEnrolled = new CustomException(404, GenericError(ErrorType.NotEnrolled))
   //409
   val Duplicate = new CustomException(409, GenericError(ErrorType.KeyDuplicate))
   //422

@@ -14,7 +14,7 @@ import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertific
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
-import de.upb.cs.uc4.shared.client.exceptions.CustomException
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 
 import scala.concurrent.ExecutionContext
@@ -33,11 +33,23 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding)
 
   /** Forwards the certificate signing request from the given user */
   override def setCertificate(username: String): ServerServiceCall[PostMessageCSR, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUsername, role) =>
+    (authUsername, _) =>
       ServerServiceCall { (_, pmcsrRaw) =>
+        // One can only set his own certificate
+        if (authUsername != username){
+          throw CustomException.OwnerMismatch
+        }
+
+        // Validate the CSR
+        val validationErrors = pmcsrRaw.validate
+        if (validationErrors.nonEmpty){
+          throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+        }
+
         entityRef(username).ask[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])](replyTo => GetCertificateUser(replyTo))
           .map {
             case (Some(enrollmentId), Some(enrollmentSecret), _, _) =>
+              //TODO use the pmcsrRaw info to enroll
               EnrollmentManager.enroll(caURL, tlsCert, walletPath, enrollmentId, enrollmentSecret, organisationId)
               (ResponseHeader(202, MessageProtocol.empty, List()), Done)
             case _ =>
@@ -47,43 +59,52 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding)
   }
 
   /** Returns the certificate of the given user */
-  override def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUsername, role) =>
-      ServerServiceCall { (_, _) =>
-        entityRef(username).ask[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])](replyTo => GetCertificateUser(replyTo))
-          .map {
-            case (_, _, Some(certificate), _) =>
-              (ResponseHeader(200, MessageProtocol.empty, List()), JsonCertificate(certificate))
-            case _ =>
-              throw CustomException.NotFound
-          }
-      }
-  }
+  override def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate] =
+    ServerServiceCall { (_, _) =>
+      entityRef(username).ask[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])](replyTo => GetCertificateUser(replyTo))
+        .map {
+          case (_, _, Some(certificate), _) =>
+            (ResponseHeader(200, MessageProtocol.empty, List()), JsonCertificate(certificate))
+          case _ =>
+            throw CustomException.NotFound
+        }
+    }
 
   /** Returns the enrollment id of the given user */
   override def getEnrollmentId(username: String): ServiceCall[NotUsed, JsonEnrollmentId] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUsername, role) =>
+    (authUsername, _) =>
       ServerServiceCall { (_, _) =>
+
+        if (authUsername != username){
+          throw CustomException.OwnerMismatch
+        }
+
         entityRef(username).ask[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])](replyTo => GetCertificateUser(replyTo))
           .map {
             case (Some(id), _, _, _) =>
               (ResponseHeader(200, MessageProtocol.empty, List()), JsonEnrollmentId(id))
             case _ =>
-              throw CustomException.NotFound
+              // An authenticated user was not registered, which should not ever happen
+              throw CustomException.InternalServerError
           }
       }
   }
 
   /** Returns the encrypted private key of the given user */
   override def getPrivateKey(username: String): ServiceCall[NotUsed, EncryptedPrivateKey] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUsername, role) =>
+    (authUsername, _) =>
       ServerServiceCall { (_, _) =>
+
+        if (authUsername != username){
+          throw CustomException.OwnerMismatch
+        }
+
         entityRef(username).ask[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])](replyTo => GetCertificateUser(replyTo))
           .map {
             case (_, _, _, Some(key)) =>
               (ResponseHeader(200, MessageProtocol.empty, List()), key)
             case _ =>
-              throw CustomException.NotFound
+              throw CustomException.NotEnrolled
           }
       }
   }

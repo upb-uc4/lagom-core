@@ -7,7 +7,7 @@ object ErrorType extends Enumeration {
   val Deserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
   BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
   NotEnoughPrivileges, OwnerMismatch, //403
-  KeyNotFound, //404
+  KeyNotFound, NotEnrolled, //404
   KeyDuplicate, //409
   Teapot, //418
   PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, //422
@@ -45,6 +45,7 @@ object ErrorType extends Enumeration {
       case OwnerMismatch => "You are not allowed to modify the resource"
       //404
       case KeyNotFound => "Key value is not in use"
+      case NotEnrolled => "Enrollment of the user is required before the requested resource can be fetched"
       //409
       case KeyDuplicate => "Key is already in use"
       //418

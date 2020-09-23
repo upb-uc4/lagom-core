@@ -319,7 +319,7 @@ class UserServiceImpl(
   }
 
   /** Publishes every deletion of a user */
-  def userDeletedTopic(): Topic[JsonUsername] = TopicProducer.singleStreamWithOffset { fromOffset =>
+  override def userDeletedTopic(): Topic[JsonUsername] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(UserEvent.Tag, fromOffset)
       .mapConcat {
