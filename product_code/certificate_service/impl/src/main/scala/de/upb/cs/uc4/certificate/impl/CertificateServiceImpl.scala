@@ -10,12 +10,13 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.CertificateState
-import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser }
+import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -47,11 +48,16 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding)
         }
 
         entityRef(username).ask[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])](replyTo => GetCertificateUser(replyTo))
-          .map {
+          .flatMap {
             case (Some(enrollmentId), Some(enrollmentSecret), _, _) =>
               //TODO use the pmcsrRaw info to enroll
               EnrollmentManager.enroll(caURL, tlsCert, walletPath, enrollmentId, enrollmentSecret, organisationId)
-              (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+              //TODO add certificate to state, or fetch directly from HL
+              entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey("cert", pmcsrRaw.encryptedPrivateKey, replyTo)).map{
+                case Accepted => (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+                case _ => throw CustomException.InternalServerError
+              }
+
             case _ =>
               throw CustomException.NotFound
           }

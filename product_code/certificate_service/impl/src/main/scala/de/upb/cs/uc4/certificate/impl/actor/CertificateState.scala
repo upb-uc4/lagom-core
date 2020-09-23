@@ -4,8 +4,8 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import com.typesafe.config.Config
 import de.upb.cs.uc4.certificate.impl.CertificateApplication
-import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, RegisterUser }
-import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnRegisterUser }
+import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, RegisterUser, SetCertificateAndKey }
+import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet, OnRegisterUser }
 import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.utilities.RegistrationManager
@@ -30,6 +30,8 @@ case class CertificateState(enrollmentId: Option[String],
         Effect.persist(OnRegisterUser(enrollmentId, secret)).thenReply(replyTo) { _ => Accepted }
       case GetCertificateUser(replyTo) =>
         Effect.reply(replyTo)(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey)
+      case SetCertificateAndKey(certificate, encryptedPrivateKey, replyTo) =>
+        Effect.persist(OnCertficateAndKeySet(certificate, encryptedPrivateKey)).thenReply(replyTo) { _ => Accepted }
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -43,6 +45,8 @@ case class CertificateState(enrollmentId: Option[String],
     evt match {
       case OnRegisterUser(id, secret) =>
         copy(enrollmentId = Some(id), enrollmentSecret = Some(secret))
+      case OnCertficateAndKeySet(cert, key) =>
+        copy(certificate = Some(cert), encryptedPrivateKey = Some(key))
       case _ =>
         println("Unknown Event")
         this
