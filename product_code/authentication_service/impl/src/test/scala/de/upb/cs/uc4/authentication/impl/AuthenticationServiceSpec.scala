@@ -1,33 +1,33 @@
 package de.upb.cs.uc4.authentication.impl
 
-import java.util.{Base64, Calendar, Date}
+import java.util.{ Base64, Calendar, Date }
 
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.transport.{RequestHeader, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{ RequestHeader, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest}
+import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest }
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationEntry, AuthenticationState}
-import de.upb.cs.uc4.authentication.impl.commands.{AuthenticationCommand, DeleteAuthentication, GetAuthentication, SetAuthentication}
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, ErrorType}
+import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
+import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, Tokens }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, ErrorType }
 import de.upb.cs.uc4.shared.server.messages.Confirmation
-import de.upb.cs.uc4.shared.server.{Hashing, ServiceCallFactory}
+import de.upb.cs.uc4.shared.server.{ Hashing, ServiceCallFactory }
 import de.upb.cs.uc4.user.UserServiceStub
 import de.upb.cs.uc4.user.api.UserService
-import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
-import org.scalatest.{Assertion, BeforeAndAfterAll}
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Seconds, Span}
+import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatest.{ Assertion, BeforeAndAfterAll }
 
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 /** Tests for the AuthenticationService
   * All tests need to be started in the defined order
@@ -86,13 +86,11 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     afterDate.setTime(expectedDate)
     afterDate.add(Calendar.MINUTE, 1)
 
-    date.before(afterDate.getTime) shouldBe true
-
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(expectedDate)
     beforeDate.add(Calendar.MINUTE, -1)
 
-    date.after(beforeDate.getTime) shouldBe true
+    date.before(afterDate.getTime) && date.after(beforeDate.getTime) shouldBe true
   }
 
   private def entityRef(id: String): EntityRef[AuthenticationCommand] =
@@ -219,64 +217,127 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "generates two correct header tokens" in {
-      client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
-        case (header: ResponseHeader, _) =>
-          val (refresh, login) = getTokens(header)
+    "generates two correct header tokens, which" must {
 
-          val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
-          val refreshUsername = refreshClaims.get("username", classOf[String])
-          val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
-          val refreshExpirationDate = refreshClaims.getExpiration
+      "have the right username" in {
+        client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val (refresh, login) = getTokens(header)
 
-          val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
-          val loginUsername = loginClaims.get("username", classOf[String])
-          val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
-          val loginExpirationDate = loginClaims.getExpiration
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshUsername = refreshClaims.get("username", classOf[String])
 
-          refreshUsername should ===("admin")
-          refreshAuthenticationRole should ===("Admin")
-          loginUsername should ===("admin")
-          loginAuthenticationRole should ===("Admin")
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginUsername = loginClaims.get("username", classOf[String])
 
-          val refreshExpected = Calendar.getInstance()
-          refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
-          checkDate(refreshExpirationDate, refreshExpected.getTime)
+            (refreshUsername, loginUsername) should ===("admin", "admin")
+        }
+      }
 
-          val loginExpected = Calendar.getInstance()
-          loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
-          checkDate(loginExpirationDate, loginExpected.getTime)
+      "have the right role" in {
+        client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val (refresh, login) = getTokens(header)
+
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
+
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
+
+            (refreshAuthenticationRole, loginAuthenticationRole) should ===("Admin", "Admin")
+        }
+      }
+
+      "have the right ExpirationDate in the refresh token" in {
+        client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val (refresh, _) = getTokens(header)
+
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshExpirationDate = refreshClaims.getExpiration
+
+            val refreshExpected = Calendar.getInstance()
+            refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
+            checkDate(refreshExpirationDate, refreshExpected.getTime)
+        }
+      }
+
+      "have the right ExpirationDate in the login token" in {
+        client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val (_, login) = getTokens(header)
+
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginExpirationDate = loginClaims.getExpiration
+
+            val loginExpected = Calendar.getInstance()
+            loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
+            checkDate(loginExpirationDate, loginExpected.getTime)
+        }
       }
     }
 
-    "generates two correct machine tokens" in {
-      client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
-        case (header: ResponseHeader, tokens: Tokens) =>
-          val refresh = tokens.refresh
-          val login = tokens.login
+    "generates two correct machine tokens, which" must {
 
-          val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
-          val refreshUsername = refreshClaims.get("username", classOf[String])
-          val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
-          val refreshExpirationDate = refreshClaims.getExpiration
+      "have the right username" in {
+        client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (_: ResponseHeader, tokens: Tokens) =>
+            val refresh = tokens.refresh
+            val login = tokens.login
 
-          val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
-          val loginUsername = loginClaims.get("username", classOf[String])
-          val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
-          val loginExpirationDate = loginClaims.getExpiration
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshUsername = refreshClaims.get("username", classOf[String])
 
-          refreshUsername should ===("admin")
-          refreshAuthenticationRole should ===("Admin")
-          loginUsername should ===("admin")
-          loginAuthenticationRole should ===("Admin")
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginUsername = loginClaims.get("username", classOf[String])
 
-          val refreshExpected = Calendar.getInstance()
-          refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
-          checkDate(refreshExpirationDate, refreshExpected.getTime)
+            (refreshUsername, loginUsername) should ===("admin", "admin")
+        }
+      }
 
-          val loginExpected = Calendar.getInstance()
-          loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
-          checkDate(loginExpirationDate, loginExpected.getTime)
+      "have the right role" in {
+        client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (_: ResponseHeader, tokens: Tokens) =>
+            val refresh = tokens.refresh
+            val login = tokens.login
+
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
+
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
+
+            (refreshAuthenticationRole, loginAuthenticationRole) should ===("Admin", "Admin")
+        }
+      }
+
+      "have the right ExpirationDate in the refresh token" in {
+        client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (_: ResponseHeader, tokens: Tokens) =>
+            val refresh = tokens.refresh
+
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshExpirationDate = refreshClaims.getExpiration
+
+            val refreshExpected = Calendar.getInstance()
+            refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
+            checkDate(refreshExpirationDate, refreshExpected.getTime)
+        }
+      }
+
+      "have the right ExpirationDate in the login token" in {
+        client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (_: ResponseHeader, tokens: Tokens) =>
+            val login = tokens.login
+
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginExpirationDate = loginClaims.getExpiration
+
+            val loginExpected = Calendar.getInstance()
+            loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
+            checkDate(loginExpirationDate, loginExpected.getTime)
+        }
       }
     }
 
