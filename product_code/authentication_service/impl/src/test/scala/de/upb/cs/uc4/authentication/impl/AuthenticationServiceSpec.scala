@@ -12,7 +12,7 @@ import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, 
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationEntry, AuthenticationState}
-import de.upb.cs.uc4.authentication.impl.commands.{AuthenticationCommand, DeleteAuthentication, GetAuthentication}
+import de.upb.cs.uc4.authentication.impl.commands.{AuthenticationCommand, DeleteAuthentication, GetAuthentication, SetAuthentication}
 import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens}
 import de.upb.cs.uc4.shared.client.exceptions.{CustomException, ErrorType}
 import de.upb.cs.uc4.shared.server.messages.Confirmation
@@ -42,19 +42,19 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-      new AuthenticationApplication(ctx) with LocalServiceLocator {
-        // Declaration as lazy values forces right execution order
-        lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
-        lazy val internDeletionStub: ProducerStub[JsonUsername] =
-          stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
+    new AuthenticationApplication(ctx) with LocalServiceLocator {
+      // Declaration as lazy values forces right execution order
+      lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
+      lazy val internDeletionStub: ProducerStub[JsonUsername] =
+        stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
 
-        deletionStub = internDeletionStub
-        applicationConfig = config
+      deletionStub = internDeletionStub
+      applicationConfig = config
 
-        // Create a userService with ProducerStub as topic
-        override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
-      }
+      // Create a userService with ProducerStub as topic
+      override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
     }
+  }
 
   private val client: AuthenticationService = server.serviceClient.implement[AuthenticationService]
 
@@ -75,9 +75,9 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   private def getTokens(responseHeader: ResponseHeader): (String, String) = {
     responseHeader.getHeaders("Set-Cookie") match {
       case Seq(
-        s"refresh=$refresh;$_",
-        s"login=$login;$_"
-        ) => (refresh, login)
+      s"refresh=$refresh;$_",
+      s"login=$login;$_"
+      ) => (refresh, login)
     }
   }
 
@@ -101,7 +101,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   private val hashedDefaultUsernames = Seq(Hashing.sha256("student"), Hashing.sha256("lecturer"), Hashing.sha256("admin"))
 
   def prepare(userToBeAdded: String): Future[Assertion] = {
-    client.setAuthentication().invoke(AuthenticationUser(userToBeAdded,userToBeAdded,AuthenticationRole.Student)).flatMap{
+    client.setAuthentication().invoke(AuthenticationUser(userToBeAdded, userToBeAdded, AuthenticationRole.Student)).flatMap {
       _ =>
         eventually(timeout(Span(15, Seconds))) {
           for {
@@ -115,20 +115,19 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   }
 
   def resetTable(usersToBeDeleted: Seq[String]): Future[Assertion] = {
+    //usersToBeDeleted.foreach(user => deletionStub.send(JsonUsername(user)))
     Future.sequence(usersToBeDeleted.map { user =>
       entityRef(Hashing.sha256(user)).ask[Confirmation](replyTo => DeleteAuthentication(replyTo))(Timeout(5.seconds))
-    })
-      .flatMap { _ =>
-        eventually(timeout(Span(100, Seconds))) {
-          for {
-            hashedUsernames <- server.application.database.getAll
-          } yield {
-            hashedUsernames should contain theSameElementsAs hashedDefaultUsernames
-          }
+    }).flatMap { _ =>
+      eventually(timeout(Span(20, Seconds))) {
+        for {
+          hashedUsernames <- server.application.database.getAll
+        } yield {
+          hashedUsernames should contain theSameElementsAs hashedDefaultUsernames
         }
       }
+    }
   }
-
 
   def cleanupOnFailure(usersToBeDeleted: Seq[String]): PartialFunction[Throwable, Future[Assertion]] = PartialFunction.fromFunction { throwable =>
     resetTable(usersToBeDeleted)
@@ -136,6 +135,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
         throw throwable
       }
   }
+
   def cleanupOnSuccess(usersToBeDeleted: Seq[String], assertion: Assertion): Future[Assertion] = {
     resetTable(usersToBeDeleted)
       .map { _ =>
@@ -189,7 +189,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
         eventually(timeout(Span(20, Seconds))) {
           client.login.handleRequestHeader(addLoginHeader("Test", "Test")).invoke().failed.map { answer =>
-            answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.JwtAuthorization)
+            answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
           }
         }.flatMap(assertion => cleanupOnSuccess(Seq("Test"), assertion))
           .recoverWith(cleanupOnFailure(Seq("Test")))
@@ -431,14 +431,14 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "detect that a machine refresh token is missing" in {
+    "detect that a machine user refresh token is missing" in {
       client.refreshMachineUser.invoke().failed.map { answer =>
         answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
       }
     }
 
     //LOGOUT
-    "log a user out" in { //TODO: Try to somehow fix this test
+    "log a user out" in {
       client.logout.withResponseHeader.invoke().map {
         case (header: ResponseHeader, _) =>
           val cookies = header.getHeaders("Set-Cookie")
