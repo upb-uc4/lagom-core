@@ -499,13 +499,30 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     }
 
     //LOGOUT
-    "log a user out" in {
-      client.logout.withResponseHeader.invoke().map {
-        case (header: ResponseHeader, _) =>
-          val cookies = header.getHeaders("Set-Cookie")
-          cookies should have size 2
-          exactly(1, cookies) should include("refresh=;")
-          exactly(1, cookies) should include("login=;")
+    "log a user out, which" must {
+
+      "set the right amount of cookies" in {
+        client.logout.withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val cookies = header.getHeaders("Set-Cookie")
+            cookies should have size 2
+        }
+      }
+
+      "clears the refresh cookie" in {
+        client.logout.withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val cookies = header.getHeaders("Set-Cookie")
+            exactly(1, cookies) should include("refresh=;")
+        }
+      }
+
+      "clears the login cookie" in {
+        client.logout.withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val cookies = header.getHeaders("Set-Cookie")
+            exactly(1, cookies) should include("login=;")
+        }
       }
     }
 
