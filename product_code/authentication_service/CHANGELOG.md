@@ -1,3 +1,10 @@
+# [v.0.9.0-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.2...authentication-v0.9.0) (2020-XX-XX)
+## Feature
+## Refactor
+ - Authentication Tests are now Unit-Tests
+## Bugfix
+
+
 # [v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.1...authentication-v0.8.2) (2020-09-22)
 ## Feature
  - Added Gzipping in Options Header
