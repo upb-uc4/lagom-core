@@ -30,7 +30,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /** Tests for the AuthenticationService
-  * All tests need to be started in the defined order
   */
 class AuthenticationServiceSpec extends AsyncWordSpec
   with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures {
@@ -42,19 +41,19 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new AuthenticationApplication(ctx) with LocalServiceLocator {
-      // Declaration as lazy values forces right execution order
-      lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
-      lazy val internDeletionStub: ProducerStub[JsonUsername] =
-        stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
+      new AuthenticationApplication(ctx) with LocalServiceLocator {
+        // Declaration as lazy values forces right execution order
+        lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
+        lazy val internDeletionStub: ProducerStub[JsonUsername] =
+          stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
 
-      deletionStub = internDeletionStub
-      applicationConfig = config
+        deletionStub = internDeletionStub
+        applicationConfig = config
 
-      // Create a userService with ProducerStub as topic
-      override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
+        // Create a userService with ProducerStub as topic
+        override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
+      }
     }
-  }
 
   private val client: AuthenticationService = server.serviceClient.implement[AuthenticationService]
 
@@ -75,9 +74,9 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   private def getTokens(responseHeader: ResponseHeader): (String, String) = {
     responseHeader.getHeaders("Set-Cookie") match {
       case Seq(
-      s"refresh=$refresh;$_",
-      s"login=$login;$_"
-      ) => (refresh, login)
+        s"refresh=$refresh;$_",
+        s"login=$login;$_"
+        ) => (refresh, login)
     }
   }
 
@@ -113,7 +112,6 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   }
 
   def resetTable(usersToBeDeleted: Seq[String]): Future[Assertion] = {
-    //usersToBeDeleted.foreach(user => deletionStub.send(JsonUsername(user)))
     Future.sequence(usersToBeDeleted.map { user =>
       entityRef(Hashing.sha256(user)).ask[Confirmation](replyTo => DeleteAuthentication(replyTo))(Timeout(5.seconds))
     }).flatMap { _ =>
@@ -172,11 +170,11 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
       client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
         .invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).flatMap {
-        _ =>
-          client.login.handleRequestHeader(addLoginHeader("Gregor", "GregNew")).invoke().map { answer =>
-            answer should ===(Done)
-          }
-      }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+          _ =>
+            client.login.handleRequestHeader(addLoginHeader("Gregor", "GregNew")).invoke().map { answer =>
+              answer should ===(Done)
+            }
+        }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
         .recoverWith(cleanupOnFailure(Seq("Gregor")))
     }
 

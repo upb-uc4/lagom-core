@@ -9,7 +9,7 @@ lagomCassandraEnabled in ThisBuild := false
 
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.13.0"
-scalacOptions in ThisBuild ++= Seq("-deprecation")
+scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
 
 
 def commonSettings(project: String) = Seq(

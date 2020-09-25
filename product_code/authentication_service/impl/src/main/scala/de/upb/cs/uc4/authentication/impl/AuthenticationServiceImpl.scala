@@ -1,33 +1,33 @@
 package de.upb.cs.uc4.authentication.impl
 
 import java.text.SimpleDateFormat
-import java.util.{Base64, Calendar, Locale, TimeZone}
+import java.util.{ Base64, Calendar, Locale, TimeZone }
 
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.impl.actor.{AuthenticationEntry, AuthenticationState}
-import de.upb.cs.uc4.authentication.impl.commands.{AuthenticationCommand, GetAuthentication, SetAuthentication}
+import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, AuthenticationState }
+import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.{AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens}
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, ErrorType, SimpleError}
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, SimpleError }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, RejectedWithError}
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 import io.jsonwebtoken._
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEventProcessor,
-                                clusterSharding: ClusterSharding, config: Config)(implicit ec: ExecutionContext) extends AuthenticationService {
+    clusterSharding: ClusterSharding, config: Config)(implicit ec: ExecutionContext) extends AuthenticationService {
 
   readSide.register(processor)
 
@@ -180,7 +180,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       case Array("Basic", userAndPass) =>
         new String(Base64.getDecoder.decode(userAndPass), "UTF-8").split(":") match {
           case Array(user, password) => Option(user, password)
-          case _ => None
+          case _                     => None
         }
       case _ => None
     }
@@ -294,13 +294,13 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       (loginToken, logoutTimer * 60, username)
     }
     catch {
-      case _: ExpiredJwtException => throw CustomException.RefreshTokenExpired
-      case _: UnsupportedJwtException => throw CustomException.MalformedRefreshToken
-      case _: MalformedJwtException => throw CustomException.MalformedRefreshToken
-      case _: SignatureException => throw CustomException.RefreshTokenSignatureError
+      case _: ExpiredJwtException      => throw CustomException.RefreshTokenExpired
+      case _: UnsupportedJwtException  => throw CustomException.MalformedRefreshToken
+      case _: MalformedJwtException    => throw CustomException.MalformedRefreshToken
+      case _: SignatureException       => throw CustomException.RefreshTokenSignatureError
       case _: IllegalArgumentException => throw CustomException.RefreshTokenMissing
-      case ce: CustomException => throw ce
-      case _: Throwable => throw CustomException.InternalServerError
+      case ce: CustomException         => throw ce
+      case _: Throwable                => throw CustomException.InternalServerError
     }
   }
 }
