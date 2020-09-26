@@ -431,11 +431,14 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
             )), "null")
 
           route(server.application.application, putHeader).get.flatMap { _ =>
-            val image = contentAsBytes(
-              route(server.application.application, getHeader).get
-            )(akka.util.Timeout(1.seconds)).toArray
 
-            image should contain theSameElementsInOrderAs body
+            eventually(timeout(Span(30, Seconds))) {
+              val image = contentAsBytes(
+                route(server.application.application, getHeader).get
+              )(akka.util.Timeout(20.seconds)).toArray
+
+              image should contain theSameElementsInOrderAs body
+            }
           }
         }.flatMap(cleanupOnSuccess)
           .recoverWith(cleanupOnFailure())
@@ -501,6 +504,24 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           val json = contentAsJson(Future.successful(result))(akka.util.Timeout(1.seconds))
 
           json.as[CustomError].`type` should ===(ErrorType.EntityTooLarge)
+        }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "should reject images with not supported media types" in {
+      prepare(Seq(student0)).flatMap { _ =>
+        val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Ben.svg"))
+        val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
+          FakeHeaders(Seq(
+            ("Content-Type", "image/svg"),
+            ("Cookie", createLoginToken(student0.username))
+          )), body)
+
+        route(server.application.application, putHeader).get.flatMap { result =>
+          val json = contentAsJson(Future.successful(result))(akka.util.Timeout(1.seconds))
+
+          json.as[CustomError].`type` should ===(ErrorType.UnsupportedMediaType)
         }
 
       }.flatMap(cleanupOnSuccess)
