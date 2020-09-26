@@ -4,6 +4,7 @@ import java.util.Calendar
 
 import akka.Done
 import akka.stream.scaladsl.Source
+import com.google.common.io.ByteStreams
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
@@ -23,7 +24,10 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ Assertion, BeforeAndAfterAll, BeforeAndAfterEach }
+import play.api.test.{ FakeHeaders, FakeRequest }
+import play.api.test.Helpers.{ GET, PUT, contentAsBytes, route }
 
+import scala.concurrent.duration._
 import scala.concurrent.Future
 
 /** Tests for the CourseService
@@ -35,10 +39,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-      new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-        override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
-      }
+    new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
+      override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
     }
+  }
 
   val client: UserService = server.serviceClient.implement[UserService]
 
@@ -46,7 +50,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
   override protected def afterAll(): Unit = server.stop()
 
-  def addAuthorizationHeader(username: String = "admin"): RequestHeader => RequestHeader = { header =>
+  def createLoginToken(username: String = "admin"): String = {
 
     var role = AuthenticationRole.Admin
 
@@ -69,16 +73,19 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         .signWith(SignatureAlgorithm.HS256, "changeme")
         .compact()
 
-    header.withHeader("Cookie", s"login=$token")
+    s"login=$token"
   }
+
+  def addAuthorizationHeader(username: String = "admin"): RequestHeader => RequestHeader =
+    header => header.withHeader("Cookie", createLoginToken(username))
 
   def prepare(users: Seq[User]): Future[Seq[User]] = {
     Future.sequence(users.map { user =>
       val newUsername = user.username
       val postMessage = user match {
-        case s: Student  => PostMessageStudent(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), s.copy(username = newUsername))
+        case s: Student => PostMessageStudent(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), s.copy(username = newUsername))
         case l: Lecturer => PostMessageLecturer(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Lecturer), l.copy(username = newUsername))
-        case a: Admin    => PostMessageAdmin(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), a.copy(username = newUsername))
+        case a: Admin => PostMessageAdmin(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), a.copy(username = newUsername))
       }
       client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
     }).flatMap { createdUsers =>
@@ -140,9 +147,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     val roleString = role.toString.toLowerCase
     server.application.database.getAll(role)
     val futureUserList: Future[Seq[User]] = role match {
-      case Role.Student  => client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke()
+      case Role.Student => client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke()
       case Role.Lecturer => client.getAllLecturers(None).handleRequestHeader(addAuthorizationHeader()).invoke()
-      case Role.Admin    => client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader()).invoke()
+      case Role.Admin => client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader()).invoke()
     }
     futureUserList.map {
       _.filter(_.username != roleString).map { user =>
@@ -159,6 +166,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         throw exception
       }
   }
+
   def cleanupOnSuccess(assertion: Assertion): Future[Assertion] = {
     resetUserDatabase()
       .map { _ =>
@@ -209,8 +217,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       client.addUser().handleRequestHeader(addAuthorizationHeader())
         .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
         .failed.map {
-          answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
-        }.flatMap(cleanupOnSuccess)
+        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+      }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
@@ -218,8 +226,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(admin0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
           .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
-            answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
-          }
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
+        }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
 
@@ -336,18 +344,18 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "not update a non-existing User" in {
       client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader())
         .invoke(student0.copy(username = "GutenAbend")).failed.map { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-        }
+        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+      }
     }
 
     "update a user as an admin" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.updateUser(admin0.username).handleRequestHeader(addAuthorizationHeader())
           .invoke(admin0.copy(firstName = "KLAUS")).flatMap { _ =>
-            client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
-          }.flatMap { answer =>
-            answer.firstName shouldBe "KLAUS"
-          }
+          client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+        }.flatMap { answer =>
+          answer.firstName shouldBe "KLAUS"
+        }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -356,10 +364,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(lecturer0)).flatMap { _ =>
         client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
           .invoke(lecturer0Updated).flatMap { _ =>
-            client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
-          }.flatMap { answer =>
-            answer should ===(lecturer0Updated)
-          }
+          client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+        }.flatMap { answer =>
+          answer should ===(lecturer0Updated)
+        }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -368,9 +376,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedUneditable.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedUneditable.username))
           .invoke(student0UpdatedUneditable).failed.flatMap { answer =>
-            answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
-              have length uneditableErrorSize
-          }
+          answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+            have length uneditableErrorSize
+        }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -379,9 +387,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedProtected.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedProtected.username))
           .invoke(student0UpdatedProtected).failed.flatMap { answer =>
-            answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
-              have length protectedErrorSize
-          }
+          answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+            have length protectedErrorSize
+        }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -407,5 +415,31 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         .recoverWith(cleanupOnFailure())
     }
 
+    //IMAGE TESTS
+    "should upload an image" in {
+      prepare(Seq(student0)).flatMap { _ =>
+        val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/ben.png"))
+        val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
+          FakeHeaders(Seq(
+            ("Content-Type", "image/png"),
+            ("Cookie", createLoginToken(student0.username))
+          )), body)
+
+        val getHeader = FakeRequest(GET, s"/user-management/users/${student0.username}/image",
+          FakeHeaders(Seq(
+            ("Cookie", createLoginToken(student0.username))
+          )), "null")
+
+        route(server.application.application, putHeader).get.flatMap { _ =>
+          route(server.application.application, getHeader).get.map { result =>
+            val image = contentAsBytes(Future.successful(result))(akka.util.Timeout(1.seconds)).toArray
+
+            image should contain theSameElementsInOrderAs body
+          }
+        }
+      }
+    }
+      .flatMap(cleanupOnSuccess)
+      .recoverWith(cleanupOnFailure())
   }
 }

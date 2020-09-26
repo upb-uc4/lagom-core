@@ -30,6 +30,7 @@ val dockerSettings = Seq(
 val macwire = "com.softwaremill.macwire" %% "macros" % "2.3.3" % "provided"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.2.0" % Test
 val flexmark = "com.vladsch.flexmark" % "flexmark-all" % "0.35.10" % Test
+val playTest = "com.typesafe.play" %% "play-test" % "2.8.0" % Test
 val guava = "com.google.guava" % "guava" % "29.0-jre"
 val akkaDiscoveryKubernetes = "com.lightbend.akka.discovery" %% "akka-discovery-kubernetes-api" % "1.0.8"
 val postgresDriver = "org.postgresql" % "postgresql" % "42.2.8"
@@ -51,7 +52,8 @@ val implDefaultDependencies = Seq(
   macwire,
   scalaTest,
   flexmark,
-  janino
+  janino,
+  playTest
 )
 
 val defaultPersistenceKafkaDependencies = Seq(
@@ -111,13 +113,6 @@ lazy val hyperledger_component = (project in file("hyperledger_component"))
   )
   .settings(commonSettings("hyperledger_component"))
   .dependsOn(shared_server, hyperledger_api)
-
-/*
-    mappings in Docker += file("hyperledger_service/impl/src/main/resources/hyperledger_assets/connection_profile_release.yaml")
-      -> "opt/docker/share/hyperledger_assets/connection_profile.yaml",
-    mappings in Docker += file("hyperledger_service/impl/src/main/resources/hyperledger_assets/wallet/cli.id")
-      -> "opt/docker/share/hyperledger_assets/wallet/cli.id",
- */
 
 lazy val course_service_api = (project in file("course_service/api"))
   .settings(
