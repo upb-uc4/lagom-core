@@ -11,7 +11,7 @@ import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomError, CustomException, DetailedError, ErrorType }
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
@@ -24,11 +24,11 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ Assertion, BeforeAndAfterAll, BeforeAndAfterEach }
+import play.api.test.Helpers.{ GET, PUT, contentAsBytes, contentAsJson, route }
 import play.api.test.{ FakeHeaders, FakeRequest }
-import play.api.test.Helpers.{ GET, PUT, contentAsBytes, route }
 
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 /** Tests for the CourseService
   * All tests need to be started in the defined order
@@ -145,7 +145,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     // When role is set to Role.Student, we don't want to delete the default student with username "student"
     // For Lecturer and Admin as well
     val roleString = role.toString.toLowerCase
-    server.application.database.getAll(role)
     val futureUserList: Future[Seq[User]] = role match {
       case Role.Student => client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke()
       case Role.Lecturer => client.getAllLecturers(None).handleRequestHeader(addAuthorizationHeader()).invoke()
@@ -416,30 +415,96 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
 
     //IMAGE TESTS
-    "should upload an image" in {
+    "should upload an image, which" must {
+      "save the same image" in {
+        prepare(Seq(student0)).flatMap { _ =>
+          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/ben.png"))
+          val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
+            FakeHeaders(Seq(
+              ("Content-Type", "image/png"),
+              ("Cookie", createLoginToken(student0.username))
+            )), body)
+
+          val getHeader = FakeRequest(GET, s"/user-management/users/${student0.username}/image",
+            FakeHeaders(Seq(
+              ("Cookie", createLoginToken(student0.username))
+            )), "null")
+
+          route(server.application.application, putHeader).get.flatMap { _ =>
+            val image = contentAsBytes(
+              route(server.application.application, getHeader).get
+            )(akka.util.Timeout(1.seconds)).toArray
+
+            image should contain theSameElementsInOrderAs body
+          }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
+      }
+
+      "save the right content type" in {
+        prepare(Seq(student0)).flatMap { _ =>
+          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/ben.png"))
+          val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
+            FakeHeaders(Seq(
+              ("Content-Type", "image/png"),
+              ("Cookie", createLoginToken(student0.username))
+            )), body)
+
+          val getHeader = FakeRequest(GET, s"/user-management/users/${student0.username}/image",
+            FakeHeaders(Seq(
+              ("Cookie", createLoginToken(student0.username))
+            )), "null")
+
+          route(server.application.application, putHeader).get.flatMap { _ =>
+            route(server.application.application, getHeader).get.map { result =>
+              result.body.contentType.get should ===("image/png; charset=UTF-8")
+            }
+          }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
+      }
+
+      "return the right location header" in {
+        prepare(Seq(student0)).flatMap { _ =>
+          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/ben.png"))
+          val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
+            FakeHeaders(Seq(
+              ("Content-Type", "image/png"),
+              ("Cookie", createLoginToken(student0.username))
+            )), body)
+
+          route(server.application.application, putHeader).get.flatMap { postResult =>
+
+            val getHeader = FakeRequest(GET, postResult.header.headers("location"),
+              FakeHeaders(Seq(
+                ("Cookie", createLoginToken(student0.username))
+              )), "null")
+
+            route(server.application.application, getHeader).get.map{ getResult =>
+              getResult.header.status should ===(200)
+            }
+          }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
+      }
+    }
+    "should reject too large images" in {
       prepare(Seq(student0)).flatMap { _ =>
-        val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/ben.png"))
+        val body = Array.ofDim[Byte](server.application.config.getInt("uc4.image.maxSize") + 1)
         val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
           FakeHeaders(Seq(
             ("Content-Type", "image/png"),
             ("Cookie", createLoginToken(student0.username))
           )), body)
 
-        val getHeader = FakeRequest(GET, s"/user-management/users/${student0.username}/image",
-          FakeHeaders(Seq(
-            ("Cookie", createLoginToken(student0.username))
-          )), "null")
+        route(server.application.application, putHeader).get.flatMap { result =>
+          val json = contentAsJson(Future.successful(result))(akka.util.Timeout(1.seconds))
 
-        route(server.application.application, putHeader).get.flatMap { _ =>
-          route(server.application.application, getHeader).get.map { result =>
-            val image = contentAsBytes(Future.successful(result))(akka.util.Timeout(1.seconds)).toArray
-
-            image should contain theSameElementsInOrderAs body
-          }
+          json.as[CustomError].`type` should ===(ErrorType.EntityTooLarge)
         }
-      }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
-      .flatMap(cleanupOnSuccess)
-      .recoverWith(cleanupOnFailure())
   }
 }
