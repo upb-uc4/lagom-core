@@ -39,10 +39,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-      override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
+      new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
+        override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
+      }
     }
-  }
 
   val client: UserService = server.serviceClient.implement[UserService]
 
@@ -83,9 +83,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     Future.sequence(users.map { user =>
       val newUsername = user.username
       val postMessage = user match {
-        case s: Student => PostMessageStudent(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), s.copy(username = newUsername))
+        case s: Student  => PostMessageStudent(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), s.copy(username = newUsername))
         case l: Lecturer => PostMessageLecturer(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Lecturer), l.copy(username = newUsername))
-        case a: Admin => PostMessageAdmin(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), a.copy(username = newUsername))
+        case a: Admin    => PostMessageAdmin(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), a.copy(username = newUsername))
       }
       client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
     }).flatMap { createdUsers =>
@@ -128,7 +128,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       _ <- resetUserTable(Role.Lecturer)
       _ <- resetUserTable(Role.Admin)
     } yield {
-      eventually(timeout(Span(15, Seconds))) {
+      eventually(timeout(Span(30, Seconds))) {
         for {
           usernamesStudent <- server.application.database.getAll(Role.Student)
           usernamesLecturer <- server.application.database.getAll(Role.Lecturer)
@@ -146,9 +146,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     // For Lecturer and Admin as well
     val roleString = role.toString.toLowerCase
     val futureUserList: Future[Seq[User]] = role match {
-      case Role.Student => client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke()
+      case Role.Student  => client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke()
       case Role.Lecturer => client.getAllLecturers(None).handleRequestHeader(addAuthorizationHeader()).invoke()
-      case Role.Admin => client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader()).invoke()
+      case Role.Admin    => client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader()).invoke()
     }
     futureUserList.map {
       _.filter(_.username != roleString).map { user =>
@@ -216,8 +216,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       client.addUser().handleRequestHeader(addAuthorizationHeader())
         .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
         .failed.map {
-        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
-      }.flatMap(cleanupOnSuccess)
+          answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+        }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
@@ -225,8 +225,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(admin0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
           .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
-        }
+            answer.asInstanceOf[CustomException].getErrorCode.http should ===(409)
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
 
@@ -343,18 +343,18 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "not update a non-existing User" in {
       client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader())
         .invoke(student0.copy(username = "GutenAbend")).failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
-      }
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+        }
     }
 
     "update a user as an admin" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.updateUser(admin0.username).handleRequestHeader(addAuthorizationHeader())
           .invoke(admin0.copy(firstName = "KLAUS")).flatMap { _ =>
-          client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
-        }.flatMap { answer =>
-          answer.firstName shouldBe "KLAUS"
-        }
+            client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+          }.flatMap { answer =>
+            answer.firstName shouldBe "KLAUS"
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -363,10 +363,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(lecturer0)).flatMap { _ =>
         client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
           .invoke(lecturer0Updated).flatMap { _ =>
-          client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
-        }.flatMap { answer =>
-          answer should ===(lecturer0Updated)
-        }
+            client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+          }.flatMap { answer =>
+            answer should ===(lecturer0Updated)
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -375,9 +375,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedUneditable.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedUneditable.username))
           .invoke(student0UpdatedUneditable).failed.flatMap { answer =>
-          answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
-            have length uneditableErrorSize
-        }
+            answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+              have length uneditableErrorSize
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -386,9 +386,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedProtected.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedProtected.username))
           .invoke(student0UpdatedProtected).failed.flatMap { answer =>
-          answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
-            have length protectedErrorSize
-        }
+            answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+              have length protectedErrorSize
+          }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -483,7 +483,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
                 ("Cookie", createLoginToken(student0.username))
               )), "null")
 
-            route(server.application.application, getHeader).get.map{ getResult =>
+            route(server.application.application, getHeader).get.map { getResult =>
               getResult.header.status should ===(200)
             }
           }
