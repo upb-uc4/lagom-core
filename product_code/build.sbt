@@ -1,4 +1,3 @@
-import sbt._
 
 // Global Settings
 organization in ThisBuild := "de.upb.cs.uc4"
