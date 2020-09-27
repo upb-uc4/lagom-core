@@ -492,7 +492,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       }
     }
     "should reject too large images" in {
-      prepare(Seq(student0)).flatMap { _ =>
+      prepare(Seq(student0)).map { _ =>
         val body = Array.ofDim[Byte](server.application.config.getInt("uc4.image.maxSize") + 1)
         val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
           FakeHeaders(Seq(
@@ -500,17 +500,14 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
             ("Cookie", createLoginToken(student0.username))
           )), body)
 
-        route(server.application.application, putHeader).get.flatMap { result =>
-          val json = contentAsJson(Future.successful(result))(akka.util.Timeout(1.seconds))
-
-          json.as[CustomError].`type` should ===(ErrorType.EntityTooLarge)
-        }
+        val json = contentAsJson(route(server.application.application, putHeader).get)(akka.util.Timeout(5.seconds))
+        json.as[CustomError].`type` should ===(ErrorType.EntityTooLarge)
 
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
     "should reject images with not supported media types" in {
-      prepare(Seq(student0)).flatMap { _ =>
+      prepare(Seq(student0)).map { _ =>
         val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Ben.svg"))
         val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
           FakeHeaders(Seq(
@@ -518,11 +515,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
             ("Cookie", createLoginToken(student0.username))
           )), body)
 
-        route(server.application.application, putHeader).get.flatMap { result =>
-          val json = contentAsJson(Future.successful(result))(akka.util.Timeout(1.seconds))
-
-          json.as[CustomError].`type` should ===(ErrorType.UnsupportedMediaType)
-        }
+        val json = contentAsJson(route(server.application.application, putHeader).get)(akka.util.Timeout(5.seconds))
+        json.as[CustomError].`type` should ===(ErrorType.UnsupportedMediaType)
 
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
