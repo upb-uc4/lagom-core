@@ -418,7 +418,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "should upload an image, which" must {
       "save the same image" in {
         prepare(Seq(student0)).flatMap { _ =>
-          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Ben.png"))
+          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
           val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
             FakeHeaders(Seq(
               ("Content-Type", "image/png"),
@@ -446,7 +446,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
       "save the right content type" in {
         prepare(Seq(student0)).flatMap { _ =>
-          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Ben.png"))
+          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
           val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
             FakeHeaders(Seq(
               ("Content-Type", "image/png"),
@@ -469,7 +469,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
       "return the right location header" in {
         prepare(Seq(student0)).flatMap { _ =>
-          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Ben.png"))
+          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
           val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
             FakeHeaders(Seq(
               ("Content-Type", "image/png"),
@@ -508,7 +508,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
     "should reject images with not supported media types" in {
       prepare(Seq(student0)).map { _ =>
-        val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Ben.svg"))
+        val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.svg"))
         val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
           FakeHeaders(Seq(
             ("Content-Type", "image/svg"),
