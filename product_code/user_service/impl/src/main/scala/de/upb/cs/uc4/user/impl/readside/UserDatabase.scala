@@ -181,4 +181,16 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       .result
       .headOption
       .map(_.map(entry => (entry.image, entry.contentType)))
+
+  /** Deletes an image from the database
+    *
+    * @param username owner of the image
+    */
+  def removeImage(username: String): DBIO[Done] = {
+    images
+      .filter(_.username === username)
+      .delete
+      .map(_ => Done)
+      .transactionally
+  }
 }

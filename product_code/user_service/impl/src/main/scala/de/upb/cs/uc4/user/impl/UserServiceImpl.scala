@@ -322,12 +322,14 @@ class UserServiceImpl(
 
   /** Gets the image of the user */
   override def getImage(username: String): ServiceCall[NotUsed, ByteString] = authenticated[NotUsed, ByteString](AuthenticationRole.All: _*) {
-    ServerServiceCall { (_, _) =>
-      database.getImage(username).map {
+    ServerServiceCall { (header, _) =>
+      database.getImage(username).flatMap {
         case Some((array, contentType)) =>
-          (ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
+          Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
         case None =>
-          (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
+          getUser(username).invokeWithHeaders(header, NotUsed).map { _ =>
+            (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
+          }
       }
     }
   }
@@ -356,6 +358,16 @@ class UserServiceImpl(
         }
       }
     }
+
+  /** Delete the image of the user */
+  def deleteImage(username: String): ServiceCall[NotUsed, Done] = authenticated[NotUsed, Done](AuthenticationRole.All: _*) {
+    ServerServiceCall { (_, _) =>
+      entityRef(username).ask[Confirmation](replyTo => DeleteImage(replyTo)).map {
+        case Accepted => (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+        case RejectedWithError(error, reason) => throw new CustomException(error, reason)
+      }
+    }
+  }
 
   /** Allows GET, POST */
   override def allowedGetPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
