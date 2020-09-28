@@ -30,7 +30,7 @@ class ImageUploadRouter(action: DefaultActionBuilder, parser: PlayBodyParsers, u
 
             try {
               userService.setImage(username).invokeWithHeaders(serviceRequest, filePath).map {
-                case (header, _) => Results.Created.withHeaders(header.headers.toSeq: _*)
+                case (header, _) => Results.Ok.withHeaders(header.headers.toSeq: _*)
               }.recover(handleException)
             }
             catch handleException.andThen(result => Future.successful(result))
