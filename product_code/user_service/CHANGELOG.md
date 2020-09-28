@@ -1,3 +1,10 @@
+# [v.0.9.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.8.3...user-v0.9.1) (2020-09-22)
+## Feature
+ - Added Support of Profile Pictures
+ - Added Endpoints for Profile Pictures
+## Refactor
+## Bugfix
+
 # [v.0.8.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.8.2...user-v0.8.3) (2020-09-22)
 ## Feature
  - Added Gzipping in Options Header

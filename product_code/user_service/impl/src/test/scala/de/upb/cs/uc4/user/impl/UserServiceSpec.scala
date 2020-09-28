@@ -11,7 +11,7 @@ import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomError, CustomException, DetailedError, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomError, CustomException, DetailedError, ErrorType, SimpleError }
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
@@ -185,7 +185,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
   val lecturer0Updated: Lecturer = lecturer0.copy(email = "noreply@scam.ng", address = address1, freeText = "Morgen kommt der große Gauss.", researchArea = "Physics")
 
-
   /** Tests only working if the whole instance is started */
   "UserService service" should {
 
@@ -233,7 +232,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
     "fail on adding a User with an empty username" in {
       prepare(Seq(admin0)).flatMap { _ =>
-        client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
+        client.addUser().handleRequestHeader(addAuthorizationHeader())
           .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
             answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError]
               .invalidParams.map(_.name) should contain("admin.username")
@@ -244,10 +243,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
     "fail on adding a Student with a duplicate matriculationId" in {
       prepare(Seq(student0)).flatMap { _ =>
-        client.addUser().handleRequestHeader(addAuthorizationHeader("admin"))
+        client.addUser().handleRequestHeader(addAuthorizationHeader())
           .invoke(PostMessageStudent(student0Auth.copy(username = "student7"), student0.copy(username = "student7"))).failed.flatMap { answer =>
             answer.asInstanceOf[CustomException].getPossibleErrorResponse
-              .asInstanceOf[DetailedError].invalidParams.map(_.name) should contain theSameElementsAs (Seq("student.matriculationId"))
+              .asInstanceOf[DetailedError].invalidParams.map(_.name) should contain theSameElementsAs Seq("student.matriculationId")
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
