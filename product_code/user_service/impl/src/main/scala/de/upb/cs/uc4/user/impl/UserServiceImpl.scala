@@ -347,7 +347,7 @@ class UserServiceImpl(
             if (config.getStringList("uc4.image.supportedTypes").contains(contentType.trim)) {
               getUser(username).invokeWithHeaders(header, NotUsed).flatMap { _ =>
                 database.setImage(username, image, contentType).map { _ =>
-                  (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"/user-management/users/$username/image"))), Done)
+                  (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
                 }
               }
             }
