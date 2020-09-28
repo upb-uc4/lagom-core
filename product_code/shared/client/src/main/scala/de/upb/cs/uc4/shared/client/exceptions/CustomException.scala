@@ -46,6 +46,4 @@ object CustomException {
   //500
   val InternalServerError = new CustomException(500, GenericError(ErrorType.InternalServer))
   val InternalDeserializationError = new CustomException(500, GenericError(ErrorType.UndeserializableException))
-
-  implicit val writes: Writes[CustomException] = (o: CustomException) => Json.toJson(o.getPossibleErrorResponse)
 }
