@@ -304,7 +304,7 @@ class UserServiceImpl(
             if (config.getStringList("uc4.image.supportedTypes").contains(contentType.trim)) {
               val ref = entityRef(username)
               ref.ask[Confirmation](replyTo => SetImage(imagePath, contentType, replyTo)).map {
-                case Accepted => (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                case Accepted => (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
                 case RejectedWithError(error, reason) => throw new CustomException(error, reason)
               }
             }
