@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.user
 
+import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
@@ -60,5 +61,9 @@ class UserServiceStub extends UserService with DefaultTestUsers {
 
   override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { _ => Future.successful(Done) }
 
-  override def addUser(): ServiceCall[PostMessageUser, User] = { _ => Future.successful(null) }
+  override def addUser(): ServiceCall[PostMessageUser, User] = ServiceCall { _ => Future.successful(null) }
+
+  override def getImage(username: String): ServiceCall[NotUsed, ByteString] = ServiceCall { _ => Future.successful(null) }
+
+  override def setImage(username: String): ServiceCall[String, Done] = ServiceCall { _ => Future.successful(Done) }
 }

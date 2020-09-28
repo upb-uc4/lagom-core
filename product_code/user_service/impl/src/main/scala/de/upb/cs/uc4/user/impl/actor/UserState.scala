@@ -61,6 +61,14 @@ case class UserState(optUser: Option[User]) {
           Effect.reply(replyTo)(Rejected("A user with the given username does not exist."))
         }
 
+      case SetImage(imagePath, contentType, replyTo) =>
+        if (optUser.isDefined) {
+          Effect.persist(OnImageSet(optUser.get.username, imagePath, contentType)).thenReply(replyTo) { _ => Accepted }
+        }
+        else {
+          Effect.reply(replyTo)(RejectedWithError(404, GenericError(ErrorType.KeyNotFound)))
+        }
+
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -82,6 +90,8 @@ case class UserState(optUser: Option[User]) {
         })
       case OnUserDelete(_) =>
         copy(None)
+      case OnImageSet(_, _, _) =>
+        this
       case _ =>
         println("Unknown Event")
         this

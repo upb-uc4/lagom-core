@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.user.impl
 
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
-import akka.util.Timeout
+import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
@@ -316,6 +316,42 @@ class UserServiceImpl(
         case _ => Nil
       }
   }
+
+  /** Gets the image of the user */
+  override def getImage(username: String): ServiceCall[NotUsed, ByteString] = authenticated[NotUsed, ByteString](AuthenticationRole.All: _*) {
+    ServerServiceCall { (_, _) =>
+      database.getImage(username).map {
+        case Some((array, contentType)) =>
+          (ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
+        case None => throw CustomException.NotFound
+      }
+    }
+  }
+
+  /** Sets the image of the user */
+  override def setImage(username: String): ServerServiceCall[String, Done] =
+    identifiedAuthenticated[String, Done](AuthenticationRole.All: _*) { (authUsername, role) =>
+      ServerServiceCall { (header, imagePath) =>
+        if (role != AuthenticationRole.Admin && authUsername != username) {
+          throw CustomException.OwnerMismatch
+        }
+
+        header.getHeader("Content-Type") match {
+          case Some(contentType) =>
+            if (config.getStringList("uc4.image.supportedTypes").contains(contentType.trim)) {
+              val ref = entityRef(username)
+              ref.ask[Confirmation](replyTo => SetImage(imagePath, contentType, replyTo)).map {
+                case Accepted => (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                case RejectedWithError(error, reason) => throw new CustomException(error, reason)
+              }
+            }
+            else {
+              throw CustomException.UnsupportedMediaType
+            }
+          case None => throw new CustomException(400, DetailedError(ErrorType.MissingHeader, Seq(SimpleError("Content-Type", "Missing"))))
+        }
+      }
+    }
 
   /** Allows GET, POST */
   override def allowedGetPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
