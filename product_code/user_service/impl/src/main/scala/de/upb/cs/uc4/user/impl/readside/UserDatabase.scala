@@ -1,7 +1,5 @@
 package de.upb.cs.uc4.user.impl.readside
 
-import java.io.{ BufferedInputStream, File, FileInputStream }
-
 import akka.Done
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
@@ -131,16 +129,17 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
   /** Creates or updates the image of a user
     *
     * @param username of the owner of the image
-    * @param newImagePath as byte array
+    * @param image as byte array
     */
-  def setImage(username: String, newImagePath: String, contentType: String): DBIO[Done] = {
-    val bis = new BufferedInputStream(new FileInputStream(new File(newImagePath)))
-    val image: Array[Byte] = LazyList.continually(bis.read).takeWhile(_ != -1).map(_.toByte).toArray
-    images
-      .insertOrUpdate(ImageEntry(username, image, contentType))
-      .map(_ => Done)
-      .transactionally
-  }
+  def setImage(username: String, image: Array[Byte], contentType: String): Future[Done] =
+    database.run(setImageQuery(username, image, contentType))
+
+  /** Deletes an image of a user
+    *
+    * @param username owner of the image
+    */
+  def deleteImage(username: String): Future[Done] =
+    database.run(deleteImageQuery(username))
 
   /** Returns the table for the specific role
     *
@@ -181,4 +180,26 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       .result
       .headOption
       .map(_.map(entry => (entry.image, entry.contentType)))
+
+  /** Returns the query to create or update the image of a user
+    *
+    * @param username of the owner of the image
+    * @param image as byte array
+    */
+  private def setImageQuery(username: String, image: Array[Byte], contentType: String): DBIO[Done] =
+    images
+      .insertOrUpdate(ImageEntry(username, image, contentType))
+      .map(_ => Done)
+      .transactionally
+
+  /** Returns the query to delete an image of a user
+    *
+    * @param username owner of the image
+    */
+  def deleteImageQuery(username: String): DBIO[Done] =
+    images
+      .filter(_.username === username)
+      .delete
+      .map(_ => Done)
+      .transactionally
 }

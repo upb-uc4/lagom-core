@@ -24,7 +24,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ Assertion, BeforeAndAfterAll }
-import play.api.test.Helpers.{ GET, PUT, contentAsBytes, contentAsJson, route }
+import play.api.test.Helpers.{ DELETE, GET, PUT, contentAsBytes, contentAsJson, route }
 import play.api.test.{ FakeHeaders, FakeRequest }
 
 import scala.concurrent.Future
@@ -544,7 +544,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
     "should return the default image if no picture is set" in {
       prepare(Seq(admin0)).map { _ =>
-
         val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
         val getHeader = FakeRequest(GET, s"/user-management/users/${admin0.username}/image",
           FakeHeaders(Seq(
@@ -557,6 +556,49 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
         image should contain theSameElementsInOrderAs default
 
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "should delete an image of a user" in {
+      prepare(Seq(student0)).flatMap { _ =>
+        val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
+        val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
+          FakeHeaders(Seq(
+            ("Content-Type", "image/png"),
+            ("Cookie", createLoginToken(student0.username))
+          )), body)
+
+        val deleteHeader = FakeRequest(DELETE, s"/user-management/users/${student0.username}/image",
+          FakeHeaders(Seq(
+            ("Cookie", createLoginToken(student0.username))
+          )), "null")
+
+        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
+        val getHeader = FakeRequest(GET, s"/user-management/users/${student0.username}/image",
+          FakeHeaders(Seq(
+            ("Cookie", createLoginToken(student0.username))
+          )), "null")
+
+        route(server.application.application, putHeader).get.flatMap { _ =>
+
+          eventually(timeout(Span(30, Seconds))) {
+            val image = contentAsBytes(
+              route(server.application.application, getHeader).get
+            )(akka.util.Timeout(20.seconds)).toArray
+
+            image should contain theSameElementsInOrderAs body
+          }.flatMap { _ =>
+            route(server.application.application, deleteHeader).get
+
+            eventually(timeout(Span(30, Seconds))) {
+              val image = contentAsBytes(
+                route(server.application.application, getHeader).get
+              )(akka.util.Timeout(20.seconds)).toArray
+
+              image should contain theSameElementsInOrderAs default
+            }
+          }
+        }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }

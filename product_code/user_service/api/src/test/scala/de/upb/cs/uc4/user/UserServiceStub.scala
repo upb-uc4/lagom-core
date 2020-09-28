@@ -65,5 +65,7 @@ class UserServiceStub extends UserService with DefaultTestUsers {
 
   override def getImage(username: String): ServiceCall[NotUsed, ByteString] = ServiceCall { _ => Future.successful(null) }
 
-  override def setImage(username: String): ServiceCall[String, Done] = ServiceCall { _ => Future.successful(Done) }
+  override def setImage(username: String): ServiceCall[Array[Byte], Done] = ServiceCall { _ => Future.successful(Done) }
+
+  override def deleteImage(username: String): ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 }

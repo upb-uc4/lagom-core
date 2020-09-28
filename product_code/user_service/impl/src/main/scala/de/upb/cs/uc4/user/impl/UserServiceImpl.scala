@@ -160,7 +160,7 @@ class UserServiceImpl(
   override def updateUser(username: String): ServerServiceCall[User, Done] =
     identifiedAuthenticated(AuthenticationRole.All: _*) {
       (authUsername, role) =>
-        ServerServiceCall { (header, userRaw) =>
+        ServerServiceCall { (_, userRaw) =>
           val user = userRaw.clean
           // Check, if the username in path is different than the username in the object
           if (username != user.username) {
@@ -322,20 +322,22 @@ class UserServiceImpl(
 
   /** Gets the image of the user */
   override def getImage(username: String): ServiceCall[NotUsed, ByteString] = authenticated[NotUsed, ByteString](AuthenticationRole.All: _*) {
-    ServerServiceCall { (_, _) =>
-      database.getImage(username).map {
+    ServerServiceCall { (header, _) =>
+      database.getImage(username).flatMap {
         case Some((array, contentType)) =>
-          (ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
+          Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
         case None =>
-          (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
+          getUser(username).invokeWithHeaders(header, NotUsed).map { _ =>
+            (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
+          }
       }
     }
   }
 
   /** Sets the image of the user */
-  override def setImage(username: String): ServerServiceCall[String, Done] =
-    identifiedAuthenticated[String, Done](AuthenticationRole.All: _*) { (authUsername, role) =>
-      ServerServiceCall { (header, imagePath) =>
+  override def setImage(username: String): ServerServiceCall[Array[Byte], Done] =
+    identifiedAuthenticated[Array[Byte], Done](AuthenticationRole.All: _*) { (authUsername, role) =>
+      ServerServiceCall { (header, image) =>
         if (role != AuthenticationRole.Admin && authUsername != username) {
           throw CustomException.OwnerMismatch
         }
@@ -343,10 +345,10 @@ class UserServiceImpl(
         header.getHeader("Content-Type") match {
           case Some(contentType) =>
             if (config.getStringList("uc4.image.supportedTypes").contains(contentType.trim)) {
-              val ref = entityRef(username)
-              ref.ask[Confirmation](replyTo => SetImage(imagePath, contentType, replyTo)).map {
-                case Accepted => (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
-                case RejectedWithError(error, reason) => throw new CustomException(error, reason)
+              getUser(username).invokeWithHeaders(header, NotUsed).flatMap { _ =>
+                database.setImage(username, image, contentType).map { _ =>
+                  (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                }
               }
             }
             else {
@@ -356,6 +358,17 @@ class UserServiceImpl(
         }
       }
     }
+
+  /** Delete the image of the user */
+  def deleteImage(username: String): ServiceCall[NotUsed, Done] = authenticated[NotUsed, Done](AuthenticationRole.All: _*) {
+    ServerServiceCall { (header, _) =>
+      getUser(username).invokeWithHeaders(header, NotUsed).flatMap { _ =>
+        database.deleteImage(username).map { _ =>
+          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+        }
+      }
+    }
+  }
 
   /** Allows GET, POST */
   override def allowedGetPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
