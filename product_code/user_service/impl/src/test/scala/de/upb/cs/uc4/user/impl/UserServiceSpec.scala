@@ -497,9 +497,9 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
               ("Cookie", createLoginToken(student0.username))
             )), body)
 
-          route(server.application.application, putHeader).get.flatMap { postResult =>
+          route(server.application.application, putHeader).get.flatMap { putResult =>
 
-            val getHeader = FakeRequest(GET, postResult.header.headers("location"),
+            val getHeader = FakeRequest(GET, putResult.header.headers("location"),
               FakeHeaders(Seq(
                 ("Cookie", createLoginToken(student0.username))
               )), "null")
@@ -538,6 +538,24 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
         val json = contentAsJson(route(server.application.application, putHeader).get)(akka.util.Timeout(5.seconds))
         json.as[CustomError].`type` should ===(ErrorType.UnsupportedMediaType)
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "should return the default image if no picture is set" in {
+      prepare(Seq(admin0)).map { _ =>
+
+        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
+        val getHeader = FakeRequest(GET, s"/user-management/users/${admin0.username}/image",
+          FakeHeaders(Seq(
+            ("Cookie", createLoginToken(student0.username))
+          )), "null")
+
+        val image = contentAsBytes(
+          route(server.application.application, getHeader).get
+        )(akka.util.Timeout(20.seconds)).toArray
+
+        image should contain theSameElementsInOrderAs default
 
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())

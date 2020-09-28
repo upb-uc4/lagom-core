@@ -3,6 +3,7 @@ package de.upb.cs.uc4.user.impl
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
+import com.google.common.io.ByteStreams
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport._
@@ -36,6 +37,8 @@ class UserServiceImpl(
     authentication: AuthenticationService
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
   readSide.register(processor)
+
+  private lazy val defaultProfilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[UserCommand] =
@@ -323,7 +326,8 @@ class UserServiceImpl(
       database.getImage(username).map {
         case Some((array, contentType)) =>
           (ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
-        case None => throw CustomException.NotFound
+        case None =>
+          (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
       }
     }
   }
