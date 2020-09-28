@@ -1,9 +1,11 @@
 # [v.0.9.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.9.1...user-v0.9.2) (2020-09-28)
 ## Feature
- - Added Default Profile Picture
+ - Added default profile picture
+ - Added endpoints to delete profile pictures
 ## Refactor
 ## Bugfix
- - PUT of a Profile Picture returns now a 200
+ - PUT of a profile picture returns now a 200
+ - Profile pictures gets deleted on user deletion
 
 # [v.0.9.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.8.3...user-v0.9.1) (2020-09-28)
 ## Feature

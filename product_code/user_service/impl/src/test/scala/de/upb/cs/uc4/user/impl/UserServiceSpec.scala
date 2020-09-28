@@ -11,7 +11,7 @@ import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomError, CustomException, DetailedError, ErrorType, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
@@ -23,7 +23,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.{ Assertion, BeforeAndAfterAll, BeforeAndAfterEach }
+import org.scalatest.{ Assertion, BeforeAndAfterAll }
 import play.api.test.Helpers.{ DELETE, GET, PUT, contentAsBytes, contentAsJson, route }
 import play.api.test.{ FakeHeaders, FakeRequest }
 
@@ -33,7 +33,7 @@ import scala.concurrent.duration._
 /** Tests for the CourseService
   * All tests need to be started in the defined order
   */
-class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers with BeforeAndAfterEach {
+class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -128,7 +128,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       _ <- resetUserTable(Role.Lecturer)
       _ <- resetUserTable(Role.Admin)
     } yield {
-      eventually(timeout(Span(30, Seconds))) {
+      eventually(timeout(Span(60, Seconds))) {
         for {
           usernamesStudent <- server.application.database.getAll(Role.Student)
           usernamesLecturer <- server.application.database.getAll(Role.Lecturer)
