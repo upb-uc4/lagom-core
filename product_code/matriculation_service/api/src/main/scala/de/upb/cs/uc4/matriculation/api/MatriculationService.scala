@@ -4,7 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
-import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculationData }
+import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
@@ -20,7 +20,7 @@ trait MatriculationService extends UC4Service {
   override val name: String = "matriculation"
 
   /** Immatriculates a student */
-  def addMatriculationData(username: String): ServiceCall[PutMessageMatriculationData, Done]
+  def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done]
 
   /** Returns the ImmatriculationData of a student with the given username */
   def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData]

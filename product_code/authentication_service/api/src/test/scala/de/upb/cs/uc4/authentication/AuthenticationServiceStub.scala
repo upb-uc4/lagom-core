@@ -3,7 +3,7 @@ package de.upb.cs.uc4.authentication
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationUser, JsonUsername }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationUser, JsonUsername, RefreshToken, Tokens }
 
 import scala.concurrent.Future
 
@@ -32,4 +32,10 @@ class AuthenticationServiceStub extends AuthenticationService {
 
   /** Logs the user out */
   override def logout: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  /** Logs a user in and returns a refresh and a login token in the body */
+  override def loginMachineUser: ServiceCall[NotUsed, Tokens] = ServiceCall { _ => Future.successful(Tokens("Mock", "Mock")) }
+
+  /** Generates a new login token from a refresh token in the bearer header */
+  override def refreshMachineUser: ServiceCall[NotUsed, RefreshToken] = ServiceCall { _ => Future.successful(RefreshToken("Mock", "Mock")) }
 }

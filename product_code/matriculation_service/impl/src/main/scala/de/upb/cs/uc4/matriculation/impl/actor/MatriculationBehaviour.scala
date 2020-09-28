@@ -7,7 +7,7 @@ import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadC
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionMatriculation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerActorFactory, HyperledgerActorObject }
-import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntryToMatriculationData, AddMatriculationData, GetMatriculationData }
+import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData }
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.shared.server.messages.Accepted
 
@@ -29,8 +29,8 @@ class MatriculationBehaviour(val config: Config) extends HyperledgerActorFactory
     */
   override protected def applyCommand(connection: ConnectionMatriculationTrait, command: HyperledgerCommand): Unit = command match {
 
-    case AddEntryToMatriculationData(matriculationId, fieldOfStudy, semester, replyTo) =>
-      connection.addEntryToMatriculationData(matriculationId, fieldOfStudy, semester)
+    case AddEntriesToMatriculationData(matriculationId, matriculation, replyTo) =>
+      connection.addEntriesToMatriculationData(matriculationId, matriculation.toJson)
       replyTo ! Accepted
 
     case AddMatriculationData(data, replyTo) =>

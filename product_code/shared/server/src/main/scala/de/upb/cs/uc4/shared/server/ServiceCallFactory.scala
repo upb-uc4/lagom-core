@@ -8,7 +8,7 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.client.exceptions.CustomException
-import io.jsonwebtoken.{ ExpiredJwtException, Jwts, MalformedJwtException, SignatureException }
+import io.jsonwebtoken.{ ExpiredJwtException, Jwts, MalformedJwtException, SignatureException, UnsupportedJwtException }
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.annotation.varargs
@@ -65,34 +65,70 @@ object ServiceCallFactory {
     }
   }
 
+  /** Checks if a token is a valid token
+    *
+    * @param token to check
+    * @param config configuration of the application
+    * @return the username and the authentication role of the owner of the token
+    */
   private def checkLoginToken(token: String)(implicit config: Config): (String, AuthenticationRole) = {
     try {
       val claims = Jwts.parser().setSigningKey(config.getString("play.http.secret.key")).parseClaimsJws(token).getBody
       val username = claims.get("username", classOf[String])
       val authenticationRole = claims.get("authenticationRole", classOf[String])
+      val subject = claims.getSubject
+
+      if (subject != "login") {
+        throw CustomException.JwtAuthorizationError
+      }
 
       (username, AuthenticationRole.withName(authenticationRole))
     }
     catch {
-      case _: ExpiredJwtException   => throw CustomException.LoginTokenExpired
-      case _: MalformedJwtException => throw CustomException.MalformedLoginToken
-      case _: SignatureException    => throw CustomException.LoginTokenSignatureError
-      case _: Exception             => throw CustomException.InternalServerError
+      case _: ExpiredJwtException      => throw CustomException.RefreshTokenExpired
+      case _: UnsupportedJwtException  => throw CustomException.MalformedRefreshToken
+      case _: MalformedJwtException    => throw CustomException.MalformedRefreshToken
+      case _: SignatureException       => throw CustomException.RefreshTokenSignatureError
+      case _: IllegalArgumentException => throw CustomException.JwtAuthorizationError
+      case ce: CustomException         => throw ce
+      case _: Exception                => throw CustomException.InternalServerError
     }
   }
 
   /** Reads the login token out of the header
     *
-    * @param requestHeader with the a cookie header
+    * @param requestHeader with the a cookie header or an authorization header
     * @return the token as string
     */
   private def getLoginToken(requestHeader: RequestHeader): String = {
-    requestHeader.getHeader("Cookie") match {
+    val cookieToken = requestHeader.getHeader("Cookie") match {
       case Some(cookies) => cookies.split(";").map(_.trim).find(_.startsWith("login=")) match {
-        case Some(s"login=$token") => token
-        case _                     => throw CustomException.AuthorizationError
+        case Some(s"login=$token") => Some(token)
+        case _                     => None
       }
-      case _ => throw CustomException.AuthorizationError
+      case _ => None
+    }
+
+    val authorizationToken = requestHeader.getHeader("Authorization") match {
+      case Some(header) =>
+        header.split("\\s+") match {
+          case Array("Bearer", token) => Some(token)
+          case _ => None
+        }
+      case _ => None
+    }
+
+    if (cookieToken.isDefined && authorizationToken.isDefined) {
+      throw CustomException.MultipleAuthorizationError
+    }
+    else if (cookieToken.isDefined) {
+      cookieToken.get
+    }
+    else if (authorizationToken.isDefined) {
+      authorizationToken.get
+    }
+    else {
+      throw CustomException.JwtAuthorizationError
     }
   }
 
@@ -106,9 +142,9 @@ object ServiceCallFactory {
       Future.successful {
         (ResponseHeader(200, MessageProtocol.empty, List(
           ("Allow", listOfOptions + ", OPTIONS"),
-          ("Access-Control-Allow-Methods", listOfOptions + ", OPTIONS")
+          ("Access-Control-Allow-Methods", listOfOptions + ", OPTIONS"),
+          ("Accept-Encoding", "gzip")
         )), Done)
       }
   }
-
 }

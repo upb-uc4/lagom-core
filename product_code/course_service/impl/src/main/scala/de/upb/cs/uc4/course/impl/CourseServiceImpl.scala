@@ -34,10 +34,6 @@ class CourseServiceImpl(
   private def entityRef(id: String): EntityRef[CourseCommand] =
     clusterSharding.entityRefFor(CourseState.typeKey, id)
 
-  def addAuthenticationHeader(serviceHeader: RequestHeader): RequestHeader => RequestHeader = {
-    origin => origin.addHeader("Cookie", serviceHeader.getHeader("Cookie").getOrElse(""))
-  }
-
   implicit val timeout: Timeout = Timeout(15.seconds)
 
   /** @inheritdoc */
@@ -63,16 +59,27 @@ class CourseServiceImpl(
   override def addCourse(): ServiceCall[Course, Course] =
     identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
       (username, role) =>
-        ServerServiceCall { (header, courseProposal) =>
-          if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId.trim != username) {
+        ServerServiceCall { (header, courseProposalRaw) =>
+          val courseProposal = courseProposalRaw.trim
+          if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId != username) {
             throw CustomException.OwnerMismatch
           }
+
+          val validationErrors = courseProposal.validate
+          // If lecturerId is empty, the userService call cannot be found, therefore check and abort
+          if (validationErrors.map(_.name).contains("lecturerId")) {
+            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+          }
+
           // Check if the lecturer does exist
           userService.getUser(courseProposal.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-            //If the lecturer does not exist, we throw a validation error, containing that info
+            //If the lecturer does not exist, we throw a validation error containing that info
             case ex: CustomException if ex.getErrorCode.http == 404 =>
-              throw new CustomException(422, DetailedError(ErrorType.Validation, courseProposal.validate :+ SimpleError("lecturerId", "Lecturer does not exist")))
+              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist")))
           }.flatMap { _ =>
+            if (validationErrors.nonEmpty) {
+              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+            }
             // Generate unique ID for the course to add
             val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
             // Look up the sharded entity (aka the aggregate instance) for the given ID.
@@ -125,41 +132,50 @@ class CourseServiceImpl(
 
   /** @inheritdoc */
   override def updateCourse(id: String): ServiceCall[Course, Done] =
-    identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
-      (username, role) =>
-        ServerServiceCall {
-          (header, updatedCourse) =>
-            // Look up the sharded entity (aka the aggregate instance) for the given ID.
-            if (id != updatedCourse.courseId) {
-              throw CustomException.PathParameterMismatch
-            }
-
-            // Check if the lecturer does exist
-            userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-              case ex: CustomException if ex.getErrorCode.http == 404 =>
-                throw new CustomException(422, DetailedError(ErrorType.Validation, updatedCourse.validate :+ SimpleError("lecturerId", "Lecturer does not exist")))
-            }.flatMap { _ =>
-              val ref = entityRef(id)
-
-              val courseBefore = ref.ask[Option[Course]](replyTo => GetCourse(replyTo))
-              courseBefore.flatMap {
-                case Some(course) =>
-                  if (role == AuthenticationRole.Lecturer && course.lecturerId != username) {
-                    throw CustomException.OwnerMismatch
-                  }
-                  else {
-                    ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
-                      .map {
-                        case Accepted => // Update Successful
-                          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                        case RejectedWithError(code, errorResponse) =>
-                          throw new CustomException(code, errorResponse)
-                      }
-                  }
-                case None => throw CustomException.NotFound
-              }
-            }
+    identifiedAuthenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) { (username, role) =>
+      ServerServiceCall { (header, updatedCourseRaw) =>
+        val updatedCourse = updatedCourseRaw.trim
+        // Look up the sharded entity (aka the aggregate instance) for the given ID.
+        if (id != updatedCourse.courseId) {
+          throw CustomException.PathParameterMismatch
         }
+
+        val validationErrors = updatedCourse.validate
+        // If lecturerId is empty, the userService call cannot be found, therefore check and abort
+        if (validationErrors.map(_.name).contains("lecturerId")) {
+          throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+        }
+
+        // Check if the lecturer does exist
+        userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+          case ex: CustomException if ex.getErrorCode.http == 404 =>
+            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist.")))
+        }.flatMap { _ =>
+          val ref = entityRef(id)
+
+          val oldCourse = ref.ask[Option[Course]](replyTo => GetCourse(replyTo))
+          oldCourse.flatMap {
+            case Some(course) =>
+              if (validationErrors.nonEmpty) {
+                throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+              }
+              if (role == AuthenticationRole.Lecturer && course.lecturerId != username) {
+                throw CustomException.OwnerMismatch
+              }
+              else {
+                ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
+                  .map {
+                    case Accepted => // Update Successful
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    case RejectedWithError(code, errorResponse) =>
+                      throw new CustomException(code, errorResponse)
+                  }
+              }
+            case None =>
+              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("courseId", "CourseID does not exist.")))
+          }
+        }
+      }
     }
 
   /** @inheritdoc */

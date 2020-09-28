@@ -28,7 +28,7 @@ case class UserState(optUser: Option[User]) {
           Effect.persist(OnUserCreate(user)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(409, GenericError(ErrorType.KeyDuplicate, "Username is already taken")))
+          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
         }
 
       case UpdateUser(user, replyTo) =>
@@ -36,7 +36,7 @@ case class UserState(optUser: Option[User]) {
           Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(404, GenericError(ErrorType.KeyNotFound, "Username not found")))
+          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
         }
 
       case UpdateLatestMatriculation(semester, replyTo) =>

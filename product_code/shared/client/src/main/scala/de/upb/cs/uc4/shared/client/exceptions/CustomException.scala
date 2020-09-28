@@ -23,8 +23,10 @@ object CustomException {
   val DeserializationError = new CustomException(400, GenericError(ErrorType.Deserialization))
   val MalformedRefreshToken = new CustomException(400, GenericError(ErrorType.MalformedRefreshToken))
   val MalformedLoginToken = new CustomException(400, GenericError(ErrorType.MalformedLoginToken))
+  val MultipleAuthorizationError = new CustomException(400, GenericError(ErrorType.MultipleAuthorization))
   //401
-  val AuthorizationError = new CustomException(401, GenericError(ErrorType.JwtAuthorization))
+  val JwtAuthorizationError = new CustomException(401, GenericError(ErrorType.JwtAuthorization))
+  val RefreshTokenMissing = new CustomException(401, GenericError(ErrorType.RefreshTokenMissing))
   val BasicAuthorizationError = new CustomException(401, GenericError(ErrorType.BasicAuthorization))
   val RefreshTokenExpired = new CustomException(401, GenericError(ErrorType.RefreshTokenExpired))
   val LoginTokenExpired = new CustomException(401, GenericError(ErrorType.LoginTokenExpired))
