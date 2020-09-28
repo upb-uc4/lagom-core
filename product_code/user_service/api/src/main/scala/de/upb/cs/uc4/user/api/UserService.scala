@@ -63,7 +63,7 @@ trait UserService extends UC4Service {
   def getImage(username: String): ServiceCall[NotUsed, ByteString]
 
   /** Sets the image of the user */
-  def setImage(username: String): ServiceCall[String, Done]
+  def setImage(username: String): ServiceCall[Array[Byte], Done]
 
   /** Delete the image of the user */
   def deleteImage(username: String): ServiceCall[NotUsed, Done]

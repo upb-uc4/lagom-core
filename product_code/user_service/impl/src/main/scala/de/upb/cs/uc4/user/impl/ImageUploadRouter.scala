@@ -11,14 +11,14 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 class ImageUploadRouter(action: DefaultActionBuilder, parser: PlayBodyParsers, userApplication: UserApplication) {
   private lazy val userService = userApplication.lagomServer.serviceBinding.service.asInstanceOf[UserServiceImpl]
-  private lazy val config = userApplication.config
+  private lazy val maxSize = userApplication.config.getInt("uc4.image.maxSize")
 
   private implicit val executionContext: ExecutionContext = userApplication.executionContext
   private implicit val materializer: Materializer = userApplication.materializer
 
   val router: Router = Router.from {
     case PUT(p"/user-management/users/$username<[^/]+>/image") =>
-      action.async(parser.maxLength(config.getInt("uc4.image.maxSize"), parser.raw)) { request =>
+      action.async(parser.maxLength(maxSize, parser.raw)) { request =>
 
         request.body match {
           case Left(_) =>
@@ -26,10 +26,8 @@ class ImageUploadRouter(action: DefaultActionBuilder, parser: PlayBodyParsers, u
           case Right(buffer) =>
             val serviceRequest = RequestHeader.Default.withHeaders(request.headers.headers)
 
-            val filePath: String = buffer.asFile.getAbsolutePath
-
             try {
-              userService.setImage(username).invokeWithHeaders(serviceRequest, filePath).map {
+              userService.setImage(username).invokeWithHeaders(serviceRequest, buffer.asBytes(maxSize).get.toArray).map {
                 case (header, _) => Results.Ok.withHeaders(header.headers.toSeq: _*)
               }.recover(handleException)
             }
