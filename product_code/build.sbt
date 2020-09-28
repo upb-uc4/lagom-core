@@ -61,6 +61,7 @@ lazy val hyperledger_component = (project in file("hyperledger_component"))
   )
   .settings(Settings.commonSettings("hyperledger_component"))
   .dependsOn(shared_server, Dependencies.hyperledger_api)
+
 lazy val course_service_api = (project in file("course_service/api"))
   .settings(Settings.apiSettings("course_service_api"))
   .dependsOn(shared_client)
