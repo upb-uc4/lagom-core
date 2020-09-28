@@ -6,7 +6,7 @@ import de.upb.cs.uc4.course.impl.CourseApplication
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.events.{ CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate }
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, GenericError, ErrorType }
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError }
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected, RejectedWithError }
 import play.api.libs.json.{ Format, Json }
 
@@ -19,36 +19,21 @@ case class CourseState(optCourse: Option[Course]) {
     */
   def applyCommand(cmd: CourseCommand): ReplyEffect[CourseEvent, CourseState] =
     cmd match {
-      case CreateCourse(courseRaw, replyTo) =>
+      case CreateCourse(course, replyTo) =>
 
-        val course = courseRaw.trim
-        val validationErrors = course.validate
         if (optCourse.isEmpty) {
-          if (validationErrors.isEmpty) {
-            Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
-          }
-          else {
-            Effect.reply(replyTo)(RejectedWithError(422, DetailedError(ErrorType.Validation, validationErrors)))
-          }
+          Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(409, GenericError(ErrorType.KeyDuplicate)))
+          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
         }
 
-      case UpdateCourse(courseRaw, replyTo) =>
-
-        val course = courseRaw.trim
-        val validationErrors = course.validate
+      case UpdateCourse(course, replyTo) =>
         if (optCourse.isDefined) {
-          if (validationErrors.isEmpty) {
-            Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted }
-          }
-          else {
-            Effect.reply(replyTo)(RejectedWithError(422, DetailedError(ErrorType.Validation, validationErrors)))
-          }
+          Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(404, GenericError(ErrorType.KeyDuplicate)))
+          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
         }
 
       case GetCourse(replyTo) =>

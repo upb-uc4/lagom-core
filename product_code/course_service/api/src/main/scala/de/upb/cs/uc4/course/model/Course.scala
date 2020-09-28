@@ -61,6 +61,9 @@ case class Course(
     if (ects <= 0 || ects > 1000) {
       errors :+= SimpleError("ects", "ECTS must be a positive integer between 1 and 999.")
     }
+    if (lecturerId.isEmpty) {
+      errors :+= SimpleError("lecturerId", "LecturerID must not be empty.")
+    }
     if (maxParticipants <= 0 || maxParticipants > 10000) {
       errors :+= SimpleError("maxParticipants", "Number of maximum participants must be a positive integer between 1 and 9999.")
     }

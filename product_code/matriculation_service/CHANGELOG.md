@@ -1,10 +1,22 @@
+# [v.0.8.4](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.8.3...matriculation-v0.8.4) (2020-09-22)
+## Feature
+ - Added Gzipping in Options Header
+## Refactor
+## Bugfix
+
+# [v.0.8.3](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.8.2...matriculation-v0.8.3) (2020-09-17)
+## Feature
+## Refactor
+## Bugfix
+ - Fixed InternalServerError being thrown where a NotFound was expected
+
 # [v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.8.1...matriculation-v0.8.2) (2020-09-15)
 ## Feature
 - Supports Bearer Authentication with JWT token
  - Enabling Gzipping
 ## Refactor
 ## Bugfix
- - Fix hard coded HTTP Secret
+ - Fixed hard coded HTTP Secret
 
 # [v.0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.7.1...matriculation-v0.8.1) (2020-09-14)
 ## Feature
@@ -17,7 +29,7 @@
  - Added full deployment support
 ## Refactor
 ## Bugfix
- - Fix wrong forwarding of cookie header
+ - Fixed wrong forwarding of cookie header
 
 # [v.0.7.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.6.0...matriculation-v0.7.0) (2020-09-01)
 ## Feature

@@ -2,8 +2,6 @@ package de.upb.cs.uc4.course.impl
 
 import java.util.Calendar
 
-import akka.NotUsed
-import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
@@ -11,10 +9,8 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, ErrorType }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType }
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
-import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.user.User
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -249,7 +245,8 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "not update a non-existing course" in {
       client.updateCourse("GutenMorgen").handleRequestHeader(addAuthorizationHeader()).invoke(course3.copy(courseId = "GutenMorgen")).failed.map {
         answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+          answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError]
+            .invalidParams.map(_.name) should contain("courseId")
       }
     }
 

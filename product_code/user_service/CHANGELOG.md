@@ -1,10 +1,26 @@
+# [v.0.8.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.8.2...user-v0.8.3) (2020-09-22)
+## Feature
+ - Added Gzipping in Options Header
+## Refactor
+ - NotFound in updateUser is now part validation
+ - Duplicate in addUser is now part validation
+## Bugfix
+ - Fixed empty username causing a timeout
+
+# [v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.8.1...user-v0.8.2) (2020-09-17)
+## Feature
+## Refactor
+## Bugfix
+ - Fixed NotFound/Duplicate not being checked before validation
+ - Fixed duplicate matriculationIds being allowed
+ 
 # [v.0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.8.0...user-v0.8.1) (2020-09-15)
 ## Feature
 - Supports Bearer Authentication with JWT token
  - Enabling Gzipping
 ## Refactor
 ## Bugfix
- - Fix hard coded HTTP Secret
+ - Fixed hard coded HTTP Secret
 
 # [v.0.8.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.7.1...user-v0.8.0) (2020-09-14)
 ## Feature

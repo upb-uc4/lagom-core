@@ -79,7 +79,7 @@ object ServiceCallFactory {
       val subject = claims.getSubject
 
       if (subject != "login") {
-        throw CustomException.AuthorizationError
+        throw CustomException.JwtAuthorizationError
       }
 
       (username, AuthenticationRole.withName(authenticationRole))
@@ -89,7 +89,7 @@ object ServiceCallFactory {
       case _: UnsupportedJwtException  => throw CustomException.MalformedRefreshToken
       case _: MalformedJwtException    => throw CustomException.MalformedRefreshToken
       case _: SignatureException       => throw CustomException.RefreshTokenSignatureError
-      case _: IllegalArgumentException => throw CustomException.AuthorizationError
+      case _: IllegalArgumentException => throw CustomException.JwtAuthorizationError
       case ce: CustomException         => throw ce
       case _: Exception                => throw CustomException.InternalServerError
     }
@@ -128,7 +128,7 @@ object ServiceCallFactory {
       authorizationToken.get
     }
     else {
-      throw CustomException.AuthorizationError
+      throw CustomException.JwtAuthorizationError
     }
   }
 
@@ -142,7 +142,8 @@ object ServiceCallFactory {
       Future.successful {
         (ResponseHeader(200, MessageProtocol.empty, List(
           ("Allow", listOfOptions + ", OPTIONS"),
-          ("Access-Control-Allow-Methods", listOfOptions + ", OPTIONS")
+          ("Access-Control-Allow-Methods", listOfOptions + ", OPTIONS"),
+          ("Accept-Encoding", "gzip")
         )), Done)
       }
   }

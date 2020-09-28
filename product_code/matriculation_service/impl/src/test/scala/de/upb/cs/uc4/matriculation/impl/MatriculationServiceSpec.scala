@@ -18,6 +18,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import play.api.libs.json.Json
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, SimpleError }
+
+import scala.language.reflectiveCalls
 
 /** Tests for the MatriculationService
   */
@@ -37,6 +40,23 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
           override protected def createConnection: ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
 
             override def addMatriculationData(jsonMatriculationData: String): String = {
+              val matriculationData = Json.parse(jsonMatriculationData).as[ImmatriculationData]
+              if (matriculationData.matriculationStatus.isEmpty) {
+                throw new TransactionExceptionTrait() {
+                  override val transactionId: String = "addEntriesToMatriculationData"
+                  override val payload: String =
+                    """{
+                      |  "type": "HLUnprocessableEntity",
+                      |  "title": "The following parameters do not conform to the specified format.",
+                      |  "invalidParams":[
+                      |     {
+                      |       "name":"matriculations",
+                      |       "reason":"Matriculation status must not be empty"
+                      |     }
+                      |  ]
+                      |}""".stripMargin
+                }
+              }
               jsonStringList :+= jsonMatriculationData
               ""
             }
@@ -44,6 +64,23 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
             override def addEntriesToMatriculationData(matriculationId: String, subjectMatriculationList: String): String = {
               var data = Json.parse(jsonStringList.find(json => json.contains(matriculationId)).get).as[ImmatriculationData]
               val matriculationList = Json.parse(subjectMatriculationList).as[Seq[SubjectMatriculation]]
+
+              if (matriculationList.isEmpty) {
+                throw new TransactionExceptionTrait() {
+                  override val transactionId: String = "addEntriesToMatriculationData"
+                  override val payload: String =
+                    """{
+                      |  "type": "HLUnprocessableEntity",
+                      |  "title": "The following parameters do not conform to the specified format.",
+                      |  "invalidParams":[
+                      |     {
+                      |       "name":"matriculations",
+                      |       "reason":"Matriculation status must not be empty"
+                      |     }
+                      |  ]
+                      |}""".stripMargin
+                }
+              }
 
               for (subjectMatriculation: SubjectMatriculation <- matriculationList) {
                 val optSubject = data.matriculationStatus.find(_.fieldOfStudy == subjectMatriculation.fieldOfStudy)
@@ -139,6 +176,15 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
           case _ => cleanup()
         }
 
+    }
+
+    "not add empty matriculation data for a student" in {
+      client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
+        .invoke(PutMessageMatriculation(Seq())).failed.map { answer =>
+          answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+        }.andThen {
+          case _ => cleanup()
+        }
     }
 
     "extend matriculation data of an already existing field of study" in {

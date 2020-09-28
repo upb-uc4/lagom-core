@@ -6,7 +6,7 @@ object ErrorType extends Enumeration {
   type ErrorType = Value
   val Deserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
   MissingHeader, //In an DetailedError
-  BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, //401
+  BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
   NotEnoughPrivileges, OwnerMismatch, //403
   KeyNotFound, //404
   KeyDuplicate, //409
@@ -41,6 +41,7 @@ object ErrorType extends Enumeration {
       //401
       case BasicAuthorization => "Username and password combination does not exist"
       case JwtAuthorization => "Authorization token missing"
+      case RefreshTokenMissing => "Refresh token missing"
       case RefreshTokenExpired => "Your long term session expired"
       case LoginTokenExpired => "Your session expired"
       //403
