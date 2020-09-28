@@ -2,6 +2,8 @@ package de.upb.cs.uc4.authentication.impl
 
 import java.util.{ Base64, Calendar, Date }
 
+import akka.cluster.sharding.typed.scaladsl.EntityRef
+import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.{ RequestHeader, ResponseHeader }
@@ -9,22 +11,25 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest }
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens }
-import de.upb.cs.uc4.shared.client.exceptions.CustomException
-import de.upb.cs.uc4.shared.server.ServiceCallFactory
+import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
+import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, Tokens }
+import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, ErrorType }
+import de.upb.cs.uc4.shared.server.messages.Confirmation
+import de.upb.cs.uc4.shared.server.{ Hashing, ServiceCallFactory }
 import de.upb.cs.uc4.user.UserServiceStub
 import de.upb.cs.uc4.user.api.UserService
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{ Minutes, Span }
+import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatest.{ Assertion, BeforeAndAfterAll }
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 /** Tests for the AuthenticationService
-  * All tests need to be started in the defined order
   */
 class AuthenticationServiceSpec extends AsyncWordSpec
   with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures {
@@ -80,20 +85,65 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     afterDate.setTime(expectedDate)
     afterDate.add(Calendar.MINUTE, 1)
 
-    date.before(afterDate.getTime) shouldBe true
-
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(expectedDate)
     beforeDate.add(Calendar.MINUTE, -1)
 
-    date.after(beforeDate.getTime) shouldBe true
+    date.before(afterDate.getTime) && date.after(beforeDate.getTime) shouldBe true
+  }
+
+  private def entityRef(id: String): EntityRef[AuthenticationCommand] =
+    server.application.clusterSharding.entityRefFor(AuthenticationState.typeKey, id)
+
+  private val hashedDefaultUsernames = Seq(Hashing.sha256("student"), Hashing.sha256("lecturer"), Hashing.sha256("admin"))
+
+  def prepare(userToBeAdded: String): Future[Assertion] = {
+    client.setAuthentication().invoke(AuthenticationUser(userToBeAdded, userToBeAdded, AuthenticationRole.Student)).flatMap {
+      _ =>
+        eventually(timeout(Span(15, Seconds))) {
+          for {
+            hashedUsernames <- server.application.database.getAll
+          } yield {
+            val expectedUsernames = hashedDefaultUsernames ++ Seq(Hashing.sha256(userToBeAdded))
+            hashedUsernames should contain theSameElementsAs expectedUsernames
+          }
+        }
+    }
+  }
+
+  def resetTable(usersToBeDeleted: Seq[String]): Future[Assertion] = {
+    Future.sequence(usersToBeDeleted.map { user =>
+      entityRef(Hashing.sha256(user)).ask[Confirmation](replyTo => DeleteAuthentication(replyTo))(Timeout(5.seconds))
+    }).flatMap { _ =>
+      eventually(timeout(Span(20, Seconds))) {
+        for {
+          hashedUsernames <- server.application.database.getAll
+        } yield {
+          hashedUsernames should contain theSameElementsAs hashedDefaultUsernames
+        }
+      }
+    }
+  }
+
+  def cleanupOnFailure(usersToBeDeleted: Seq[String]): PartialFunction[Throwable, Future[Assertion]] = PartialFunction.fromFunction { throwable =>
+    resetTable(usersToBeDeleted)
+      .map { _ =>
+        throw throwable
+      }
+  }
+
+  def cleanupOnSuccess(usersToBeDeleted: Seq[String], assertion: Assertion): Future[Assertion] = {
+    resetTable(usersToBeDeleted)
+      .map { _ =>
+        assertion
+      }
   }
 
   /** Tests only working if the whole instance is started */
   "AuthenticationService service" should {
 
     "has the default login data" in {
-      eventually(timeout(Span(2, Minutes))) {
+      eventually(timeout(Span(20, Seconds))) {
         val futureAnswers = for {
           answer1 <- client.login.handleRequestHeader(addLoginHeader("student", "student")).invoke()
           answer2 <- client.login.handleRequestHeader(addLoginHeader("lecturer", "lecturer")).invoke()
@@ -104,15 +154,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "add new login data" in {
-      client.setAuthentication().invoke(AuthenticationUser("Gregor", "Greg", AuthenticationRole.Student)).flatMap {
-        _ =>
-          client.login.handleRequestHeader(addLoginHeader("Gregor", "Greg")).invoke().map { answer =>
-            answer should ===(Done)
-          }
-      }
-    }
-
+    //UPDATE
     "update login data" in {
       val time = Calendar.getInstance()
       time.add(Calendar.DATE, 1)
@@ -126,87 +168,178 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .signWith(SignatureAlgorithm.HS256, "changeme")
           .compact()
 
-      client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token)).invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).flatMap {
+      client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
+        .invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).flatMap {
+          _ =>
+            client.login.handleRequestHeader(addLoginHeader("Gregor", "GregNew")).invoke().map { answer =>
+              answer should ===(Done)
+            }
+        }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+        .recoverWith(cleanupOnFailure(Seq("Gregor")))
+    }
+
+    //DELETE
+    "remove a user over the topic" in {
+      prepare("Test").flatMap { _ =>
+        deletionStub.send(JsonUsername("Test"))
+
+        eventually(timeout(Span(20, Seconds))) {
+          client.login.handleRequestHeader(addLoginHeader("Test", "Test")).invoke().failed.map { answer =>
+            answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
+          }
+        }.flatMap(assertion => cleanupOnSuccess(Seq("Test"), assertion))
+          .recoverWith(cleanupOnFailure(Seq("Test")))
+      }
+    }
+
+    //LOGIN
+    "add new login data" in {
+      client.setAuthentication().invoke(AuthenticationUser("Gregor", "Greg", AuthenticationRole.Student)).flatMap {
         _ =>
-          client.login.handleRequestHeader(addLoginHeader("Gregor", "GregNew")).invoke().map { answer =>
+          client.login.handleRequestHeader(addLoginHeader("Gregor", "Greg")).invoke().map { answer =>
             answer should ===(Done)
           }
-      }
+      }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+        .recoverWith(cleanupOnFailure(Seq("Gregor")))
     }
 
     "detect a wrong username" in {
       client.login.handleRequestHeader(addLoginHeader("studenta", "student")).invoke().failed.map {
-        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+        answer => answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
       }
     }
 
     "detect a wrong password" in {
       client.login.handleRequestHeader(addLoginHeader("student", "studenta")).invoke().failed.map {
-        answer => answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+        answer => answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
       }
     }
 
-    "generates two correct header tokens" in {
-      client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
-        case (header: ResponseHeader, _) =>
-          val (refresh, login) = getTokens(header)
+    "generates two correct header tokens, which" must {
 
-          val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
-          val refreshUsername = refreshClaims.get("username", classOf[String])
-          val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
-          val refreshExpirationDate = refreshClaims.getExpiration
+      "have the right username" in {
+        client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val (refresh, login) = getTokens(header)
 
-          val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
-          val loginUsername = loginClaims.get("username", classOf[String])
-          val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
-          val loginExpirationDate = loginClaims.getExpiration
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshUsername = refreshClaims.get("username", classOf[String])
 
-          refreshUsername should ===("admin")
-          refreshAuthenticationRole should ===("Admin")
-          loginUsername should ===("admin")
-          loginAuthenticationRole should ===("Admin")
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginUsername = loginClaims.get("username", classOf[String])
 
-          val refreshExpected = Calendar.getInstance()
-          refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
-          checkDate(refreshExpirationDate, refreshExpected.getTime)
+            (refreshUsername, loginUsername) should ===("admin", "admin")
+        }
+      }
 
-          val loginExpected = Calendar.getInstance()
-          loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
-          checkDate(loginExpirationDate, loginExpected.getTime)
+      "have the right role" in {
+        client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val (refresh, login) = getTokens(header)
+
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
+
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
+
+            (refreshAuthenticationRole, loginAuthenticationRole) should ===("Admin", "Admin")
+        }
+      }
+
+      "have the right ExpirationDate in the refresh token" in {
+        client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val (refresh, _) = getTokens(header)
+
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshExpirationDate = refreshClaims.getExpiration
+
+            val refreshExpected = Calendar.getInstance()
+            refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
+            checkDate(refreshExpirationDate, refreshExpected.getTime)
+        }
+      }
+
+      "have the right ExpirationDate in the login token" in {
+        client.login.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val (_, login) = getTokens(header)
+
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginExpirationDate = loginClaims.getExpiration
+
+            val loginExpected = Calendar.getInstance()
+            loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
+            checkDate(loginExpirationDate, loginExpected.getTime)
+        }
       }
     }
 
-    "generates two correct machine tokens" in {
-      client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
-        case (header: ResponseHeader, tokens: Tokens) =>
-          val refresh = tokens.refresh
-          val login = tokens.login
+    "generates two correct machine tokens, which" must {
 
-          val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
-          val refreshUsername = refreshClaims.get("username", classOf[String])
-          val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
-          val refreshExpirationDate = refreshClaims.getExpiration
+      "have the right username" in {
+        client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (_: ResponseHeader, tokens: Tokens) =>
+            val refresh = tokens.refresh
+            val login = tokens.login
 
-          val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
-          val loginUsername = loginClaims.get("username", classOf[String])
-          val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
-          val loginExpirationDate = loginClaims.getExpiration
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshUsername = refreshClaims.get("username", classOf[String])
 
-          refreshUsername should ===("admin")
-          refreshAuthenticationRole should ===("Admin")
-          loginUsername should ===("admin")
-          loginAuthenticationRole should ===("Admin")
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginUsername = loginClaims.get("username", classOf[String])
 
-          val refreshExpected = Calendar.getInstance()
-          refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
-          checkDate(refreshExpirationDate, refreshExpected.getTime)
+            (refreshUsername, loginUsername) should ===("admin", "admin")
+        }
+      }
 
-          val loginExpected = Calendar.getInstance()
-          loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
-          checkDate(loginExpirationDate, loginExpected.getTime)
+      "have the right role" in {
+        client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (_: ResponseHeader, tokens: Tokens) =>
+            val refresh = tokens.refresh
+            val login = tokens.login
+
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshAuthenticationRole = refreshClaims.get("authenticationRole", classOf[String])
+
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginAuthenticationRole = loginClaims.get("authenticationRole", classOf[String])
+
+            (refreshAuthenticationRole, loginAuthenticationRole) should ===("Admin", "Admin")
+        }
+      }
+
+      "have the right ExpirationDate in the refresh token" in {
+        client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (_: ResponseHeader, tokens: Tokens) =>
+            val refresh = tokens.refresh
+
+            val refreshClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(refresh).getBody
+            val refreshExpirationDate = refreshClaims.getExpiration
+
+            val refreshExpected = Calendar.getInstance()
+            refreshExpected.add(Calendar.DATE, applicationConfig.getInt("uc4.authentication.refresh"))
+            checkDate(refreshExpirationDate, refreshExpected.getTime)
+        }
+      }
+
+      "have the right ExpirationDate in the login token" in {
+        client.loginMachineUser.handleRequestHeader(addLoginHeader("admin", "admin")).withResponseHeader.invoke().map {
+          case (_: ResponseHeader, tokens: Tokens) =>
+            val login = tokens.login
+
+            val loginClaims = Jwts.parser().setSigningKey("changeme").parseClaimsJws(login).getBody
+            val loginExpirationDate = loginClaims.getExpiration
+
+            val loginExpected = Calendar.getInstance()
+            loginExpected.add(Calendar.MINUTE, applicationConfig.getInt("uc4.authentication.login"))
+            checkDate(loginExpirationDate, loginExpected.getTime)
+        }
       }
     }
 
+    //REFRESH
     "refresh a header login token" in {
       val time = Calendar.getInstance()
       time.add(Calendar.DATE, 1)
@@ -257,7 +390,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenExpired)
       }
     }
 
@@ -275,7 +408,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenExpired)
       }
     }
 
@@ -293,7 +426,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact().replaceFirst(".", ",")
 
       client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(400)
+        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.MalformedRefreshToken)
       }
     }
 
@@ -311,7 +444,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact().replaceFirst(".", ",")
 
       client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(400)
+        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.MalformedRefreshToken)
       }
     }
 
@@ -329,7 +462,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenSignatureInvalid)
       }
     }
 
@@ -347,33 +480,52 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenSignatureInvalid)
       }
     }
 
     "detect that a header refresh token is missing" in {
       client.refresh.invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
       }
     }
 
-    "detect that a machine refresh token is missing" in {
+    "detect that a machine user refresh token is missing" in {
       client.refreshMachineUser.invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
+        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
       }
     }
 
-    "log a user out" in {
-      client.logout.withResponseHeader.invoke().map {
-        case (header: ResponseHeader, _) =>
-          val cookies = header.getHeaders("Set-Cookie")
-          cookies should have size 2
-          exactly(1, cookies) should include("refresh=;")
-          exactly(1, cookies) should include("login=;")
+    //LOGOUT
+    "log a user out, which" must {
+
+      "set the right amount of cookies" in {
+        client.logout.withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val cookies = header.getHeaders("Set-Cookie")
+            cookies should have size 2
+        }
+      }
+
+      "clears the refresh cookie" in {
+        client.logout.withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val cookies = header.getHeaders("Set-Cookie")
+            exactly(1, cookies) should include("refresh=;")
+        }
+      }
+
+      "clears the login cookie" in {
+        client.logout.withResponseHeader.invoke().map {
+          case (header: ResponseHeader, _) =>
+            val cookies = header.getHeaders("Set-Cookie")
+            exactly(1, cookies) should include("login=;")
+        }
       }
     }
 
-    "detect that a user is not authorized" in {
+    //SERVICE CALL FACTORY
+    "detect that a user is missing privileges" in {
       val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Admin) {
         _ => Future.successful(NotUsed)
       }(applicationConfig, server.executionContext)
@@ -391,12 +543,13 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       val thrown = the[CustomException] thrownBy serviceCall.handleRequestHeader(addTokenHeader(token)).invoke()
-      thrown.getErrorCode.http should ===(403)
+      thrown.getPossibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
     }
 
     "detect that a user is authorized" in {
-      val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Student) {
-        _ => Future.successful(NotUsed)
+      val result = "Successful"
+      val serviceCall = ServiceCallFactory.authenticated[NotUsed, String](AuthenticationRole.Student) {
+        _ => Future.successful(result)
       }(applicationConfig, server.executionContext)
 
       val time = Calendar.getInstance()
@@ -412,17 +565,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       serviceCall.handleRequestHeader(addTokenHeader(token)).invoke().map { answer =>
-        answer should ===(NotUsed)
-      }
-    }
-
-    "remove a user over the topic" in {
-      deletionStub.send(JsonUsername("student"))
-
-      eventually(timeout(Span(2, Minutes))) {
-        client.login.handleRequestHeader(addLoginHeader("student", "student")).invoke().failed.map { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(401)
-        }
+        answer should ===(result)
       }
     }
 

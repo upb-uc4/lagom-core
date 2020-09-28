@@ -71,7 +71,7 @@ class AuthenticationDatabase(database: Database, clusterSharding: ClusterShardin
     */
   def removeAuthenticationUser(username: String): DBIO[Done] =
     authenticationUsers
-      .filter(_.username === Hashing.sha256(username))
+      .filter(_.username === username)
       .delete
       .map(_ => Done)
       .transactionally

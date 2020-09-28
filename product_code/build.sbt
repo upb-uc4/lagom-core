@@ -4,7 +4,7 @@ organization in ThisBuild := "de.upb.cs.uc4"
 lagomServiceEnableSsl in ThisBuild := true
 lagomCassandraEnabled in ThisBuild := false
 scalaVersion in ThisBuild := "2.13.0"
-scalacOptions in ThisBuild ++= Seq("-deprecation")
+scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
 
 val withTests = "compile->compile;test->test"
 

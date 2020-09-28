@@ -20,6 +20,8 @@ import play.api.libs.json.Json
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
 import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, SimpleError }
 
+import scala.language.reflectiveCalls
+
 /** Tests for the MatriculationService
   */
 class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with DefaultTestUsers {
