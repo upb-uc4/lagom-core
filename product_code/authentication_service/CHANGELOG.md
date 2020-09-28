@@ -1,4 +1,4 @@
-# [v.0.9.0-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.2...authentication-v0.9.0) (2020-XX-XX)
+# [v.0.9.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.2...authentication-v0.9.0) (2020-09-28)
 ## Feature
 ## Refactor
  - Authentication Tests are now Unit-Tests
