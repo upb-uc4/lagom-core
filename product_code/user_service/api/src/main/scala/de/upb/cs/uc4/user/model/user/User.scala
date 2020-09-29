@@ -11,7 +11,6 @@ trait User {
   val address: Address
   val firstName: String
   val lastName: String
-  val picture: String
   val email: String
   val phoneNumber: String
   val birthDate: String
@@ -22,7 +21,6 @@ trait User {
       address: Address = this.address,
       firstName: String = this.firstName,
       lastName: String = this.lastName,
-      picture: String = this.picture,
       email: String = this.email,
       phoneNumber: String = this.phoneNumber,
       birthDate: String = this.birthDate
@@ -30,7 +28,7 @@ trait User {
 
   def trim: User = copyUser(
     username.trim, role, address.trim, firstName.trim, lastName.trim,
-    picture.trim, email.trim, phoneNumber.trim, birthDate.trim
+    email.trim, phoneNumber.trim, birthDate.trim
   )
 
   def clean: User = trim.copyUser(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
@@ -94,9 +92,6 @@ trait User {
     }
     if (!nameRegex.matches(lastName)) {
       errors :+= SimpleError("lastName", "Last name must contain between 1 and 100 characters.")
-    }
-    if (!generalRegex.matches(picture)) { //TODO, this does not make any sense, but pictures are not defined yet
-      errors :+= SimpleError("picture", "Picture is invalid.")
     }
     errors
   }

@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
 import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
+import play.api.libs.json.{ Json, Writes }
 
 class CustomException(errorCode: TransportErrorCode, possibleErrorResponse: CustomError, cause: Throwable) extends Exception(possibleErrorResponse.title, null, true, true) {
 
@@ -38,6 +39,8 @@ object CustomException {
   val NotEnrolled = new CustomException(404, GenericError(ErrorType.NotEnrolled))
   //409
   val Duplicate = new CustomException(409, GenericError(ErrorType.KeyDuplicate))
+  //415
+  val UnsupportedMediaType = new CustomException(415, GenericError(ErrorType.UnsupportedMediaType))
   //422
   val PathParameterMismatch = new CustomException(422, GenericError(ErrorType.PathParameterMismatch))
   val RefreshTokenSignatureError = new CustomException(422, GenericError(ErrorType.RefreshTokenSignatureInvalid))

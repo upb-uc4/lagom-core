@@ -12,7 +12,6 @@ case class Student(
     address: Address,
     firstName: String,
     lastName: String,
-    picture: String,
     email: String,
     phoneNumber: String,
     birthDate: String,
@@ -26,12 +25,11 @@ case class Student(
       address: Address = this.address,
       firstName: String = this.firstName,
       lastName: String = this.lastName,
-      picture: String = this.picture,
       email: String = this.email,
       phoneNumber: String = this.phoneNumber,
       birthDate: String = this.birthDate
   ): Student =
-    copy(username, role, address, firstName, lastName, picture, email, phoneNumber, birthDate)
+    copy(username, role, address, firstName, lastName, email, phoneNumber, birthDate)
 
   override def trim: Student =
     super.trim.asInstanceOf[Student].copy(

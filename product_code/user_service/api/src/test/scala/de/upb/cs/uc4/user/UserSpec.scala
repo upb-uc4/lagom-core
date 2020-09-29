@@ -10,9 +10,9 @@ class UserSpec extends AnyWordSpecLike with Matchers {
   val genericString: String = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut l"
   val addressValid: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
 
-  val studentValid: Student = Student("student0", Role.Student, addressValid, "VollDer", "Hammer", "Picture", "example@mail.de", "+49123456789", "1990-12-11", "SS2020", "7421769")
-  val lecturerValid: Lecturer = Lecturer("lecturer0", Role.Lecturer, addressValid, "EchtDer", "Hammer", "Picture", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
-  val adminValid: Admin = Admin("admin0", Role.Admin, addressValid, "firstName", "LastName", "Picture", "example@mail.de", "+49123456789", "1992-12-11")
+  val studentValid: Student = Student("student0", Role.Student, addressValid, "VollDer", "Hammer", "example@mail.de", "+49123456789", "1990-12-11", "SS2020", "7421769")
+  val lecturerValid: Lecturer = Lecturer("lecturer0", Role.Lecturer, addressValid, "EchtDer", "Hammer", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+  val adminValid: Admin = Admin("admin0", Role.Admin, addressValid, "firstName", "LastName", "example@mail.de", "+49123456789", "1992-12-11")
 
   "A User" should {
     "be validated" in {
@@ -51,13 +51,6 @@ class UserSpec extends AnyWordSpecLike with Matchers {
       val errors = adminValid.copy(lastName = "").validate
       val errorVariables = errors.map(error => error.name)
       errorVariables should contain theSameElementsAs Seq("lastName")
-    }
-
-    //PICTURE
-    "return a validation error for incorrect length in picture" in {
-      val errors = adminValid.copy(picture = genericString * 3).validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("picture")
     }
 
     //EMAIL

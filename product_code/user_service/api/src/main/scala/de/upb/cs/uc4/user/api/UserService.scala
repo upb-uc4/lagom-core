@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.user.api
 
+import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
@@ -58,6 +59,15 @@ trait UserService extends UC4Service {
   /** Update latestMatriculation */
   def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done]
 
+  /** Gets the image of the user */
+  def getImage(username: String): ServiceCall[NotUsed, ByteString]
+
+  /** Sets the image of the user */
+  def setImage(username: String): ServiceCall[Array[Byte], Done]
+
+  /** Delete the image of the user */
+  def deleteImage(username: String): ServiceCall[NotUsed, Done]
+
   // OPTIONS
   /** Allows GET, POST */
   def allowedGetPost: ServiceCall[NotUsed, Done]
@@ -99,8 +109,14 @@ trait UserService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/admins?usernames", getAllAdmins _),
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGet _),
 
+        restCall(Method.GET, pathPrefix + "/users/:username/image", getImage _)(MessageSerializer.NotUsedMessageSerializer, MessageSerializer.NoopMessageSerializer),
+        restCall(Method.DELETE, pathPrefix + "/users/:username/image", deleteImage _),
+
+        restCall(Method.OPTIONS, pathPrefix + "/users/:username/image", allowedDeleteGetPut _),
+
         //Not exposed
-        restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _)
+        restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
+        restCall(Method.PUT, pathPrefix + "/image/:username", setImage _)
       )
       .addAcls(
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users\\E" + "(\\?([^\\/\\?]+))?"),
@@ -122,7 +138,12 @@ trait UserService extends UC4Service {
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/lecturers\\E" + "(\\?([^\\/\\?]+))?"),
 
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?"),
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?")
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/admins\\E" + "(\\?([^\\/\\?]+))?"),
+
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image"""),
+        ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users\\E" + "([^/]+)" + """\/image"""),
+        ServiceAcl.forMethodAndPathRegex(Method.DELETE, "\\Q" + pathPrefix + "/users\\E" + "([^/]+)" + """\/image"""),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image""")
       )
       .addTopics(
         topic(UserService.ADD_TOPIC_NAME, userCreationTopic _),

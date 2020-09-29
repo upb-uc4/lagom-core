@@ -1,3 +1,19 @@
+# [v.0.9.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.9.1...user-v0.9.2) (2020-09-28)
+## Feature
+ - Added default profile picture
+ - Added endpoints to delete profile pictures
+## Refactor
+## Bugfix
+ - PUT of a profile picture returns now a 200
+ - Profile pictures gets deleted on user deletion
+
+# [v.0.9.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.8.3...user-v0.9.1) (2020-09-28)
+## Feature
+ - Added Support of Profile Pictures
+ - Added Endpoints for Profile Pictures
+## Refactor
+## Bugfix
+
 # [v.0.8.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.8.2...user-v0.8.3) (2020-09-22)
 ## Feature
  - Added Gzipping in Options Header

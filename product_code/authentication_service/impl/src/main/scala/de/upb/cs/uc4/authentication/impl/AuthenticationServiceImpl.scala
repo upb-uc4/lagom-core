@@ -136,7 +136,14 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
 
   /** Generates a new login token from a refresh token in the bearer header */
   override def refreshMachineUser: ServiceCall[NotUsed, RefreshToken] = ServerServiceCall { (header, _) =>
-    val refreshToken = getBearerToken(header)
+    val refreshToken = try {
+      getBearerToken(header)
+    }
+    catch {
+      case ce: CustomException if ce.getPossibleErrorResponse.`type` == ErrorType.JwtAuthorization =>
+        throw CustomException.RefreshTokenMissing
+      case e: Throwable => throw e
+    }
     val (loginToken, _, username) = createLoginTokenFromRefreshToken(refreshToken)
 
     Future.successful(
@@ -208,7 +215,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
   /** Create a refresh token out of the given parameters
     *
     * @param username of the token owner
-    * @param role of the token owner
+    * @param role     of the token owner
     * @return a String tuple with the token as a string and the formatted expiration date
     */
   private def createRefreshToken(username: String, role: AuthenticationRole): (String, String) = {
@@ -234,7 +241,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
   /** Create a login token out of the given parameters
     *
     * @param username of the token owner
-    * @param role of the token owner
+    * @param role     of the token owner
     * @return a tuple with the token as a string and the expiration time in minutes
     */
   private def createLoginToken(username: String, role: AuthenticationRole): (String, Int) = {
@@ -291,9 +298,9 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       case _: UnsupportedJwtException  => throw CustomException.MalformedRefreshToken
       case _: MalformedJwtException    => throw CustomException.MalformedRefreshToken
       case _: SignatureException       => throw CustomException.RefreshTokenSignatureError
-      case _: IllegalArgumentException => throw CustomException.JwtAuthorizationError
+      case _: IllegalArgumentException => throw CustomException.RefreshTokenMissing
       case ce: CustomException         => throw ce
-      case _: Exception                => throw CustomException.InternalServerError
+      case _: Throwable                => throw CustomException.InternalServerError
     }
   }
 }

@@ -1,8 +1,9 @@
 package de.upb.cs.uc4.user.impl
 
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
-import akka.util.Timeout
+import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
+import com.google.common.io.ByteStreams
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport._
@@ -37,6 +38,8 @@ class UserServiceImpl(
     authentication: AuthenticationService
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
   readSide.register(processor)
+
+  private lazy val defaultProfilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[UserCommand] =
@@ -158,7 +161,7 @@ class UserServiceImpl(
   override def updateUser(username: String): ServerServiceCall[User, Done] =
     identifiedAuthenticated(AuthenticationRole.All: _*) {
       (authUsername, role) =>
-        ServerServiceCall { (header, userRaw) =>
+        ServerServiceCall { (_, userRaw) =>
           val user = userRaw.clean
           // Check, if the username in path is different than the username in the object
           if (username != user.username) {
@@ -328,6 +331,56 @@ class UserServiceImpl(
           immutable.Seq((JsonUsername(user.username), offset))
         case _ => Nil
       }
+  }
+
+  /** Gets the image of the user */
+  override def getImage(username: String): ServiceCall[NotUsed, ByteString] = authenticated[NotUsed, ByteString](AuthenticationRole.All: _*) {
+    ServerServiceCall { (header, _) =>
+      database.getImage(username).flatMap {
+        case Some((array, contentType)) =>
+          Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
+        case None =>
+          getUser(username).invokeWithHeaders(header, NotUsed).map { _ =>
+            (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
+          }
+      }
+    }
+  }
+
+  /** Sets the image of the user */
+  override def setImage(username: String): ServerServiceCall[Array[Byte], Done] =
+    identifiedAuthenticated[Array[Byte], Done](AuthenticationRole.All: _*) { (authUsername, role) =>
+      ServerServiceCall { (header, image) =>
+        if (role != AuthenticationRole.Admin && authUsername != username) {
+          throw CustomException.OwnerMismatch
+        }
+
+        header.getHeader("Content-Type") match {
+          case Some(contentType) =>
+            if (config.getStringList("uc4.image.supportedTypes").contains(contentType.trim)) {
+              getUser(username).invokeWithHeaders(header, NotUsed).flatMap { _ =>
+                database.setImage(username, image, contentType).map { _ =>
+                  (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                }
+              }
+            }
+            else {
+              throw CustomException.UnsupportedMediaType
+            }
+          case None => throw new CustomException(400, DetailedError(ErrorType.MissingHeader, Seq(SimpleError("Content-Type", "Missing"))))
+        }
+      }
+    }
+
+  /** Delete the image of the user */
+  def deleteImage(username: String): ServiceCall[NotUsed, Done] = authenticated[NotUsed, Done](AuthenticationRole.All: _*) {
+    ServerServiceCall { (header, _) =>
+      getUser(username).invokeWithHeaders(header, NotUsed).flatMap { _ =>
+        database.deleteImage(username).map { _ =>
+          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+        }
+      }
+    }
   }
 
   /** Allows GET, POST */

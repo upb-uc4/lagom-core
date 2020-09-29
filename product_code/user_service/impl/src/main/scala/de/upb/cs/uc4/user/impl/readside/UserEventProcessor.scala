@@ -16,7 +16,8 @@ class UserEventProcessor(readSide: SlickReadSide, database: UserDatabase)
         database.addUser(envelope.event.user)
       }
       .setEventHandler[OnUserDelete] { envelope =>
-        database.removeUser(envelope.event.user)
+        database.removeUser(envelope.event.user) >>
+          database.deleteImageQuery(envelope.event.user.username)
       }
       .build()
 

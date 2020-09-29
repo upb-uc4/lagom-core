@@ -1,5 +1,8 @@
 ### Reason for this PR
-- [INSERT HERE REASONS]
+- [INSERT REASONS HERE]
 
 ### Changes in this PR
-- [INSERT HERE CHANGES]
+- [INSERT CHANGES HERE]
+
+- [ ] Test written
+- [ ] Changelog updated
