@@ -156,26 +156,28 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
     //UPDATE
     "update login data" in {
-      val time = Calendar.getInstance()
-      time.add(Calendar.DATE, 1)
+      prepare("Gregor").flatMap { _ =>
+        val time = Calendar.getInstance()
+        time.add(Calendar.DATE, 1)
 
-      val token =
-        Jwts.builder()
-          .setSubject("login")
-          .setExpiration(time.getTime)
-          .claim("username", "Gregor")
-          .claim("authenticationRole", "Student")
-          .signWith(SignatureAlgorithm.HS256, "changeme")
-          .compact()
+        val token =
+          Jwts.builder()
+            .setSubject("login")
+            .setExpiration(time.getTime)
+            .claim("username", "Gregor")
+            .claim("authenticationRole", "Student")
+            .signWith(SignatureAlgorithm.HS256, "changeme")
+            .compact()
 
-      client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
-        .invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).flatMap {
-          _ =>
-            client.login.handleRequestHeader(addLoginHeader("Gregor", "GregNew")).invoke().map { answer =>
-              answer should ===(Done)
-            }
-        }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
-        .recoverWith(cleanupOnFailure(Seq("Gregor")))
+        client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
+          .invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).flatMap {
+            _ =>
+              client.login.handleRequestHeader(addLoginHeader("Gregor", "GregNew")).invoke().map { answer =>
+                answer should ===(Done)
+              }
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+          .recoverWith(cleanupOnFailure(Seq("Gregor")))
+      }
     }
 
     //DELETE
