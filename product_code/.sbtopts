@@ -2,3 +2,4 @@
 -Xmx4096M
 -Xss2M
 -XX:MaxMetaspaceSize=1024M
+-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005

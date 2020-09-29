@@ -17,7 +17,7 @@ import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAu
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, DetailedError, ErrorType, SimpleError }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
@@ -43,7 +43,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     entityRef(Hashing.sha256(user.username)).ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map {
       case Accepted => Done
       case RejectedWithError(code, errorResponse) =>
-        throw new CustomException(code, errorResponse)
+        throw new UC4Exception(code, errorResponse)
     }
   }
 
@@ -53,13 +53,13 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       (authUsername, role) =>
         ServerServiceCall { (_: RequestHeader, user: AuthenticationUser) =>
           if (username != user.username.trim) {
-            throw CustomException.PathParameterMismatch
+            throw UC4Exception.PathParameterMismatch
           }
           if (authUsername != user.username.trim) {
-            throw CustomException.OwnerMismatch
+            throw UC4Exception.OwnerMismatch
           }
           if (role != user.role) {
-            throw new CustomException(422, DetailedError(ErrorType.UneditableFields, List(SimpleError("role", "Role may not be manually changed."))))
+            throw new UC4Exception(422, DetailedError(ErrorType.UneditableFields, List(SimpleError("role", "Role may not be manually changed."))))
           }
           val ref = entityRef(Hashing.sha256(user.username))
 
@@ -68,7 +68,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
               case Accepted => // Update Successful
                 (ResponseHeader(200, MessageProtocol.empty, List()), Done)
               case RejectedWithError(code, errorResponse) =>
-                throw new CustomException(code, errorResponse)
+                throw new UC4Exception(code, errorResponse)
             }
         }
     }(config, ec)
@@ -80,7 +80,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     entityRef(Hashing.sha256(username)).ask[Option[AuthenticationEntry]](replyTo => GetAuthentication(replyTo)).map {
       case Some(entry) =>
         if (entry.password != Hashing.sha256(entry.salt + password)) {
-          throw CustomException.BasicAuthorizationError
+          throw UC4Exception.BasicAuthorizationError
         }
         else {
           val (refreshToken, date) = createRefreshToken(username, entry.role)
@@ -92,7 +92,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
           )), Done)
         }
       case None =>
-        throw CustomException.BasicAuthorizationError
+        throw UC4Exception.BasicAuthorizationError
     }
   }
 
@@ -108,9 +108,9 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
               ("Set-Cookie", s"login=$loginToken; SameSite=Strict; Secure; HttpOnly; Max-Age=$logoutTimer")
             )), JsonUsername(username))
           )
-        case _ => throw CustomException.RefreshTokenMissing
+        case _ => throw UC4Exception.RefreshTokenMissing
       }
-      case _ => throw CustomException.RefreshTokenMissing
+      case _ => throw UC4Exception.RefreshTokenMissing
     }
   }
 
@@ -121,7 +121,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     entityRef(Hashing.sha256(username)).ask[Option[AuthenticationEntry]](replyTo => GetAuthentication(replyTo)).map {
       case Some(entry) =>
         if (entry.password != Hashing.sha256(entry.salt + password)) {
-          throw CustomException.BasicAuthorizationError
+          throw UC4Exception.BasicAuthorizationError
         }
         else {
           val (refreshToken, _) = createRefreshToken(username, entry.role)
@@ -130,7 +130,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
           (ResponseHeader(200, MessageProtocol.empty, List()), Tokens(loginToken, refreshToken))
         }
       case None =>
-        throw CustomException.BasicAuthorizationError
+        throw UC4Exception.BasicAuthorizationError
     }
   }
 
@@ -140,8 +140,8 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       getBearerToken(header)
     }
     catch {
-      case ce: CustomException if ce.getPossibleErrorResponse.`type` == ErrorType.JwtAuthorization =>
-        throw CustomException.RefreshTokenMissing
+      case ce: UC4Exception if ce.possibleErrorResponse.`type` == ErrorType.JwtAuthorization =>
+        throw UC4Exception.RefreshTokenMissing
       case e: Throwable => throw e
     }
     val (loginToken, _, username) = createLoginTokenFromRefreshToken(refreshToken)
@@ -186,7 +186,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     }
 
     if (userPw.isEmpty) {
-      throw CustomException.BasicAuthorizationError
+      throw UC4Exception.BasicAuthorizationError
     }
     else {
       userPw.get
@@ -205,7 +205,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     }
 
     if (token.isEmpty) {
-      throw CustomException.JwtAuthorizationError
+      throw UC4Exception.JwtAuthorizationError
     }
     else {
       token.get
@@ -276,7 +276,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       val subject = claims.getSubject
 
       if (subject != "refresh") {
-        throw CustomException.RefreshTokenMissing
+        throw UC4Exception.RefreshTokenMissing
       }
 
       val now = Calendar.getInstance()
@@ -294,13 +294,13 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       (loginToken, logoutTimer * 60, username)
     }
     catch {
-      case _: ExpiredJwtException      => throw CustomException.RefreshTokenExpired
-      case _: UnsupportedJwtException  => throw CustomException.MalformedRefreshToken
-      case _: MalformedJwtException    => throw CustomException.MalformedRefreshToken
-      case _: SignatureException       => throw CustomException.RefreshTokenSignatureError
-      case _: IllegalArgumentException => throw CustomException.RefreshTokenMissing
-      case ce: CustomException         => throw ce
-      case _: Throwable                => throw CustomException.InternalServerError
+      case _: ExpiredJwtException      => throw UC4Exception.RefreshTokenExpired
+      case _: UnsupportedJwtException  => throw UC4Exception.MalformedRefreshToken
+      case _: MalformedJwtException    => throw UC4Exception.MalformedRefreshToken
+      case _: SignatureException       => throw UC4Exception.RefreshTokenSignatureError
+      case _: IllegalArgumentException => throw UC4Exception.RefreshTokenMissing
+      case ce: UC4Exception            => throw ce
+      case ex: Throwable               => throw UC4Exception.InternalServerError("Failed to create LoginToken", ex.getMessage)
     }
   }
 }

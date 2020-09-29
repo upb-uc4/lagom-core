@@ -14,7 +14,7 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication }
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, Tokens }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, ErrorType }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, ErrorType }
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.shared.server.{ Hashing, ServiceCallFactory }
 import de.upb.cs.uc4.user.UserServiceStub
@@ -185,7 +185,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
         eventually(timeout(Span(20, Seconds))) {
           client.login.handleRequestHeader(addLoginHeader("Test", "Test")).invoke().failed.map { answer =>
-            answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
           }
         }.flatMap(assertion => cleanupOnSuccess(Seq("Test"), assertion))
           .recoverWith(cleanupOnFailure(Seq("Test")))
@@ -205,13 +205,13 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
     "detect a wrong username" in {
       client.login.handleRequestHeader(addLoginHeader("studenta", "student")).invoke().failed.map {
-        answer => answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
+        answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
       }
     }
 
     "detect a wrong password" in {
       client.login.handleRequestHeader(addLoginHeader("student", "studenta")).invoke().failed.map {
-        answer => answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
+        answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
       }
     }
 
@@ -390,7 +390,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenExpired)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.RefreshTokenExpired)
       }
     }
 
@@ -408,7 +408,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenExpired)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.RefreshTokenExpired)
       }
     }
 
@@ -426,7 +426,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact().replaceFirst(".", ",")
 
       client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.MalformedRefreshToken)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.MalformedRefreshToken)
       }
     }
 
@@ -444,7 +444,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact().replaceFirst(".", ",")
 
       client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.MalformedRefreshToken)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.MalformedRefreshToken)
       }
     }
 
@@ -462,7 +462,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       client.refresh.handleRequestHeader(addTokenHeader(token, "refresh")).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenSignatureInvalid)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.RefreshTokenSignatureInvalid)
       }
     }
 
@@ -480,19 +480,19 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .compact()
 
       client.refreshMachineUser.handleRequestHeader(addBearerToken(token)).invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenSignatureInvalid)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.RefreshTokenSignatureInvalid)
       }
     }
 
     "detect that a header refresh token is missing" in {
       client.refresh.invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
       }
     }
 
     "detect that a machine user refresh token is missing" in {
       client.refreshMachineUser.invoke().failed.map { answer =>
-        answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
       }
     }
 
@@ -542,8 +542,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .signWith(SignatureAlgorithm.HS256, "changeme")
           .compact()
 
-      val thrown = the[CustomException] thrownBy serviceCall.handleRequestHeader(addTokenHeader(token)).invoke()
-      thrown.getPossibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
+      val thrown = the[UC4Exception] thrownBy serviceCall.handleRequestHeader(addTokenHeader(token)).invoke()
+      thrown.possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
     }
 
     "detect that a user is authorized" in {

@@ -10,14 +10,16 @@ import play.api.{ Environment, Mode }
 
 import scala.util.control.NonFatal
 
-class CustomExceptionSerializer(environment: Environment) extends DefaultExceptionSerializer(environment) {
+class UC4ExceptionSerializer(environment: Environment) extends DefaultExceptionSerializer(environment) {
 
   override def serialize(exception: Throwable, accept: Seq[MessageProtocol]): RawExceptionMessage = {
     val (errorCode, message) = exception match {
-      case ce: CustomException => (ce.getErrorCode, ce.getPossibleErrorResponse)
+      case ce: UC4Exception if environment.mode == Mode.Prod && ce.possibleErrorResponse.`type` == ErrorType.InternalServer =>
+        (ce.errorCode, GenericError(ErrorType.InternalServer))
+      case ce: UC4Exception => (ce.errorCode, ce.possibleErrorResponse)
       case te: TransportException =>
         (te.errorCode, te.exceptionMessage)
-      case e if environment.mode == Mode.Prod =>
+      case _ if environment.mode == Mode.Prod =>
         // By default, don't give out information about generic exceptions.
         (TransportErrorCode.InternalServerError, new ExceptionMessage("Exception", ""))
       case e =>
@@ -29,7 +31,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     }
 
     val messageBytes = message match {
-      case custom: CustomError => ByteString.fromString(Json.stringify(Json.toJson(custom)))
+      case custom: UC4Error => ByteString.fromString(Json.stringify(Json.toJson(custom)))
 
       case message: ExceptionMessage => ByteString.fromString(Json.stringify(Json.obj(
         "name" -> message.name,
@@ -54,9 +56,9 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
 
     //Check if the raw json contains the fields needed for a CustomException (type, title, invalidParams). If so, use our deserializer, if not, use default
     if ((messageJson \ "type").isDefined && (messageJson \ "title").isDefined) {
-      val customError = Json.fromJson[CustomError](messageJson) match {
+      val customError = Json.fromJson[UC4Error](messageJson) match {
         case JsSuccess(error, _) => error
-        case JsError(_)          => throw CustomException.InternalDeserializationError
+        case JsError(_)          => throw UC4Exception.InternalDeserializationError
       }
       fromCodeAndMessageCustom(message.errorCode, customError)
     }
@@ -97,7 +99,7 @@ class CustomExceptionSerializer(environment: Environment) extends DefaultExcepti
     */
   def fromCodeAndMessageCustom(
       transportErrorCode: TransportErrorCode,
-      customError: CustomError
-  ): Throwable = new CustomException(transportErrorCode, customError)
+      customError: UC4Error
+  ): Throwable = new UC4Exception(transportErrorCode, customError)
 }
 

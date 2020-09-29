@@ -7,7 +7,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.exceptions.CustomException
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import io.jsonwebtoken.{ ExpiredJwtException, Jwts, MalformedJwtException, SignatureException, UnsupportedJwtException }
 import org.slf4j.{ Logger, LoggerFactory }
 
@@ -41,7 +41,7 @@ object ServiceCallFactory {
     ServerServiceCall.compose[Request, Response] { requestHeader =>
       val (_, role) = checkLoginToken(getLoginToken(requestHeader))
       if (!roles.contains(role)) {
-        throw CustomException.NotEnoughPrivileges
+        throw UC4Exception.NotEnoughPrivileges
       }
       serviceCall
     }
@@ -59,7 +59,7 @@ object ServiceCallFactory {
     ServerServiceCall.compose[Request, Response] { requestHeader =>
       val (username, role) = checkLoginToken(getLoginToken(requestHeader))
       if (!roles.contains(role)) {
-        throw CustomException.NotEnoughPrivileges
+        throw UC4Exception.NotEnoughPrivileges
       }
       serviceCall(username, role)
     }
@@ -79,19 +79,19 @@ object ServiceCallFactory {
       val subject = claims.getSubject
 
       if (subject != "login") {
-        throw CustomException.JwtAuthorizationError
+        throw UC4Exception.JwtAuthorizationError
       }
 
       (username, AuthenticationRole.withName(authenticationRole))
     }
     catch {
-      case _: ExpiredJwtException      => throw CustomException.RefreshTokenExpired
-      case _: UnsupportedJwtException  => throw CustomException.MalformedRefreshToken
-      case _: MalformedJwtException    => throw CustomException.MalformedRefreshToken
-      case _: SignatureException       => throw CustomException.RefreshTokenSignatureError
-      case _: IllegalArgumentException => throw CustomException.JwtAuthorizationError
-      case ce: CustomException         => throw ce
-      case _: Exception                => throw CustomException.InternalServerError
+      case _: ExpiredJwtException      => throw UC4Exception.RefreshTokenExpired
+      case _: UnsupportedJwtException  => throw UC4Exception.MalformedRefreshToken
+      case _: MalformedJwtException    => throw UC4Exception.MalformedRefreshToken
+      case _: SignatureException       => throw UC4Exception.RefreshTokenSignatureError
+      case _: IllegalArgumentException => throw UC4Exception.JwtAuthorizationError
+      case ce: UC4Exception            => throw ce
+      case ex: Exception               => throw UC4Exception.InternalServerError("LoginToken Check Error", ex.getMessage)
     }
   }
 
@@ -119,7 +119,7 @@ object ServiceCallFactory {
     }
 
     if (cookieToken.isDefined && authorizationToken.isDefined) {
-      throw CustomException.MultipleAuthorizationError
+      throw UC4Exception.MultipleAuthorizationError
     }
     else if (cookieToken.isDefined) {
       cookieToken.get
@@ -128,7 +128,7 @@ object ServiceCallFactory {
       authorizationToken.get
     }
     else {
-      throw CustomException.JwtAuthorizationError
+      throw UC4Exception.JwtAuthorizationError
     }
   }
 

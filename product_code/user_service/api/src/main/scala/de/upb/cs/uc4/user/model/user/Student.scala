@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.user.model.user
 
 import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, SimpleError }
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
 import play.api.libs.json.{ Format, Json }
@@ -74,9 +74,8 @@ case class Student(
     * @return Filled Sequence of [[SimpleError]]
     */
   override def checkProtectedFields(user: User): Seq[SimpleError] = {
-    if (!user.isInstanceOf[Student]) {
-      throw CustomException.InternalServerError
-    }
+    checkIfStudent(user)
+
     val student = user.asInstanceOf[Student]
     var errors = super.checkProtectedFields(user).asInstanceOf[List[SimpleError]]
 
@@ -93,9 +92,8 @@ case class Student(
     * @return Filled Sequence of [[SimpleError]]
     */
   override def checkUneditableFields(user: User): Seq[SimpleError] = {
-    if (!user.isInstanceOf[Student]) {
-      throw CustomException.InternalServerError
-    }
+    checkIfStudent(user)
+
     val student = user.asInstanceOf[Student]
     var errors = super.checkUneditableFields(student).asInstanceOf[List[SimpleError]]
 
@@ -104,6 +102,13 @@ case class Student(
     }
 
     errors
+  }
+
+  /** Helper method to check if the user is a student */
+  private def checkIfStudent(user: User): Unit = {
+    if (!user.isInstanceOf[Student]) {
+      throw UC4Exception.InternalServerError("Wrong Entity", s"Expected a student, got a ${user.role}")
+    }
   }
 }
 
