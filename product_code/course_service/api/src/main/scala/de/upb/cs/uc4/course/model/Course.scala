@@ -3,6 +3,8 @@ package de.upb.cs.uc4.course.model
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json._
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 case class Course(
     courseId: String,
     courseName: String,
@@ -36,7 +38,7 @@ case class Course(
     *
     * @return response-code which gives detailed description of syntax or semantics violation
     */
-  def validate: Seq[SimpleError] = {
+  def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 
     val nameRegex = """[\s\S]{1,100}""".r // Allowed characters for coursename: 1-100 of everything
     val descriptionRegex = """[\s\S]{0,10000}""".r // Allowed characters  for description

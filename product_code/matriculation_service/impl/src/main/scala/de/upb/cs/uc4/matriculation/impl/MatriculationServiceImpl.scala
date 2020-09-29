@@ -5,7 +5,7 @@ import akka.stream.Materializer
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, RequestHeader, ResponseHeader }
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
@@ -22,8 +22,8 @@ import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.MatriculationUpdate
 import de.upb.cs.uc4.user.model.user.Student
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
 import scala.util.{ Failure, Success, Try }
 
 /** Implementation of the MatriculationService */
@@ -41,7 +41,16 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
     authenticated[PutMessageMatriculation, Done](AuthenticationRole.Admin) {
       ServerServiceCall { (header, rawMessage) =>
         val message = rawMessage.trim
-        val validationList = message.validate
+
+        // For syntax and regex checks, 5 seconds are more than enough
+        val validationList = try {
+          Await.result(message.validate, 5.seconds)
+        }
+        catch {
+          case _: TimeoutException => throw CustomException.ValidationTimeout
+          case e: Exception        => throw e
+        }
+
         if (validationList.nonEmpty) {
           throw new CustomException(422, DetailedError(ErrorType.Validation, validationList))
         }

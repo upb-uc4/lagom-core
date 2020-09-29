@@ -5,6 +5,8 @@ import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.{ Address, Role }
 import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 trait User {
   val username: String
   val role: Role
@@ -40,7 +42,7 @@ trait User {
     *
     * @return Filled Sequence of [[SimpleError]]
     */
-  def validate: Seq[SimpleError] = {
+  def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 
     val generalRegex = """[\s\S]{0,200}""".r // Allowed characters for general strings TBD
     val usernameRegex = """[a-zA-Z0-9-.]{4,16}""".r

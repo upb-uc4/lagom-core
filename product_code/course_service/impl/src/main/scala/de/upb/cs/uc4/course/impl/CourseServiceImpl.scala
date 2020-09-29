@@ -21,7 +21,7 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, 
 import de.upb.cs.uc4.user.api.UserService
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(
@@ -65,7 +65,15 @@ class CourseServiceImpl(
             throw CustomException.OwnerMismatch
           }
 
-          val validationErrors = courseProposal.validate
+          // For syntax and regex checks, 5 seconds are more than enough
+          val validationErrors = try {
+            Await.result(courseProposal.validate, 5.seconds)
+          }
+          catch {
+            case _: TimeoutException => throw CustomException.ValidationTimeout
+            case e: Exception        => throw e
+          }
+
           // If lecturerId is empty, the userService call cannot be found, therefore check and abort
           if (validationErrors.map(_.name).contains("lecturerId")) {
             throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
@@ -140,7 +148,14 @@ class CourseServiceImpl(
           throw CustomException.PathParameterMismatch
         }
 
-        val validationErrors = updatedCourse.validate
+        val validationErrors = try {
+          Await.result(updatedCourse.validate, 5.seconds)
+        }
+        catch {
+          case _: TimeoutException => throw CustomException.ValidationTimeout
+          case e: Exception        => throw e
+        }
+
         // If lecturerId is empty, the userService call cannot be found, therefore check and abort
         if (validationErrors.map(_.name).contains("lecturerId")) {
           throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))

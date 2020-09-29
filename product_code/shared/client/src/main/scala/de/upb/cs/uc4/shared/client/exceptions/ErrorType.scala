@@ -13,7 +13,7 @@ object ErrorType extends Enumeration {
   EntityTooLarge, //413
   UnsupportedMediaType, //415
   Teapot, //418
-  PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, //422
+  PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, //422
   Validation, UneditableFields, //422 In a DetailedError
   InternalServer, UndeserializableException, //500
   HLInternal, //In an InformativeError
@@ -60,6 +60,7 @@ object ErrorType extends Enumeration {
       //422
       case PathParameterMismatch => "Parameter specified in path and in object do not match"
       case Validation => "Your request parameters did not validate" //In a DetailedError
+      case ValidationTimeout => "Validation of the given object timed out"
       case UneditableFields => "Attempted to change uneditable fields" //In a DetailedError
       case RefreshTokenSignatureInvalid => "The long term token has a wrong signature"
       case LoginTokenSignatureInvalid => "The login term token has a wrong signature"
