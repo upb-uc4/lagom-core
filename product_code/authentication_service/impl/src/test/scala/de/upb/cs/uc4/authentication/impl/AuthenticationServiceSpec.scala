@@ -171,11 +171,11 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
         client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
           .invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).flatMap {
-          _ =>
-            client.login.handleRequestHeader(addLoginHeader("Gregor", "GregNew")).invoke().map { answer =>
-              answer should ===(Done)
-            }
-        }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+            _ =>
+              client.login.handleRequestHeader(addLoginHeader("Gregor", "GregNew")).invoke().map { answer =>
+                answer should ===(Done)
+              }
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
           .recoverWith(cleanupOnFailure(Seq("Gregor")))
       }
     }
