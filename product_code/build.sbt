@@ -10,13 +10,9 @@ val withTests = "compile->compile;test->test"
 
 // Projects
 lazy val lagom = (project in file("."))
-  .aggregate(shared_client, shared_server, hyperledger_component,
-    course_service_api, course_service,
-    authentication_service_api, authentication_service,
-    user_service_api, user_service,
-    matriculation_service_api, matriculation_service)
   .dependsOn(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
+    certificate_service_api, certificate_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service)
@@ -106,19 +102,11 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .dependsOn(user_service_api % withTests, shared_server, shared_client, matriculation_service_api, hyperledger_component)
 
 lazy val certificate_service_api = (project in file("certificate_service/api"))
-  .settings(
-    libraryDependencies ++= apiDefaultDependencies
-  )
-  .settings(commonSettings("certificate_service_api"))
+  .settings(Settings.apiSettings("certificate_service_api"))
   .dependsOn(shared_client)
 
 lazy val certificate_service = (project in file("certificate_service/impl"))
   .enablePlugins(LagomScala)
-  .settings(
-    libraryDependencies ++= implDefaultDependencies,
-    libraryDependencies ++= defaultPersistenceKafkaDependencies,
-  )
-  .settings(commonSettings("certificate_service"))
-  .settings(dockerSettings)
-  .settings(version := "v0.8.1")
+  .settings(libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies)
+  .settings(Settings.implSettings("certificate_service"))
   .dependsOn(certificate_service_api % withTests, user_service_api % withTests, shared_server, hyperledger_component)
