@@ -13,25 +13,22 @@ class AuthenticationUserSpec extends AsyncWordSpecLike with Matchers {
     "be validated" in {
       authUserValid.validate.map(_ shouldBe empty)
     }
-    /*
+
     //USERNAME
     "return a validation error for incorrect length in username" in {
-      val errors = authUserValid.copy(username = "Ben").validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("username")
+      authUserValid.copy(username = "Ben").validate
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("username"))
     }
     "return a validation error for invalid character in username" in {
-      val errors = authUserValid.copy(username = "B€nn").validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("username")
+      authUserValid.copy(username = "B€nn").validate
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("username"))
     }
 
     //PASSWORD
     "return a validation error for empty password" in {
-      val errors = authUserValid.copy(password = "").validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("password")
-    }*/
+      authUserValid.copy(password = "").validate
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("password"))
+    }
   }
 }
 

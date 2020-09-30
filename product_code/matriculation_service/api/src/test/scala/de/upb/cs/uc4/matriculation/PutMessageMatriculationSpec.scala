@@ -17,11 +17,10 @@ class PutMessageMatriculationSpec extends AsyncWordSpecLike with Matchers {
     "be validated" in {
       putMessageValid.validate.map(_ shouldBe empty)
     }
-    /*
+
     "return a validation error with correct indices" in {
-      val errors = putMessageInvalid.validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("matriculation[1].semesters[1]")
-    }*/
+      putMessageInvalid.validate
+      .map(_.map(error => error.name) should contain theSameElementsAs Seq("matriculation[1].semesters[1]"))
+    }
   }
 }

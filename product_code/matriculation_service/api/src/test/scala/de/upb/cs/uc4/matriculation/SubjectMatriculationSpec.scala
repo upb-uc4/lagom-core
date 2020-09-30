@@ -12,19 +12,17 @@ class SubjectMatriculationSpec extends AsyncWordSpecLike with Matchers {
     "be validated" in {
       subjectMatriculationValid.validate.map(_ shouldBe empty)
     }
-    /*
+
     //FIELD OF STUDY
     "return a validation error for undefined fieldOfStudy" in {
-      val errors = subjectMatriculationValid.copy(fieldOfStudy = "ThisDoesNot Exist").validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("fieldOfStudy")
+      subjectMatriculationValid.copy(fieldOfStudy = "ThisDoesNot Exist").validate
+      .map(_.map(error => error.name) should contain theSameElementsAs Seq("fieldOfStudy"))
     }
 
     //SEMESTER
     "return a validation error for incorrect semester" in {
-      val errors = subjectMatriculationValid.copy(semesters = Seq("SS2019", "FS2020")).validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("semesters[1]")
-    }*/
+      subjectMatriculationValid.copy(semesters = Seq("SS2019", "FS2020")).validate
+      .map(_.map(error => error.name) should contain theSameElementsAs Seq("semesters[1]"))
+    }
   }
 }

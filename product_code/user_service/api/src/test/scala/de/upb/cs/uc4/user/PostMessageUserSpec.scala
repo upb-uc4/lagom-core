@@ -14,43 +14,37 @@ class PostMessageUserSpec extends AsyncWordSpecLike with Matchers with DefaultTe
     "be validated" in {
       postMessageStudentValid.validate.map(_ shouldBe empty)
     }
-    /*
+
     "return a validation error for having different usernames" in {
-      val errors = postMessageStudentValid.copy(authUser = student0Auth.copy(username = "anotherUsername")).validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("authUser.username", "student.username")
+      postMessageStudentValid.copy(authUser = student0Auth.copy(username = "anotherUsername")).validate
+      .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "student.username"))
     }
 
     "return a validation error for having a non-empty String in latestImmatriculation" in {
-      val errors = postMessageStudentValid.copy(student = student0.copy(latestImmatriculation = "SS2020")).validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("student.latestImmatriculation")
+      postMessageStudentValid.copy(student = student0.copy(latestImmatriculation = "SS2020")).validate
+      .map(_.map(error => error.name) should contain theSameElementsAs Seq("student.latestImmatriculation"))
     }
   }
 
   "A PostMessageLecturer" should {
     "be validated" in {
-      val errors = postMessageLecturerValid.validate
-      errors shouldBe empty
+      postMessageLecturerValid.validate.map(_ shouldBe empty)
     }
 
     "return a validation error for having different usernames" in {
-      val errors = postMessageLecturerValid.copy(authUser = lecturer0Auth.copy(username = "anotherUsername")).validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("authUser.username", "lecturer.username")
+      postMessageLecturerValid.copy(authUser = lecturer0Auth.copy(username = "anotherUsername")).validate
+      .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "lecturer.username"))
     }
   }
 
   "A PostMessageAdmin" should {
     "be validated" in {
-      val errors = postMessageAdminValid.validate
-      errors shouldBe empty
+      postMessageAdminValid.validate.map(_ shouldBe empty)
     }
 
     "return a validation error for having different usernames" in {
-      val errors = postMessageAdminValid.copy(authUser = admin0Auth.copy(username = "anotherUsername")).validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("authUser.username", "admin.username")
-    }*/
+      postMessageAdminValid.copy(authUser = admin0Auth.copy(username = "anotherUsername")).validate
+      .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "admin.username"))
+    }
   }
 }
