@@ -118,7 +118,7 @@ class UserServiceImpl(
         Await.result(validationErrorsFuture, 5.seconds)
       }
       catch {
-        case _: TimeoutException => throw CustomException.ValidationTimeout
+        case _: TimeoutException => throw UC4Exception.ValidationTimeout
         case e: Exception        => throw e
       }
 
@@ -189,7 +189,7 @@ class UserServiceImpl(
               Await.result(user.validate, 5.seconds)
             }
             catch {
-              case _: TimeoutException => throw CustomException.ValidationTimeout
+              case _: TimeoutException => throw UC4Exception.ValidationTimeout
               case e: Exception        => throw e
             }
 

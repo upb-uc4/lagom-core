@@ -70,7 +70,7 @@ class CourseServiceImpl(
             Await.result(courseProposal.validate, 5.seconds)
           }
           catch {
-            case _: TimeoutException => throw CustomException.ValidationTimeout
+            case _: TimeoutException => throw UC4Exception.ValidationTimeout
             case e: Exception        => throw e
           }
 
@@ -152,7 +152,7 @@ class CourseServiceImpl(
           Await.result(updatedCourse.validate, 5.seconds)
         }
         catch {
-          case _: TimeoutException => throw CustomException.ValidationTimeout
+          case _: TimeoutException => throw UC4Exception.ValidationTimeout
           case e: Exception        => throw e
         }
 
