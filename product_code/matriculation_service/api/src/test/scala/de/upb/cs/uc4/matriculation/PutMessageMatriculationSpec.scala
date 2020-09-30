@@ -20,7 +20,7 @@ class PutMessageMatriculationSpec extends AsyncWordSpecLike with Matchers {
 
     "return a validation error with correct indices" in {
       putMessageInvalid.validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("matriculation[1].semesters[1]"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("matriculation[1].semesters[1]"))
     }
   }
 }

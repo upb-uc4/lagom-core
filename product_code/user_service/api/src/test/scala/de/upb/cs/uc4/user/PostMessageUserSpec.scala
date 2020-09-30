@@ -17,12 +17,12 @@ class PostMessageUserSpec extends AsyncWordSpecLike with Matchers with DefaultTe
 
     "return a validation error for having different usernames" in {
       postMessageStudentValid.copy(authUser = student0Auth.copy(username = "anotherUsername")).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "student.username"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "student.username"))
     }
 
     "return a validation error for having a non-empty String in latestImmatriculation" in {
       postMessageStudentValid.copy(student = student0.copy(latestImmatriculation = "SS2020")).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("student.latestImmatriculation"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("student.latestImmatriculation"))
     }
   }
 
@@ -33,7 +33,7 @@ class PostMessageUserSpec extends AsyncWordSpecLike with Matchers with DefaultTe
 
     "return a validation error for having different usernames" in {
       postMessageLecturerValid.copy(authUser = lecturer0Auth.copy(username = "anotherUsername")).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "lecturer.username"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "lecturer.username"))
     }
   }
 
@@ -44,7 +44,7 @@ class PostMessageUserSpec extends AsyncWordSpecLike with Matchers with DefaultTe
 
     "return a validation error for having different usernames" in {
       postMessageAdminValid.copy(authUser = admin0Auth.copy(username = "anotherUsername")).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "admin.username"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "admin.username"))
     }
   }
 }

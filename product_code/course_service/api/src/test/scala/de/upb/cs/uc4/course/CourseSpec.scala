@@ -17,75 +17,74 @@ class CourseSpec extends AsyncWordSpecLike with Matchers {
     //COURSE NAME
     "return a validation error for empty String in courseName" in {
       courseValid.copy(courseName = "").validate
-        .map(_.map( error => error.name) should contain theSameElementsAs Seq("courseName"))
-      }
-
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("courseName"))
+    }
 
     "return a validation error for incorrect length in courseName" in {
       courseValid.copy(courseName = genericString * 2).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("courseName"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("courseName"))
     }
 
     //COURSE TYPE
     "return a validation error for incorrect type in courseType" in {
       courseValid.copy(courseType = "Course").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("courseType"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("courseType"))
     }
 
     //START DATE
     "return a validation error for not existing date in startDate" in {
       courseValid.copy(startDate = "2019-02-29").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("startDate"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("startDate"))
     }
     "return a validation error for incorrect format in startDate" in {
       courseValid.copy(startDate = "2019/1/1").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("startDate"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("startDate"))
     }
 
     //END DATE
     "return a validation error for not existing date in endDate" in {
       courseValid.copy(endDate = "2019-02-29").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("endDate"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("endDate"))
     }
     "return a validation error for incorrect format in endDate" in {
       courseValid.copy(endDate = "2019/1/1").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("endDate"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("endDate"))
     }
 
     //ECTS
     "return a validation error for incorrect ects" in {
       courseValid.copy(ects = 0).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("ects"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("ects"))
     }
 
     //LECTURER ID
     "return a validation error for empty lecturerId" in {
       courseValid.copy(lecturerId = "").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("lecturerId"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("lecturerId"))
     }
 
     //MAX PARTICIPANTS
     "return a validation error for incorrect maxParticipants" in {
       courseValid.copy(maxParticipants = 0).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("maxParticipants"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("maxParticipants"))
     }
 
     //CURRENT PARTICIPANTS
     "return a validation error for incorrect currentParticipants" in {
       courseValid.copy(currentParticipants = courseValid.maxParticipants + 1).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("currentParticipants"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("currentParticipants"))
     }
 
     //COURSE LANGUAGE
     "return a validation error for incorrect courseLanguage" in {
       courseValid.copy(courseLanguage = "Klingon").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("courseLanguage"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("courseLanguage"))
     }
 
     //COURSE DESCRIPTION
     "return a validation error for incorrect length in courseDescription" in {
       courseValid.copy(courseDescription = genericString * 101).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("courseDescription"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("courseDescription"))
     }
   }
 }

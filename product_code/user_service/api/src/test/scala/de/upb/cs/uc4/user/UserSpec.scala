@@ -22,29 +22,29 @@ class UserSpec extends AsyncWordSpecLike with Matchers {
     //USERNAME
     "return a validation error for incorrect length in username" in {
       adminValid.copy(username = "Ben").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("username"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("username"))
     }
     "return a validation error for invalid character in username" in {
       adminValid.copy(username = "B€nn").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("username"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("username"))
     }
 
     //ROLE
     "return a validation error for incorrect role in role" in {
       adminValid.copy(role = Role.Student).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("role"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("role"))
     }
 
     //FIRST NAME
     "return a validation error for incorrect length in firstName" in {
       adminValid.copy(firstName = "").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("firstName"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("firstName"))
     }
 
     //LAST NAME
     "return a validation error for incorrect length in lastName" in {
       adminValid.copy(lastName = "").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("lastName"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("lastName"))
     }
 
     //EMAIL
@@ -56,25 +56,25 @@ class UserSpec extends AsyncWordSpecLike with Matchers {
     //PHONE NUMBER
     "return a validation error for non-digits in phoneNumber" in {
       adminValid.copy(phoneNumber = "+five").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("phoneNumber"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("phoneNumber"))
     }
     "return a validation error for missing '+' in phoneNumber" in {
       adminValid.copy(phoneNumber = "42").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("phoneNumber"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("phoneNumber"))
     }
     "return a validation error for incorrect length in phoneNumber" in {
       adminValid.copy(phoneNumber = "+31415926535897932384626433832795028842973").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("phoneNumber"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("phoneNumber"))
     }
 
     //BIRTH DATE
     "return a validation error for not existing date in birthDate" in {
       adminValid.copy(birthDate = "2019-02-29").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("birthDate"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("birthDate"))
     }
     "return a validation error for incorrect format in birthDate" in {
       adminValid.copy(birthDate = "2019/1/1").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("birthDate"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("birthDate"))
     }
   }
 
@@ -86,13 +86,13 @@ class UserSpec extends AsyncWordSpecLike with Matchers {
     //FREE TEXT
     "return a validation error for incorrect length in freeText" in {
       lecturerValid.copy(freeText = genericString * 101).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("freeText"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("freeText"))
     }
 
     //RESEARCH AREA
     "return a validation error for incorrect length in researchArea" in {
       lecturerValid.copy(researchArea = genericString * 3).validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("researchArea"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("researchArea"))
     }
   }
 
@@ -113,66 +113,66 @@ class UserSpec extends AsyncWordSpecLike with Matchers {
     //MATRICULATION ID
     "return a validation error for incorrect format in matriculationId" in {
       studentValid.copy(matriculationId = "0000000").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("matriculationId"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("matriculationId"))
     }
     "return a validation error for incorrect length in matriculationId" in {
       studentValid.copy(matriculationId = "00042").validate
-      .map(_.map(error => error.name) should contain theSameElementsAs Seq("matriculationId"))
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("matriculationId"))
     }
   }
 
   "An Address" should {
     "be validated" in {
-      addressValid.validate shouldBe empty
+      addressValid.validate.map(_ shouldBe empty)
     }
     //STREET
     "return a validation error for incorrect length in street" in {
       addressValid.copy(street = "").validate
-      .map(error => error.name) should contain theSameElementsAs Seq("street")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("street"))
     }
     "return a validation error for incorrect character in street" in {
       addressValid.copy(street = "Entenstra?e").validate
-      .map(error => error.name) should contain theSameElementsAs Seq("street")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("street"))
     }
 
     //HOUSE NUMBER
     "return a validation error for empty String in houseNumber" in {
       addressValid.copy(houseNumber = "").validate
-      .map(error => error.name) should contain theSameElementsAs Seq("houseNumber")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("houseNumber"))
     }
     "return a validation error for leading zero in houseNumber" in {
       addressValid.copy(houseNumber = "02").validate
-      .map(error => error.name) should contain theSameElementsAs Seq("houseNumber")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("houseNumber"))
     }
     "return a validation error for wrong format in houseNumber" in {
       addressValid.copy(houseNumber = "a3").validate
-        .map(error => error.name) should contain theSameElementsAs Seq("houseNumber")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("houseNumber"))
     }
 
     //ZIPCODE
     "return a validation error for wrong length in zipCode" in {
       addressValid.copy(zipCode = "42").validate
-        .map(error => error.name) should contain theSameElementsAs Seq("zipCode")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("zipCode"))
     }
     "return a validation error for non-digits in zipCode" in {
       addressValid.copy(zipCode = "eight").validate
-      .map(error => error.name) should contain theSameElementsAs Seq("zipCode")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("zipCode"))
     }
 
     //CITY
     "return a validation error for incorrect length in city" in {
       addressValid.copy(city = "").validate
-        .map(error => error.name) should contain theSameElementsAs Seq("city")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("city"))
     }
     "return a validation error for incorrect character in city" in {
       addressValid.copy(city = "&enhausen").validate
-      .map(error => error.name) should contain theSameElementsAs Seq("city")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("city"))
     }
 
     //COUNTRY
     "return a validation error for undefined country" in {
       addressValid.copy(country = "Wakanda").validate
-      .map(error => error.name) should contain theSameElementsAs Seq("country")
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("country"))
     }
   }
 }
