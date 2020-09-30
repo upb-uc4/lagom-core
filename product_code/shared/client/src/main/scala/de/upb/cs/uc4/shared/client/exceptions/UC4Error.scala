@@ -5,22 +5,21 @@ import play.api.http.{ ContentTypeOf, ContentTypes, Writeable }
 import play.api.libs.json._
 import play.api.mvc.Codec
 
-trait CustomError {
+trait UC4Error {
   val `type`: ErrorType
   val title: String
-
 }
 
-object CustomError {
-  implicit val format: Format[CustomError] = new Format[CustomError] {
-    override def reads(json: JsValue): JsResult[CustomError] = json match {
+object UC4Error {
+  implicit val format: Format[UC4Error] = new Format[UC4Error] {
+    override def reads(json: JsValue): JsResult[UC4Error] = json match {
       case json if (json \ "invalidParams").isDefined => Json.fromJson[DetailedError](json)
       case json if (json \ "transactionId").isDefined => Json.fromJson[TransactionError](json)
       case json if (json \ "information").isDefined => Json.fromJson[InformativeError](json)
       case json => Json.fromJson[GenericError](json)
     }
 
-    override def writes(o: CustomError): JsValue = o match {
+    override def writes(o: UC4Error): JsValue = o match {
       case dErr: DetailedError    => Json.toJson(dErr)
       case gErr: GenericError     => Json.toJson(gErr)
       case tErr: TransactionError => Json.toJson(tErr)

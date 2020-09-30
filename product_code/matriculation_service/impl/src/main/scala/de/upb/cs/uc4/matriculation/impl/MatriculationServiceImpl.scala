@@ -15,7 +15,7 @@ import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client.Utils
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -34,7 +34,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
   private def entityRef: EntityRef[HyperledgerCommand] =
     clusterSharding.entityRefFor(MatriculationBehaviour.typeKey, MatriculationBehaviour.entityId)
 
-  implicit val timeout: Timeout = Timeout(15.seconds)
+  implicit val timeout: Timeout = Timeout(30.seconds)
 
   /** Immatriculates a student */
   override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done] =
@@ -52,13 +52,13 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
         }
 
         if (validationList.nonEmpty) {
-          throw new CustomException(422, DetailedError(ErrorType.Validation, validationList))
+          throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationList))
         }
         userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
           .flatMap { user =>
             if (!user.isInstanceOf[Student]) {
               //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
-              throw CustomException.NotFound
+              throw UC4Exception.NotFound
             }
             val student = user.asInstanceOf[Student]
 
@@ -77,12 +77,12 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
                       ))
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
 
-                    case RejectedWithError(statusCode, reason) => throw new CustomException(statusCode, reason)
+                    case RejectedWithError(statusCode, reason) => throw new UC4Exception(statusCode, reason)
                   }
 
                 case Failure(exception) =>
                   exception match {
-                    case customException: CustomException if customException.getErrorCode.http == 404 =>
+                    case customException: UC4Exception if customException.errorCode.http == 404 =>
                       val data = ImmatriculationData(
                         student.matriculationId, student.firstName, student.lastName, student.birthDate,
                         message.matriculation
@@ -95,7 +95,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
                           ))
                           (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/${student.username}"))), Done)
 
-                        case RejectedWithError(statusCode, reason) => throw new CustomException(statusCode, reason)
+                        case RejectedWithError(statusCode, reason) => throw new UC4Exception(statusCode, reason)
                       }
 
                     case exception: Exception => throw exception
@@ -111,12 +111,12 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
       (authUsername, role) =>
         ServerServiceCall { (header, _) =>
           if (role != AuthenticationRole.Admin && authUsername != username) {
-            throw CustomException.OwnerMismatch
+            throw UC4Exception.OwnerMismatch
           }
           userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { user =>
             if (!user.isInstanceOf[Student]) {
               //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
-              throw CustomException.NotFound
+              throw UC4Exception.NotFound
             }
             val student = user.asInstanceOf[Student]
             entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo)).map {

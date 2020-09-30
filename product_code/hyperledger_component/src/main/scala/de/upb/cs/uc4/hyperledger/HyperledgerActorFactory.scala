@@ -11,9 +11,10 @@ import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.messages.RejectedWithError
 
-import scala.util.Failure
+import scala.util.{ Failure, Try }
 
 trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
 
@@ -37,9 +38,14 @@ trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
 
   /** Creates an actor */
   def create(): Behavior[HyperledgerCommand] = Behaviors.setup { _ =>
-    EnrollmentManager.enroll(caURL, tlsCert, walletPath, username, password, organisationId)
+    try {
+      EnrollmentManager.enroll(caURL, tlsCert, walletPath, username, password, organisationId)
+    }
+    catch {
+      case _: Throwable => throw UC4Exception.InternalServerError("Enrollment Error", "No enrollment possible")
+    }
 
-    lazy val connection = createConnection
+    lazy val connection: Try[Connection] = Try(createConnection())
 
     def start(): Behavior[HyperledgerCommand] =
       Behaviors.receive {
@@ -47,21 +53,21 @@ trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
           cmd match {
 
             case Shutdown() =>
-              if (connection != null) {
-                connection.close()
+              if (connection.isSuccess) {
+                connection.get.close()
               }
               Behaviors.same
 
             case cmd: HyperledgerCommand =>
               try {
-                applyCommand(connection, cmd)
+                applyCommand(connection.get, cmd)
               }
               catch {
-                case ex: Exception =>
+                case ex: Throwable =>
                   val customException = ex.toCustomException
                   cmd match {
                     case write: HyperledgerWriteCommand =>
-                      write.replyTo ! RejectedWithError(customException.getErrorCode.http, customException.getPossibleErrorResponse)
+                      write.replyTo ! RejectedWithError(customException.errorCode.http, customException.possibleErrorResponse)
                     case read: HyperledgerReadCommand[_] =>
                       read.replyTo ! Failure(customException)
                   }
@@ -124,7 +130,7 @@ trait HyperledgerActorFactory[Connection <: ConnectionTrait] {
   }
 
   /** Creates the connection to the chaincode */
-  protected def createConnection: Connection
+  protected def createConnection(): Connection
 
   /** Gets called every time when the actor receives a command.
     * Errors which this method will thrown will be handled accordingly
