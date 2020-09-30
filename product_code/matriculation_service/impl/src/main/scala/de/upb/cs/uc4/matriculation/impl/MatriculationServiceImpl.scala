@@ -47,7 +47,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
           Await.result(message.validate, 5.seconds)
         }
         catch {
-          case _: TimeoutException => throw CustomException.ValidationTimeout
+          case _: TimeoutException => throw UC4Exception.ValidationTimeout
           case e: Exception        => throw e
         }
 
