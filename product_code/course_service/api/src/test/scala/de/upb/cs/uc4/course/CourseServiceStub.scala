@@ -59,7 +59,7 @@ class CourseServiceStub extends CourseService with DefaultTestCourses {
   /** Update an existing course */
   override def updateCourse(id: String): ServiceCall[Course, Done] = ServiceCall {
     updatedCourse =>
-      if (!courses.exists(_.courseId == id)){
+      if (!courses.exists(_.courseId == id)) {
         Future.failed(UC4Exception.NotFound)
       }
       courses = courses.filter(_.courseId != id)
