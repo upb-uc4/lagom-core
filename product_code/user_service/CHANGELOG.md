@@ -1,3 +1,9 @@
+# [v.0.9.3-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.9.2...user-v0.9.3) (2020-XX-XX)
+## Feature
+- Wrap Validation in Future to enable timeouts
+## Refactor
+## Bugfix
+
 # [v.0.9.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.9.1...user-v0.9.2) (2020-09-28)
 ## Feature
  - Added default profile picture
