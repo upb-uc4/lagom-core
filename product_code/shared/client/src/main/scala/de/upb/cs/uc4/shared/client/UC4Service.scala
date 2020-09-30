@@ -3,7 +3,7 @@ package de.upb.cs.uc4.shared.client
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.{ Method, RequestHeader }
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, ServiceCall }
-import de.upb.cs.uc4.shared.client.exceptions.CustomExceptionSerializer
+import de.upb.cs.uc4.shared.client.exceptions.UC4ExceptionSerializer
 import play.api.Environment
 
 import scala.concurrent.Future
@@ -34,7 +34,7 @@ trait UC4Service extends Service {
         restCall(Method.OPTIONS, pathPrefix + "/version", allowVersionNumber _)
       )
       .withExceptionSerializer(
-        new CustomExceptionSerializer(Environment.simple())
+        new UC4ExceptionSerializer(Environment.simple())
       )
 
     if (autoAcl) {

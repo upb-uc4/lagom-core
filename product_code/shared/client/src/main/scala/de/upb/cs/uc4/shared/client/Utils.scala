@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.shared.client
 
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, SimpleError }
 
 object Utils {
 
@@ -41,7 +41,7 @@ object Utils {
       */
     def compareSemester(other: String): Int = {
       if ((semester.validateSemester.nonEmpty && !semester.isEmpty) || other.validateSemester.nonEmpty && !other.isEmpty) {
-        throw CustomException.InternalServerError
+        throw UC4Exception.InternalServerError("Semester validation error", "The semester string was compared without being validated")
       }
       else {
         semesterToNumber(semester).compareTo(semesterToNumber(other))
@@ -56,7 +56,7 @@ object Utils {
     */
   def findLatestSemester(semesters: Seq[String]): String = {
     if (semesters.forall(_.validateSemester.nonEmpty)) {
-      throw CustomException.InternalServerError
+      throw UC4Exception.InternalServerError("Semester validation error", "The semester string was used to find latest without being validated")
     }
     semesters.distinct.sortWith((a, b) => a.compareSemester(b) != 1).last
   }

@@ -61,7 +61,7 @@ class UserServiceImpl(
               else {
                 user
               }
-            case None => throw CustomException.NotFound
+            case None => throw UC4Exception.NotFound
           }
         }
     }
@@ -114,7 +114,7 @@ class UserServiceImpl(
 
           // Check, if username errors exist, since entityRef might fail if username is incorrect
           if (validationErrors.map(_.name).contains(userVariableName + ".username")) {
-            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+            throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
           }
 
           val ref = entityRef(postMessageUser.getUser.username)
@@ -125,7 +125,7 @@ class UserServiceImpl(
             }
 
             if (validationErrors.nonEmpty) {
-              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
             }
 
             ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
@@ -139,7 +139,7 @@ class UserServiceImpl(
                     }
                     // In case the password cant be saved
                     .recoverWith {
-                      case authenticationException: CustomException =>
+                      case authenticationException: UC4Exception =>
                         ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
                           .map[(ResponseHeader, User)] { _ =>
                             throw authenticationException
@@ -149,7 +149,7 @@ class UserServiceImpl(
                           }
                     }
                 case RejectedWithError(code, errorResponse) =>
-                  throw new CustomException(code, errorResponse)
+                  throw new UC4Exception(code, errorResponse)
               }
           }
       }
@@ -164,18 +164,18 @@ class UserServiceImpl(
           val user = userRaw.clean
           // Check, if the username in path is different than the username in the object
           if (username != user.username) {
-            throw CustomException.PathParameterMismatch
+            throw UC4Exception.PathParameterMismatch
           }
 
           // If invoked by a non-Admin, check if the manipulated object is owned by the user
           if (role != AuthenticationRole.Admin && authUsername != user.username) {
-            throw CustomException.OwnerMismatch
+            throw UC4Exception.OwnerMismatch
           }
 
           //validate new user and check, if username errors exist, since entityRef might fail if username is incorrect
           var validationErrors = user.validate
           if (validationErrors.map(_.name).contains("username")) {
-            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+            throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
           }
 
           val ref = entityRef(user.username)
@@ -183,7 +183,7 @@ class UserServiceImpl(
             if (optUser.isEmpty) {
               // Add to validation errors, and throw prematurely since uneditable fields are uncheckable
               validationErrors :+= SimpleError("username", "Username not in use.")
-              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
             }
             val oldUser = optUser.get
             // Other users than admins can only edit specified fields
@@ -192,16 +192,16 @@ class UserServiceImpl(
               editErrors ++= oldUser.checkProtectedFields(user)
             }
             if (editErrors.nonEmpty) {
-              throw new CustomException(422, DetailedError(ErrorType.UneditableFields, editErrors))
+              throw new UC4Exception(422, DetailedError(ErrorType.UneditableFields, editErrors))
             }
             if (validationErrors.nonEmpty) {
-              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
             }
 
             oldUser match {
-              case _: Student if !user.isInstanceOf[Student] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
-              case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
-              case _: Admin if !user.isInstanceOf[Admin] => throw new CustomException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Admin, but received non-Admin"))
+              case _: Student if !user.isInstanceOf[Student] => throw new UC4Exception(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
+              case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new UC4Exception(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
+              case _: Admin if !user.isInstanceOf[Admin] => throw new UC4Exception(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Admin, but received non-Admin"))
               case _ =>
             }
 
@@ -210,7 +210,7 @@ class UserServiceImpl(
                 case Accepted => // Update successful
                   (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                 case RejectedWithError(code, errorResponse) => //Update failed
-                  throw new CustomException(code, errorResponse)
+                  throw new UC4Exception(code, errorResponse)
               }
           }
         }
@@ -226,7 +226,7 @@ class UserServiceImpl(
           case Accepted => // Update Successful
             (ResponseHeader(200, MessageProtocol.empty, List()), Done)
           case Rejected("A user with the given username does not exist.") => // Already exists
-            throw CustomException.NotFound
+            throw UC4Exception.NotFound
         }
     }
   }
@@ -236,7 +236,7 @@ class UserServiceImpl(
     identifiedAuthenticated[NotUsed, Seq[Student]](AuthenticationRole.All: _*) { (_, role) => _ =>
       usernames match {
         case None if role != AuthenticationRole.Admin =>
-          throw CustomException.NotEnoughPrivileges
+          throw UC4Exception.NotEnoughPrivileges
         case None if role == AuthenticationRole.Admin =>
           getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
         case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
@@ -251,7 +251,7 @@ class UserServiceImpl(
     identifiedAuthenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.All: _*) { (_, role) => _ =>
       usernames match {
         case None if role != AuthenticationRole.Admin =>
-          throw CustomException.NotEnoughPrivileges
+          throw UC4Exception.NotEnoughPrivileges
         case None if role == AuthenticationRole.Admin =>
           getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
         case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
@@ -266,7 +266,7 @@ class UserServiceImpl(
     identifiedAuthenticated[NotUsed, Seq[Admin]](AuthenticationRole.All: _*) { (_, role) => _ =>
       usernames match {
         case None if role != AuthenticationRole.Admin =>
-          throw CustomException.NotEnoughPrivileges
+          throw UC4Exception.NotEnoughPrivileges
         case None if role == AuthenticationRole.Admin =>
           getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
         case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
@@ -304,7 +304,7 @@ class UserServiceImpl(
     val ref = entityRef(matriculationUpdate.username)
     ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
       case Accepted => Done
-      case RejectedWithError(error, reason) => throw new CustomException(error, reason)
+      case RejectedWithError(error, reason) => throw new UC4Exception(error, reason)
     }
   }
 
@@ -339,7 +339,7 @@ class UserServiceImpl(
     identifiedAuthenticated[Array[Byte], Done](AuthenticationRole.All: _*) { (authUsername, role) =>
       ServerServiceCall { (header, image) =>
         if (role != AuthenticationRole.Admin && authUsername != username) {
-          throw CustomException.OwnerMismatch
+          throw UC4Exception.OwnerMismatch
         }
 
         header.getHeader("Content-Type") match {
@@ -352,9 +352,9 @@ class UserServiceImpl(
               }
             }
             else {
-              throw CustomException.UnsupportedMediaType
+              throw UC4Exception.UnsupportedMediaType
             }
-          case None => throw new CustomException(400, DetailedError(ErrorType.MissingHeader, Seq(SimpleError("Content-Type", "Missing"))))
+          case None => throw new UC4Exception(400, DetailedError(ErrorType.MissingHeader, Seq(SimpleError("Content-Type", "Missing"))))
         }
       }
     }

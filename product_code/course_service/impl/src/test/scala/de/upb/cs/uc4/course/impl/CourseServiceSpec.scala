@@ -9,7 +9,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, DetailedError, ErrorType }
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.concurrent.Eventually
@@ -151,7 +151,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "fail in finding a non-existing course" in {
       client.findCourseByCourseId("42").handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+          answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
         }
     }
 
@@ -197,7 +197,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       client.addCourse().handleRequestHeader(addAuthorizationHeader())
         .invoke(course0.copy(lecturerId = "nonExisting")).failed.map {
           answer =>
-            answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
         }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -205,7 +205,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "not create a course for another lecturer, as a lecturer" in {
       client.addCourse().handleRequestHeader(addAuthorizationHeader(lecturer0.username, AuthenticationRole.Lecturer))
         .invoke(course0.copy(lecturerId = lecturer1.username)).failed.map { answer =>
-          answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
         }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -213,7 +213,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "not create an invalid course" in {
       client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0.copy(startDate = "ab15-37-42")).failed.map {
         answer =>
-          answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -222,7 +222,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       client.deleteCourse("42").handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map {
           answer =>
-            answer.asInstanceOf[CustomException].getErrorCode.http should ===(404)
+            answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
         }
     }
 
@@ -245,7 +245,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "not update a non-existing course" in {
       client.updateCourse("GutenMorgen").handleRequestHeader(addAuthorizationHeader()).invoke(course3.copy(courseId = "GutenMorgen")).failed.map {
         answer =>
-          answer.asInstanceOf[CustomException].getPossibleErrorResponse.asInstanceOf[DetailedError]
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
             .invalidParams.map(_.name) should contain("courseId")
       }
     }
@@ -255,7 +255,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader(lecturer1.username, AuthenticationRole.Lecturer))
           .invoke(createdCourses.head.copy(startDate = "1996-05-21")).failed.map {
             answer =>
-              answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+              answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -266,7 +266,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
           .invoke(createdCourses.head.copy(lecturerId = "nonExisting")).failed.map {
             answer =>
-              answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
+              answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -277,7 +277,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
           .invoke(createdCourses.head.copy(endDate = "15a68d42")).failed.map {
             answer =>
-              answer.asInstanceOf[CustomException].getPossibleErrorResponse.`type` should ===(ErrorType.Validation)
+              answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
