@@ -2,7 +2,7 @@ package de.upb.cs.uc4.user.impl
 
 import akka.stream.Materializer
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, ErrorType, GenericError }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, ErrorType, GenericError }
 import play.api.mvc.{ DefaultActionBuilder, PlayBodyParsers, Result, Results }
 import play.api.routing.Router
 import play.api.routing.sird._
@@ -37,8 +37,8 @@ class ImageUploadRouter(action: DefaultActionBuilder, parser: PlayBodyParsers, u
   }
 
   private def handleException: PartialFunction[Throwable, Result] = {
-    case customException: CustomException =>
-      new Results.Status(customException.getErrorCode.http)(customException.getPossibleErrorResponse)
+    case customException: UC4Exception =>
+      new Results.Status(customException.errorCode.http)(customException.possibleErrorResponse)
     case _: Exception =>
       Results.InternalServerError(GenericError(ErrorType.InternalServer))
   }

@@ -19,6 +19,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import play.api.libs.json.Json
+import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, DetailedError, ErrorType, SimpleError }
 
 import scala.language.reflectiveCalls
 
@@ -37,7 +39,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         var jsonStringList: Seq[String] = List()
 
         override def createActorFactory: MatriculationBehaviour = new MatriculationBehaviour(config) {
-          override protected def createConnection: ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
+          override protected def createConnection(): ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
 
             override def addMatriculationData(jsonMatriculationData: String): String = {
               val matriculationData = Json.parse(jsonMatriculationData).as[ImmatriculationData]
@@ -181,7 +183,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     "not add empty matriculation data for a student" in {
       client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(PutMessageMatriculation(Seq())).failed.map { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+          answer.asInstanceOf[UC4Exception].errorCode.http should ===(422)
         }.andThen {
           case _ => cleanup()
         }

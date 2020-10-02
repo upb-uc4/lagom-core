@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.user.model.post
 
 import de.upb.cs.uc4.authentication.model.AuthenticationUser
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, SimpleError }
 import de.upb.cs.uc4.user.model.user.User
 import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
@@ -42,7 +42,7 @@ object PostMessageUser {
         case json if (json \ "student").isDefined => Json.fromJson[PostMessageStudent](json)
         case json if (json \ "lecturer").isDefined => Json.fromJson[PostMessageLecturer](json)
         case json if (json \ "admin").isDefined => Json.fromJson[PostMessageAdmin](json)
-        case _ => throw CustomException.DeserializationError
+        case _ => throw UC4Exception.DeserializationError
       }
     }
 
