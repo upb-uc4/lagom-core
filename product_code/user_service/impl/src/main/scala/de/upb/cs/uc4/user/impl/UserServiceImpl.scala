@@ -119,7 +119,7 @@ class UserServiceImpl(
       }
       catch {
         case _: TimeoutException => throw UC4Exception.ValidationTimeout
-        case e: Exception        => throw e
+        case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
       }
 
       // Check, if username errors exist, since entityRef might fail if username is incorrect
