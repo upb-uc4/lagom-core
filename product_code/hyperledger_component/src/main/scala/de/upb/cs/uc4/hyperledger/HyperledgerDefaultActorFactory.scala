@@ -18,7 +18,7 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
 
   /** Creates an actor */
   def create(): Behavior[HyperledgerCommand] = Behaviors.setup { _ =>
-    EnrollmentManager.enroll(caURL, tlsCert, walletPath, username, password, organisationId)
+    EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel , chaincode, networkDescriptionPath)
 
     lazy val connection = createConnection
 

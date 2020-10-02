@@ -49,7 +49,7 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding)
 
         getCertificateUser(username).flatMap {
             case (Some(enrollmentId), Some(enrollmentSecret), _, _) =>
-              val certificate = EnrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest)
+              val certificate = EnrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
               entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
                 case Accepted => (ResponseHeader(202, MessageProtocol.empty, List()), Done)
                 case _ => throw CustomException.InternalServerError

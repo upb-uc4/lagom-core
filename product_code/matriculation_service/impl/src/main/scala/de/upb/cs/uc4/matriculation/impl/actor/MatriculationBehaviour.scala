@@ -17,7 +17,7 @@ class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActor
 
   /** Creates the connection to the chaincode */
   override protected def createConnection: ConnectionMatriculationTrait =
-    ConnectionMatriculation(username, channel, chaincode, walletPath, networkDescriptionPath)
+    ConnectionMatriculation(adminUsername, channel, chaincode, walletPath, networkDescriptionPath)
 
   /** Gets called every time when the actor receives a command
     * Errors which this method will thrown will be handled accordingly

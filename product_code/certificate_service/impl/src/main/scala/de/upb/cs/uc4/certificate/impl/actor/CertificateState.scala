@@ -26,7 +26,7 @@ case class CertificateState(enrollmentId: Option[String],
   def applyCommand(cmd: CertificateCommand): ReplyEffect[CertificateEvent, CertificateState] =
     cmd match {
       case RegisterUser(enrollmentId, replyTo) =>
-        val secret = RegistrationManager.register(tlsCert, caURL, enrollmentId, username, walletPath, organisationName)
+        val secret = RegistrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
         Effect.persist(OnRegisterUser(enrollmentId, secret)).thenReply(replyTo) { _ => Accepted }
       case GetCertificateUser(replyTo) =>
         Effect.reply(replyTo)(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey)
