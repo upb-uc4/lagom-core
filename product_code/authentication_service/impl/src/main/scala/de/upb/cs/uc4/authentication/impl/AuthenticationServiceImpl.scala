@@ -36,6 +36,8 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
   /** Sets the authentication data of a user */
@@ -62,7 +64,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
           }
 
           val validationErrors = try {
-            Await.result(authUser.validate, 5.seconds)
+            Await.result(authUser.validate, validationTimeout)
           }
           catch {
             case _: TimeoutException => throw UC4Exception.ValidationTimeout

@@ -36,6 +36,8 @@ class CourseServiceImpl(
 
   implicit val timeout: Timeout = Timeout(15.seconds)
 
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+
   /** @inheritdoc */
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
     database.getAll
@@ -65,9 +67,8 @@ class CourseServiceImpl(
             throw UC4Exception.OwnerMismatch
           }
 
-          // For syntax and regex checks, 5 seconds are more than enough
           val validationErrors = try {
-            Await.result(courseProposal.validate, 5.seconds)
+            Await.result(courseProposal.validate, validationTimeout)
           }
           catch {
             case _: TimeoutException => throw UC4Exception.ValidationTimeout
@@ -149,7 +150,7 @@ class CourseServiceImpl(
         }
 
         val validationErrors = try {
-          Await.result(updatedCourse.validate, 5.seconds)
+          Await.result(updatedCourse.validate, validationTimeout)
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout

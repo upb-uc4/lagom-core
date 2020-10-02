@@ -46,6 +46,8 @@ class UserServiceImpl(
 
   implicit val timeout: Timeout = Timeout(5.seconds)
 
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+
   /** Get the specified user */
   override def getUser(username: String): ServerServiceCall[NotUsed, User] =
     identifiedAuthenticated(AuthenticationRole.All: _*) {
@@ -115,7 +117,7 @@ class UserServiceImpl(
       }
 
       var validationErrors = try {
-        Await.result(validationErrorsFuture, 5.seconds)
+        Await.result(validationErrorsFuture, validationTimeout)
       }
       catch {
         case _: TimeoutException => throw UC4Exception.ValidationTimeout
@@ -186,7 +188,7 @@ class UserServiceImpl(
 
             //validate new user and check, if username errors exist, since entityRef might fail if username is incorrect
             var validationErrors = try {
-              Await.result(user.validate, 5.seconds)
+              Await.result(user.validate, validationTimeout)
             }
             catch {
               case _: TimeoutException => throw UC4Exception.ValidationTimeout

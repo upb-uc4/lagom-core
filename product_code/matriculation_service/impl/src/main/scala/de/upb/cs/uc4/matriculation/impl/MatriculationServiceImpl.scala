@@ -36,15 +36,16 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
 
   implicit val timeout: Timeout = Timeout(30.seconds)
 
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+
   /** Immatriculates a student */
   override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done] =
     authenticated[PutMessageMatriculation, Done](AuthenticationRole.Admin) {
       ServerServiceCall { (header, rawMessage) =>
         val message = rawMessage.trim
 
-        // For syntax and regex checks, 5 seconds are more than enough
         val validationList = try {
-          Await.result(message.validate, 5.seconds)
+          Await.result(message.validate, validationTimeout)
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
