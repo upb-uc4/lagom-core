@@ -1,7 +1,13 @@
-# [v.0.9.1-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.8.2...course-v0.9.1) (2020-XX-XX)
+# [v.0.9.1-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.9.0...course-v0.9.1) (2020-XX-XX)
 ## Feature
 - Wrap Validation in Future to enable timeouts
 ## Refactor
+## Bugfix
+
+# [v.0.9.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.8.2...course-v0.9.0) (2020-10-02)
+## Feature
+## Refactor
+ - Rebuild to implement new user-service API
 ## Bugfix
 
 # [v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.8.1...course-v0.8.2) (2020-09-22)
