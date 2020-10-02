@@ -64,7 +64,7 @@ lazy val hyperledger_component = (project in file("hyperledger_component"))
 
 lazy val course_service_api = (project in file("course_service/api"))
   .settings(Settings.apiSettings("course_service_api"))
-  .settings(libraryDependencies += Dependencies.uuid)
+  .settings(libraryDependencies += Dependencies.uuid % Test)
   .dependsOn(shared_client)
 
 lazy val course_service = (project in file("course_service/impl"))
