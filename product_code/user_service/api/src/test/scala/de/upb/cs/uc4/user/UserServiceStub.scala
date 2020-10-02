@@ -54,7 +54,17 @@ class UserServiceStub extends UserService with DefaultTestUsers {
     }
   }
 
-  override def updateUser(username: String): ServiceCall[User, Done] = ServiceCall { _ => Future.successful(Done) }
+  override def updateUser(username: String): ServiceCall[User, Done] = ServiceCall { updatedUser =>
+    val optUser = users.find(_.username == username)
+    optUser match {
+      case Some(user) =>
+        users = users.filter(_.username != username)
+        users :+= updatedUser
+        Future.successful(Done)
+      case None =>
+        Future.failed(UC4Exception.NotFound)
+    }
+  }
 
   override def getAllLecturers(usernames: Option[String]): ServiceCall[NotUsed, Seq[Lecturer]] = ServiceCall { _ =>
     Future.successful(users.filter(_.role == Role.Lecturer).map(_.asInstanceOf[Lecturer]))
@@ -64,7 +74,13 @@ class UserServiceStub extends UserService with DefaultTestUsers {
     Future.successful(users.filter(_.role == Role.Admin).map(_.asInstanceOf[Admin]))
   }
 
-  override def getRole(username: String): ServiceCall[NotUsed, JsonRole] = ServiceCall { _ => Future.successful(null) }
+  override def getRole(username: String): ServiceCall[NotUsed, JsonRole] = ServiceCall { _ =>
+    val optUser = users.find(_.username == username)
+    optUser match {
+      case Some(user) => Future.successful(JsonRole(user.role))
+      case None =>Future.failed(UC4Exception.NotFound)
+    }
+  }
 
   override def allowedGetPost: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
