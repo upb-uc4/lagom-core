@@ -7,6 +7,7 @@ import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.messages.RejectedWithError
 
 import scala.util.Failure
@@ -18,8 +19,12 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
 
   /** Creates an actor */
   def create(): Behavior[HyperledgerCommand] = Behaviors.setup { _ =>
-    EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel , chaincode, networkDescriptionPath)
-
+    try {
+      EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
+    }
+    catch {
+      case _: Throwable => throw UC4Exception.InternalServerError("Enrollment Error", "No enrollment possible")
+    }
     lazy val connection = createConnection
 
     def start(): Behavior[HyperledgerCommand] =
@@ -39,10 +44,10 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
               }
               catch {
                 case ex: Exception =>
-                  val customException = ex.toCustomException
+                  val customException = ex.toUC4Exception
                   cmd match {
                     case write: HyperledgerWriteCommand =>
-                      write.replyTo ! RejectedWithError(customException.getErrorCode.http, customException.getPossibleErrorResponse)
+                      write.replyTo ! RejectedWithError(customException.errorCode.http, customException.possibleErrorResponse)
                     case read: HyperledgerReadCommand[_] =>
                       read.replyTo ! Failure(customException)
                   }

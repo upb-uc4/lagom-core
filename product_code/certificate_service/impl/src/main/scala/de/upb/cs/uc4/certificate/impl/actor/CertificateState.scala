@@ -13,11 +13,12 @@ import de.upb.cs.uc4.shared.server.messages.Accepted
 import play.api.libs.json.{ Format, Json }
 
 /** The current state of a User */
-case class CertificateState(enrollmentId: Option[String],
-                            enrollmentSecret: Option[String],
-                            certificate: Option[String],
-                            encryptedPrivateKey: Option[EncryptedPrivateKey]
-                           )(implicit val config: Config) extends HyperledgerAdminParts {
+case class CertificateState(
+    enrollmentId: Option[String],
+    enrollmentSecret: Option[String],
+    certificate: Option[String],
+    encryptedPrivateKey: Option[EncryptedPrivateKey]
+)(implicit val config: Config) extends HyperledgerAdminParts {
 
   /** Functions as a CommandHandler
     *
@@ -74,5 +75,5 @@ object CertificateState {
     * snapshot. Hence, a JSON format needs to be declared so that it can be
     * serialized and deserialized when storing to and from the database.
     */
-  implicit val format: Format[CertificateState] = Json.format
+  implicit def format(implicit config: Config): Format[CertificateState] = Json.format
 }

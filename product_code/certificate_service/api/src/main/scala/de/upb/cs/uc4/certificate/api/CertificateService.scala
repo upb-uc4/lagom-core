@@ -35,8 +35,7 @@ trait CertificateService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.POST, pathPrefix + "/certificates/:username", setCertificate _)
-        (CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/certificates/:username", setCertificate _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.GET, pathPrefix + "/certificates/:username/certificate", getCertificate _),
         restCall(Method.GET, pathPrefix + "/certificates/:username/enrollmentId", getEnrollmentId _),
         restCall(Method.GET, pathPrefix + "/certificates/:username/privateKey", getPrivateKey _)

@@ -1,29 +1,28 @@
 package de.upb.cs.uc4.certificate.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.CertificateState
-import de.upb.cs.uc4.certificate.impl.commands.{CertificateCommand, GetCertificateUser, SetCertificateAndKey}
-import de.upb.cs.uc4.certificate.model.{EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR}
+import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
+import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
-import de.upb.cs.uc4.shared.client.exceptions.{CustomException, DetailedError, ErrorType}
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, DetailedError, ErrorType }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation}
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 
 /** Implementation of the UserService */
-class CertificateServiceImpl(clusterSharding: ClusterSharding)
-                            (implicit ec: ExecutionContext, val config: Config)
+class CertificateServiceImpl(clusterSharding: ClusterSharding)(implicit ec: ExecutionContext, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
 
   /** Looks up the entity for the given ID */
@@ -38,26 +37,26 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding)
       ServerServiceCall { (_, pmcsrRaw) =>
         // One can only set his own certificate
         if (authUsername != username) {
-          throw CustomException.OwnerMismatch
+          throw UC4Exception.OwnerMismatch
         }
 
         // Validate the CSR
         val validationErrors = pmcsrRaw.validate
         if (validationErrors.nonEmpty) {
-          throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+          throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
         }
 
         getCertificateUser(username).flatMap {
-            case (Some(enrollmentId), Some(enrollmentSecret), _, _) =>
-              val certificate = EnrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
-              entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
-                case Accepted => (ResponseHeader(202, MessageProtocol.empty, List()), Done)
-                case _ => throw CustomException.InternalServerError
-              }
+          case (Some(enrollmentId), Some(enrollmentSecret), _, _) =>
+            val certificate = EnrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
+            entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
+              case Accepted => (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+              case _        => throw UC4Exception.InternalServerError
+            }
 
-            case _ =>
-              throw CustomException.NotFound
-          }
+          case _ =>
+            throw UC4Exception.NotFound
+        }
       }
   }
 
@@ -65,11 +64,11 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding)
   override def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate] =
     ServerServiceCall { (_, _) =>
       getCertificateUser(username).map {
-          case (_, _, Some(certificate), _) =>
-            (ResponseHeader(200, MessageProtocol.empty, List()), JsonCertificate(certificate))
-          case _ =>
-            throw CustomException.NotFound
-        }
+        case (_, _, Some(certificate), _) =>
+          (ResponseHeader(200, MessageProtocol.empty, List()), JsonCertificate(certificate))
+        case _ =>
+          throw UC4Exception.NotFound
+      }
     }
 
   /** Returns the enrollment id of the given user */
@@ -78,16 +77,16 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding)
       ServerServiceCall { (_, _) =>
 
         if (authUsername != username) {
-          throw CustomException.OwnerMismatch
+          throw UC4Exception.OwnerMismatch
         }
 
         getCertificateUser(username).map {
-            case (Some(id), _, _, _) =>
-              (ResponseHeader(200, MessageProtocol.empty, List()), JsonEnrollmentId(id))
-            case _ =>
-              // An authenticated user was not registered, which should not ever happen
-              throw CustomException.InternalServerError
-          }
+          case (Some(id), _, _, _) =>
+            (ResponseHeader(200, MessageProtocol.empty, List()), JsonEnrollmentId(id))
+          case _ =>
+            // An authenticated user was not registered, which should not ever happen
+            throw UC4Exception.InternalServerError
+        }
       }
   }
 
@@ -97,15 +96,15 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding)
       ServerServiceCall { (_, _) =>
 
         if (authUsername != username) {
-          throw CustomException.OwnerMismatch
+          throw UC4Exception.OwnerMismatch
         }
 
         getCertificateUser(username).map {
-            case (_, _, _, Some(key)) =>
-              (ResponseHeader(200, MessageProtocol.empty, List()), key)
-            case _ =>
-              throw CustomException.NotEnrolled
-          }
+          case (_, _, _, Some(key)) =>
+            (ResponseHeader(200, MessageProtocol.empty, List()), key)
+          case _ =>
+            throw UC4Exception.NotEnrolled
+        }
       }
   }
 

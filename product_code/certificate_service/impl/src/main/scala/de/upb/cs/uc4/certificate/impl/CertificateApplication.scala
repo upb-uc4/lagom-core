@@ -23,9 +23,9 @@ import scala.concurrent.duration._
 
 abstract class CertificateApplication(context: LagomApplicationContext)
   extends UC4Application(context)
-    with SlickPersistenceComponents
-    with JdbcPersistenceComponents
-    with HikariCPComponents {
+  with SlickPersistenceComponents
+  with JdbcPersistenceComponents
+  with HikariCPComponents {
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CertificateService](wire[CertificateServiceImpl])
