@@ -13,16 +13,17 @@ import de.upb.cs.uc4.certificate.impl.actor.CertificateState
 import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
-import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
-import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, DetailedError, ErrorType }
+import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
 
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the UserService */
-class CertificateServiceImpl(clusterSharding: ClusterSharding)(implicit ec: ExecutionContext, val config: Config)
+class CertificateServiceImpl(clusterSharding: ClusterSharding, enrollmentManager: EnrollmentManagerTrait)
+                            (implicit ec: ExecutionContext, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
 
   /** Looks up the entity for the given ID */
@@ -48,7 +49,7 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding)(implicit ec: Exec
 
         getCertificateUser(username).flatMap {
           case (Some(enrollmentId), Some(enrollmentSecret), _, _) =>
-            val certificate = EnrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
+            val certificate = enrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
             entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
               case Accepted => (ResponseHeader(202, MessageProtocol.empty, List()), Done)
               case _        => throw UC4Exception.InternalServerError

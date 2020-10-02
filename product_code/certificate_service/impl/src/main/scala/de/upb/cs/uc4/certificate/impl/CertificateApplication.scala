@@ -12,6 +12,8 @@ import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateState }
 import de.upb.cs.uc4.certificate.impl.commands.RegisterUser
+import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
+import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
@@ -26,6 +28,8 @@ abstract class CertificateApplication(context: LagomApplicationContext)
   with SlickPersistenceComponents
   with JdbcPersistenceComponents
   with HikariCPComponents {
+
+  lazy val enrollmentManager: EnrollmentManagerTrait = EnrollmentManager
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CertificateService](wire[CertificateServiceImpl])
