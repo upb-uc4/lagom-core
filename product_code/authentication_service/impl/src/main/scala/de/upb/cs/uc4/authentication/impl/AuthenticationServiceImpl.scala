@@ -66,7 +66,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
           }
           catch {
             case _: TimeoutException => throw UC4Exception.ValidationTimeout
-            case e: Exception        => throw e
+            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
           }
 
           if (validationErrors.nonEmpty) {
