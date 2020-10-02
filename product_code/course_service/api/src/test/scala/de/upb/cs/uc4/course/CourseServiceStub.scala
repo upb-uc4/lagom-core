@@ -5,6 +5,7 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import com.fasterxml.uuid.Generators
 
 import scala.concurrent.Future
 
@@ -13,16 +14,29 @@ class CourseServiceStub extends CourseService with DefaultTestCourses {
   private var courses: Seq[Course] = Seq()
 
   def resetToDefaults(): Unit = {
-    courses = Seq(course0, course0, course0, course0)
+    courses = Seq(
+      setUuid(course0),
+      setUuid(course1),
+      setUuid(course2),
+      setUuid(course3)
+    )
   }
+
   def resetToEmpty(): Unit = {
     courses = Seq()
   }
+
   /** Add a new course to the database */
   override def addCourse(): ServiceCall[Course, Course] = ServiceCall {
     course =>
-      courses :+= course
-      Future.successful(course)
+      val courseToAdd = setUuid(course)
+      courses :+= courseToAdd
+      Future.successful(courseToAdd)
+  }
+
+  /** Sets a course's UUID*/
+  private def setUuid(course: Course): Course = {
+    course.copy(courseId = Generators.timeBasedGenerator().generate().toString)
   }
 
   /** Deletes a course */
@@ -62,9 +76,11 @@ class CourseServiceStub extends CourseService with DefaultTestCourses {
       if (!courses.exists(_.courseId == id)) {
         Future.failed(UC4Exception.NotFound)
       }
-      courses = courses.filter(_.courseId != id)
-      courses :+= updatedCourse
-      Future.successful(Done)
+      else {
+        courses = courses.filter(_.courseId != id)
+        courses :+= updatedCourse
+        Future.successful(Done)
+      }
   }
 
   /** Allows GET POST */
