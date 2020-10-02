@@ -153,7 +153,7 @@ class CourseServiceImpl(
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
-            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
 
         // If lecturerId is empty, the userService call cannot be found, therefore check and abort
