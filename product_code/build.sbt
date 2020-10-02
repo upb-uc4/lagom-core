@@ -10,6 +10,12 @@ val withTests = "compile->compile;test->test"
 
 // Projects
 lazy val lagom = (project in file("."))
+  .aggregate(shared_client, shared_server, hyperledger_component,
+    course_service_api, course_service,
+    certificate_service_api, certificate_service,
+    authentication_service_api, authentication_service,
+    user_service_api, user_service,
+    matriculation_service_api, matriculation_service)
   .dependsOn(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
