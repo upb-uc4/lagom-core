@@ -78,7 +78,7 @@ class UserServiceStub extends UserService with DefaultTestUsers {
     val optUser = users.find(_.username == username)
     optUser match {
       case Some(user) => Future.successful(JsonRole(user.role))
-      case None =>Future.failed(UC4Exception.NotFound)
+      case None       => Future.failed(UC4Exception.NotFound)
     }
   }
 
