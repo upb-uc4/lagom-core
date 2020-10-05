@@ -8,12 +8,13 @@ import com.lightbend.lagom.scaladsl.persistence.AkkaTaggerAdapter
 import com.typesafe.config.Config
 import de.upb.cs.uc4.certificate.impl.commands.CertificateCommand
 import de.upb.cs.uc4.certificate.impl.events.CertificateEvent
+import de.upb.cs.uc4.hyperledger.utilities.traits.RegistrationManagerTrait
 
 object CertificateBehaviour {
 
   /** Given a sharding [[EntityContext]] this function produces an Akka [[Behavior]] for the aggregate.
     */
-  def create(entityContext: EntityContext[CertificateCommand])(implicit config: Config): Behavior[CertificateCommand] = {
+  def create(entityContext: EntityContext[CertificateCommand])(implicit config: Config, registrationManager: RegistrationManagerTrait): Behavior[CertificateCommand] = {
     val persistenceId: PersistenceId = PersistenceId(entityContext.entityTypeKey.name, entityContext.entityId)
 
     create(persistenceId)
@@ -28,7 +29,7 @@ object CertificateBehaviour {
   /*
    * This method is extracted to write unit tests that are completely independent to Akka Cluster.
    */
-  private[impl] def create(persistenceId: PersistenceId)(implicit config: Config): EventSourcedBehavior[CertificateCommand, CertificateEvent, CertificateState] = EventSourcedBehavior
+  private[impl] def create(persistenceId: PersistenceId)(implicit config: Config, registrationManager: RegistrationManagerTrait): EventSourcedBehavior[CertificateCommand, CertificateEvent, CertificateState] = EventSourcedBehavior
     .withEnforcedReplies[CertificateCommand, CertificateEvent, CertificateState](
       persistenceId = persistenceId,
       emptyState = CertificateState.initial,
