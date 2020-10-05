@@ -10,7 +10,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to DockerHub
+    name: Check dependencies
 
     runs-on: ubuntu-latest
 
@@ -35,7 +35,7 @@ jobs:
     - name: Dependency check
       run: | 
         service=${{ github.event.inputs.target_service }}
-        if (sbt dependencyCheck $service); then
+        if (sbt clean "dependencyCheck $service"); then
           echo "Failure=0" >> $GITHUB_ENV
         else
           echo "Failure=1" >> $GITHUB_ENV
