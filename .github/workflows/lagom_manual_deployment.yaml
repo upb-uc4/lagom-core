@@ -1,4 +1,4 @@
-name: Lagom Manual Deployment Pipeline
+name: Lagom Manual Dependency Pipeline
 
 on:
   # manual triggers with parameters
@@ -24,9 +24,6 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-        
-    - name: Login to DockerHub Registry
-      run: echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
     #change .sbtopts
     - name: Add -J to .sbtops
@@ -34,13 +31,23 @@ jobs:
         pushd ./product_code
         echo "-J-Xms512M -J-Xmx4096M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
         popd
-    
-    # run sbt docker publish
-    - name: Deploy
-      run: |
-        pushd ./product_code
-        echo "##########################"
-        echo "    deploy ${{ github.event.inputs.target_service }}   "
-        echo "##########################"
-        sbt ${{ github.event.inputs.target_service }}_service/docker:publish
-        popd
+
+    - name: Dependency check
+      run: | 
+        service=${{ github.event.inputs.target_service }}
+        if sbt dependencyCheck $service; then
+          echo "Failure=0" >> $GITHUB_ENV
+        else
+          echo "Failure=1" >> $GITHUB_ENV
+          message=`cat target/dependencyCheck.txt`
+          echo "FailureMessage=$message" >> $GITHUB_ENV
+          echo "ServiceName=$service" >> $GITHUB_ENV
+        fi
+      
+    - name: Discord notification
+      if: ${{ env.Failure != 0 }}
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      uses: Ilshidur/action-discord@master
+      with:
+        args: ${{ env.FailureMessage }}
