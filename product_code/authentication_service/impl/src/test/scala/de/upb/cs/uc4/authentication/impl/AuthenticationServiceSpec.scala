@@ -526,51 +526,6 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    //SERVICE CALL FACTORY
-    "detect that a user is missing privileges" in {
-      val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Admin) {
-        _ => Future.successful(NotUsed)
-      }(applicationConfig, server.executionContext)
-
-      val time = Calendar.getInstance()
-      time.add(Calendar.DATE, 1)
-
-      val token =
-        Jwts.builder()
-          .setSubject("login")
-          .setExpiration(time.getTime)
-          .claim("username", "student")
-          .claim("authenticationRole", "Student")
-          .signWith(SignatureAlgorithm.HS256, "changeme")
-          .compact()
-
-      val thrown = the[UC4Exception] thrownBy serviceCall.handleRequestHeader(addTokenHeader(token)).invoke()
-      thrown.possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
-    }
-
-    "detect that a user is authorized" in {
-      val result = "Successful"
-      val serviceCall = ServiceCallFactory.authenticated[NotUsed, String](AuthenticationRole.Student) {
-        _ => Future.successful(result)
-      }(applicationConfig, server.executionContext)
-
-      val time = Calendar.getInstance()
-      time.add(Calendar.DATE, 1)
-
-      val token =
-        Jwts.builder()
-          .setSubject("login")
-          .setExpiration(time.getTime)
-          .claim("username", "student")
-          .claim("authenticationRole", "Student")
-          .signWith(SignatureAlgorithm.HS256, "changeme")
-          .compact()
-
-      serviceCall.handleRequestHeader(addTokenHeader(token)).invoke().map { answer =>
-        answer should ===(result)
-      }
-    }
-
   }
 }
 
