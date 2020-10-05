@@ -4,6 +4,8 @@ import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 case class SubjectMatriculation(fieldOfStudy: String, semesters: Seq[String]) {
   def trim: SubjectMatriculation =
     copy(fieldOfStudy.trim, semesters.map(_.trim))
@@ -17,7 +19,7 @@ case class SubjectMatriculation(fieldOfStudy: String, semesters: Seq[String]) {
     *
     * @return Filled Sequence of [[SimpleError]]
     */
-  def validate: Seq[SimpleError] = {
+  def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 
     val fos = List("Computer Science", "Philosophy", "Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
       "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")

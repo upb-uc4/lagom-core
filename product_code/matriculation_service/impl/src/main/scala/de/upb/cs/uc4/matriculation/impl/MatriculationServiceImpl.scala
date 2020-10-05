@@ -22,8 +22,8 @@ import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.MatriculationUpdate
 import de.upb.cs.uc4.user.model.user.Student
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
 import scala.util.{ Failure, Success, Try }
 
 /** Implementation of the MatriculationService */
@@ -36,12 +36,22 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
 
   implicit val timeout: Timeout = Timeout(30.seconds)
 
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+
   /** Immatriculates a student */
   override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done] =
     authenticated[PutMessageMatriculation, Done](AuthenticationRole.Admin) {
       ServerServiceCall { (header, rawMessage) =>
         val message = rawMessage.trim
-        val validationList = message.validate
+
+        val validationList = try {
+          Await.result(message.validate, validationTimeout)
+        }
+        catch {
+          case _: TimeoutException => throw UC4Exception.ValidationTimeout
+          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        }
+
         if (validationList.nonEmpty) {
           throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationList))
         }

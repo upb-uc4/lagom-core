@@ -3,6 +3,8 @@ package de.upb.cs.uc4.matriculation.model
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 case class PutMessageMatriculation(matriculation: Seq[SubjectMatriculation]) {
 
   def trim: PutMessageMatriculation = copy(matriculation.map(_.trim))
@@ -14,20 +16,19 @@ case class PutMessageMatriculation(matriculation: Seq[SubjectMatriculation]) {
     *
     * @return Filled Sequence of [[SimpleError]]
     */
-  def validate: Seq[SimpleError] = {
-
-    var errors = List[SimpleError]()
-
-    matriculation.foreach {
-      subjectMatriculation =>
-        errors :++= subjectMatriculation.validate.map {
-          simpleError =>
-            //Name of error is of the form: matriculation[index].semesters[index]
-            simpleError.copy(name = s"matriculation[${matriculation.indexOf(subjectMatriculation)}].${simpleError.name}")
-        }
-    }
-
-    errors
+  def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
+    Future.sequence {
+      matriculation.map {
+        subjectMatriculation =>
+          subjectMatriculation.validate.map {
+            _.map {
+              simpleError =>
+                //Name of error is of the form: matriculation[index].semesters[index]
+                simpleError.copy(name = s"matriculation[${matriculation.indexOf(subjectMatriculation)}].${simpleError.name}")
+            }
+          }
+      }
+    }.map(_.flatten)
   }
 }
 

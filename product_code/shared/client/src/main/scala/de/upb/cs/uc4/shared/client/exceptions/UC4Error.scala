@@ -2,7 +2,7 @@ package de.upb.cs.uc4.shared.client.exceptions
 
 import de.upb.cs.uc4.shared.client.exceptions.ErrorType.ErrorType
 import play.api.http.{ ContentTypeOf, ContentTypes, Writeable }
-import play.api.libs.json.{ Format, JsResult, JsValue, Json, Writes }
+import play.api.libs.json._
 import play.api.mvc.Codec
 
 trait UC4Error {
