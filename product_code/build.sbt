@@ -58,7 +58,8 @@ lazy val hyperledger_component = (project in file("hyperledger_component"))
       Dependencies.scalaTest,
       Dependencies.flexmark,
       Dependencies.macwire
-    )
+    ),
+    version := Version("hyperledger_api")
   )
   .settings(Settings.commonSettings("hyperledger_component"))
   .dependsOn(shared_server, Dependencies.hyperledger_api)

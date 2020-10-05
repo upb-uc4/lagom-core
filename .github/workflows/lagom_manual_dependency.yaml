@@ -1,0 +1,51 @@
+name: Lagom Manual Dependency Pipeline
+
+on:
+  # manual triggers with parameters
+  workflow_dispatch:
+    inputs:
+        target_service:
+            description: "The name of the service which should get published"
+            required: true
+
+jobs:
+  deploy:
+    name: Deploy to DockerHub
+
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Check out source repository
+      uses: actions/checkout@v2
+        
+    # Set up JDK
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+
+    #change .sbtopts
+    - name: Add -J to .sbtops
+      run: |
+        pushd ./product_code
+        echo "-J-Xms512M -J-Xmx4096M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
+        popd
+
+    - name: This fails
+      run: | 
+        if sbt dependencyCheck ${{ github.event.inputs.target_service }}; then
+          echo "Failure=0" >> $GITHUB_ENV
+        else
+          echo "Failure=1" >> $GITHUB_ENV
+          message=`cat target/dependencyCheck.txt`
+          echo "FailureMessage=$message" >> $GITHUB_ENV
+        fi
+      
+    - name: Discord notification
+      if: ${{ env.Failure != 0 }}
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      uses: Ilshidur/action-discord@master
+      with:
+        args: ${{ env.FailureMessage }}

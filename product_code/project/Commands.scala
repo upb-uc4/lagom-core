@@ -1,11 +1,14 @@
+import java.io.{ File, PrintWriter }
+
 import sbt.internal.util.ConsoleLogger
-import sbt.{ Command, State }
+import sbt.{ Command, Project, State }
 
 object Commands {
 
+  private lazy val logger = ConsoleLogger()
+
   val versionCheck: Command = Command.single("versionCheck") { (state: State, tag: String) =>
 
-    lazy val logger = ConsoleLogger()
     val tagRegex = """([A-Za-z]*)-(v[0-9]+\.[0-9]+\.[0-9]+)""".r
 
     try {
@@ -33,6 +36,37 @@ object Commands {
     }
   }
 
+  val dependencyCheck: Command = Command.single("dependencyCheck") { (state: State, shortName: String) =>
+    val project = shortName + "_service"
+    val extracted = Project.extract(state)
+
+    val lagom = Project.getProject(extracted.currentRef, extracted.structure).get
+    val version = Version(project)
+
+    val writer = new PrintWriter(new File("target/dependencyCheck.txt"))
+    var failed = false
+
+    for (ref <- lagom.aggregate) {
+      val depend = Project.getProject(ref, extracted.structure).get
+      if (depend.uses.map(_.project).contains(project + "_api") && depend.id.contains("_service")) {
+        val dependState = Command.process(s"project ${depend.id}", state)
+        val dependVersion = Project.extract(dependState).get(sbt.Keys.version)
+
+        if (compare(dependVersion, version) < 0) {
+          logger.warn(s"${depend.id.stripSuffix("_api")} could be broken by a breaking change in $project.")
+          writer.println(s"${depend.id.stripSuffix("_api")} with $dependVersion could be broken by a breaking change in $project on $version.")
+          failed = true
+        } else {
+          logger.success(s"${depend.id.stripSuffix("_api")} is going to function without compatibility problems.")
+        }
+      }
+    }
+
+    writer.close()
+
+    if (failed) state.fail else state
+  }
+
   /** Compares two version strings.
     *
     * @param   version1 the first version to be compared.
@@ -55,5 +89,5 @@ object Commands {
     if (majorDif == 0) if (minorDif == 0) patchDif else minorDif else majorDif
   }
 
-  val all = Seq(versionCheck)
+  val all = Seq(versionCheck, dependencyCheck)
 }
