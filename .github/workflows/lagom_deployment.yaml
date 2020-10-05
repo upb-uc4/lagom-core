@@ -31,6 +31,17 @@ jobs:
         echo "-J-Xms512M -J-Xmx4096M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
         popd
     
+    #check tag
+    - name: Check Tag
+      run: |
+        pushd ./product_code
+        tag= ${GITHUB_REF#refs/tags/}
+        echo "##########################"
+        echo "#       check tag        #"
+        echo "##########################"
+        sbt versionCheck ${tag}
+        popd
+        
     # run sbt docker publish
     - name: Deploy
       run: |
