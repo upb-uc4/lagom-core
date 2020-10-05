@@ -41,7 +41,30 @@ jobs:
         echo "##########################"
         sbt versionCheck ${tag}
         popd
-        
+
+    #check dependency
+    - name: Dependency check
+      run: | 
+        service=${{ github.event.inputs.target_service }}
+        if (sbt dependencyCheck $service); then
+          echo "Failure=0" >> $GITHUB_ENV
+        else
+          echo "Failure=1" >> $GITHUB_ENV
+          message=`cat target/dependencyCheck.txt`
+          echo "FailureMessage=$message" >> $GITHUB_ENV
+          echo "ServiceName=$service" >> $GITHUB_ENV
+        fi
+    
+    #send message
+    - name: Discord notification
+      if: ${{ env.Failure != 0 }}
+      env:
+        DISCORD_USERNAME: ${{ env.ServiceName }}
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      uses: Ilshidur/action-discord@master
+      with:
+        args: ${{ env.FailureMessage }}
+  
     # run sbt docker publish
     - name: Deploy
       run: |
