@@ -2,9 +2,9 @@ package de.upb.cs.uc4.matriculation
 
 import de.upb.cs.uc4.matriculation.model.{ PutMessageMatriculation, SubjectMatriculation }
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.wordspec.AsyncWordSpecLike
 
-class PutMessageMatriculationSpec extends AnyWordSpecLike with Matchers {
+class PutMessageMatriculationSpec extends AsyncWordSpecLike with Matchers {
 
   val putMessageValid: PutMessageMatriculation = PutMessageMatriculation(Seq(SubjectMatriculation("Computer Science", Seq("SS2019"))))
 
@@ -15,14 +15,12 @@ class PutMessageMatriculationSpec extends AnyWordSpecLike with Matchers {
 
   "A PutMessageMatriculation" should {
     "be validated" in {
-      val errors = putMessageValid.validate
-      errors shouldBe empty
+      putMessageValid.validate.map(_ shouldBe empty)
     }
 
     "return a validation error with correct indices" in {
-      val errors = putMessageInvalid.validate
-      val errorVariables = errors.map(error => error.name)
-      errorVariables should contain theSameElementsAs Seq("matriculation[1].semesters[1]")
+      putMessageInvalid.validate
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("matriculation[1].semesters[1]"))
     }
   }
 }

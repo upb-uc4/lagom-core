@@ -16,7 +16,7 @@ import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, Authentica
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, RefreshToken, Tokens }
+import de.upb.cs.uc4.authentication.model._
 import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, DetailedError, ErrorType, SimpleError }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
@@ -24,7 +24,7 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWi
 import io.jsonwebtoken._
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEventProcessor,
     clusterSharding: ClusterSharding, config: Config)(implicit ec: ExecutionContext) extends AuthenticationService {
@@ -35,6 +35,8 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     clusterSharding.entityRefFor(AuthenticationState.typeKey, id)
 
   implicit val timeout: Timeout = Timeout(5.seconds)
+
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
@@ -51,19 +53,35 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
   override def changePassword(username: String): ServiceCall[AuthenticationUser, Done] =
     identifiedAuthenticated[AuthenticationUser, Done](AuthenticationRole.All: _*) {
       (authUsername, role) =>
-        ServerServiceCall { (_: RequestHeader, user: AuthenticationUser) =>
-          if (username != user.username.trim) {
+        ServerServiceCall { (_: RequestHeader, authUserRaw: AuthenticationUser) =>
+          val authUser = authUserRaw.clean
+
+          if (username != authUser.username) {
             throw UC4Exception.PathParameterMismatch
           }
-          if (authUsername != user.username.trim) {
+          if (authUsername != authUser.username) {
             throw UC4Exception.OwnerMismatch
           }
-          if (role != user.role) {
+
+          val validationErrors = try {
+            Await.result(authUser.validate, validationTimeout)
+          }
+          catch {
+            case _: TimeoutException => throw UC4Exception.ValidationTimeout
+            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          }
+
+          if (validationErrors.nonEmpty) {
+            throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+          }
+
+          if (role != authUser.role) {
             throw new UC4Exception(422, DetailedError(ErrorType.UneditableFields, List(SimpleError("role", "Role may not be manually changed."))))
           }
-          val ref = entityRef(Hashing.sha256(user.username))
 
-          ref.ask[Confirmation](replyTo => SetAuthentication(user, replyTo))
+          val ref = entityRef(Hashing.sha256(authUser.username))
+
+          ref.ask[Confirmation](replyTo => SetAuthentication(authUser, replyTo))
             .map {
               case Accepted => // Update Successful
                 (ResponseHeader(200, MessageProtocol.empty, List()), Done)

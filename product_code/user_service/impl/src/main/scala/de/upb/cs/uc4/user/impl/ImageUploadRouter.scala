@@ -2,7 +2,7 @@ package de.upb.cs.uc4.user.impl
 
 import akka.stream.Materializer
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
-import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, ErrorType, GenericError }
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exception }
 import play.api.mvc.{ DefaultActionBuilder, PlayBodyParsers, Result, Results }
 import play.api.routing.Router
 import play.api.routing.sird._

@@ -5,25 +5,35 @@ import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.user.Lecturer
 import play.api.libs.json.{ Format, Json }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 case class PostMessageLecturer(authUser: AuthenticationUser, lecturer: Lecturer) extends PostMessageUser {
 
   def copyPostMessageUser(
       authUser: AuthenticationUser = this.authUser
   ): PostMessageLecturer = copy(authUser, lecturer)
 
-  override def validate: Seq[SimpleError] = {
-    var errors: List[SimpleError] = lecturer.validate.map {
-      simpleError =>
-        SimpleError("lecturer." + simpleError.name, simpleError.reason)
-    }.toList
-    errors ++= super.validate
+  override def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
+    lecturer.validate.flatMap { lecturerErrors =>
+      var errors = lecturerErrors.map {
+        simpleError =>
+          SimpleError("lecturer." + simpleError.name, simpleError.reason)
+      }
 
-    if (authUser.username != lecturer.username) {
-      errors.filter(simpleError => !simpleError.name.contains("username"))
-      errors :+= SimpleError("authUser.username", "Username in authUser must match username in lecturer")
-      errors :+= SimpleError("lecturer.username", "Username in lecturer must match username in authUser")
+      super.validate.map { superErrors =>
+        errors ++= superErrors
+
+        //Filter username errors if authUsername and username are not equal + return error that usernames are not equal
+        if (authUser.username != lecturer.username) {
+          errors.filter(simpleError => !simpleError.name.contains("username"))
+          errors :+= SimpleError("authUser.username", "Username in authUser must match username in lecturer")
+          errors :+= SimpleError("lecturer.username", "Username in lecturer must match username in authUser")
+        }
+
+        errors
+      }
     }
-    errors
+
   }
 
   override def trim: PostMessageLecturer =
