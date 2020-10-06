@@ -53,9 +53,14 @@ jobs:
       
     - name: Discord notification
       if: ${{ steps.dependency-check.outputs.FAILURE != 0 }}
-      env:
-        DISCORD_USERNAME: ${{ steps.dependency-check.outputs.SERVICE }}
-        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      uses: Ilshidur/action-discord@master
+      uses: rjstone/discord-webhook-notify@v1
       with:
-        args: ${{ steps.dependency-check.outputs.MESSAGE }}
+        severity: warn
+        username: ${{ steps.dependency-check.outputs.SERVICE }}
+        color: '#FFFF00'
+        avatarUrl: https://github.githubassets.com/images/modules/logos_page/Octocat.png
+        description: ${{ steps.dependency-check.outputs.MESSAGE }}
+        details: ''
+        footer: ''
+        text: Something could be broken.
+        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
