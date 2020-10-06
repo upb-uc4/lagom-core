@@ -1,5 +1,6 @@
 #!/bin/sh
 
+cd product_code
 if sbt "dependencyCheck $1"
 then
   echo "Failure=0" >> $GITHUB_ENV
