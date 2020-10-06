@@ -43,7 +43,10 @@ jobs:
         else
           echo "Failure=1" >> $GITHUB_ENV
           message=`cat target/dependencyCheck.txt`
-          echo "::set-output name=MESSAGE::\"$message\""
+          message="${message//'%'/'%25'}"
+          message="${message//$'\n'/'%0A'}"
+          message="${message//$'\r'/'%0D'}"
+          echo "::set-output name=MESSAGE::$message"
           echo "ServiceName=$service" >> $GITHUB_ENV
         fi
         popd
