@@ -33,6 +33,7 @@ jobs:
         popd
 
     - name: Dependency check
+      id: dependency-check
       run: | 
         pushd ./product_code
         service=${{ github.event.inputs.target_service }}
@@ -42,10 +43,7 @@ jobs:
         else
           echo "Failure=1" >> $GITHUB_ENV
           message=`cat target/dependencyCheck.txt`
-          message="${message//'%'/'%25'}"
-          #message="${message//$'\n'/'%0A'}"
-          #message="${message//$'\r'/'%0D'}"
-          echo "FailureMessage=$message" >> $GITHUB_ENV
+          echo '::set-output name=MESSAGE::$message'
           echo "ServiceName=$service" >> $GITHUB_ENV
         fi
         popd
@@ -57,4 +55,4 @@ jobs:
         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       uses: Ilshidur/action-discord@master
       with:
-        args: ${{ env.FailureMessage }}
+        args: ${{ steps.dependency-check.outputs.MESSAGE }}
