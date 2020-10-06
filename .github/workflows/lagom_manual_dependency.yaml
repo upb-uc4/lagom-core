@@ -35,8 +35,7 @@ jobs:
     - name: Dependency check
       run: | 
         service=${{ github.event.inputs.target_service }}
-        sbt "dependencyCheck ${service}"
-        if sbt "dependencyCheck ${service}"
+        if sbt "dependencyCheck user"
         then
           echo "Failure=0" >> $GITHUB_ENV
         else
