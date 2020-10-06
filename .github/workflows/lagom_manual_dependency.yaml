@@ -52,4 +52,4 @@ jobs:
         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       uses: Ilshidur/action-discord@master
       with:
-        args: . cat target/dependencyCheck.txt
+        args: ${ cat target/dependencyCheck.txt }
