@@ -18,7 +18,8 @@ object Commands {
         if (compare(version, Version(s"${service}_service")) == 0) {
           logger.info("The version matches the tag.")
           state
-        } else {
+        }
+        else {
           logger.err(s"The version of $service is ${Version(s"${service}_service")}, but was tagged with $version.")
           state.fail
         }
@@ -58,7 +59,8 @@ object Commands {
           val dependName = depend.id.stripSuffix("_api").split("_").map(_.capitalize).mkString(" ")
           writer.println(s"$dependName with $dependVersion")
           failed = true
-        } else {
+        }
+        else {
           logger.success(s"${depend.id.stripSuffix("_api")} is going to function without compatibility problems.")
         }
       }
