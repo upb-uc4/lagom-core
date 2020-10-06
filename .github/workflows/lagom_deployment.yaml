@@ -42,28 +42,43 @@ jobs:
         sbt versionCheck ${tag}
         popd
 
-    #check dependency
+    #check dependencies
     - name: Dependency check
+      id: dependency-check
       run: | 
-        service=${{ github.event.inputs.target_service }}
-        if (sbt dependencyCheck $service); then
-          echo "Failure=0" >> $GITHUB_ENV
+        pushd ./product_code
+        echo "##########################"
+        echo "#   check dependencies   #"
+        echo "##########################"
+        tag=${GITHUB_REF#refs/tags/}
+        service=${tag%-v*}
+        if sbt "dependencyCheck ${service}"
+        then
+          echo "::set-output name=FAILURE::0"
         else
-          echo "Failure=1" >> $GITHUB_ENV
+          echo "::set-output name=FAILURE::1"
           message=`cat target/dependencyCheck.txt`
-          echo "FailureMessage=$message" >> $GITHUB_ENV
-          echo "ServiceName=$service" >> $GITHUB_ENV
+          message="${message//'%'/'%25'}"
+          message="${message//$'\n'/'%0A'}"
+          message="${message//$'\r'/'%0D'}"
+          echo "::set-output name=MESSAGE::$message"
+          echo "::set-output name=SERVICE::\"${service^} Service with ${tag#*-}\""
         fi
-    
-    #send message
+        popd
+      
     - name: Discord notification
-      if: ${{ env.Failure != 0 }}
-      env:
-        DISCORD_USERNAME: ${{ env.ServiceName }}
-        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      uses: Ilshidur/action-discord@master
+      if: ${{ steps.dependency-check.outputs.FAILURE != 0 }}
+      uses: rjstone/discord-webhook-notify@v1
       with:
-        args: ${{ env.FailureMessage }}
+        severity: warn
+        username: ${{ steps.dependency-check.outputs.SERVICE }} Service
+        color: '#FFFF00'
+        avatarUrl: https://github.githubassets.com/images/modules/logos_page/Octocat.png
+        description: ${{ steps.dependency-check.outputs.MESSAGE }}
+        details: ''
+        footer: ''
+        text: Following services could be broken by a breaking change.
+        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
   
     # run sbt docker publish
     - name: Deploy
