@@ -41,7 +41,6 @@ jobs:
           echo "Failure=0" >> $GITHUB_ENV
         else
           echo "Failure=1" >> $GITHUB_ENV
-          echo "FailureMessage=\"`cat target/dependencyCheck.txt`\"" >> $GITHUB_ENV
           echo "ServiceName=$service" >> $GITHUB_ENV
         fi
         popd
@@ -53,4 +52,4 @@ jobs:
         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       uses: Ilshidur/action-discord@master
       with:
-        args: ${{ env.FailureMessage }}
+        args: . cat target/dependencyCheck.txt
