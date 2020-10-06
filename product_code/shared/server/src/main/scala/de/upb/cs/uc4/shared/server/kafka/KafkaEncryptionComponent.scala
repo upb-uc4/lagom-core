@@ -5,8 +5,12 @@ import com.softwaremill.macwire.wire
 import javax.crypto.spec.{ PBEKeySpec, SecretKeySpec }
 import javax.crypto.{ SecretKey, SecretKeyFactory }
 
+/** Used to allow services access the [[de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility]]
+  */
 trait KafkaEncryptionComponent extends LagomConfigComponent {
 
+  /** The symmetric secretKey is derived from an master secret defined in the configurations
+    */
   protected val secretKey: SecretKey = {
     val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
     val spec = new PBEKeySpec(

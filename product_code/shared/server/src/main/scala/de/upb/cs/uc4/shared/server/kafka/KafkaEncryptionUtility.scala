@@ -11,15 +11,21 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.{ Cipher, SecretKey }
 import play.api.libs.json.Format
 
-import scala.reflect.ClassTag
-
+/** Provides methods for encryption, decryption and authentication of objects which shall be send through Kafka
+  *
+  * @param secretKey symmetric key for authenticated encryption
+  */
 class KafkaEncryptionUtility(secretKey: SecretKey) {
 
-  /** @param objectToEncrypt object which shall be send encrypted over kafka
-    * @param format
-    * @tparam Type
-    * @return
+  /** Given an objectToEncrypt it will be encrypted and authenticated with AES-GCM. The canonical name of the class
+    * type is used as associated data, therefore encrypted payload and plaintext class type are authenticated.
+    *
+    * @param objectToEncrypt Json serializable object which shall be send encrypted and authenticated through Kafka
+    * @param format implicit to allow toJson conversion
+    * @tparam Type of the objectToEncrypt
+    * @return [[de.upb.cs.uc4.shared.client.kafka.EncryptionContainer]] wrapping the objectToEncrypt
     */
+
   def encrypt[Type](objectToEncrypt: Type)(implicit format: Format[Type]): EncryptionContainer = {
     val plaintext: String = objectToEncrypt.toJson
     val associatedData = objectToEncrypt.getClass.getCanonicalName
@@ -42,10 +48,13 @@ class KafkaEncryptionUtility(secretKey: SecretKey) {
     EncryptionContainer(associatedData, byteBuffer.array)
   }
 
-  /** @param container container which contains encrypted object received through kafka
-    * @param format
-    * @tparam Type
-    * @return
+  /** Given an valid [[de.upb.cs.uc4.shared.client.kafka.EncryptionContainer]] it will be unpacked into unencrypted
+    * object.
+    *
+    * @param container which contains encrypted object received through kafka
+    * @param format implicit to allow fromJson conversion
+    * @tparam Type of the encrypted object, used for deserialization
+    * @return unencrypted object of provided Type
     */
   def decrypt[Type](container: EncryptionContainer)(implicit format: Format[Type]): Type = {
     val cipherMessage = container.data
@@ -55,8 +64,8 @@ class KafkaEncryptionUtility(secretKey: SecretKey) {
     val gcmIv = new GCMParameterSpec(128, cipherMessage, 0, GCM_IV_LENGTH)
     cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmIv)
 
-    println(container.dataType)
-    cipher.updateAAD(container.dataType.getBytes)
+    println(container.ClassType)
+    cipher.updateAAD(container.ClassType.getBytes)
     //use everything from 12 bytes on as ciphertext
     val plainText = cipher.doFinal(cipherMessage, GCM_IV_LENGTH, cipherMessage.length - GCM_IV_LENGTH)
 
