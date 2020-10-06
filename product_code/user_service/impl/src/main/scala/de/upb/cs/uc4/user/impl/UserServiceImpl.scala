@@ -14,7 +14,9 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
@@ -34,7 +36,7 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 class UserServiceImpl(
     clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
     readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase,
-    authentication: AuthenticationService
+    authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
   readSide.register(processor)
 
@@ -334,14 +336,14 @@ class UserServiceImpl(
   }
 
   /** Publishes every deletion of a user */
-  def userDeletedTopic(): Topic[JsonUsername] = TopicProducer.singleStreamWithOffset {
+  def userDeletedTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
     fromOffset =>
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)
         .mapConcat {
           //Filter only OnUserDelete events
           case EventStreamElement(_, OnUserDelete(user), offset) =>
-            immutable.Seq((JsonUsername(user.username), offset))
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
           case _ => Nil
         }
   }

@@ -15,6 +15,8 @@ import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationBehaviour, Authen
 import de.upb.cs.uc4.authentication.impl.commands.DeleteAuthentication
 import de.upb.cs.uc4.authentication.impl.readside.{ AuthenticationDatabase, AuthenticationEventProcessor }
 import de.upb.cs.uc4.authentication.model.JsonUsername
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.shared.server.{ Hashing, UC4Application }
 import de.upb.cs.uc4.user.api.UserService
@@ -28,7 +30,8 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
   with SlickPersistenceComponents
   with JdbcPersistenceComponents
   with HikariCPComponents
-  with LagomKafkaComponents {
+  with LagomKafkaComponents
+  with KafkaEncryptionComponent {
 
   private implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -56,9 +59,12 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
     .userDeletedTopic()
     .subscribe
     .atLeastOnce(
-      Flow.fromFunction[JsonUsername, Future[Done]](json =>
+      Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
+        val json = kafkaEncryptionUtility.decrypt[JsonUsername](container)
         clusterSharding.entityRefFor(AuthenticationState.typeKey, Hashing.sha256(json.username))
-          .ask[Confirmation](replyTo => DeleteAuthentication(replyTo)).map(_ => Done)).mapAsync(8)(done => done)
+          .ask[Confirmation](replyTo => DeleteAuthentication(replyTo)).map(_ => Done)
+      }
+        .mapAsync(8)(done => done)
     )
 }
 

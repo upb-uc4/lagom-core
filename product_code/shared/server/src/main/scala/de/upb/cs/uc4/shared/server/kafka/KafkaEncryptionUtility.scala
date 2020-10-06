@@ -1,0 +1,73 @@
+package de.upb.cs.uc4.shared.server.kafka
+
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+import java.security.SecureRandom
+
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.server.JsonUtility._
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility.{ GCM_IV_LENGTH, secureRandom }
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.{ Cipher, SecretKey }
+import play.api.libs.json.Format
+
+import scala.reflect.ClassTag
+
+class KafkaEncryptionUtility(secretKey: SecretKey) {
+
+  /** @param objectToEncrypt object which shall be send encrypted over kafka
+    * @param format
+    * @tparam Type
+    * @return
+    */
+  def encrypt[Type](objectToEncrypt: Type)(implicit format: Format[Type]): EncryptionContainer = {
+    val plaintext: String = objectToEncrypt.toJson
+    val associatedData = objectToEncrypt.getClass.getCanonicalName
+    println(associatedData)
+
+    val iv = new Array[Byte](GCM_IV_LENGTH) //NEVER REUSE THIS IV WITH SAME KEY
+    secureRandom.nextBytes(iv)
+
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    val parameterSpec = new GCMParameterSpec(128, iv) //128 bit auth tag length
+    cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec)
+
+    cipher.updateAAD(associatedData.getBytes)
+
+    val cipherText: Array[Byte] = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8))
+
+    val byteBuffer = ByteBuffer.allocate(iv.length + cipherText.length)
+    byteBuffer.put(iv)
+    byteBuffer.put(cipherText)
+    EncryptionContainer(associatedData, byteBuffer.array)
+  }
+
+  /** @param container container which contains encrypted object received through kafka
+    * @param format
+    * @tparam Type
+    * @return
+    */
+  def decrypt[Type](container: EncryptionContainer)(implicit format: Format[Type]): Type = {
+    val cipherMessage = container.data
+
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    //use first 12 bytes for iv
+    val gcmIv = new GCMParameterSpec(128, cipherMessage, 0, GCM_IV_LENGTH)
+    cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmIv)
+
+    println(container.dataType)
+    cipher.updateAAD(container.dataType.getBytes)
+    //use everything from 12 bytes on as ciphertext
+    val plainText = cipher.doFinal(cipherMessage, GCM_IV_LENGTH, cipherMessage.length - GCM_IV_LENGTH)
+
+    new String(plainText, StandardCharsets.UTF_8).fromJson[Type]
+  }
+}
+
+object KafkaEncryptionUtility {
+  /** For GCM a 12 byte (not 16!) random (or counter) byte-array is recommend by NIST,
+    * because it’s faster and more secure.
+    */
+  protected val GCM_IV_LENGTH = 12
+  protected val secureRandom: SecureRandom = new SecureRandom()
+}
