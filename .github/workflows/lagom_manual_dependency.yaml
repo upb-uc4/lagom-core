@@ -33,7 +33,7 @@ jobs:
         popd
 
     - name: Dependency check
-      run: ./.github/dependency.sh
+      run: ./github_scripts/dependency.sh
       
     - name: Discord notification
       if: ${{ env.Failure != 0 }}
