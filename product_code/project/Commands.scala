@@ -54,7 +54,9 @@ object Commands {
 
         if (compare(dependVersion, version) < 0) {
           logger.warn(s"${depend.id.stripSuffix("_api")} could be broken by a breaking change in $project.")
-          writer.println(s"${depend.id.stripSuffix("_api")} with $dependVersion could be broken by a breaking change in $project on $version.")
+
+          val dependName = depend.id.stripSuffix("_api").split("_").map(_.capitalize).mkString(" ")
+          writer.println(s"$dependName with $dependVersion")
           failed = true
         } else {
           logger.success(s"${depend.id.stripSuffix("_api")} is going to function without compatibility problems.")

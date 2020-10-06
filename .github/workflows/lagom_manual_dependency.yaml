@@ -47,7 +47,7 @@ jobs:
           message="${message//$'\n'/'%0A'}"
           message="${message//$'\r'/'%0D'}"
           echo "::set-output name=MESSAGE::$message"
-          echo "::set-output name=SERVICE::$service"
+          echo "::set-output name=SERVICE::${service^}"
         fi
         popd
       
@@ -56,11 +56,11 @@ jobs:
       uses: rjstone/discord-webhook-notify@v1
       with:
         severity: warn
-        username: ${{ steps.dependency-check.outputs.SERVICE }}
+        username: ${{ steps.dependency-check.outputs.SERVICE }} Service
         color: '#FFFF00'
         avatarUrl: https://github.githubassets.com/images/modules/logos_page/Octocat.png
         description: ${{ steps.dependency-check.outputs.MESSAGE }}
         details: ''
         footer: ''
-        text: Something could be broken.
+        text: Following services could be broken by a breaking change.
         webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
