@@ -336,7 +336,7 @@ class UserServiceImpl(
   }
 
   /** Publishes every deletion of a user */
-  def userDeletedTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
+  def userDeletionTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
     fromOffset =>
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)

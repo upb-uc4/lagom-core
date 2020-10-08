@@ -12,6 +12,7 @@ import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
@@ -46,7 +47,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
   val client: UserService = server.serviceClient.implement[UserService]
 
-  val deletionTopic: Source[JsonUsername, _] = client.userDeletedTopic().subscribe.atMostOnceSource
+  val deletionTopic: Source[EncryptionContainer, _] = client.userDeletionTopic().subscribe.atMostOnceSource
 
   override protected def afterAll(): Unit = server.stop()
 

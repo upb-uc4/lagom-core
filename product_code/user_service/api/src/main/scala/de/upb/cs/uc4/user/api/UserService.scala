@@ -80,7 +80,7 @@ trait UserService extends UC4Service {
   def allowedDeleteGetPut: ServiceCall[NotUsed, Done]
 
   /** Publishes every deletion of a user */
-  def userDeletedTopic(): Topic[EncryptionContainer]
+  def userDeletionTopic(): Topic[EncryptionContainer]
 
   final override def descriptor: Descriptor = {
     import Service._
@@ -144,7 +144,7 @@ trait UserService extends UC4Service {
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image""")
       )
       .withTopics(
-        topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)
+        topic(UserService.DELETE_TOPIC_NAME, userDeletionTopic _)
       )
 
   }
