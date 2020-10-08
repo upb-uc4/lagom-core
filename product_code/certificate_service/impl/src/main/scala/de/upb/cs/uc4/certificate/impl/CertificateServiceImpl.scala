@@ -21,7 +21,7 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the UserService */
 class CertificateServiceImpl(
@@ -38,6 +38,8 @@ class CertificateServiceImpl(
 
   implicit val timeout: Timeout = Timeout(15.seconds)
 
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+
   /** Forwards the certificate signing request from the given user */
   override def setCertificate(username: String): ServerServiceCall[PostMessageCSR, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUsername, _) =>
@@ -48,7 +50,14 @@ class CertificateServiceImpl(
         }
 
         // Validate the CSR
-        val validationErrors = pmcsrRaw.validate
+        val validationErrorsFuture = pmcsrRaw.validate
+        val validationErrors = try {
+          Await.result(validationErrorsFuture, validationTimeout)
+        }
+        catch {
+          case _: TimeoutException => throw UC4Exception.ValidationTimeout
+          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        }
         if (validationErrors.nonEmpty) {
           throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
         }

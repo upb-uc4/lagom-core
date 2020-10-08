@@ -2,7 +2,6 @@ package de.upb.cs.uc4.certificate.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
-import com.typesafe.config.Config
 import de.upb.cs.uc4.certificate.impl.CertificateApplication
 import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, RegisterUser, SetCertificateAndKey }
 import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet, OnRegisterUser }
