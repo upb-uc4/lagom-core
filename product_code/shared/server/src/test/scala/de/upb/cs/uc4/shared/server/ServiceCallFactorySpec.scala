@@ -17,8 +17,8 @@ import scala.concurrent.Future
 
 class ServiceCallFactorySpec extends AsyncWordSpec with Matchers with PrivateMethodTester {
 
-  private val applicationConfig: Config = {
-    com.typesafe.config.ConfigFactory.parseFile(new File(getClass.getResource("/application.conf").getPath))
+  private implicit val applicationConfig: Config = {
+    com.typesafe.config.ConfigFactory.parseFile(new File(getClass.getResource("/test-application.conf").getPath))
   }
 
   def addTokenHeader(token: String, cookie: String = "login"): RequestHeader => RequestHeader = { header =>
@@ -30,7 +30,7 @@ class ServiceCallFactorySpec extends AsyncWordSpec with Matchers with PrivateMet
     "detect that a user is missing privileges" in {
       val serviceCall = ServiceCallFactory.authenticated[NotUsed, NotUsed](AuthenticationRole.Admin) {
         _ => Future.successful(NotUsed)
-      }(applicationConfig, executionContext)
+      }
 
       val time = Calendar.getInstance()
       time.add(Calendar.DATE, 1)
@@ -52,7 +52,7 @@ class ServiceCallFactorySpec extends AsyncWordSpec with Matchers with PrivateMet
       val result = "Successful"
       val serviceCall = ServiceCallFactory.authenticated[NotUsed, String](AuthenticationRole.Student) {
         _ => Future.successful(result)
-      }(applicationConfig, executionContext)
+      }
 
       val time = Calendar.getInstance()
       time.add(Calendar.DATE, 1)
