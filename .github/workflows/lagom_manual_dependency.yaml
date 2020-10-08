@@ -10,7 +10,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to DockerHub
+    name: Check dependencies
 
     runs-on: ubuntu-latest
 
@@ -33,22 +33,34 @@ jobs:
         popd
 
     - name: Dependency check
+      id: dependency-check
       run: | 
+        pushd ./product_code
         service=${{ github.event.inputs.target_service }}
-        if (sbt dependencyCheck $service); then
-          echo "Failure=0" >> $GITHUB_ENV
+        if sbt "dependencyCheck ${service}"
+        then
+          echo "::set-output name=FAILURE::0"
         else
-          echo "Failure=1" >> $GITHUB_ENV
+          echo "::set-output name=FAILURE::1"
           message=`cat target/dependencyCheck.txt`
-          echo "FailureMessage=$message" >> $GITHUB_ENV
-          echo "ServiceName=$service" >> $GITHUB_ENV
+          message="${message//'%'/'%25'}"
+          message="${message//$'\n'/'%0A'}"
+          message="${message//$'\r'/'%0D'}"
+          echo "::set-output name=MESSAGE::$message"
+          echo "::set-output name=SERVICE::\"${service^} Service with unknown version\""
         fi
+        popd
       
     - name: Discord notification
-      if: ${{ env.Failure != 0 }}
-      env:
-        DISCORD_USERNAME: ${{ env.ServiceName }}
-        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      uses: Ilshidur/action-discord@master
+      if: ${{ steps.dependency-check.outputs.FAILURE != 0 }}
+      uses: rjstone/discord-webhook-notify@v1
       with:
-        args: ${{ env.FailureMessage }}
+        severity: warn
+        username: ${{ steps.dependency-check.outputs.SERVICE }} Service
+        color: '#FFFF00'
+        avatarUrl: https://pm.uni-paderborn.de/_Resources/Persistent/Thumbnails/310x443/66173.png
+        description: ${{ steps.dependency-check.outputs.MESSAGE }}
+        details: ''
+        footer: ''
+        text: Following services could be broken by a breaking change.
+        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}

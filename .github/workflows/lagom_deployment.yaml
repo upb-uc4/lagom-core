@@ -31,6 +31,56 @@ jobs:
         echo "-J-Xms512M -J-Xmx4096M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
         popd
     
+    #check tag
+    - name: Check Tag
+      run: |
+        pushd ./product_code
+        tag= ${GITHUB_REF#refs/tags/}
+        echo "##########################"
+        echo "#       check tag        #"
+        echo "##########################"
+        sbt versionCheck ${tag}
+        popd
+
+    #check dependencies
+    - name: Dependency check
+      id: dependency-check
+      run: | 
+        pushd ./product_code
+        echo "##########################"
+        echo "#   check dependencies   #"
+        echo "##########################"
+        tag=${GITHUB_REF#refs/tags/}
+        service=${tag%-v*}
+        if sbt "dependencyCheck ${service}"
+        then
+          echo "::set-output name=FAILURE::0"
+        else
+          echo "::set-output name=FAILURE::1"
+          message=`cat target/dependencyCheck.txt`
+          message="${message//'%'/'%25'}"
+          message="${message//$'\n'/'%0A'}"
+          message="${message//$'\r'/'%0D'}"
+          echo "::set-output name=MESSAGE::$message"
+          echo "::set-output name=SERVICE::\"${service^} Service with ${tag#*-}\""
+        fi
+        popd
+      
+    - name: Discord notification
+      if: ${{ steps.dependency-check.outputs.FAILURE != 0 }}
+      uses: rjstone/discord-webhook-notify@v1
+      with:
+        severity: warn
+        username: ${{ steps.dependency-check.outputs.SERVICE }} Service
+        color: '#FFFF00'
+        avatarUrl: https://pm.uni-paderborn.de/_Resources/Persistent/Thumbnails/310x443/66173.png
+
+        description: ${{ steps.dependency-check.outputs.MESSAGE }}
+        details: ''
+        footer: ''
+        text: Following services could be broken by a breaking change.
+        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+  
     # run sbt docker publish
     - name: Deploy
       run: |
