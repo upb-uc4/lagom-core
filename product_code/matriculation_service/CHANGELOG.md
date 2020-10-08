@@ -1,3 +1,9 @@
+# [v.0.9.1-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.9.0...matriculation-v0.9.1) (2020-XX-XX)
+## Feature
+- Wrap Validation in Future to enable timeouts
+## Refactor
+## Bugfix
+
 # [v.0.9.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.8.4...matriculation-v0.9.0) (2020-10-02)
 ## Feature
 ## Refactor

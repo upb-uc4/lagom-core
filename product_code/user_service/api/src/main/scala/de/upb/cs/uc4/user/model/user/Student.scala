@@ -6,6 +6,8 @@ import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
 import play.api.libs.json.{ Format, Json }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 case class Student(
     username: String,
     role: Role,
@@ -43,28 +45,29 @@ case class Student(
   override def clean: Student = super.clean.asInstanceOf[Student]
 
   /** @inheritdoc */
-  override def validate: Seq[SimpleError] = {
+  override def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
 
-    var errors = super.validate.asInstanceOf[List[SimpleError]]
+    super.validate.map { superErrors =>
+      var errors = superErrors.toList
+      if (latestImmatriculation != "") {
+        errors :++= latestImmatriculation.validateSemester.map(error => SimpleError("latestImmatriculation", error.reason))
+      }
 
-    if (latestImmatriculation != "") {
-      errors :++= latestImmatriculation.validateSemester.map(error => SimpleError("latestImmatriculation", error.reason))
-    }
-
-    if (matriculationId.isEmpty) {
-      errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
-    }
-    else {
-      if (!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
-        errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 0000001 and 9999999.")
+      if (matriculationId.isEmpty) {
+        errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
       }
       else {
-        if (matriculationId.length != 7) {
-          errors :+= SimpleError("matriculationId", "Matriculation ID must be a string of length 7.")
+        if (!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
+          errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 0000001 and 9999999.")
+        }
+        else {
+          if (matriculationId.length != 7) {
+            errors :+= SimpleError("matriculationId", "Matriculation ID must be a string of length 7.")
+          }
         }
       }
+      errors
     }
-    errors
   }
 
   /** Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.

@@ -39,6 +39,7 @@ object UC4Exception {
   //415
   val UnsupportedMediaType = new UC4Exception(415, GenericError(ErrorType.UnsupportedMediaType))
   //422
+  val ValidationTimeout = new UC4Exception(422, GenericError(ErrorType.ValidationTimeout))
   val PathParameterMismatch = new UC4Exception(422, GenericError(ErrorType.PathParameterMismatch))
   val RefreshTokenSignatureError = new UC4Exception(422, GenericError(ErrorType.RefreshTokenSignatureInvalid))
   val LoginTokenSignatureError = new UC4Exception(422, GenericError(ErrorType.LoginTokenSignatureInvalid))

@@ -21,7 +21,7 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, 
 import de.upb.cs.uc4.user.api.UserService
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(
@@ -35,6 +35,8 @@ class CourseServiceImpl(
     clusterSharding.entityRefFor(CourseState.typeKey, id)
 
   implicit val timeout: Timeout = Timeout(15.seconds)
+
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
 
   /** @inheritdoc */
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
@@ -65,7 +67,14 @@ class CourseServiceImpl(
             throw UC4Exception.OwnerMismatch
           }
 
-          val validationErrors = courseProposal.validate
+          val validationErrors = try {
+            Await.result(courseProposal.validate, validationTimeout)
+          }
+          catch {
+            case _: TimeoutException => throw UC4Exception.ValidationTimeout
+            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          }
+
           // If lecturerId is empty, the userService call cannot be found, therefore check and abort
           if (validationErrors.map(_.name).contains("lecturerId")) {
             throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
@@ -140,7 +149,14 @@ class CourseServiceImpl(
           throw UC4Exception.PathParameterMismatch
         }
 
-        val validationErrors = updatedCourse.validate
+        val validationErrors = try {
+          Await.result(updatedCourse.validate, validationTimeout)
+        }
+        catch {
+          case _: TimeoutException => throw UC4Exception.ValidationTimeout
+          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        }
+
         // If lecturerId is empty, the userService call cannot be found, therefore check and abort
         if (validationErrors.map(_.name).contains("lecturerId")) {
           throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
