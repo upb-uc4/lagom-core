@@ -62,7 +62,7 @@ jobs:
           message="${message//$'\n'/'%0A'}"
           message="${message//$'\r'/'%0D'}"
           echo "::set-output name=MESSAGE::$message"
-          echo "::set-output name=SERVICE::\"${service^} Service (${tag#*-})\""
+          echo "::set-output name=SERVICE::${service^} Service (${tag#*-})"
         fi
         popd
       
