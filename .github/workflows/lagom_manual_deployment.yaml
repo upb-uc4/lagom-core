@@ -65,7 +65,7 @@ jobs:
         severity: warn
         username: ${{ steps.dependency-check.outputs.SERVICE }}
         color: '#FFFF00'
-        avatarUrl: https://pm.uni-paderborn.de/_Resources/Persistent/Thumbnails/310x443/66173.png
+        avatarUrl: https://github.githubassets.com/images/modules/logos_page/Octocat.png
         description: ${{ steps.dependency-check.outputs.MESSAGE }}
         details: ''
         footer: ''
