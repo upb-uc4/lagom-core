@@ -7,13 +7,14 @@ import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{LagomApplicationContext, LagomServer}
+import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.certificate.impl.actor.{CertificateBehaviour, CertificateState}
+import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateState }
 import de.upb.cs.uc4.certificate.impl.commands.RegisterUser
-import de.upb.cs.uc4.hyperledger.utilities.{EnrollmentManager, RegistrationManager}
-import de.upb.cs.uc4.hyperledger.utilities.traits.{EnrollmentManagerTrait, RegistrationManagerTrait}
+import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
+import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
+import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
@@ -27,11 +28,11 @@ abstract class CertificateApplication(context: LagomApplicationContext)
   extends UC4Application(context)
   with SlickPersistenceComponents
   with JdbcPersistenceComponents
-  with HikariCPComponents {
+  with HikariCPComponents
+  with HyperledgerAdminParts {
 
   lazy val enrollmentManager: EnrollmentManagerTrait = EnrollmentManager
-
-  implicit val registrationManager: RegistrationManagerTrait = RegistrationManager
+  lazy val registrationManager: RegistrationManagerTrait = RegistrationManager
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CertificateService](wire[CertificateServiceImpl])
@@ -56,9 +57,14 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     .subscribe
     .atLeastOnce(
       Flow.fromFunction[Usernames, Future[Done]](usernames =>
-        clusterSharding.entityRefFor(CertificateState.typeKey, usernames.username)
-          .ask[Confirmation](replyTo => RegisterUser(usernames.enrollmentId, replyTo)).map(_ => Done)).mapAsync(8)(done => done)
+        registerUser(usernames.username, usernames.enrollmentId)).mapAsync(8)(done => done)
     )
+
+  private def registerUser(username: String, enrollmentId: String): Future[Done] = {
+    val secret = registrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
+    clusterSharding.entityRefFor(CertificateState.typeKey, username)
+      .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, replyTo)).map(_ => Done)
+  }
 }
 
 object CertificateApplication {

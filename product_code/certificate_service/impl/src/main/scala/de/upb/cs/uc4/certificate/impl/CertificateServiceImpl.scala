@@ -22,8 +22,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the UserService */
-class CertificateServiceImpl(clusterSharding: ClusterSharding, enrollmentManager: EnrollmentManagerTrait)
-                            (implicit ec: ExecutionContext, val config: Config)
+class CertificateServiceImpl(clusterSharding: ClusterSharding, enrollmentManager: EnrollmentManagerTrait)(implicit ec: ExecutionContext, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
 
   /** Looks up the entity for the given ID */
@@ -63,13 +62,13 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding, enrollmentManager
 
   /** Returns the certificate of the given user */
   override def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate] = authenticated(AuthenticationRole.All: _*) { _ =>
-      getCertificateUser(username).map {
-        case (_, _, Some(certificate), _) =>
-          JsonCertificate(certificate)
-        case _ =>
-          throw UC4Exception.NotFound
-      }
+    getCertificateUser(username).map {
+      case (_, _, Some(certificate), _) =>
+        JsonCertificate(certificate)
+      case _ =>
+        throw UC4Exception.NotFound
     }
+  }
 
   /** Returns the enrollment id of the given user */
   override def getEnrollmentId(username: String): ServiceCall[NotUsed, JsonEnrollmentId] = authenticated(AuthenticationRole.All: _*) { _ =>

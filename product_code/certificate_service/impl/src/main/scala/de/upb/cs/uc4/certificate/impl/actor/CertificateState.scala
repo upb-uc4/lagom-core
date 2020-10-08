@@ -1,16 +1,14 @@
 package de.upb.cs.uc4.certificate.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
+import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import com.typesafe.config.Config
 import de.upb.cs.uc4.certificate.impl.CertificateApplication
-import de.upb.cs.uc4.certificate.impl.commands.{CertificateCommand, GetCertificateUser, RegisterUser, SetCertificateAndKey}
-import de.upb.cs.uc4.certificate.impl.events.{CertificateEvent, OnCertficateAndKeySet, OnRegisterUser}
+import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, RegisterUser, SetCertificateAndKey }
+import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet, OnRegisterUser }
 import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
-import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
-import de.upb.cs.uc4.hyperledger.utilities.traits.RegistrationManagerTrait
 import de.upb.cs.uc4.shared.server.messages.Accepted
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
 /** The current state of a User */
 case class CertificateState(
@@ -18,7 +16,7 @@ case class CertificateState(
     enrollmentSecret: Option[String],
     certificate: Option[String],
     encryptedPrivateKey: Option[EncryptedPrivateKey]
-)(implicit val config: Config, registrationManager: RegistrationManagerTrait) extends HyperledgerAdminParts {
+) {
 
   /** Functions as a CommandHandler
     *
@@ -26,8 +24,7 @@ case class CertificateState(
     */
   def applyCommand(cmd: CertificateCommand): ReplyEffect[CertificateEvent, CertificateState] =
     cmd match {
-      case RegisterUser(enrollmentId, replyTo) =>
-        val secret = registrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
+      case RegisterUser(enrollmentId, secret, replyTo) =>
         Effect.persist(OnRegisterUser(enrollmentId, secret)).thenReply(replyTo) { _ => Accepted }
       case GetCertificateUser(replyTo) =>
         Effect.reply(replyTo)(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey)
@@ -58,7 +55,7 @@ object CertificateState {
 
   /** The initial state. This is used if there is no snapshotted state to be found.
     */
-  def initial(implicit config: Config, registrationManager: RegistrationManagerTrait): CertificateState = CertificateState(None, None, None, None)
+  def initial: CertificateState = CertificateState(None, None, None, None)
 
   /** The [[akka.persistence.typed.scaladsl.EventSourcedBehavior]] instances (aka Aggregates) run on sharded actors inside the Akka Cluster.
     * When sharding actors and distributing them across the cluster, each aggregate is
@@ -67,7 +64,7 @@ object CertificateState {
     */
   val typeKey: EntityTypeKey[CertificateCommand] = EntityTypeKey[CertificateCommand](CertificateApplication.offset)
 
-  /** Format for the course state.
+  /** Format for the certificate state.
     *
     * Persisted entities get snapshotted every configured number of events. This
     * means the state gets stored to the database, so that when the aggregate gets
@@ -75,5 +72,5 @@ object CertificateState {
     * snapshot. Hence, a JSON format needs to be declared so that it can be
     * serialized and deserialized when storing to and from the database.
     */
-  implicit def format(implicit config: Config): Format[CertificateState] = Json.format
+  implicit def format: Format[CertificateState] = Json.format
 }

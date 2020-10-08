@@ -7,7 +7,7 @@ import com.typesafe.config.Config
 
 trait HyperledgerDefaultParts {
 
-  implicit val config: Config
+  implicit def config: Config
 
   protected val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
   protected val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile.yaml")
