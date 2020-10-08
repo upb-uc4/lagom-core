@@ -5,12 +5,14 @@ import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
+import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.CertificateState
 import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
+import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
@@ -22,8 +24,13 @@ import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the UserService */
-class CertificateServiceImpl(clusterSharding: ClusterSharding, enrollmentManager: EnrollmentManagerTrait)(implicit ec: ExecutionContext, val config: Config)
+class CertificateServiceImpl(
+    clusterSharding: ClusterSharding,
+    enrollmentManager: EnrollmentManagerTrait,
+    readSide: ReadSide, processor: CertificateEventProcessor
+)(implicit ec: ExecutionContext, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
+  readSide.register(processor)
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CertificateCommand] =

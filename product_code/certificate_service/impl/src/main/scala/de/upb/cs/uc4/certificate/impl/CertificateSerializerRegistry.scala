@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.certificate.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
-import de.upb.cs.uc4.certificate.impl.events.OnRegisterUser
+import de.upb.cs.uc4.certificate.impl.events.{ OnCertficateAndKeySet, OnRegisterUser }
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq
@@ -16,6 +16,7 @@ import scala.collection.immutable.Seq
   */
 object CertificateSerializerRegistry extends SharedSerializerRegistry {
   override def customSerializers: Seq[JsonSerializer[_]] = Seq(
-    JsonSerializer[OnRegisterUser]
+    JsonSerializer[OnRegisterUser],
+    JsonSerializer[OnCertficateAndKeySet]
   )
 }

@@ -12,7 +12,7 @@ case class PostMessageCSR(certificateSigningRequest: String, encryptedPrivateKey
 
     encryptedPrivateKey match {
       case EncryptedPrivateKey("", "", "") =>
-      case EncryptedPrivateKey(allRegex(_), allRegex(_), allRegex(_)) =>
+      case EncryptedPrivateKey(allRegex(_*), allRegex(_*), allRegex(_*)) =>
       case _ =>
         errors :+= SimpleError("encryptedPrivateKey", "Either all fields must be empty or no fields must be empty.")
     }

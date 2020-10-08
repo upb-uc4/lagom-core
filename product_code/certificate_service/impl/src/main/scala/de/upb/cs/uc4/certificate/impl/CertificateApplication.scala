@@ -12,6 +12,7 @@ import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateState }
 import de.upb.cs.uc4.certificate.impl.commands.RegisterUser
+import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
@@ -33,6 +34,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
 
   lazy val enrollmentManager: EnrollmentManagerTrait = EnrollmentManager
   lazy val registrationManager: RegistrationManagerTrait = RegistrationManager
+  lazy val processor: CertificateEventProcessor = wire[CertificateEventProcessor]
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CertificateService](wire[CertificateServiceImpl])
