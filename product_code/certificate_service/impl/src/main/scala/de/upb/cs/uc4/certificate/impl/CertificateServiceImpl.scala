@@ -62,33 +62,23 @@ class CertificateServiceImpl(clusterSharding: ClusterSharding, enrollmentManager
   }
 
   /** Returns the certificate of the given user */
-  override def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate] =
-    ServerServiceCall { (_, _) =>
+  override def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate] = authenticated(AuthenticationRole.All: _*) { _ =>
       getCertificateUser(username).map {
         case (_, _, Some(certificate), _) =>
-          (ResponseHeader(200, MessageProtocol.empty, List()), JsonCertificate(certificate))
+          JsonCertificate(certificate)
         case _ =>
           throw UC4Exception.NotFound
       }
     }
 
   /** Returns the enrollment id of the given user */
-  override def getEnrollmentId(username: String): ServiceCall[NotUsed, JsonEnrollmentId] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUsername, _) =>
-      ServerServiceCall { (_, _) =>
-
-        if (authUsername != username) {
-          throw UC4Exception.OwnerMismatch
-        }
-
-        getCertificateUser(username).map {
-          case (Some(id), _, _, _) =>
-            (ResponseHeader(200, MessageProtocol.empty, List()), JsonEnrollmentId(id))
-          case _ =>
-            // An authenticated user was not registered, which should not ever happen
-            throw UC4Exception.InternalServerError
-        }
-      }
+  override def getEnrollmentId(username: String): ServiceCall[NotUsed, JsonEnrollmentId] = authenticated(AuthenticationRole.All: _*) { _ =>
+    getCertificateUser(username).map {
+      case (Some(id), _, _, _) =>
+        JsonEnrollmentId(id)
+      case _ =>
+        throw UC4Exception.NotFound
+    }
   }
 
   /** Returns the encrypted private key of the given user */
