@@ -62,7 +62,7 @@ jobs:
           message="${message//$'\n'/'%0A'}"
           message="${message//$'\r'/'%0D'}"
           echo "::set-output name=MESSAGE::$message"
-          echo "::set-output name=SERVICE::\"${service^} Service with ${tag#*-}\""
+          echo "::set-output name=SERVICE::\"${service^} Service (${tag#*-})\""
         fi
         popd
       
@@ -71,7 +71,7 @@ jobs:
       uses: rjstone/discord-webhook-notify@v1
       with:
         severity: warn
-        username: ${{ steps.dependency-check.outputs.SERVICE }} Service
+        username: ${{ steps.dependency-check.outputs.SERVICE }}
         color: '#FFFF00'
         avatarUrl: https://pm.uni-paderborn.de/_Resources/Persistent/Thumbnails/310x443/66173.png
 
