@@ -66,8 +66,8 @@ class CertificateServiceImpl(
           case (Some(enrollmentId), Some(enrollmentSecret), _, _) =>
             val certificate = enrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
             entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
-              case Accepted => (ResponseHeader(202, MessageProtocol.empty, List()), Done)
-              case _        => throw UC4Exception.InternalServerError
+              case Accepted     => (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+              case e: Exception => throw UC4Exception.InternalServerError("Failed to set certificate", e.getMessage)
             }
 
           case _ =>
