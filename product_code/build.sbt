@@ -10,6 +10,7 @@ val withTests = "compile->compile;test->test"
 
 // Projects
 lazy val lagom = (project in file("."))
+  .settings(commands ++= Commands.all)
   .aggregate(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
     authentication_service_api, authentication_service,
@@ -57,7 +58,8 @@ lazy val hyperledger_component = (project in file("hyperledger_component"))
       Dependencies.scalaTest,
       Dependencies.flexmark,
       Dependencies.macwire
-    )
+    ),
+    version := Version("hyperledger_api")
   )
   .settings(Settings.commonSettings("hyperledger_component"))
   .dependsOn(shared_server, Dependencies.hyperledger_api)
