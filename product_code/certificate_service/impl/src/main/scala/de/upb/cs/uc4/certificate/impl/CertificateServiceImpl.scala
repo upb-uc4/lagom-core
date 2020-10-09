@@ -16,9 +16,9 @@ import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4Exception }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
@@ -66,8 +66,12 @@ class CertificateServiceImpl(
           case (Some(enrollmentId), Some(enrollmentSecret), None, None) =>
             val certificate = enrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
             entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
-              case Accepted     => (ResponseHeader(202, MessageProtocol.empty, List()), Done)
-              case e: Exception => throw UC4Exception.InternalServerError("Failed to set certificate", e.getMessage)
+              case Accepted =>
+                (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+              case RejectedWithError(code, reason) =>
+                throw new UC4Exception(code, reason)
+              case _ =>
+                throw UC4Exception.InternalServerError("Unexpected Error", "Unexpected error occurred when fetching certificate")
             }
           case (_, _, Some(_), _) =>
             throw UC4Exception.AlreadyEnrolled
