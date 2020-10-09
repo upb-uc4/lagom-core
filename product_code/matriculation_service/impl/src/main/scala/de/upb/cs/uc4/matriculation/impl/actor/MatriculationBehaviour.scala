@@ -6,18 +6,18 @@ import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil._
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionMatriculation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
-import de.upb.cs.uc4.hyperledger.{ HyperledgerActorFactory, HyperledgerActorObject }
+import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
 import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData }
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.shared.server.messages.Accepted
 
 import scala.util.Success
 
-class MatriculationBehaviour(val config: Config) extends HyperledgerActorFactory[ConnectionMatriculationTrait] {
+class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionMatriculationTrait] {
 
   /** Creates the connection to the chaincode */
   override protected def createConnection(): ConnectionMatriculationTrait =
-    ConnectionMatriculation(username, channel, chaincode, walletPath, networkDescriptionPath)
+    ConnectionMatriculation(adminUsername, channel, chaincode, walletPath, networkDescriptionPath)
 
   /** Gets called every time when the actor receives a command
     * Errors which this method will thrown will be handled accordingly
