@@ -24,33 +24,29 @@ class KafkaEncryptionUtility(secretKey: SecretKey) {
     * @param objectToEncrypt Json serializable object which shall be send encrypted and authenticated through Kafka
     * @param format implicit to allow toJson conversion
     * @tparam Type of the objectToEncrypt
+    * @throws Throwable javax.crypto exceptions, IO exceptions, Json serialization exception if objectToEncrypt is invalid e.g. null
     * @return [[de.upb.cs.uc4.shared.client.kafka.EncryptionContainer]] wrapping the objectToEncrypt
     */
 
   def encrypt[Type](objectToEncrypt: Type)(implicit format: Format[Type]): EncryptionContainer = {
-    try {
-      val plaintext: String = objectToEncrypt.toJson
-      val associatedData = objectToEncrypt.getClass.getCanonicalName
+    val plaintext: String = objectToEncrypt.toJson
+    val associatedData = objectToEncrypt.getClass.getCanonicalName
 
-      val iv = new Array[Byte](GCM_IV_LENGTH) //NEVER REUSE THIS IV WITH SAME KEY
-      secureRandom.nextBytes(iv)
+    val iv = new Array[Byte](GCM_IV_LENGTH) //NEVER REUSE THIS IV WITH SAME KEY
+    secureRandom.nextBytes(iv)
 
-      val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-      val parameterSpec = new GCMParameterSpec(128, iv) //128 bit auth tag length
-      cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec)
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    val parameterSpec = new GCMParameterSpec(128, iv) //128 bit auth tag length
+    cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec)
 
-      cipher.updateAAD(associatedData.getBytes)
+    cipher.updateAAD(associatedData.getBytes)
 
-      val cipherText: Array[Byte] = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8))
+    val cipherText: Array[Byte] = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8))
 
-      val byteBuffer = ByteBuffer.allocate(iv.length + cipherText.length)
-      byteBuffer.put(iv)
-      byteBuffer.put(cipherText)
-      EncryptionContainer(associatedData, byteBuffer.array)
-    }
-    catch {
-      case throwable: Throwable => throw UC4Exception.InternalServerError("Kafka encryption exception", throwable.getMessage)
-    }
+    val byteBuffer = ByteBuffer.allocate(iv.length + cipherText.length)
+    byteBuffer.put(iv)
+    byteBuffer.put(cipherText)
+    EncryptionContainer(associatedData, byteBuffer.array)
   }
 
   /** Given an valid [[de.upb.cs.uc4.shared.client.kafka.EncryptionContainer]] it will be unpacked into unencrypted
@@ -59,25 +55,21 @@ class KafkaEncryptionUtility(secretKey: SecretKey) {
     * @param container which contains encrypted object received through kafka
     * @param format implicit to allow fromJson conversion
     * @tparam Type of the encrypted object, used for deserialization
+    * @throws Throwable javax.crypto exceptions, IO exceptions, Json deserialization exception if objectToEncrypt is invalid e.g. null, especially AEADBadTagException if auth tag has been altered
     * @return unencrypted object of provided Type
     */
   def decrypt[Type](container: EncryptionContainer)(implicit format: Format[Type]): Type = {
     val cipherMessage = container.data
 
-    try {
-      val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-      //use first 12 bytes for iv
-      val gcmIv = new GCMParameterSpec(128, cipherMessage, 0, GCM_IV_LENGTH)
-      cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmIv)
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    //use first 12 bytes for iv
+    val gcmIv = new GCMParameterSpec(128, cipherMessage, 0, GCM_IV_LENGTH)
+    cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmIv)
 
-      cipher.updateAAD(container.ClassType.getBytes)
-      //use everything from 12 bytes on as ciphertext
-      val plainText = cipher.doFinal(cipherMessage, GCM_IV_LENGTH, cipherMessage.length - GCM_IV_LENGTH)
-      new String(plainText, StandardCharsets.UTF_8).fromJson[Type]
-    }
-    catch {
-      case throwable: Throwable => throw UC4Exception.InternalServerError("Kafka decryption exception", throwable.getMessage) //Invalid decryption procedure or deserialization error
-    }
+    cipher.updateAAD(container.classType.getBytes)
+    //use everything from 12 bytes on as ciphertext
+    val plainText = cipher.doFinal(cipherMessage, GCM_IV_LENGTH, cipherMessage.length - GCM_IV_LENGTH)
+    new String(plainText, StandardCharsets.UTF_8).fromJson[Type]
   }
 }
 

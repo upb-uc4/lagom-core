@@ -20,6 +20,7 @@ import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.shared.server.{ Hashing, UC4Application }
 import de.upb.cs.uc4.user.api.UserService
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
 import scala.concurrent.Future
@@ -32,6 +33,8 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
   with HikariCPComponents
   with LagomKafkaComponents
   with KafkaEncryptionComponent {
+
+  private final val log: Logger = LoggerFactory.getLogger("Shared")
 
   private implicit val timeout: Timeout = Timeout(5.seconds)
 
@@ -61,12 +64,14 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
     .atLeastOnce(
       Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
         try {
-          val json = kafkaEncryptionUtility.decrypt[JsonUsername](container)
-          clusterSharding.entityRefFor(AuthenticationState.typeKey, Hashing.sha256(json.username))
+          val jsonUsername = kafkaEncryptionUtility.decrypt[JsonUsername](container)
+          clusterSharding.entityRefFor(AuthenticationState.typeKey, Hashing.sha256(jsonUsername.username))
             .ask[Confirmation](replyTo => DeleteAuthentication(replyTo)).map(_ => Done)
         }
         catch {
-          case _: Throwable => Future.successful(Done)
+          case throwable: Throwable =>
+            log.error("Authentication Service received invalid topic message: {}", throwable.toString)
+            Future.successful(Done)
         }
       }
         .mapAsync(8)(done => done)

@@ -27,6 +27,7 @@ import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
 import de.upb.cs.uc4.user.model.user._
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -39,6 +40,8 @@ class UserServiceImpl(
     authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
   readSide.register(processor)
+
+  private final val log: Logger = LoggerFactory.getLogger("Shared")
 
   private lazy val defaultProfilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
 
@@ -342,8 +345,14 @@ class UserServiceImpl(
         .eventStream(UserEvent.Tag, fromOffset)
         .mapConcat {
           //Filter only OnUserDelete events
-          case EventStreamElement(_, OnUserDelete(user), offset) =>
+          case EventStreamElement(_, OnUserDelete(user), offset) => try {
             immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
+          }
+          catch {
+            case throwable: Throwable =>
+              log.error("UserService cannot send invalid topic message {}", throwable.toString)
+              Nil
+          }
           case _ => Nil
         }
   }
