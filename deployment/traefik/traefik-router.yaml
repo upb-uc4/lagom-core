@@ -31,3 +31,9 @@ spec:
         - name: matriculation
           namespace: uc4-lagom
           port: 80
+    - match: PathPrefix(`/certificate-management`)
+      kind: Rule
+      services:
+        - name: certificate
+          namespace: uc4-lagom
+          port: 80
