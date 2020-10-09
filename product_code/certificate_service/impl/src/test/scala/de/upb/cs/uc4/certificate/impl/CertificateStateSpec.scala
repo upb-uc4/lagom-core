@@ -69,7 +69,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
       probe.expectMessage(Accepted)
     }
 
-    //SETCERTANDKEY
+    //SET CERTIFICATE AND KEY
     "set the certificate and key of a CertificateUser" in {
       val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-6")))
 
