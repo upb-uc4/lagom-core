@@ -11,6 +11,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4Exception }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Usernames
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
@@ -90,38 +91,122 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
   "The CertificateService" should {
     "register a user and get enrollmentId" in {
-      creationStub.send(Usernames("student00", "student00"))
+      val username = "student00"
+      creationStub.send(Usernames(username, username + "enroll"))
 
       eventually(timeout(Span(30, Seconds))) {
-        client.getEnrollmentId("student00").handleRequestHeader(addAuthorizationHeader()).invoke().map {
-          answer => answer.id should ===("student00")
+        client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+          answer => answer.id should ===(username + "enroll")
         }
       }
     }
 
-    "enroll a user and get the certificate" in {
-      creationStub.send(Usernames("student01", "student01"))
+    "return an error when fetching the enrollmentId of a non-existing user" in {
+      val username = "student01"
+      client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
+        answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+      }
+    }
 
-      client.setCertificate("student01").handleRequestHeader(addAuthorizationHeader("student01"))
+    "enroll a user and get the certificate" in {
+      val username = "student02"
+      val enrollmentId = username + "enroll"
+      creationStub.send(Usernames(username, enrollmentId))
+
+      client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).flatMap { _ =>
 
-          client.getCertificate("student01").handleRequestHeader(addAuthorizationHeader("student01"))
+          client.getCertificate(username).handleRequestHeader(addAuthorizationHeader())
             .invoke().map {
-              answer => answer.certificate should ===(s"certificate for student01")
+              answer => answer.certificate should ===(s"certificate for " + enrollmentId)
             }
         }
     }
 
-    "enroll a user and get private key" in {
-      creationStub.send(Usernames("student02", "student02"))
+    "return an error when fetching the certificate of a non-enrolled user" in {
+      val username = "student03"
+      creationStub.send(Usernames(username, username + "enroll"))
 
-      client.setCertificate("student02").handleRequestHeader(addAuthorizationHeader("student02"))
+      client.getCertificate(username).handleRequestHeader(addAuthorizationHeader())
+        .invoke().failed.map {
+          answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+        }
+    }
+
+    "return an error when a user enrolls twice" in {
+      val username = "student04"
+      creationStub.send(Usernames(username, username + "enroll"))
+
+      client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
+        .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).flatMap { _ =>
+
+          client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
+            .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
+              answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
+                .`type` should ===(ErrorType.AlreadyEnrolled)
+            }
+        }
+    }
+
+    "return an error when a user enrolls another user" in {
+      val username = "student05"
+      creationStub.send(Usernames(username, username))
+
+      client.setCertificate(username).handleRequestHeader(addAuthorizationHeader("not" + username))
+        .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
+            .`type` should ===(ErrorType.OwnerMismatch)
+        }
+    }
+
+    "return an error enrollment uses an invalid key object" in {
+      val username = "student06"
+      creationStub.send(Usernames(username, username))
+
+      client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
+        .invoke(PostMessageCSR("", EncryptedPrivateKey("not", "valid", ""))).failed.map { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams
+            .map(_.name) should contain("encryptedPrivateKey")
+        }
+    }
+
+    "enroll a user and get private key" in {
+      val username = "student07"
+      creationStub.send(Usernames(username, username + "enroll"))
+
+      client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("private", "iv", "salt"))).flatMap { _ =>
 
-          client.getPrivateKey("student02").handleRequestHeader(addAuthorizationHeader("student02"))
+          client.getPrivateKey(username).handleRequestHeader(addAuthorizationHeader(username))
             .invoke().map {
               answer => answer should ===(EncryptedPrivateKey("private", "iv", "salt"))
             }
+        }
+    }
+
+    "return an error when fetching the private key of another user" in {
+      val username = "student08"
+      creationStub.send(Usernames(username, username + "enroll"))
+
+      client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
+        .invoke(PostMessageCSR("", EncryptedPrivateKey("private", "iv", "salt"))).flatMap { _ =>
+
+          client.getPrivateKey(username).handleRequestHeader(addAuthorizationHeader(username + "not"))
+            .invoke().failed.map { answer =>
+              answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
+                .`type` should ===(ErrorType.OwnerMismatch)
+            }
+        }
+    }
+
+    "return an error when fetching the private key of a non-enrolled user" in {
+      val username = "student09"
+      creationStub.send(Usernames(username, username + "enroll"))
+
+      client.getPrivateKey(username).handleRequestHeader(addAuthorizationHeader(username))
+        .invoke().failed.map { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
+            .`type` should ===(ErrorType.NotEnrolled)
         }
     }
   }

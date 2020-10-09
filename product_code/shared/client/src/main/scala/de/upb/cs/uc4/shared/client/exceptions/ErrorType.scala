@@ -9,7 +9,7 @@ object ErrorType extends Enumeration {
   BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
   NotEnoughPrivileges, OwnerMismatch, //403
   KeyNotFound, NotEnrolled, //404
-  KeyDuplicate, //409
+  AlreadyEnrolled, KeyDuplicate, //409
   EntityTooLarge, //413
   UnsupportedMediaType, //415
   Teapot, //418
@@ -52,6 +52,7 @@ object ErrorType extends Enumeration {
       case NotEnrolled => "Enrollment of the user is required before the requested resource can be fetched"
       //409
       case KeyDuplicate => "Key is already in use"
+      case AlreadyEnrolled => "You are already enrolled"
       //413
       case EntityTooLarge => "Entity is too large"
       //415

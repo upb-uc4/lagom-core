@@ -63,15 +63,16 @@ class CertificateServiceImpl(
         }
 
         getCertificateUser(username).flatMap {
-          case (Some(enrollmentId), Some(enrollmentSecret), _, _) =>
+          case (Some(enrollmentId), Some(enrollmentSecret), None, None) =>
             val certificate = enrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
             entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
               case Accepted     => (ResponseHeader(202, MessageProtocol.empty, List()), Done)
               case e: Exception => throw UC4Exception.InternalServerError("Failed to set certificate", e.getMessage)
             }
-
+          case (_, _, Some(_), _) =>
+            throw UC4Exception.AlreadyEnrolled
           case _ =>
-            throw UC4Exception.NotFound
+            throw UC4Exception.InternalServerError("Failed to enroll user", "Unexpected actor content, maybe registration failed")
         }
       }
   }
