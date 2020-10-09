@@ -2,25 +2,15 @@ package de.upb.cs.uc4.shared.server.kafka
 
 import com.lightbend.lagom.scaladsl.api.LagomConfigComponent
 import com.softwaremill.macwire.wire
-import javax.crypto.spec.{ PBEKeySpec, SecretKeySpec }
-import javax.crypto.{ SecretKey, SecretKeyFactory }
+import de.upb.cs.uc4.shared.server.SecretsUtility
+import javax.crypto.SecretKey
 
 /** Used to allow services access the [[de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility]]
   */
 trait KafkaEncryptionComponent extends LagomConfigComponent {
 
-  /** The symmetric secretKey is derived from an master secret defined in the configurations
-    */
-  protected val secretKey: SecretKey = {
-    val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
-    val spec = new PBEKeySpec(
-      config.getString("master.secret").toCharArray,
-      config.getString("master.salt").getBytes,
-      65536,
-      256
-    )
-    new SecretKeySpec(factory.generateSecret(spec).getEncoded, "AES")
-  }
+  protected val secretKey: SecretKey =
+    SecretsUtility.deriveKey(config.getString("secrets.master"), config.getString("secrets.salts.kafka"))
 
   val kafkaEncryptionUtility: KafkaEncryptionUtility = wire[KafkaEncryptionUtility]
 }

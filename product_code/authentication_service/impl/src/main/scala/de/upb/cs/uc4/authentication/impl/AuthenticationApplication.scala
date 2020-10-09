@@ -60,9 +60,14 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
     .subscribe
     .atLeastOnce(
       Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
-        val json = kafkaEncryptionUtility.decrypt[JsonUsername](container)
-        clusterSharding.entityRefFor(AuthenticationState.typeKey, Hashing.sha256(json.username))
-          .ask[Confirmation](replyTo => DeleteAuthentication(replyTo)).map(_ => Done)
+        try {
+          val json = kafkaEncryptionUtility.decrypt[JsonUsername](container)
+          clusterSharding.entityRefFor(AuthenticationState.typeKey, Hashing.sha256(json.username))
+            .ask[Confirmation](replyTo => DeleteAuthentication(replyTo)).map(_ => Done)
+        }
+        catch {
+          case _: Throwable => Future.successful(Done)
+        }
       }
         .mapAsync(8)(done => done)
     )

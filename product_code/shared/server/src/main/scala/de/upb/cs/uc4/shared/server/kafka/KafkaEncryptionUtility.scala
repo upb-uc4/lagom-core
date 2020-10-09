@@ -4,12 +4,13 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.JsonUtility._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility.{ GCM_IV_LENGTH, secureRandom }
 import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.{ Cipher, SecretKey }
-import play.api.libs.json.Format
+import javax.crypto.{ AEADBadTagException, Cipher, SecretKey }
+import play.api.libs.json.{ Format, __ }
 
 /** Provides methods for encryption, decryption and authentication of objects which shall be send through Kafka
   *
@@ -27,25 +28,29 @@ class KafkaEncryptionUtility(secretKey: SecretKey) {
     */
 
   def encrypt[Type](objectToEncrypt: Type)(implicit format: Format[Type]): EncryptionContainer = {
-    val plaintext: String = objectToEncrypt.toJson
-    val associatedData = objectToEncrypt.getClass.getCanonicalName
-    println(associatedData)
+    try {
+      val plaintext: String = objectToEncrypt.toJson
+      val associatedData = objectToEncrypt.getClass.getCanonicalName
 
-    val iv = new Array[Byte](GCM_IV_LENGTH) //NEVER REUSE THIS IV WITH SAME KEY
-    secureRandom.nextBytes(iv)
+      val iv = new Array[Byte](GCM_IV_LENGTH) //NEVER REUSE THIS IV WITH SAME KEY
+      secureRandom.nextBytes(iv)
 
-    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-    val parameterSpec = new GCMParameterSpec(128, iv) //128 bit auth tag length
-    cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec)
+      val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+      val parameterSpec = new GCMParameterSpec(128, iv) //128 bit auth tag length
+      cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec)
 
-    cipher.updateAAD(associatedData.getBytes)
+      cipher.updateAAD(associatedData.getBytes)
 
-    val cipherText: Array[Byte] = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8))
+      val cipherText: Array[Byte] = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8))
 
-    val byteBuffer = ByteBuffer.allocate(iv.length + cipherText.length)
-    byteBuffer.put(iv)
-    byteBuffer.put(cipherText)
-    EncryptionContainer(associatedData, byteBuffer.array)
+      val byteBuffer = ByteBuffer.allocate(iv.length + cipherText.length)
+      byteBuffer.put(iv)
+      byteBuffer.put(cipherText)
+      EncryptionContainer(associatedData, byteBuffer.array)
+    }
+    catch {
+      case throwable: Throwable => throw UC4Exception.InternalServerError("Kafka encryption exception", throwable.getMessage)
+    }
   }
 
   /** Given an valid [[de.upb.cs.uc4.shared.client.kafka.EncryptionContainer]] it will be unpacked into unencrypted
@@ -59,17 +64,20 @@ class KafkaEncryptionUtility(secretKey: SecretKey) {
   def decrypt[Type](container: EncryptionContainer)(implicit format: Format[Type]): Type = {
     val cipherMessage = container.data
 
-    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-    //use first 12 bytes for iv
-    val gcmIv = new GCMParameterSpec(128, cipherMessage, 0, GCM_IV_LENGTH)
-    cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmIv)
+    try {
+      val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+      //use first 12 bytes for iv
+      val gcmIv = new GCMParameterSpec(128, cipherMessage, 0, GCM_IV_LENGTH)
+      cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmIv)
 
-    println(container.ClassType)
-    cipher.updateAAD(container.ClassType.getBytes)
-    //use everything from 12 bytes on as ciphertext
-    val plainText = cipher.doFinal(cipherMessage, GCM_IV_LENGTH, cipherMessage.length - GCM_IV_LENGTH)
-
-    new String(plainText, StandardCharsets.UTF_8).fromJson[Type]
+      cipher.updateAAD(container.ClassType.getBytes)
+      //use everything from 12 bytes on as ciphertext
+      val plainText = cipher.doFinal(cipherMessage, GCM_IV_LENGTH, cipherMessage.length - GCM_IV_LENGTH)
+      new String(plainText, StandardCharsets.UTF_8).fromJson[Type]
+    }
+    catch {
+      case throwable: Throwable => throw UC4Exception.InternalServerError("Kafka decryption exception", throwable.getMessage) //Invalid decryption procedure or deserialization error
+    }
   }
 }
 
