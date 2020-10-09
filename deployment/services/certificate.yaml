@@ -56,6 +56,8 @@ spec:
               value: scalaAdminPW
             - name: HYPERLEDGER_ORGANISATION_ID
               value: org1MSP
+            - name: HYPERLEDGER_ORGANISATION_NAME
+              value: org1
             - name: HYPERLEDGER_CHANNEL
               value: mychannel
             - name: HYPERLEDGER_CHAINCODE
