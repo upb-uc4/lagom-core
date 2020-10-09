@@ -39,7 +39,7 @@ jobs:
         echo "##########################"
         echo "#       check tag        #"
         echo "##########################"
-        sbt versionCheck ${tag}
+        sbt "versionCheck ${tag}"
         popd
 
     #check dependencies
