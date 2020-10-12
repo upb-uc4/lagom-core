@@ -35,11 +35,11 @@ jobs:
     - name: Check Tag
       run: |
         pushd ./product_code
-        tag= ${GITHUB_REF#refs/tags/}
+        tag=${GITHUB_REF#refs/tags/}
         echo "##########################"
         echo "#       check tag        #"
         echo "##########################"
-        sbt versionCheck ${tag}
+        sbt "versionCheck ${tag}"
         popd
 
     #check dependencies

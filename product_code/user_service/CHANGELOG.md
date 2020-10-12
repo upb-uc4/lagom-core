@@ -1,6 +1,7 @@
-# [v.0.9.3-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.9.2...user-v0.9.3) (2020-XX-XX)
+# [v.0.9.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.9.2...user-v0.9.3) (2020-10-09)
 ## Feature
  - Wrapped Validation in Future to enable timeouts
+ - Enabled automatic user registration with Hyperledger
 ## Refactor
 ## Bugfix
  - Adjusted maximal profile picture size

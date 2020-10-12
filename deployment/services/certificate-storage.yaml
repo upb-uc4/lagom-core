@@ -1,0 +1,31 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  namespace: uc4-lagom
+  name: certificate-pv-volume
+  labels:
+    type: local
+    app: certificate
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/hyperledger"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: uc4-lagom
+  name: certificate-pv-claim
+  labels:
+    app: certificate
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi

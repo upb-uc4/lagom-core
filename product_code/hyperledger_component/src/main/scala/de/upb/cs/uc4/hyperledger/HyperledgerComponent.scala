@@ -17,10 +17,10 @@ trait HyperledgerComponent extends ClusterComponents with LagomConfigComponent {
     *
     * @return the factory for this application
     */
-  protected def createActorFactory: HyperledgerActorFactory[_]
+  protected def createActorFactory: HyperledgerDefaultActorFactory[_]
 
   /** The HyperledgerActorFactory of this application */
-  lazy val actorFactory: HyperledgerActorFactory[_] = createActorFactory
+  lazy val actorFactory: HyperledgerDefaultActorFactory[_] = createActorFactory
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
   // a given sharding entity typeKey.

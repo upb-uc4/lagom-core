@@ -33,8 +33,10 @@ object UC4Exception {
   val OwnerMismatch = new UC4Exception(403, GenericError(ErrorType.OwnerMismatch))
   //404
   val NotFound = new UC4Exception(404, GenericError(ErrorType.KeyNotFound))
+  val NotEnrolled = new UC4Exception(404, GenericError(ErrorType.NotEnrolled))
   //409
   val Duplicate = new UC4Exception(409, GenericError(ErrorType.KeyDuplicate))
+  val AlreadyEnrolled = new UC4Exception(409, GenericError(ErrorType.AlreadyEnrolled))
   //415
   val UnsupportedMediaType = new UC4Exception(415, GenericError(ErrorType.UnsupportedMediaType))
   //422

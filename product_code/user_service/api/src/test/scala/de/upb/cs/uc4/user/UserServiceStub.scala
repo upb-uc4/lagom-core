@@ -10,7 +10,7 @@ import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.post.PostMessageUser
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, MatriculationUpdate, Role }
+import de.upb.cs.uc4.user.model._
 
 import scala.concurrent.Future
 
@@ -88,6 +88,8 @@ class UserServiceStub extends UserService with DefaultTestUsers {
   override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
   override def allowedDeleteGetPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  override def userCreationTopic(): Topic[Usernames] = null
 
   override def userDeletionTopic(): Topic[EncryptionContainer] = null //EncryptionContainer[JsonUsername]
 
