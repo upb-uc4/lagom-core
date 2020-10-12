@@ -80,7 +80,7 @@ trait UserService extends UC4Service {
   def allowedDeleteGetPut: ServiceCall[NotUsed, Done]
 
   /** Publishes every new user */
-  def userCreationTopic(): Topic[Usernames]
+  def userCreationTopic(): Topic[EncryptionContainer]
 
   /** Publishes every deletion of a user */
   def userDeletionTopic(): Topic[EncryptionContainer]

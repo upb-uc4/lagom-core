@@ -10,7 +10,7 @@ import javax.crypto.SecretKey
 trait KafkaEncryptionComponent extends LagomConfigComponent {
 
   protected val secretKey: SecretKey =
-    SecretsUtility.deriveKey(config.getString("secrets.master"), config.getString("secrets.salts.kafka"))
+    SecretsUtility.deriveKey(config.getString("uc4.secrets.master"), config.getString("uc4.secrets.salts.kafka"))
 
   val kafkaEncryptionUtility: KafkaEncryptionUtility = wire[KafkaEncryptionUtility]
 }

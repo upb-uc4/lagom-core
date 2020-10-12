@@ -12,6 +12,7 @@ import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4Exception }
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Usernames
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
@@ -27,7 +28,7 @@ import org.scalatest.wordspec.AsyncWordSpec
   */
 class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
 
-  private var creationStub: ProducerStub[Usernames] = _
+  private var creationStub: ProducerStub[EncryptionContainer] = _ //EncryptionContainer[Usernames]
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -49,8 +50,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
           (_: String, _: Path, username: String, _: String, _: Path, _: String, _: Integer, _: String) => s"$username-secret"
 
         lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
-        lazy val internCreationStub: ProducerStub[Usernames] =
-          stubFactory.producer[Usernames](UserService.ADD_TOPIC_NAME)
+        lazy val internCreationStub: ProducerStub[EncryptionContainer] =
+          stubFactory.producer[EncryptionContainer](UserService.ADD_TOPIC_NAME)
 
         creationStub = internCreationStub
 
@@ -92,7 +93,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
   "The CertificateService" should {
     "register a user and get enrollmentId" in {
       val username = "student00"
-      creationStub.send(Usernames(username, username + "enroll"))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
+      creationStub.send(container)
 
       eventually(timeout(Span(30, Seconds))) {
         client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
@@ -111,7 +113,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
     "enroll a user and get the certificate" in {
       val username = "student02"
       val enrollmentId = username + "enroll"
-      creationStub.send(Usernames(username, enrollmentId))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, enrollmentId))
+      creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).flatMap { _ =>
@@ -125,7 +128,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "return an error when fetching the certificate of a non-enrolled user" in {
       val username = "student03"
-      creationStub.send(Usernames(username, username + "enroll"))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
+      creationStub.send(container)
 
       client.getCertificate(username).handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map {
@@ -135,7 +139,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "return an error when a user enrolls twice" in {
       val username = "student04"
-      creationStub.send(Usernames(username, username + "enroll"))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
+      creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).flatMap { _ =>
@@ -150,7 +155,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "return an error when a user enrolls another user" in {
       val username = "student05"
-      creationStub.send(Usernames(username, username))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username))
+      creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader("not" + username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
@@ -161,7 +167,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "return an error enrollment uses an invalid key object" in {
       val username = "student06"
-      creationStub.send(Usernames(username, username))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username))
+      creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("not", "valid", ""))).failed.map { answer =>
@@ -172,7 +179,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "enroll a user and get private key" in {
       val username = "student07"
-      creationStub.send(Usernames(username, username + "enroll"))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
+      creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("private", "iv", "salt"))).flatMap { _ =>
@@ -186,7 +194,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "return an error when fetching the private key of another user" in {
       val username = "student08"
-      creationStub.send(Usernames(username, username + "enroll"))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
+      creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("private", "iv", "salt"))).flatMap { _ =>
@@ -201,7 +210,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "return an error when fetching the private key of a non-enrolled user" in {
       val username = "student09"
-      creationStub.send(Usernames(username, username + "enroll"))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
+      creationStub.send(container)
 
       client.getPrivateKey(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke().failed.map { answer =>
@@ -212,8 +222,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
   }
 }
 
-class UserServiceStubWithTopic(creationStub: ProducerStub[Usernames]) extends UserServiceStub {
+class UserServiceStubWithTopic(creationStub: ProducerStub[EncryptionContainer]) extends UserServiceStub {
 
-  override def userCreationTopic(): Topic[Usernames] = creationStub.topic
+  override def userCreationTopic(): Topic[EncryptionContainer] = creationStub.topic
 
 }

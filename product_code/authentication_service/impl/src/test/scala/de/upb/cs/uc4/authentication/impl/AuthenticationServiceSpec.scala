@@ -51,8 +51,6 @@ class AuthenticationServiceSpec extends AsyncWordSpec
         deletionStub = internDeletionStub
         applicationConfig = config
 
-        //override val kafkaEncryptionUtility = new KafkaEncryptionUtility(secretKey)
-
         // Create a userService with ProducerStub as topic
         override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internDeletionStub)
       }
@@ -186,8 +184,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     //DELETE
     "remove a user over the topic" in {
       prepare("Test").flatMap { _ =>
-        val message = server.application.kafkaEncryptionUtility.encrypt(JsonUsername("Test"))
-        deletionStub.send(message)
+        val container = server.application.kafkaEncryptionUtility.encrypt(JsonUsername("Test"))
+        deletionStub.send(container)
 
         eventually(timeout(Span(20, Seconds))) {
           client.login.handleRequestHeader(addLoginHeader("Test", "Test")).invoke().failed.map { answer =>

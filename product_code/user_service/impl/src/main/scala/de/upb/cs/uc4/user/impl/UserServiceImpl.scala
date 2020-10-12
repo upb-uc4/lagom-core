@@ -340,13 +340,19 @@ class UserServiceImpl(
   }
 
   /** Publishes every new user */
-  override def userCreationTopic(): Topic[Usernames] = TopicProducer.singleStreamWithOffset { fromOffset =>
+  override def userCreationTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(UserEvent.Tag, fromOffset)
       .mapConcat {
         //Filter only OnUserCreate events
-        case EventStreamElement(_, OnUserCreate(user), offset) =>
-          immutable.Seq((Usernames(user.username, Hashing.sha256(user.username)), offset))
+        case EventStreamElement(_, OnUserCreate(user), offset) => try {
+          immutable.Seq((kafkaEncryptionUtility.encrypt(Usernames(user.username, Hashing.sha256(user.username))), offset))
+        }
+        catch {
+          case throwable: Throwable =>
+            log.error("UserService cannot send invalid topic message {}", throwable.toString)
+            Nil
+        }
         case _ => Nil
       }
   }
