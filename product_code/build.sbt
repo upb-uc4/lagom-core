@@ -99,7 +99,7 @@ lazy val user_service = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
   .settings(libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies)
   .settings(Settings.implSettings("user_service"))
-  .dependsOn(user_service_api % withTests, image_processing_api, shared_server, shared_client)
+  .dependsOn(user_service_api % withTests, image_processing_api % withTests, shared_server, shared_client)
 
 lazy val matriculation_service_api = (project in file("matriculation_service/api"))
   .settings(Settings.apiSettings("matriculation_service_api"))
