@@ -70,7 +70,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
       }
       catch {
         case throwable: Throwable =>
-          log.error("Authentication Service received invalid topic message: {}", throwable.toString)
+          log.error("CertificateService received invalid topic message: {}", throwable.toString)
           Future.successful(Done)
       }).mapAsync(8)(done => done)
     )

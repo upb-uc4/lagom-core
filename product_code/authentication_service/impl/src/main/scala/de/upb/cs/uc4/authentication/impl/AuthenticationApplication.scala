@@ -70,7 +70,7 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
         }
         catch {
           case throwable: Throwable =>
-            log.error("Authentication Service received invalid topic message: {}", throwable.toString)
+            log.error("AuthenticationService received invalid topic message: {}", throwable.toString)
             Future.successful(Done)
         }
       }
