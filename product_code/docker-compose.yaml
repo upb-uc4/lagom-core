@@ -1,4 +1,4 @@
-version: '3.1'
+version: '3.2'
 services:
   postgres:
     image: postgres:latest
@@ -9,3 +9,13 @@ services:
       - "POSTGRES_PASSWORD=admin"
     ports:
       - "5432:5432"
+      
+  imaginary:
+    image: h2non/imaginary:latest
+    container_name: imaginary
+    environment:
+       PORT: 9000
+    command: -cors -disable-endpoints form
+    ports:
+      - "9020:9000"
+      
