@@ -62,6 +62,9 @@ trait UserService extends UC4Service {
   /** Gets the image of the user */
   def getImage(username: String): ServiceCall[NotUsed, ByteString]
 
+  /** Gets the thumbnail of the user */
+  def getThumbnail(username: String): ServiceCall[NotUsed, ByteString]
+
   /** Sets the image of the user */
   def setImage(username: String): ServiceCall[Array[Byte], Done]
 
@@ -110,9 +113,11 @@ trait UserService extends UC4Service {
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGet _),
 
         restCall(Method.GET, pathPrefix + "/users/:username/image", getImage _)(MessageSerializer.NotUsedMessageSerializer, MessageSerializer.NoopMessageSerializer),
+        restCall(Method.GET, pathPrefix + "/users/:username/thumbnail", getThumbnail _)(MessageSerializer.NotUsedMessageSerializer, MessageSerializer.NoopMessageSerializer),
         restCall(Method.DELETE, pathPrefix + "/users/:username/image", deleteImage _),
 
         restCall(Method.OPTIONS, pathPrefix + "/users/:username/image", allowedDeleteGetPut _),
+        restCall(Method.OPTIONS, pathPrefix + "/users/:username/thumbnail", allowedGet _),
 
         //Not exposed
         restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
@@ -143,7 +148,9 @@ trait UserService extends UC4Service {
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image"""),
         ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users\\E" + "([^/]+)" + """\/image"""),
         ServiceAcl.forMethodAndPathRegex(Method.DELETE, "\\Q" + pathPrefix + "/users\\E" + "([^/]+)" + """\/image"""),
-        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image""")
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/image"""),
+        ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/thumbnail"""),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/thumbnail""")
       )
       .addTopics(
         topic(UserService.ADD_TOPIC_NAME, userCreationTopic _),
