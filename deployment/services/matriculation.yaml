@@ -44,12 +44,14 @@ spec:
               value: scalaAdminPW
             - name: HYPERLEDGER_ORGANISATION_ID
               value: org1MSP
+            - name: HYPERLEDGER_ORGANISATION_NAME
+              value: org1
             - name: HYPERLEDGER_CHANNEL
               value: mychannel
             - name: HYPERLEDGER_CHAINCODE
               value: uc4-cc
             - name: HYPERLEDGER_CA_URL
-              value: "https://rca-org1.hlf-production-network:7054"
+              value: "https://rca-org1.hlf:7054"
           resources:
             limits:
               memory: 512Mi

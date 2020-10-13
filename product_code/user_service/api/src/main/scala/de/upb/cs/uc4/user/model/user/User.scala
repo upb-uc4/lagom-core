@@ -5,13 +5,14 @@ import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.{ Address, Role }
 import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 trait User {
   val username: String
   val role: Role
   val address: Address
   val firstName: String
   val lastName: String
-  val picture: String
   val email: String
   val phoneNumber: String
   val birthDate: String
@@ -22,7 +23,6 @@ trait User {
       address: Address = this.address,
       firstName: String = this.firstName,
       lastName: String = this.lastName,
-      picture: String = this.picture,
       email: String = this.email,
       phoneNumber: String = this.phoneNumber,
       birthDate: String = this.birthDate
@@ -30,7 +30,7 @@ trait User {
 
   def trim: User = copyUser(
     username.trim, role, address.trim, firstName.trim, lastName.trim,
-    picture.trim, email.trim, phoneNumber.trim, birthDate.trim
+    email.trim, phoneNumber.trim, birthDate.trim
   )
 
   def clean: User = trim.copyUser(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
@@ -42,7 +42,7 @@ trait User {
     *
     * @return Filled Sequence of [[SimpleError]]
     */
-  def validate: Seq[SimpleError] = {
+  def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
 
     val generalRegex = """[\s\S]{0,200}""".r // Allowed characters for general strings TBD
     val usernameRegex = """[a-zA-Z0-9-.]{4,16}""".r
@@ -52,53 +52,52 @@ trait User {
 
     val dateRegex = """^(?:(?:(?:(?:(?:[1-9]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:[2468][048]|[13579][26])00))(-)(?:0?2\1(?:29)))|(?:(?:[1-9]\d{3})(-)(?:(?:(?:0?[13578]|1[02])\2(?:31))|(?:(?:0?[13-9]|1[0-2])\2(?:29|30))|(?:(?:0?[1-9])|(?:1[0-2]))\2(?:0?[1-9]|1\d|2[0-8])))))$""".r
 
-    var errors = List[SimpleError]()
+    address.validate.map { addressErrors =>
+      var errors = List[SimpleError]()
 
-    if (!usernameRegex.matches(username)) {
-      errors :+= SimpleError(
-        "username",
-        "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'."
-      )
-    }
+      if (!usernameRegex.matches(username)) {
+        errors :+= SimpleError(
+          "username",
+          "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'."
+        )
+      }
 
-    if (!Role.All.contains(role)) {
-      errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
-    }
-    else {
-      this match {
-        case _: Student => if (role != Role.Student) {
-          errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
-        }
-        case _: Lecturer => if (role != Role.Lecturer) {
-          errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
-        }
-        case _: Admin => if (role != Role.Admin) {
-          errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+      if (!Role.All.contains(role)) {
+        errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
+      }
+      else {
+        this match {
+          case _: Student => if (role != Role.Student) {
+            errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+          }
+          case _: Lecturer => if (role != Role.Lecturer) {
+            errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+          }
+          case _: Admin => if (role != Role.Admin) {
+            errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+          }
         }
       }
-    }
 
-    errors ++= address.validate.map(error => SimpleError("address." + error.name, error.reason))
+      errors ++= addressErrors.map(error => SimpleError("address." + error.name, error.reason))
 
-    if (!mailRegex.matches(email)) {
-      errors :+= SimpleError("email", "Email must be in email format example@xyz.com.")
+      if (!mailRegex.matches(email)) {
+        errors :+= SimpleError("email", "Email must be in email format example@xyz.com.")
+      }
+      if (!dateRegex.matches(birthDate)) {
+        errors :+= SimpleError("birthDate", "Birthdate must be of the following format \"yyyy-mm-dd\".")
+      }
+      if (!phoneNumberRegex.matches(phoneNumber)) {
+        errors :+= SimpleError("phoneNumber", "Phone number must be of the following format \"+xxxxxxxxxxxx\".")
+      }
+      if (!nameRegex.matches(firstName)) {
+        errors :+= SimpleError("firstName", "First name must contain between 1 and 100 characters.")
+      }
+      if (!nameRegex.matches(lastName)) {
+        errors :+= SimpleError("lastName", "Last name must contain between 1 and 100 characters.")
+      }
+      errors
     }
-    if (!dateRegex.matches(birthDate)) {
-      errors :+= SimpleError("birthDate", "Birthdate must be of the following format \"yyyy-mm-dd\".")
-    }
-    if (!phoneNumberRegex.matches(phoneNumber)) {
-      errors :+= SimpleError("phoneNumber", "Phone number must be of the following format \"+xxxxxxxxxxxx\".")
-    }
-    if (!nameRegex.matches(firstName)) {
-      errors :+= SimpleError("firstName", "First name must contain between 1 and 100 characters.")
-    }
-    if (!nameRegex.matches(lastName)) {
-      errors :+= SimpleError("lastName", "Last name must contain between 1 and 100 characters.")
-    }
-    if (!generalRegex.matches(picture)) { //TODO, this does not make any sense, but pictures are not defined yet
-      errors :+= SimpleError("picture", "Picture is invalid.")
-    }
-    errors
   }
 
   /** Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.

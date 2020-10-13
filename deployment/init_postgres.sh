@@ -1,10 +1,10 @@
-for table in "uc4user" "uc4course" "uc4authentication"; do
+for table in "uc4user" "uc4course" "uc4authentication" "uc4certificate"; do
   kubectl exec --stdin svc/postgres -n postgres -- psql -U postgresadmin -d postgres \
   -c "CREATE USER $table WITH LOGIN ENCRYPTED PASSWORD '$table';" \
   -c "CREATE DATABASE $table WITH OWNER=$table;"
 done
 
-for table in "uc4user" "uc4course" "uc4authentication"; do
+for table in "uc4user" "uc4course" "uc4authentication" "uc4certificate"; do
   kubectl exec --stdin svc/postgres -n postgres -- psql -U $table -d postgres \
     -c "\c \"$table\"" \
     -c "CREATE TABLE IF NOT EXISTS journal (

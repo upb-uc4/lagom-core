@@ -1,3 +1,15 @@
+# [v.0.10.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.9.0...matriculation-v0.10.0) (2020-10-12)
+## Feature
+- Wrap Validation in Future to enable timeouts
+## Refactor
+## Bugfix
+
+# [v.0.9.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.8.4...matriculation-v0.9.0) (2020-10-02)
+## Feature
+## Refactor
+ - Rebuild to implement new user-service API
+## Bugfix
+
 # [v.0.8.4](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.8.3...matriculation-v0.8.4) (2020-09-22)
 ## Feature
  - Added Gzipping in Options Header

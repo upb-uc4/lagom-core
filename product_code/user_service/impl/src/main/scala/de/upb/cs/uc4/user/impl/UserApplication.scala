@@ -28,6 +28,7 @@ abstract class UserApplication(context: LagomApplicationContext)
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[UserService](wire[UserServiceImpl])
+    .additionalRouter(new ImageUploadRouter(this.defaultActionBuilder, this.playBodyParsers, this).router)
 
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = UserSerializerRegistry

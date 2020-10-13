@@ -1,9 +1,11 @@
 package de.upb.cs.uc4.user.model.post
 
 import de.upb.cs.uc4.authentication.model.AuthenticationUser
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, SimpleError }
 import de.upb.cs.uc4.user.model.user.User
 import play.api.libs.json.{ Format, JsResult, JsValue, Json }
+
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait PostMessageUser {
   val authUser: AuthenticationUser
@@ -12,10 +14,12 @@ trait PostMessageUser {
       authUser: AuthenticationUser = this.authUser
   ): PostMessageUser
 
-  def validate: Seq[SimpleError] = {
+  def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
     authUser.validate.map {
-      simpleError =>
-        SimpleError("authUser." + simpleError.name, simpleError.reason)
+      _.map {
+        simpleError =>
+          SimpleError("authUser." + simpleError.name, simpleError.reason)
+      }
     }
   }
 
@@ -30,6 +34,7 @@ trait PostMessageUser {
   def trim: PostMessageUser = {
     copyPostMessageUser(authUser.trim)
   }
+
   def clean: PostMessageUser = {
     trim.copyPostMessageUser(authUser.clean)
   }
@@ -42,7 +47,7 @@ object PostMessageUser {
         case json if (json \ "student").isDefined => Json.fromJson[PostMessageStudent](json)
         case json if (json \ "lecturer").isDefined => Json.fromJson[PostMessageLecturer](json)
         case json if (json \ "admin").isDefined => Json.fromJson[PostMessageAdmin](json)
-        case _ => throw CustomException.DeserializationError
+        case _ => throw UC4Exception.DeserializationError
       }
     }
 

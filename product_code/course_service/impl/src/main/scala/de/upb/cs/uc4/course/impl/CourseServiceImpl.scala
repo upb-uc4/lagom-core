@@ -15,13 +15,13 @@ import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, DetailedError, ErrorType, SimpleError }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(
@@ -35,6 +35,8 @@ class CourseServiceImpl(
     clusterSharding.entityRefFor(CourseState.typeKey, id)
 
   implicit val timeout: Timeout = Timeout(15.seconds)
+
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
 
   /** @inheritdoc */
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
@@ -62,23 +64,30 @@ class CourseServiceImpl(
         ServerServiceCall { (header, courseProposalRaw) =>
           val courseProposal = courseProposalRaw.trim
           if (role == AuthenticationRole.Lecturer && courseProposal.lecturerId != username) {
-            throw CustomException.OwnerMismatch
+            throw UC4Exception.OwnerMismatch
           }
 
-          val validationErrors = courseProposal.validate
+          val validationErrors = try {
+            Await.result(courseProposal.validate, validationTimeout)
+          }
+          catch {
+            case _: TimeoutException => throw UC4Exception.ValidationTimeout
+            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          }
+
           // If lecturerId is empty, the userService call cannot be found, therefore check and abort
           if (validationErrors.map(_.name).contains("lecturerId")) {
-            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+            throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
           }
 
           // Check if the lecturer does exist
           userService.getUser(courseProposal.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
             //If the lecturer does not exist, we throw a validation error containing that info
-            case ex: CustomException if ex.getErrorCode.http == 404 =>
-              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist")))
+            case ex: UC4Exception if ex.errorCode.http == 404 =>
+              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist")))
           }.flatMap { _ =>
             if (validationErrors.nonEmpty) {
-              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
             }
             // Generate unique ID for the course to add
             val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
@@ -90,7 +99,7 @@ class CourseServiceImpl(
                 case Accepted => // Creation Successful
                   (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
                 case RejectedWithError(code, errorResponse) =>
-                  throw new CustomException(code, errorResponse)
+                  throw new UC4Exception(code, errorResponse)
               }
           }
         }
@@ -105,19 +114,19 @@ class CourseServiceImpl(
           entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).flatMap {
             case Some(course) =>
               if (role == AuthenticationRole.Lecturer && username != course.lecturerId) {
-                throw CustomException.OwnerMismatch
+                throw UC4Exception.OwnerMismatch
               }
               else {
                 entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
                   .map {
                     case Accepted => // OK
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case Rejected(_) => // Not Found
-                      throw CustomException.InternalServerError
+                    case Rejected(reason) => // Not Found
+                      throw UC4Exception.InternalServerError("Course Deletion Error", reason)
                   }
               }
             case None =>
-              throw CustomException.NotFound
+              throw UC4Exception.NotFound
           }
         }
     }
@@ -126,7 +135,7 @@ class CourseServiceImpl(
   override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
-      case None         => throw CustomException.NotFound
+      case None         => throw UC4Exception.NotFound
     }
   }
 
@@ -137,19 +146,26 @@ class CourseServiceImpl(
         val updatedCourse = updatedCourseRaw.trim
         // Look up the sharded entity (aka the aggregate instance) for the given ID.
         if (id != updatedCourse.courseId) {
-          throw CustomException.PathParameterMismatch
+          throw UC4Exception.PathParameterMismatch
         }
 
-        val validationErrors = updatedCourse.validate
+        val validationErrors = try {
+          Await.result(updatedCourse.validate, validationTimeout)
+        }
+        catch {
+          case _: TimeoutException => throw UC4Exception.ValidationTimeout
+          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        }
+
         // If lecturerId is empty, the userService call cannot be found, therefore check and abort
         if (validationErrors.map(_.name).contains("lecturerId")) {
-          throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+          throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
         }
 
         // Check if the lecturer does exist
         userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-          case ex: CustomException if ex.getErrorCode.http == 404 =>
-            throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist.")))
+          case ex: UC4Exception if ex.errorCode.http == 404 =>
+            throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist.")))
         }.flatMap { _ =>
           val ref = entityRef(id)
 
@@ -157,10 +173,10 @@ class CourseServiceImpl(
           oldCourse.flatMap {
             case Some(course) =>
               if (validationErrors.nonEmpty) {
-                throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors))
+                throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
               }
               if (role == AuthenticationRole.Lecturer && course.lecturerId != username) {
-                throw CustomException.OwnerMismatch
+                throw UC4Exception.OwnerMismatch
               }
               else {
                 ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
@@ -168,11 +184,11 @@ class CourseServiceImpl(
                     case Accepted => // Update Successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case RejectedWithError(code, errorResponse) =>
-                      throw new CustomException(code, errorResponse)
+                      throw new UC4Exception(code, errorResponse)
                   }
               }
             case None =>
-              throw new CustomException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("courseId", "CourseID does not exist.")))
+              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("courseId", "CourseID does not exist.")))
           }
         }
       }

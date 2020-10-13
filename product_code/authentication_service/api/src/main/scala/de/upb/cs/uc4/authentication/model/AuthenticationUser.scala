@@ -4,6 +4,8 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 /** Used to be sent to the AuthenticationService. Includes only relevant data for that service. */
 case class AuthenticationUser(username: String, password: String, role: AuthenticationRole) {
 
@@ -15,7 +17,7 @@ case class AuthenticationUser(username: String, password: String, role: Authenti
     trim
   }
 
-  def validate: Seq[SimpleError] = {
+  def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
     val usernameRegex = """[a-zA-Z0-9-.]{4,16}""".r
 
     var errors = List[SimpleError]()

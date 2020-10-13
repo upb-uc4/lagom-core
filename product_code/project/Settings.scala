@@ -28,7 +28,7 @@ object Settings {
     * @param project name of the project
     */
   def apiSettings(project: String): Seq[Def.Setting[_]] =
-    commonSettings(project) ++ Seq(libraryDependencies ++= Dependencies.apiDefaultDependencies)
+    commonSettings(project) ++ Seq(libraryDependencies ++= Dependencies.apiDefaultDependencies, version := Version(project.stripSuffix("_api")))
 
   /** The settings every impl project needs
     * This includes the common settings

@@ -1,10 +1,12 @@
 package de.upb.cs.uc4.user.model.user
 
 import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, SimpleError }
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
 import play.api.libs.json.{ Format, Json }
+
+import scala.concurrent.{ ExecutionContext, Future }
 
 case class Student(
     username: String,
@@ -12,7 +14,6 @@ case class Student(
     address: Address,
     firstName: String,
     lastName: String,
-    picture: String,
     email: String,
     phoneNumber: String,
     birthDate: String,
@@ -26,12 +27,11 @@ case class Student(
       address: Address = this.address,
       firstName: String = this.firstName,
       lastName: String = this.lastName,
-      picture: String = this.picture,
       email: String = this.email,
       phoneNumber: String = this.phoneNumber,
       birthDate: String = this.birthDate
   ): Student =
-    copy(username, role, address, firstName, lastName, picture, email, phoneNumber, birthDate)
+    copy(username, role, address, firstName, lastName, email, phoneNumber, birthDate)
 
   override def trim: Student =
     super.trim.asInstanceOf[Student].copy(
@@ -45,28 +45,29 @@ case class Student(
   override def clean: Student = super.clean.asInstanceOf[Student]
 
   /** @inheritdoc */
-  override def validate: Seq[SimpleError] = {
+  override def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
 
-    var errors = super.validate.asInstanceOf[List[SimpleError]]
+    super.validate.map { superErrors =>
+      var errors = superErrors.toList
+      if (latestImmatriculation != "") {
+        errors :++= latestImmatriculation.validateSemester.map(error => SimpleError("latestImmatriculation", error.reason))
+      }
 
-    if (latestImmatriculation != "") {
-      errors :++= latestImmatriculation.validateSemester.map(error => SimpleError("latestImmatriculation", error.reason))
-    }
-
-    if (matriculationId.isEmpty) {
-      errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
-    }
-    else {
-      if (!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
-        errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 0000001 and 9999999.")
+      if (matriculationId.isEmpty) {
+        errors :+= SimpleError("matriculationId", "Matriculation ID must not be empty.")
       }
       else {
-        if (matriculationId.length != 7) {
-          errors :+= SimpleError("matriculationId", "Matriculation ID must be a string of length 7.")
+        if (!(matriculationId forall Character.isDigit) || !(matriculationId.toInt > 0) || !(matriculationId.toInt < 10000000)) {
+          errors :+= SimpleError("matriculationId", "Matriculation ID must be an integer between 0000001 and 9999999.")
+        }
+        else {
+          if (matriculationId.length != 7) {
+            errors :+= SimpleError("matriculationId", "Matriculation ID must be a string of length 7.")
+          }
         }
       }
+      errors
     }
-    errors
   }
 
   /** Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
@@ -76,9 +77,8 @@ case class Student(
     * @return Filled Sequence of [[SimpleError]]
     */
   override def checkProtectedFields(user: User): Seq[SimpleError] = {
-    if (!user.isInstanceOf[Student]) {
-      throw CustomException.InternalServerError
-    }
+    checkIfStudent(user)
+
     val student = user.asInstanceOf[Student]
     var errors = super.checkProtectedFields(user).asInstanceOf[List[SimpleError]]
 
@@ -95,9 +95,8 @@ case class Student(
     * @return Filled Sequence of [[SimpleError]]
     */
   override def checkUneditableFields(user: User): Seq[SimpleError] = {
-    if (!user.isInstanceOf[Student]) {
-      throw CustomException.InternalServerError
-    }
+    checkIfStudent(user)
+
     val student = user.asInstanceOf[Student]
     var errors = super.checkUneditableFields(student).asInstanceOf[List[SimpleError]]
 
@@ -106,6 +105,13 @@ case class Student(
     }
 
     errors
+  }
+
+  /** Helper method to check if the user is a student */
+  private def checkIfStudent(user: User): Unit = {
+    if (!user.isInstanceOf[Student]) {
+      throw UC4Exception.InternalServerError("Wrong Entity", s"Expected a student, got a ${user.role}")
+    }
   }
 }
 

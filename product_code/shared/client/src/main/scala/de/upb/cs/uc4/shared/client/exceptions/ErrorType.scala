@@ -5,12 +5,15 @@ import play.api.libs.json.{ Format, Json }
 object ErrorType extends Enumeration {
   type ErrorType = Value
   val Deserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
+  MissingHeader, //In an DetailedError
   BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
   NotEnoughPrivileges, OwnerMismatch, //403
-  KeyNotFound, //404
-  KeyDuplicate, //409
+  KeyNotFound, NotEnrolled, //404
+  AlreadyEnrolled, KeyDuplicate, //409
+  EntityTooLarge, //413
+  UnsupportedMediaType, //415
   Teapot, //418
-  PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, //422
+  PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, //422
   Validation, UneditableFields, //422 In a DetailedError
   InternalServer, UndeserializableException, //500
   HLInternal, //In an InformativeError
@@ -34,6 +37,7 @@ object ErrorType extends Enumeration {
       case MalformedLoginToken => "The login token is malformed"
       case UnexpectedEntity => "Expected another entity" //In an InformativeError
       case MultipleAuthorization => "Multiple authorization given"
+      case MissingHeader => "Missing required header" //In a DetailedError
       //401
       case BasicAuthorization => "Username and password combination does not exist"
       case JwtAuthorization => "Authorization token missing"
@@ -45,13 +49,20 @@ object ErrorType extends Enumeration {
       case OwnerMismatch => "You are not allowed to modify the resource"
       //404
       case KeyNotFound => "Key value is not in use"
+      case NotEnrolled => "Enrollment of the user is required before the requested resource can be fetched"
       //409
       case KeyDuplicate => "Key is already in use"
+      case AlreadyEnrolled => "You are already enrolled"
+      //413
+      case EntityTooLarge => "Entity is too large"
+      //415
+      case UnsupportedMediaType => "The payload format is in an unsupported format"
       //418
       case Teapot => "I'm a teapot"
       //422
       case PathParameterMismatch => "Parameter specified in path and in object do not match"
       case Validation => "Your request parameters did not validate" //In a DetailedError
+      case ValidationTimeout => "Validation of the given object timed out"
       case UneditableFields => "Attempted to change uneditable fields" //In a DetailedError
       case RefreshTokenSignatureInvalid => "The long term token has a wrong signature"
       case LoginTokenSignatureInvalid => "The login term token has a wrong signature"

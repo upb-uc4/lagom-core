@@ -5,11 +5,13 @@ import java.util.Calendar
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
+import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.hyperledger.fabric.gateway.{ Contract, Gateway }
@@ -17,8 +19,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import play.api.libs.json.Json
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
-import de.upb.cs.uc4.shared.client.exceptions.{ CustomException, DetailedError, ErrorType, SimpleError }
 
 import scala.language.reflectiveCalls
 
@@ -37,7 +37,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         var jsonStringList: Seq[String] = List()
 
         override def createActorFactory: MatriculationBehaviour = new MatriculationBehaviour(config) {
-          override protected def createConnection: ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
+          override protected def createConnection(): ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
 
             override def addMatriculationData(jsonMatriculationData: String): String = {
               val matriculationData = Json.parse(jsonMatriculationData).as[ImmatriculationData]
@@ -181,7 +181,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     "not add empty matriculation data for a student" in {
       client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(PutMessageMatriculation(Seq())).failed.map { answer =>
-          answer.asInstanceOf[CustomException].getErrorCode.http should ===(422)
+          answer.asInstanceOf[UC4Exception].errorCode.http should ===(422)
         }.andThen {
           case _ => cleanup()
         }

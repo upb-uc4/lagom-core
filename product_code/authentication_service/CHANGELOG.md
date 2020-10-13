@@ -1,3 +1,9 @@
+# [v.0.10.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.9.0...authentication-v0.10.0) (2020-10-12)
+## Feature
+- Wrap Validation in Future to enable timeouts
+## Refactor
+## Bugfix
+
 # [v.0.9.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.2...authentication-v0.9.0) (2020-09-28)
 ## Feature
 ## Refactor

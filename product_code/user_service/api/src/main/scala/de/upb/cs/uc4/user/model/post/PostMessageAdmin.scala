@@ -5,25 +5,35 @@ import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.user.Admin
 import play.api.libs.json.{ Format, Json }
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 case class PostMessageAdmin(authUser: AuthenticationUser, admin: Admin) extends PostMessageUser {
 
   def copyPostMessageUser(
       authUser: AuthenticationUser = this.authUser
   ): PostMessageAdmin = copy(authUser, admin)
 
-  override def validate: Seq[SimpleError] = {
-    var errors: List[SimpleError] = admin.validate.map {
-      simpleError =>
-        SimpleError("admin." + simpleError.name, simpleError.reason)
-    }.toList
-    errors ++= super.validate
+  override def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
+    admin.validate.flatMap { adminErrors =>
+      var errors = adminErrors.map {
+        simpleError =>
+          SimpleError("admin." + simpleError.name, simpleError.reason)
+      }
 
-    if (authUser.username != admin.username) {
-      errors.filter(simpleError => !simpleError.name.contains("username"))
-      errors :+= SimpleError("authUser.username", "Username in authUser must match username in admin")
-      errors :+= SimpleError("admin.username", "Username in admin must match username in authUser")
+      super.validate.map { superErrors =>
+        errors ++= superErrors
+
+        //Filter username errors if authUsername and username are not equal + return error that usernames are not equal
+        if (authUser.username != admin.username) {
+          errors.filter(simpleError => !simpleError.name.contains("username"))
+          errors :+= SimpleError("authUser.username", "Username in authUser must match username in admin")
+          errors :+= SimpleError("admin.username", "Username in admin must match username in authUser")
+        }
+
+        errors
+      }
     }
-    errors
+
   }
 
   override def trim: PostMessageAdmin =

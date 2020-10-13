@@ -3,7 +3,7 @@ package de.upb.cs.uc4.shared.client.exceptions
 import de.upb.cs.uc4.shared.client.exceptions.ErrorType.ErrorType
 import play.api.libs.json._
 
-case class TransactionError(`type`: ErrorType, title: String, transactionId: String) extends CustomError
+case class TransactionError(`type`: ErrorType, title: String, transactionId: String) extends UC4Error
 
 object TransactionError {
   implicit val format: Format[TransactionError] = Json.format
