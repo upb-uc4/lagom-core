@@ -16,6 +16,7 @@ import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
@@ -50,6 +51,13 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     )
   )
 
+  try {
+    EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
+  }
+  catch {
+    case e: Throwable => throw UC4Exception.InternalServerError("Enrollment Error", e.getMessage)
+  }
+
   implicit val timeout: Timeout = Timeout(15.seconds)
 
   lazy val userService: UserService = serviceClient.implement[UserService]
@@ -63,9 +71,14 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     )
 
   private def registerUser(username: String, enrollmentId: String): Future[Done] = {
-    val secret = registrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
-    clusterSharding.entityRefFor(CertificateState.typeKey, username)
-      .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, replyTo)).map(_ => Done)
+    try {
+      val secret = registrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
+      clusterSharding.entityRefFor(CertificateState.typeKey, username)
+        .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, replyTo)).map(_ => Done)
+    }
+    catch {
+      case e: Throwable => throw UC4Exception.InternalServerError("Registration Error", e.getMessage)
+    }
   }
 }
 
