@@ -22,7 +22,7 @@ case class EncryptedPrivateKey(key: String, iv: String, salt: String) {
       var errors = List[SimpleError]()
 
       if (!keyRegex.matches(key)) {
-        errors :+= SimpleError("key", "The key must not be empty or longer than 8192 characters.")
+        errors :+= SimpleError("key", "For a non-empty key object, the key must not be longer than 8192 characters.")
       }
       if (!ivRegex.matches(iv)) {
         errors :+= SimpleError("iv", "The iv must not be empty or longer than 64 characters.")
