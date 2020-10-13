@@ -12,12 +12,13 @@ case class EncryptedPrivateKey(key: String, iv: String, salt: String) {
     val ivRegex = """[\s\S]{1,64}""".r
     val saltRegex = """[\s\S]{1,256}""".r
 
-
     if (key.isEmpty && iv.isEmpty && salt.isEmpty) {
       Seq()
-    } else if(Seq(key, iv, salt).contains("")) {
+    }
+    else if (Seq(key, iv, salt).contains("")) {
       Seq(SimpleError("encryptedPrivateKey", "Either all fields must be empty or no fields must be empty."))
-    } else {
+    }
+    else {
       var errors = List[SimpleError]()
 
       if (!keyRegex.matches(key)) {
