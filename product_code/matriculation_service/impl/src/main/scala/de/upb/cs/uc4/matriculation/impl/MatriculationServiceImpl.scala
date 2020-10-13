@@ -9,6 +9,7 @@ import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHea
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.hyperledger.commands.HyperledgerCommand
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
@@ -27,7 +28,7 @@ import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
 import scala.util.{ Failure, Success, Try }
 
 /** Implementation of the MatriculationService */
-class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: UserService)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
+class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: UserService, certificateService: CertificateService)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
   extends MatriculationService {
 
   /** Looks up the entity for the given ID */
@@ -55,51 +56,56 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
         if (validationList.nonEmpty) {
           throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationList))
         }
+
         userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
           .flatMap { user =>
             if (!user.isInstanceOf[Student]) {
               //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
               throw UC4Exception.NotFound
             }
-            val student = user.asInstanceOf[Student]
 
-            entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo))
-              .flatMap {
-                case Success(_) =>
-                  entityRef.ask[Confirmation](replyTo => AddEntriesToMatriculationData(
-                    student.matriculationId,
-                    message.matriculation,
-                    replyTo
-                  )).map {
-                    case Accepted =>
-                      userService.updateLatestMatriculation().invoke(MatriculationUpdate(
-                        username,
-                        Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
-                      ))
-                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+            certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+              .flatMap { jsonEnrollmentId =>
+                val enrollmentId = jsonEnrollmentId.id
 
-                    case RejectedWithError(statusCode, reason) => throw new UC4Exception(statusCode, reason)
-                  }
-
-                case Failure(exception) =>
-                  exception match {
-                    case customException: UC4Exception if customException.errorCode.http == 404 =>
-                      val data = ImmatriculationData(
-                        student.matriculationId, student.firstName, student.lastName, student.birthDate,
-                        message.matriculation
-                      )
-                      entityRef.ask[Confirmation](replyTo => AddMatriculationData(data, replyTo)).map {
+                entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(enrollmentId, replyTo))
+                  .flatMap {
+                    case Success(_) =>
+                      entityRef.ask[Confirmation](replyTo => AddEntriesToMatriculationData(
+                        enrollmentId,
+                        message.matriculation,
+                        replyTo
+                      )).map {
                         case Accepted =>
                           userService.updateLatestMatriculation().invoke(MatriculationUpdate(
                             username,
                             Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
                           ))
-                          (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/${student.username}"))), Done)
+                          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
 
                         case RejectedWithError(statusCode, reason) => throw new UC4Exception(statusCode, reason)
                       }
 
-                    case exception: Exception => throw exception
+                    case Failure(exception) =>
+                      exception match {
+                        case customException: UC4Exception if customException.errorCode.http == 404 =>
+                          val data = ImmatriculationData(
+                            enrollmentId,
+                            message.matriculation
+                          )
+                          entityRef.ask[Confirmation](replyTo => AddMatriculationData(data, replyTo)).map {
+                            case Accepted =>
+                              userService.updateLatestMatriculation().invoke(MatriculationUpdate(
+                                username,
+                                Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
+                              ))
+                              (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/${username}"))), Done)
+
+                            case RejectedWithError(statusCode, reason) => throw new UC4Exception(statusCode, reason)
+                          }
+
+                        case exception: Exception => throw exception
+                      }
                   }
               }
           }
@@ -119,11 +125,14 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
               //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
               throw UC4Exception.NotFound
             }
-            val student = user.asInstanceOf[Student]
-            entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(student.matriculationId, replyTo)).map {
-              case Success(data)      => (ResponseHeader(200, MessageProtocol.empty, List()), data)
-              case Failure(exception) => throw exception
-            }
+            certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+              .flatMap { jsonEnrollmentId =>
+                val enrollmentId = jsonEnrollmentId.id
+                entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(enrollmentId, replyTo)).map {
+                  case Success(data)      => (ResponseHeader(200, MessageProtocol.empty, List()), data)
+                  case Failure(exception) => throw exception
+                }
+              }
           }
         }
     }

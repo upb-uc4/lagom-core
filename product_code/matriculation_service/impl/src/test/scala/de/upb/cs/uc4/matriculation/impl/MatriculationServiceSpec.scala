@@ -5,6 +5,7 @@ import java.util.Calendar
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
+import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
@@ -31,8 +32,11 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
   ) { ctx =>
       new MatriculationApplication(ctx) with LocalServiceLocator {
         override lazy val userService: UserServiceStub = new UserServiceStub
+        override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
 
         userService.resetToDefaults()
+        certificateService.setup(student0.username)
+        student0EnrollmentId = certificateService.get(student0.username).enrollmentId
 
         var jsonStringList: Seq[String] = List()
 
@@ -61,8 +65,8 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               ""
             }
 
-            override def addEntriesToMatriculationData(matriculationId: String, subjectMatriculationList: String): String = {
-              var data = Json.parse(jsonStringList.find(json => json.contains(matriculationId)).get).as[ImmatriculationData]
+            override def addEntriesToMatriculationData(enrollmentId: String, subjectMatriculationList: String): String = {
+              var data = Json.parse(jsonStringList.find(json => json.contains(enrollmentId)).get).as[ImmatriculationData]
               val matriculationList = Json.parse(subjectMatriculationList).as[Seq[SubjectMatriculation]]
 
               if (matriculationList.isEmpty) {
@@ -100,7 +104,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
                 }
               }
 
-              jsonStringList = jsonStringList.filter(json => !json.contains(matriculationId)) :+ Json.stringify(Json.toJson(data))
+              jsonStringList = jsonStringList.filter(json => !json.contains(enrollmentId)) :+ Json.stringify(Json.toJson(data))
               ""
             }
 
@@ -117,7 +121,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
                   override val payload: String =
                     """{
                     |  "type": "HLNotFound",
-                    |  "title": "There is no MatriculationData for the given matriculationId."
+                    |  "title": "There is no MatriculationData for the given enrollmentId."
                     |}""".stripMargin
                 }
               }
@@ -161,6 +165,8 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
 
   private def createSingleMatriculation(field: String, semester: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester))))
 
+  var student0EnrollmentId: String = _
+
   "MatriculationService service" should {
 
     "add matriculation data for a student" in {
@@ -168,7 +174,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         .invoke(PutMessageMatriculation(Seq(SubjectMatriculation("Computer Science", Seq("SS2020"))))).flatMap { _ =>
           client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
             answer =>
-              answer.matriculationId should ===(student0.matriculationId)
+              answer.enrollmentId should ===(student0EnrollmentId)
               answer.matriculationStatus should contain theSameElementsAs
                 Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
           }
@@ -190,10 +196,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     "extend matriculation data of an already existing field of study" in {
       prepare(Seq(
         ImmatriculationData(
-          student0.matriculationId,
-          student0.firstName,
-          student0.lastName,
-          student0.birthDate,
+          student0EnrollmentId,
           Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
         )
       ))
@@ -212,10 +215,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     "extend matriculation data of a non-existing field of study" in {
       prepare(Seq(
         ImmatriculationData(
-          student0.matriculationId,
-          student0.firstName,
-          student0.lastName,
-          student0.birthDate,
+          student0EnrollmentId,
           Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
         )
       ))
