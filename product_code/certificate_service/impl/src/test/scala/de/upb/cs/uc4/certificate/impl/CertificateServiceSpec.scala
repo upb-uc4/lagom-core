@@ -176,9 +176,9 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
-        answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams
-          .map(_.name) should contain("certificateSigningRequest")
-      }
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams
+            .map(_.name) should contain("certificateSigningRequest")
+        }
     }
 
     "enroll a user and get private key" in {
