@@ -25,7 +25,7 @@ case class EncryptedPrivateKey(key: String, iv: String, salt: String) {
         errors :+= SimpleError("key", "For a non-empty key object, the key must not be longer than 8192 characters.")
       }
       if (!ivRegex.matches(iv)) {
-        errors :+= SimpleError("iv", "The iv must not be empty or longer than 64 characters.")
+        errors :+= SimpleError("iv", "For a non-empty key object, the iv must not be longer than 64 characters.")
       }
       if (!saltRegex.matches(salt)) {
         errors :+= SimpleError("salt", "The salt must not be empty or longer than 256 characters.")
