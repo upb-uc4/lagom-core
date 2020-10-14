@@ -13,8 +13,8 @@ class ConfigurationServiceSpec extends AsyncWordSpec with Matchers {
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
   ) { ctx =>
-    new ConfigurationApplication(ctx) with LocalServiceLocator {}
-  }
+      new ConfigurationApplication(ctx) with LocalServiceLocator {}
+    }
 
   val client: ConfigurationService = server.serviceClient.implement[ConfigurationService]
 
