@@ -119,3 +119,13 @@ lazy val certificate_service = (project in file("certificate_service/impl"))
   .settings(libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies)
   .settings(Settings.implSettings("certificate_service"))
   .dependsOn(certificate_service_api % withTests, user_service_api % withTests, shared_server, hyperledger_component)
+
+lazy val configuration_service_api =  (project in file("configuration_service/api"))
+  .settings(Settings.apiSettings("configuration_service_api"))
+  .dependsOn(shared_client)
+
+lazy val configuration_service = (project in file("configuration_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies)
+  .settings(Settings.implSettings("configuration_service"))
+  .dependsOn(configuration_service_api % withTests, shared_client, shared_server)

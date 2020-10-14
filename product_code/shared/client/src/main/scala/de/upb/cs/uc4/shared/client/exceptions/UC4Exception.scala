@@ -22,6 +22,10 @@ object UC4Exception {
   val MalformedRefreshToken = new UC4Exception(400, GenericError(ErrorType.MalformedRefreshToken))
   val MalformedLoginToken = new UC4Exception(400, GenericError(ErrorType.MalformedLoginToken))
   val MultipleAuthorizationError = new UC4Exception(400, GenericError(ErrorType.MultipleAuthorization))
+
+  def QueryParameterError(invalidParams: SimpleError*) =
+    new UC4Exception(400, DetailedError(ErrorType.QueryParameter, invalidParams))
+
   //401
   val JwtAuthorizationError = new UC4Exception(401, GenericError(ErrorType.JwtAuthorization))
   val RefreshTokenMissing = new UC4Exception(401, GenericError(ErrorType.RefreshTokenMissing))

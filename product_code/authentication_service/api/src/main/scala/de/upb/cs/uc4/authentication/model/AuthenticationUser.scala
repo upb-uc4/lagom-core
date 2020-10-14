@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.authentication.model
 
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.shared.client.RegexCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
@@ -18,7 +19,7 @@ case class AuthenticationUser(username: String, password: String, role: Authenti
   }
 
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
-    val usernameRegex = """[a-zA-Z0-9-.]{4,16}""".r
+    val usernameRegex = RegexCollection.AuthenticationUser.usernameRegex
 
     var errors = List[SimpleError]()
     if (!usernameRegex.matches(username)) {

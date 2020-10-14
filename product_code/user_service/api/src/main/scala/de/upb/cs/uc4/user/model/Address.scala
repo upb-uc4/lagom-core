@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.user.model
 
+import de.upb.cs.uc4.shared.client.RegexCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
@@ -24,8 +25,8 @@ case class Address(
     * @return Sequence of SimpleErrors[[SimpleError]]
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
-    val houseNumberRegex = """[1-9][0-9]{0,4}([a-zA-Z]([0-9]|-[a-zA-Z]){0,1}){0,1}""".r
-    val nameRegex = """[a-zA-Z.,\s\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df0-9-]{1,50}""".r
+    val houseNumberRegex = RegexCollection.Address.houseNumberRegex
+    val nameRegex = RegexCollection.Address.nameRegex
 
     val countryList = List("Germany", "United States", "Italy", "France", "United Kingdom", "Belgium", "Netherlands", "Spain", "Austria", "Switzerland", "Poland")
 
