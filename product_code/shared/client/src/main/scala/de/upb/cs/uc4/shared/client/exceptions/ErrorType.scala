@@ -72,6 +72,11 @@ object ErrorType extends Enumeration {
       case InternalServer => "An internal server error has occurred"
       case UndeserializableException => "Internal error while deserializing Exception"
       case HLInternal => "Hyperledger encountered an internal error" //In an InformativeError
+      //501
+      case NotImplemented => "The invoked method is not implemented yet"
+
+      //Hopefully never
+      case _ => "Undefined error title, please open a bug report at https://github.com/upb-uc4/lagom-core/issues/new?assignees=&labels=bug&template=bug_report.md&title="
     }
   }
 
