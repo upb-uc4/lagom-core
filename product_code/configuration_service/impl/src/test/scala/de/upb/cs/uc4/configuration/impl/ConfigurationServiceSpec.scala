@@ -20,7 +20,7 @@ class ConfigurationServiceSpec extends AsyncWordSpec with Matchers {
 
   "ConfigurationService" should {
     "get the semester derived from a date" in {
-      client.getSemester(Some("2020-10-14")).invoke().map{
+      client.getSemester(Some("2020-10-14")).invoke().map {
         answer =>
           answer.semester should ===("WS2020/21")
       }
@@ -33,14 +33,14 @@ class ConfigurationServiceSpec extends AsyncWordSpec with Matchers {
         CourseLanguage.All.map(_.toString),
         CourseType.All.map(_.toString)
       )
-      client.getConfiguration.invoke().map{
+      client.getConfiguration.invoke().map {
         answer =>
           answer should ===(configuration)
       }
     }
 
     "get the validation configuration" in {
-      client.getValidation.invoke().map{
+      client.getValidation.invoke().map {
         answer =>
           answer should ===(ValidationConfiguration.build)
       }
