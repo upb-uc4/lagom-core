@@ -22,7 +22,6 @@ object UC4Exception {
   val MalformedRefreshToken = new UC4Exception(400, GenericError(ErrorType.MalformedRefreshToken))
   val MalformedLoginToken = new UC4Exception(400, GenericError(ErrorType.MalformedLoginToken))
   val MultipleAuthorizationError = new UC4Exception(400, GenericError(ErrorType.MultipleAuthorization))
-
   def QueryParameterError(invalidParams: SimpleError*) =
     new UC4Exception(400, DetailedError(ErrorType.QueryParameter, invalidParams))
 
@@ -57,4 +56,7 @@ object UC4Exception {
 
   def InternalServerError(invalidParams: SimpleError*) =
     new UC4Exception(500, DetailedError(ErrorType.InternalServer, invalidParams))
+
+  //501
+  val NotImplemented = new UC4Exception(501, GenericError(ErrorType.NotImplemented))
 }

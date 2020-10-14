@@ -126,6 +126,6 @@ lazy val configuration_service_api =  (project in file("configuration_service/ap
 
 lazy val configuration_service = (project in file("configuration_service/impl"))
   .enablePlugins(LagomScala)
-  .settings(libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies)
+  .settings(libraryDependencies ++= Dependencies.implDefaultDependencies)
   .settings(Settings.implSettings("configuration_service"))
   .dependsOn(configuration_service_api % withTests, shared_client, shared_server)

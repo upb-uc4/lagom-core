@@ -62,11 +62,11 @@ object Utils {
 
   def dateToSemester(date: String): String = {
     date match {
-      case s"${ y }-${ m }-${d}" => m.toInt match {
-        case month if month <= 3 => s"WS${y.toInt -1}/${y.substring(2)}"
+      case s"${ y }-${ m }-${ d }" => m.toInt match {
+        case month if month <= 3 => s"WS${y.toInt - 1}/${y.substring(2)}"
         case month if month <= 9 =>
           s"SS$y"
-        case _ => s"WS$y${(y.toInt+1).toString.substring(2)}"
+        case _ => s"WS$y/${(y.toInt + 1).toString.substring(2)}"
       }
       case _ => throw UC4Exception.InternalServerError("date", "Received invalid date while trying to convert to semester.")
     }

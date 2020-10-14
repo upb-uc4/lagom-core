@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.authentication.model
 
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.RegexCollection
+import de.upb.cs.uc4.shared.client.configuration.RegexCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 

@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
-import de.upb.cs.uc4.shared.client.RegexCollection
+import de.upb.cs.uc4.shared.client.configuration.RegexCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.{ Address, Role }
@@ -46,7 +46,7 @@ trait User {
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
 
     val usernameRegex = RegexCollection.User.usernameRegex
-    val nameRegex = RegexCollection.User.nameRegex
+    val nameRegex = RegexCollection.Commons.nameRegex
     val mailRegex = RegexCollection.User.mailRegex
     val phoneNumberRegex = RegexCollection.User.phoneNumberRegex
     val dateRegex = RegexCollection.Commons.dateRegex

@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model
 
-import de.upb.cs.uc4.shared.client.RegexCollection
+import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
@@ -28,7 +28,7 @@ case class Address(
     val houseNumberRegex = RegexCollection.Address.houseNumberRegex
     val nameRegex = RegexCollection.Address.nameRegex
 
-    val countryList = List("Germany", "United States", "Italy", "France", "United Kingdom", "Belgium", "Netherlands", "Spain", "Austria", "Switzerland", "Poland")
+    val countryList = ConfigurationCollection.countries
 
     var errors = List[SimpleError]()
     if (!nameRegex.matches(street)) {

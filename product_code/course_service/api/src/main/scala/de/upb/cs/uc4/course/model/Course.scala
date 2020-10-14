@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.course.model
 
-import de.upb.cs.uc4.shared.client.RegexCollection
+import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json._
 
@@ -41,7 +41,7 @@ case class Course(
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 
-    val nameRegex = RegexCollection.Course.nameRegex
+    val nameRegex = RegexCollection.Commons.nameRegex
     val descriptionRegex = RegexCollection.Commons.longTextRegex
     val dateRegex = RegexCollection.Commons.dateRegex
 

@@ -16,6 +16,7 @@ object ErrorType extends Enumeration {
   PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, //422
   Validation, UneditableFields, //422 In a DetailedError
   InternalServer, UndeserializableException, //500
+  NotImplemented, //501
   HLInternal, //In an InformativeError
   HLUnknownTransactionId, HLUnprocessableEntity, HLNotFound, HLConflict, HLUnprocessableLedgerState, //In a GenericError
   HLUnprocessableField, //In a DetailedError
