@@ -32,10 +32,10 @@ class CertificateServiceStub extends CertificateService {
   }
 
   /** Forwards the certificate signing request from the given user */
-  override def setCertificate(username: String): ServiceCall[PostMessageCSR, Done] = ServiceCall {
+  override def setCertificate(username: String): ServiceCall[PostMessageCSR, JsonCertificate] = ServiceCall {
     postMessageCSR =>
       certificateUsers.put(username, CertificateUserEntry(username + "enrollmentId", username + "enrollmentSecret", username + "certificate", postMessageCSR.encryptedPrivateKey))
-      Future.successful(Done)
+      Future.successful(JsonCertificate(username + "certificate"))
   }
 
   /** Returns the certificate of the given user */
