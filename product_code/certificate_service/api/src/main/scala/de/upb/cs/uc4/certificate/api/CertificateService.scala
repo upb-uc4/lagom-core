@@ -20,7 +20,7 @@ trait CertificateService extends UC4Service {
   override val name = "certificate"
 
   /** Forwards the certificate signing request from the given user */
-  def setCertificate(username: String): ServiceCall[PostMessageCSR, Done]
+  def setCertificate(username: String): ServiceCall[PostMessageCSR, JsonCertificate]
 
   /** Returns the certificate of the given user */
   def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate]
@@ -42,7 +42,7 @@ trait CertificateService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.POST, pathPrefix + "/certificates/:username", setCertificate _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/certificates/:username", setCertificate _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/certificates/:username/certificate", getCertificate _),
         restCall(Method.GET, pathPrefix + "/certificates/:username/enrollmentId", getEnrollmentId _),
         restCall(Method.GET, pathPrefix + "/certificates/:username/privateKey", getPrivateKey _),

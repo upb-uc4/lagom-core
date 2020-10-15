@@ -42,7 +42,7 @@ class CertificateServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
 
   /** Forwards the certificate signing request from the given user */
-  override def setCertificate(username: String): ServerServiceCall[PostMessageCSR, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+  override def setCertificate(username: String): ServerServiceCall[PostMessageCSR, JsonCertificate] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUsername, _) =>
       ServerServiceCall { (_, pmcsrRaw) =>
         // One can only set his own certificate
@@ -69,7 +69,9 @@ class CertificateServiceImpl(
               val certificate = enrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
               entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
                 case Accepted =>
-                  (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+                  val header = ResponseHeader(201, MessageProtocol.empty, List())
+                    .addHeader("Location", s"$pathPrefix/certificates/$username/certificate")
+                  (header, JsonCertificate(certificate))
                 case RejectedWithError(code, reason) =>
                   throw new UC4Exception(code, reason)
                 case _ =>

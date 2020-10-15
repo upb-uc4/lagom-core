@@ -114,12 +114,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       creationStub.send(Usernames(username, enrollmentId))
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
-        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).flatMap { _ =>
-
-          client.getCertificate(username).handleRequestHeader(addAuthorizationHeader())
-            .invoke().map {
-              answer => answer.certificate should ===(s"certificate for " + enrollmentId)
-            }
+        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).flatMap {
+          answer => answer.certificate should ===(s"certificate for " + enrollmentId)
         }
     }
 
