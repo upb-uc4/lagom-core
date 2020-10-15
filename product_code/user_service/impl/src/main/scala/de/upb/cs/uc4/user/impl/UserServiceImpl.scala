@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.user.impl
 
+import java.util
+
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
@@ -13,6 +15,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
+import de.upb.cs.uc4.image.api.ImageProcessingService
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
@@ -35,11 +38,18 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 class UserServiceImpl(
     clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
     readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase,
-    authentication: AuthenticationService
+    authentication: AuthenticationService, imageProcessing: ImageProcessingService
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
   readSide.register(processor)
 
   private lazy val defaultProfilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
+  private lazy val defaultThumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultThumbnail.png"))
+  private lazy val supportedTypes: util.List[String] = config.getStringList("uc4.image.supportedTypes")
+  private lazy val convertedTypes: util.List[String] = config.getStringList("uc4.image.convertedTypes")
+  private lazy val profileWidth: Int = config.getInt("uc4.image.profileWidth")
+  private lazy val profileHeight: Int = config.getInt("uc4.image.profileHeight")
+  private lazy val thumbnailWidth: Int = config.getInt("uc4.image.thumbnailWidth")
+  private lazy val thumbnailHeight: Int = config.getInt("uc4.image.thumbnailHeight")
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[UserCommand] =
@@ -375,6 +385,22 @@ class UserServiceImpl(
     }
   }
 
+  /** Gets the thumbnail of the user */
+  override def getThumbnail(username: String): ServiceCall[NotUsed, ByteString] = authenticated[NotUsed, ByteString](AuthenticationRole.All: _*) {
+    ServerServiceCall {
+      (header, _) =>
+        database.getThumbnail(username).flatMap {
+          case Some((array, contentType)) =>
+            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
+          case None =>
+            getUser(username).invokeWithHeaders(header, NotUsed).map {
+              _ =>
+                (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultThumbnail))
+            }
+        }
+    }
+  }
+
   /** Sets the image of the user */
   override def setImage(username: String): ServerServiceCall[Array[Byte], Done] =
     identifiedAuthenticated[Array[Byte], Done](AuthenticationRole.All: _*) {
@@ -386,14 +412,32 @@ class UserServiceImpl(
             }
 
             header.getHeader("Content-Type") match {
-              case Some(contentType) =>
-                if (config.getStringList("uc4.image.supportedTypes").contains(contentType.trim)) {
+              case Some(contentTypeRaw) =>
+                var contentType = contentTypeRaw.trim
+                if (supportedTypes.contains(contentType)) {
                   getUser(username).invokeWithHeaders(header, NotUsed).flatMap {
                     _ =>
-                      database.setImage(username, image, contentType).map {
-                        _ =>
-                          (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                      val convertedFuture = if (convertedTypes.contains(contentType)) {
+                        contentType = "image/jpeg"
+                        imageProcessing.convert("jpeg").invoke(ByteString(image))
                       }
+                      else {
+                        Future.successful(ByteString(image))
+                      }
+
+                      convertedFuture.flatMap { converted =>
+                        imageProcessing.fit(profileWidth, profileHeight).invoke(converted).flatMap { profilePicture =>
+                          imageProcessing.thumbnail(thumbnailWidth, thumbnailHeight).invoke(profilePicture).flatMap { thumbnail =>
+                            database.setImage(username, profilePicture.toArray, thumbnail.toArray, contentType).map {
+                              _ =>
+                                (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                            }
+                          }
+                        }
+                      }
+                        .recover {
+                          case ex: Throwable => throw UC4Exception.InternalServerError("Error processing the image", ex.getMessage)
+                        }
                   }
                 }
                 else {

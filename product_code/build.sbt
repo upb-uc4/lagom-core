@@ -5,6 +5,7 @@ lagomServiceEnableSsl in ThisBuild := true
 lagomCassandraEnabled in ThisBuild := false
 scalaVersion in ThisBuild := "2.13.0"
 scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
+lagomUnmanagedServices in ThisBuild := Map("imageprocessing" -> sys.env.getOrElse("IMAGE_PROCESSING", "http://localhost:9020"))
 
 val withTests = "compile->compile;test->test"
 
@@ -98,7 +99,7 @@ lazy val user_service = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
   .settings(libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies)
   .settings(Settings.implSettings("user_service"))
-  .dependsOn(user_service_api % withTests, shared_server, shared_client)
+  .dependsOn(user_service_api % withTests, image_processing_api % withTests, shared_server % withTests, shared_client)
 
 lazy val matriculation_service_api = (project in file("matriculation_service/api"))
   .settings(Settings.apiSettings("matriculation_service_api"))
@@ -119,3 +120,7 @@ lazy val certificate_service = (project in file("certificate_service/impl"))
   .settings(libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies)
   .settings(Settings.implSettings("certificate_service"))
   .dependsOn(certificate_service_api % withTests, user_service_api % withTests, shared_server, hyperledger_component)
+
+lazy val image_processing_api = (project in file("image_processing/api"))
+  .settings(libraryDependencies ++= Dependencies.apiDefaultDependencies)
+  .dependsOn(shared_client)

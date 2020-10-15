@@ -40,7 +40,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
   class StudentTable(tag: Tag) extends UserTable(tag, "Student")
 
   /** Entry definition of the image table */
-  case class ImageEntry(username: String, image: Array[Byte], contentType: String)
+  case class ImageEntry(username: String, image: Array[Byte], thumbnail: Array[Byte], contentType: String)
 
   /** Table definition of the image table */
   class ImageTable(tag: Tag) extends Table[ImageEntry](tag, s"uc4ImageTable") {
@@ -48,9 +48,12 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
 
     def image: Rep[Array[Byte]] = column[Array[Byte]]("image")
 
+    def thumbnail: Rep[Array[Byte]] = column[Array[Byte]]("thumbnail")
+
     def contentType: Rep[String] = column[String]("contentType")
 
-    override def * : ProvenShape[ImageEntry] = (username, image, contentType) <> ((ImageEntry.apply _).tupled, ImageEntry.unapply)
+    override def * : ProvenShape[ImageEntry] =
+      (username, image, thumbnail, contentType) <> ((ImageEntry.apply _).tupled, ImageEntry.unapply)
   }
 
   val admins = TableQuery[AdminTable]
@@ -126,13 +129,20 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
   def getImage(username: String): Future[Option[(Array[Byte], String)]] =
     database.run(findImageByUsernameQuery(username))
 
+  /** Returns an option of the thumbnail of a user
+    *
+    * @param username of the owner of the image
+    */
+  def getThumbnail(username: String): Future[Option[(Array[Byte], String)]] =
+    database.run(findThumbnailByUsernameQuery(username))
+
   /** Creates or updates the image of a user
     *
     * @param username of the owner of the image
     * @param image as byte array
     */
-  def setImage(username: String, image: Array[Byte], contentType: String): Future[Done] =
-    database.run(setImageQuery(username, image, contentType))
+  def setImage(username: String, image: Array[Byte], thumbnail: Array[Byte], contentType: String): Future[Done] =
+    database.run(setImageQuery(username, image, thumbnail, contentType))
 
   /** Deletes an image of a user
     *
@@ -181,14 +191,25 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       .headOption
       .map(_.map(entry => (entry.image, entry.contentType)))
 
+  /** Returns the query to find an thumbnail by a username
+    *
+    * @param username of the owner of the image
+    */
+  private def findThumbnailByUsernameQuery(username: String): DBIO[Option[(Array[Byte], String)]] =
+    images
+      .filter(_.username === username)
+      .result
+      .headOption
+      .map(_.map(entry => (entry.thumbnail, entry.contentType)))
+
   /** Returns the query to create or update the image of a user
     *
     * @param username of the owner of the image
     * @param image as byte array
     */
-  private def setImageQuery(username: String, image: Array[Byte], contentType: String): DBIO[Done] =
+  private def setImageQuery(username: String, image: Array[Byte], thumbnail: Array[Byte], contentType: String): DBIO[Done] =
     images
-      .insertOrUpdate(ImageEntry(username, image, contentType))
+      .insertOrUpdate(ImageEntry(username, image, thumbnail, contentType))
       .map(_ => Done)
       .transactionally
 

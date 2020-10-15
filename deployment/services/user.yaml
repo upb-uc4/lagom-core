@@ -44,6 +44,8 @@ spec:
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
+            - name: IMAGE_PROCESSING
+              value: "_http._tcp.imaginary.uc4-support"
           resources:
             limits:
               memory: 512Mi

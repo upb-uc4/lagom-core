@@ -10,6 +10,13 @@ kubectl apply -f traefik/traefik-router.yaml
 
 echo
 echo "##############################"
+echo "#      Starting Support      #"
+echo "##############################"
+kubectl create namespace uc4-support
+kubectl apply -f support/imaginary.yaml
+
+echo
+echo "##############################"
 echo "#     Starting Postgres      #"
 echo "##############################"
 kubectl create namespace postgres
