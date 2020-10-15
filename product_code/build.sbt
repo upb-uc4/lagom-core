@@ -108,7 +108,7 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .enablePlugins(LagomScala)
   .settings(libraryDependencies += lagomScaladslKafkaBroker)
   .settings(Settings.implSettings("matriculation_service"))
-  .dependsOn(user_service_api % withTests, shared_server, shared_client, matriculation_service_api, hyperledger_component)
+  .dependsOn(user_service_api % withTests, certificate_service_api % withTests, shared_server, shared_client, matriculation_service_api, hyperledger_component)
 
 lazy val certificate_service_api = (project in file("certificate_service/api"))
   .settings(Settings.apiSettings("certificate_service_api"))
