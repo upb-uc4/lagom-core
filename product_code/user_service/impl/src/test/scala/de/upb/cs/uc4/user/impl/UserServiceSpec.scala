@@ -41,12 +41,13 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
-      override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
+      new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
 
-      override lazy val imageProcessing: ImageProcessingService = new ImageProcessingServiceStub()
+        override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
+
+        override lazy val imageProcessing: ImageProcessingService = new ImageProcessingServiceStub()
+      }
     }
-  }
 
   val client: UserService = server.serviceClient.implement[UserService]
 
