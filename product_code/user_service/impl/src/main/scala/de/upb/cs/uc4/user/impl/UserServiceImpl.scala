@@ -436,7 +436,7 @@ class UserServiceImpl(
                         }
                       }
                         .recover {
-                          case ex: Throwable => throw UC4Exception.InternalServerError("Something gone wrong", ex.getMessage)
+                          case ex: Throwable => throw UC4Exception.InternalServerError("Error processing the image", ex.getMessage)
                         }
                   }
                 }
