@@ -92,7 +92,7 @@ lazy val authentication_service = (project in file("authentication_service/impl"
 
 lazy val user_service_api = (project in file("user_service/api"))
   .settings(Settings.apiSettings("user_service_api"))
-  .dependsOn(authentication_service_api % withTests, matriculation_service_api, shared_client)
+  .dependsOn(authentication_service_api % withTests, shared_client)
 
 lazy val user_service = (project in file("user_service/impl"))
   .enablePlugins(LagomScala)
