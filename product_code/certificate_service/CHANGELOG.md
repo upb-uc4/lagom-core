@@ -1,3 +1,9 @@
+# [WIP v.0.10.4](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.3...certificate-v0.10.4) (2020-XX-XX)
+## Feature
+- The Circuit Breaker ignores now UC4NonCriticalExceptions
+## Refactor
+## Bugfix
+
 # [v.0.10.3](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.2...certificate-v0.10.3) (2020-10-15)
 ## Feature
 ## Refactor
