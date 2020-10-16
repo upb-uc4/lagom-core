@@ -7,7 +7,7 @@ import akka.NotUsed
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.typesafe.config._
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4CriticalException }
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.PrivateMethodTester
 import org.scalatest.matchers.should.Matchers
@@ -44,7 +44,7 @@ class ServiceCallFactorySpec extends AsyncWordSpec with Matchers with PrivateMet
           .signWith(SignatureAlgorithm.HS256, "Y2hhbmdlbWU=")
           .compact()
 
-      val thrown = the[UC4CriticalException] thrownBy serviceCall.handleRequestHeader(addTokenHeader(token)).invoke()
+      val thrown = the[UC4Exception] thrownBy serviceCall.handleRequestHeader(addTokenHeader(token)).invoke()
       thrown.possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
     }
 

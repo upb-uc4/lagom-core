@@ -12,7 +12,7 @@ import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
-import de.upb.cs.uc4.shared.client.exceptions.UC4CriticalException
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.hyperledger.fabric.gateway.{ Contract, Gateway }
@@ -187,7 +187,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     "not add empty matriculation data for a student" in {
       client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(PutMessageMatriculation(Seq())).failed.map { answer =>
-          answer.asInstanceOf[UC4CriticalException].errorCode.http should ===(422)
+          answer.asInstanceOf[UC4Exception].errorCode.http should ===(422)
         }.andThen {
           case _ => cleanup()
         }
