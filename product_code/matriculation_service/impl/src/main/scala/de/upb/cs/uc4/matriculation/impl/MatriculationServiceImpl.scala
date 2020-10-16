@@ -22,7 +22,6 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWi
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.MatriculationUpdate
 import de.upb.cs.uc4.user.model.user.Student
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
@@ -105,7 +104,10 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
                             case RejectedWithError(statusCode, reason) => throw new UC4CriticalException(statusCode, reason)
                           }
 
-                        case exception: Throwable => throw exception.toUC4Exception
+                        case uc4Exception: UC4Exception => throw uc4Exception
+
+                        case ex: Throwable =>
+                          throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
                       }
                   }
               }
