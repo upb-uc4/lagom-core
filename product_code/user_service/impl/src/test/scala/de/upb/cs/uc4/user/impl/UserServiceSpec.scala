@@ -219,7 +219,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       client.addUser().handleRequestHeader(addAuthorizationHeader())
         .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
         .failed.map {
-          answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(422)
+          answer => answer.asInstanceOf[UC4CriticalException].errorCode.http should ===(422)
         }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -228,7 +228,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(admin0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
           .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
-            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+            answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[DetailedError]
               .invalidParams should contain(SimpleError("admin.username", "Username already in use."))
           }
       }.flatMap(cleanupOnSuccess)
@@ -239,7 +239,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(admin0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
           .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
-            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+            answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[DetailedError]
               .invalidParams.map(_.name) should contain("admin.username")
           }
       }.flatMap(cleanupOnSuccess)
@@ -250,7 +250,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(student0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
           .invoke(PostMessageStudent(student0Auth.copy(username = "student7"), student0.copy(username = "student7"))).failed.flatMap { answer =>
-            answer.asInstanceOf[UC4Exception].possibleErrorResponse
+            answer.asInstanceOf[UC4CriticalException].possibleErrorResponse
               .asInstanceOf[DetailedError].invalidParams.map(_.name) should contain theSameElementsAs Seq("student.matriculationId")
           }
       }.flatMap(cleanupOnSuccess)
@@ -351,7 +351,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
     "find a non-existing User" in {
       client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+        answer.asInstanceOf[UC4CriticalException].errorCode.http should ===(404)
       }
     }
 
@@ -368,7 +368,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "not update a non-existing User" in {
       client.updateUser("GutenAbend").handleRequestHeader(addAuthorizationHeader())
         .invoke(student0.copy(username = "GutenAbend")).failed.map { answer =>
-          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+          answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[DetailedError]
             .invalidParams.map(_.name) should contain("username")
         }
     }
@@ -401,7 +401,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedUneditable.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedUneditable.username))
           .invoke(student0UpdatedUneditable).failed.flatMap { answer =>
-            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+            answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
               have length uneditableErrorSize
           }
       }.flatMap(cleanupOnSuccess)
@@ -412,7 +412,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedProtected.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedProtected.username))
           .invoke(student0UpdatedProtected).failed.flatMap { answer =>
-            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+            answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
               have length protectedErrorSize
           }
       }.flatMap(cleanupOnSuccess)
@@ -423,7 +423,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "delete a non-existing user" in {
       client.deleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
         answer =>
-          answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer.asInstanceOf[UC4CriticalException].errorCode.http should ===(404)
       }
     }
     "delete a user from the database" in {

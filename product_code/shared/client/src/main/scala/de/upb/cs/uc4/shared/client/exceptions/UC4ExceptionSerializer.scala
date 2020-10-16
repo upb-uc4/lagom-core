@@ -100,6 +100,6 @@ class UC4ExceptionSerializer(environment: Environment) extends DefaultExceptionS
   def fromCodeAndMessageCustom(
       transportErrorCode: TransportErrorCode,
       customError: UC4Error
-  ): Throwable = new UC4Exception(transportErrorCode, customError)
+  ): Throwable = new UC4NonCriticalException(transportErrorCode, customError)
 }
 

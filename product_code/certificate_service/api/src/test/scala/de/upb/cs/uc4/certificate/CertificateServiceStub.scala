@@ -21,9 +21,7 @@ class CertificateServiceStub extends CertificateService {
     }
   }
 
-  /** Fetch CertficateUser data for the given username. Without futures, for your convenience.
-    *
-    */
+  /** Fetch CertficateUser data for the given username. Without futures, for your convenience. */
   def get(username: String): CertificateUserEntry = {
     certificateUsers.get(username) match {
       case Some(certificateUserEntry) => certificateUserEntry

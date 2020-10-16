@@ -17,7 +17,7 @@ import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, J
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4CriticalException, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 
@@ -60,7 +60,7 @@ class CertificateServiceImpl(
           case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
         if (validationErrors.nonEmpty) {
-          throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+          throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
         }
 
         getCertificateUser(username).flatMap {
@@ -73,7 +73,7 @@ class CertificateServiceImpl(
                     .addHeader("Location", s"$pathPrefix/certificates/$username/certificate")
                   (header, JsonCertificate(certificate))
                 case RejectedWithError(code, reason) =>
-                  throw new UC4Exception(code, reason)
+                  throw new UC4CriticalException(code, reason)
                 case _ =>
                   throw UC4Exception.InternalServerError("Unexpected Error", "Unexpected error occurred when fetching certificate")
               }

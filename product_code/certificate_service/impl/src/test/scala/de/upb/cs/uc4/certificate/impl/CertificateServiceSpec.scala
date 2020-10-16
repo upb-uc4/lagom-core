@@ -11,7 +11,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4CriticalException }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Usernames
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
@@ -104,7 +104,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
     "return an error when fetching the enrollmentId of a non-existing user" in {
       val username = "student01"
       client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
-        answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+        answer => answer.asInstanceOf[UC4CriticalException].errorCode.http should ===(404)
       }
     }
 
@@ -125,7 +125,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
       client.getCertificate(username).handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map {
-          answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer => answer.asInstanceOf[UC4CriticalException].errorCode.http should ===(404)
         }
     }
 
@@ -138,7 +138,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
           client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
             .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
-              answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
+              answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[GenericError]
                 .`type` should ===(ErrorType.AlreadyEnrolled)
             }
         }
@@ -150,7 +150,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader("not" + username))
         .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
-          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
+          answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[GenericError]
             .`type` should ===(ErrorType.OwnerMismatch)
         }
     }
@@ -161,7 +161,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("csr", EncryptedPrivateKey("not", "valid", ""))).failed.map { answer =>
-          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams
+          answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams
             .map(_.name) should contain("encryptedPrivateKey")
         }
     }
@@ -172,7 +172,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
-          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams
+          answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams
             .map(_.name) should contain("certificateSigningRequest")
         }
     }
@@ -200,7 +200,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
           client.getPrivateKey(username).handleRequestHeader(addAuthorizationHeader(username + "not"))
             .invoke().failed.map { answer =>
-              answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
+              answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[GenericError]
                 .`type` should ===(ErrorType.OwnerMismatch)
             }
         }
@@ -212,7 +212,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
       client.getPrivateKey(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke().failed.map { answer =>
-          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
+          answer.asInstanceOf[UC4CriticalException].possibleErrorResponse.asInstanceOf[GenericError]
             .`type` should ===(ErrorType.NotEnrolled)
         }
     }

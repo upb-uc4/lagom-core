@@ -15,7 +15,7 @@ import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, DetailedError, ErrorType, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4CriticalException, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -77,17 +77,17 @@ class CourseServiceImpl(
 
           // If lecturerId is empty, the userService call cannot be found, therefore check and abort
           if (validationErrors.map(_.name).contains("lecturerId")) {
-            throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+            throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
           }
 
           // Check if the lecturer does exist
           userService.getUser(courseProposal.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
             //If the lecturer does not exist, we throw a validation error containing that info
             case ex: UC4Exception if ex.errorCode.http == 404 =>
-              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist")))
+              throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist")))
           }.flatMap { _ =>
             if (validationErrors.nonEmpty) {
-              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+              throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
             }
             // Generate unique ID for the course to add
             val courseToAdd = courseProposal.copy(courseId = Generators.timeBasedGenerator().generate().toString)
@@ -99,7 +99,7 @@ class CourseServiceImpl(
                 case Accepted => // Creation Successful
                   (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
                 case RejectedWithError(code, errorResponse) =>
-                  throw new UC4Exception(code, errorResponse)
+                  throw new UC4NonCriticalException(code, errorResponse)
               }
           }
         }
@@ -159,13 +159,13 @@ class CourseServiceImpl(
 
         // If lecturerId is empty, the userService call cannot be found, therefore check and abort
         if (validationErrors.map(_.name).contains("lecturerId")) {
-          throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+          throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
         }
 
         // Check if the lecturer does exist
         userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
           case ex: UC4Exception if ex.errorCode.http == 404 =>
-            throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist.")))
+            throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist.")))
         }.flatMap { _ =>
           val ref = entityRef(id)
 
@@ -173,7 +173,7 @@ class CourseServiceImpl(
           oldCourse.flatMap {
             case Some(course) =>
               if (validationErrors.nonEmpty) {
-                throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+                throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
               }
               if (role == AuthenticationRole.Lecturer && course.lecturerId != username) {
                 throw UC4Exception.OwnerMismatch
@@ -184,11 +184,11 @@ class CourseServiceImpl(
                     case Accepted => // Update Successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case RejectedWithError(code, errorResponse) =>
-                      throw new UC4Exception(code, errorResponse)
+                      throw new UC4CriticalException(code, errorResponse)
                   }
               }
             case None =>
-              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("courseId", "CourseID does not exist.")))
+              throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("courseId", "CourseID does not exist.")))
           }
         }
       }

@@ -14,8 +14,8 @@ import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateS
 import de.upb.cs.uc4.certificate.impl.commands.RegisterUser
 import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
-import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
+import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.messages.Confirmation
@@ -55,7 +55,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
   }
   catch {
-    case e: Throwable => throw UC4Exception.InternalServerError("Enrollment Error", e.getMessage)
+    case e: Throwable => throw UC4Exception.InternalServerError("Enrollment Error", e.getMessage, e)
   }
 
   implicit val timeout: Timeout = Timeout(15.seconds)
@@ -77,7 +77,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
         .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, replyTo)).map(_ => Done)
     }
     catch {
-      case e: Throwable => throw UC4Exception.InternalServerError("Registration Error", e.getMessage)
+      case e: Throwable => throw UC4Exception.InternalServerError("Registration Error", e.getMessage, e)
     }
   }
 }

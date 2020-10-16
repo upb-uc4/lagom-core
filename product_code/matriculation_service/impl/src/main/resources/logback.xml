@@ -6,7 +6,7 @@
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
             <evaluator>
                 <expression>
-                    return de.upb.cs.uc4.shared.client.exceptions.UC4Exception.class.isInstance(throwable) &amp;&amp;
+                    return de.upb.cs.uc4.shared.client.exceptions.UC4CriticalException.class.isInstance(throwable) &amp;&amp;
                     !event.getThrowableProxy().getMessage().contains("internal");
                 </expression>
             </evaluator>
