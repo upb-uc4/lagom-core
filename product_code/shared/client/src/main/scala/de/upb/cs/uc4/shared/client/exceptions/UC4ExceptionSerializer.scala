@@ -21,7 +21,7 @@ class UC4ExceptionSerializer(environment: Environment) extends DefaultExceptionS
         (te.errorCode, te.exceptionMessage)
       case _ if environment.mode == Mode.Prod =>
         // By default, don't give out information about generic exceptions.
-        (TransportErrorCode.InternalServerError, new ExceptionMessage("Exception", ""))
+        (TransportErrorCode.InternalServerError, GenericError(ErrorType.InternalServer))
       case e =>
         // Ok to give out exception information in dev and test
         val writer = new CharArrayWriter

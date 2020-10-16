@@ -14,6 +14,8 @@ class UC4Exception(
 
   def this(errorCode: Int, possibleErrorResponse: UC4Error) =
     this(TransportErrorCode(errorCode, 1003, "Error"), possibleErrorResponse)
+
+  override def getMessage: String = super.getMessage + "\n" + possibleErrorResponse.toString
 }
 
 object UC4Exception {

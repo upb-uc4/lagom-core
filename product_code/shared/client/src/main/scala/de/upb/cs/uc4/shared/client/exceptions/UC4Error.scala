@@ -8,6 +8,8 @@ import play.api.mvc.Codec
 trait UC4Error {
   val `type`: ErrorType
   val title: String
+
+  override def toString: String = `type`.toString + " : " + title
 }
 
 object UC4Error {
