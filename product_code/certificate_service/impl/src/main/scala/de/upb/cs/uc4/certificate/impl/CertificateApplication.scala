@@ -14,8 +14,9 @@ import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateS
 import de.upb.cs.uc4.certificate.impl.commands.RegisterUser
 import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
-import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
+import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
@@ -36,7 +37,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
   with HyperledgerAdminParts
   with KafkaEncryptionComponent {
 
-  private final val log: Logger = LoggerFactory.getLogger("Shared")
+  private final val log: Logger = LoggerFactory.getLogger("Certificate")
 
   lazy val enrollmentManager: EnrollmentManagerTrait = EnrollmentManager
   lazy val registrationManager: RegistrationManagerTrait = RegistrationManager
@@ -55,6 +56,13 @@ abstract class CertificateApplication(context: LagomApplicationContext)
       entityContext => CertificateBehaviour.create(entityContext)
     )
   )
+
+  try {
+    EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
+  }
+  catch {
+    case e: Throwable => throw UC4Exception.InternalServerError("Enrollment Error", e.getMessage, e)
+  }
 
   implicit val timeout: Timeout = Timeout(15.seconds)
 
@@ -76,9 +84,14 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     )
 
   private def registerUser(username: String, enrollmentId: String): Future[Done] = {
-    val secret = registrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
-    clusterSharding.entityRefFor(CertificateState.typeKey, username)
-      .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, replyTo)).map(_ => Done)
+    try {
+      val secret = registrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
+      clusterSharding.entityRefFor(CertificateState.typeKey, username)
+        .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, replyTo)).map(_ => Done)
+    }
+    catch {
+      case e: Throwable => throw UC4Exception.InternalServerError("Registration Error", e.getMessage, e)
+    }
   }
 }
 

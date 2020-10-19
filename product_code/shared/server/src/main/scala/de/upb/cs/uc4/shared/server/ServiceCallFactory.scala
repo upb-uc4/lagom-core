@@ -90,8 +90,8 @@ object ServiceCallFactory {
       case _: MalformedJwtException    => throw UC4Exception.MalformedRefreshToken
       case _: SignatureException       => throw UC4Exception.RefreshTokenSignatureError
       case _: IllegalArgumentException => throw UC4Exception.JwtAuthorizationError
-      case ce: UC4Exception            => throw ce
-      case ex: Exception               => throw UC4Exception.InternalServerError("LoginToken Check Error", ex.getMessage)
+      case ue: UC4Exception            => throw ue
+      case ex: Exception               => throw UC4Exception.InternalServerError("LoginToken Check Error", ex.getMessage, ex)
     }
   }
 

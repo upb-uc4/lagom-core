@@ -1,4 +1,10 @@
-# [v.0.9.1-WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.9.0...course-v0.9.1) (2020-XX-XX)
+# [WIP v.0.10.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.10.0...course-v0.10.1) (2020-XX-XX)
+## Feature
+- The Circuit Breaker ignores now UC4NonCriticalExceptions
+## Refactor
+## Bugfix
+
+# [v.0.10.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.9.0...course-v0.10.0) (2020-10-12)
 ## Feature
 - Wrap Validation in Future to enable timeouts
 ## Refactor

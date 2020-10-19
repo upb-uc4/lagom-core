@@ -117,12 +117,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
-        .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).flatMap { _ =>
-
-          client.getCertificate(username).handleRequestHeader(addAuthorizationHeader())
-            .invoke().map {
-              answer => answer.certificate should ===(s"certificate for " + enrollmentId)
-            }
+        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).flatMap {
+          answer => answer.certificate should ===(s"certificate for " + enrollmentId)
         }
     }
 
@@ -143,10 +139,10 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
-        .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).flatMap { _ =>
+        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).flatMap { _ =>
 
           client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
-            .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
+            .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
               answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
                 .`type` should ===(ErrorType.AlreadyEnrolled)
             }
@@ -159,7 +155,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader("not" + username))
-        .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
+        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
           answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[GenericError]
             .`type` should ===(ErrorType.OwnerMismatch)
         }
@@ -171,9 +167,20 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
-        .invoke(PostMessageCSR("", EncryptedPrivateKey("not", "valid", ""))).failed.map { answer =>
+        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("not", "valid", ""))).failed.map { answer =>
           answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams
             .map(_.name) should contain("encryptedPrivateKey")
+        }
+    }
+
+    "return an error enrollment uses an invalid csr object" in {
+      val username = "student065"
+      creationStub.send(Usernames(username, username))
+
+      client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
+        .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams
+            .map(_.name) should contain("certificateSigningRequest")
         }
     }
 
@@ -183,7 +190,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
-        .invoke(PostMessageCSR("", EncryptedPrivateKey("private", "iv", "salt"))).flatMap { _ =>
+        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("private", "iv", "salt"))).flatMap { _ =>
 
           client.getPrivateKey(username).handleRequestHeader(addAuthorizationHeader(username))
             .invoke().map {
@@ -198,7 +205,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
-        .invoke(PostMessageCSR("", EncryptedPrivateKey("private", "iv", "salt"))).flatMap { _ =>
+        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("private", "iv", "salt"))).flatMap { _ =>
 
           client.getPrivateKey(username).handleRequestHeader(addAuthorizationHeader(username + "not"))
             .invoke().failed.map { answer =>

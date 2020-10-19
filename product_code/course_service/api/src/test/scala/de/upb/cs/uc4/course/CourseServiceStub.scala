@@ -1,11 +1,11 @@
 package de.upb.cs.uc4.course
 
 import akka.{ Done, NotUsed }
+import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
-import com.fasterxml.uuid.Generators
 
 import scala.concurrent.Future
 

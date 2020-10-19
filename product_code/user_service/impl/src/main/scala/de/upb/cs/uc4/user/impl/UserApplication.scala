@@ -7,6 +7,7 @@ import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.api.AuthenticationService
+import de.upb.cs.uc4.image.api.ImageProcessingService
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.user.api.UserService
@@ -25,8 +26,9 @@ abstract class UserApplication(context: LagomApplicationContext)
   lazy val database: UserDatabase = wire[UserDatabase]
   lazy val processor: UserEventProcessor = wire[UserEventProcessor]
 
-  // Bind the authentication service
+  // Bind  services
   lazy val authentication: AuthenticationService = serviceClient.implement[AuthenticationService]
+  lazy val imageProcessing: ImageProcessingService = serviceClient.implement[ImageProcessingService]
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[UserService](wire[UserServiceImpl])

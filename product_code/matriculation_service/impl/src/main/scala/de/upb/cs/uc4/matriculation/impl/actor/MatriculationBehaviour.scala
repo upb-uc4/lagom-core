@@ -16,7 +16,7 @@ import scala.util.Success
 class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionMatriculationTrait] {
 
   /** Creates the connection to the chaincode */
-  override protected def createConnection(): ConnectionMatriculationTrait =
+  override protected def createConnection: ConnectionMatriculationTrait =
     ConnectionMatriculation(adminUsername, channel, chaincode, walletPath, networkDescriptionPath)
 
   /** Gets called every time when the actor receives a command

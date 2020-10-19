@@ -14,6 +14,8 @@ import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
+import de.upb.cs.uc4.image.ImageProcessingServiceStub
+import de.upb.cs.uc4.image.api.ImageProcessingService
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.Hashing
@@ -45,7 +47,10 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       .withJdbc()
   ) { ctx =>
       new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
+
         override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
+
+        override lazy val imageProcessing: ImageProcessingService = new ImageProcessingServiceStub()
       }
     }
 
