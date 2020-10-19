@@ -42,10 +42,9 @@ class UserServiceImpl(
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
   readSide.register(processor)
 
-  private lazy val defaultProfilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
-  private lazy val defaultThumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultThumbnail.png"))
+  private lazy val defaultProfilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.jpg"))
+  private lazy val defaultThumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultThumbnail.jpg"))
   private lazy val supportedTypes: util.List[String] = config.getStringList("uc4.image.supportedTypes")
-  private lazy val convertedTypes: util.List[String] = config.getStringList("uc4.image.convertedTypes")
   private lazy val profileWidth: Int = config.getInt("uc4.image.profileWidth")
   private lazy val profileHeight: Int = config.getInt("uc4.image.profileHeight")
   private lazy val thumbnailWidth: Int = config.getInt("uc4.image.thumbnailWidth")
@@ -373,12 +372,12 @@ class UserServiceImpl(
     ServerServiceCall {
       (header, _) =>
         database.getImage(username).flatMap {
-          case Some((array, contentType)) =>
-            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
+          case Some(array) =>
+            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List()), ByteString(array))
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
-                (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
             }
         }
     }
@@ -389,12 +388,12 @@ class UserServiceImpl(
     ServerServiceCall {
       (header, _) =>
         database.getThumbnail(username).flatMap {
-          case Some((array, _)) =>
-            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some(s"image/jpeg; charset=UTF-8")), List()), ByteString(array))
+          case Some(array) =>
+            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List()), ByteString(array))
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
-                (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultThumbnail))
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List()), ByteString(defaultThumbnail))
             }
         }
     }
@@ -416,22 +415,12 @@ class UserServiceImpl(
                 if (supportedTypes.contains(contentType)) {
                   getUser(username).invokeWithHeaders(header, NotUsed).flatMap {
                     _ =>
-                      val convertedFuture = if (convertedTypes.contains(contentType)) {
-                        contentType = "image/jpeg"
-                        imageProcessing.convert("jpeg").invoke(ByteString(image))
-                      }
-                      else {
-                        Future.successful(ByteString(image))
-                      }
-
-                      convertedFuture.flatMap { converted =>
+                      imageProcessing.convert("jpeg").invoke(ByteString(image)).flatMap { converted =>
                         imageProcessing.smartCrop(profileWidth, profileHeight).invoke(converted).flatMap { profilePicture =>
                           imageProcessing.thumbnail(thumbnailWidth, thumbnailHeight).invoke(profilePicture).flatMap { thumbnail =>
-                            imageProcessing.convert("jpeg").invoke(thumbnail).flatMap { convertedThumbnail =>
-                              database.setImage(username, profilePicture.toArray, convertedThumbnail.toArray, contentType).map {
-                                _ =>
-                                  (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
-                              }
+                            database.setImage(username, profilePicture.toArray, thumbnail.toArray).map {
+                              _ =>
+                                (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
                             }
                           }
                         }
