@@ -2,7 +2,7 @@
 ## Feature
 - The Circuit Breaker ignores now UC4NonCriticalExceptions
 - Profile images are now properly cropped and stripped of their metadata
-- Thumbnails are now always jpegs for bandwidth reasons
+- Images are now always jpegs for bandwidth reasons
 ## Refactor
 ## Bugfix
 
