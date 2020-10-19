@@ -7,7 +7,7 @@ import de.upb.cs.uc4.configuration.model.{ Configuration, JsonSemester, Validati
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
-object CourseService {
+object ConfigurationService {
   val TOPIC_NAME = "Configuration"
 }
 

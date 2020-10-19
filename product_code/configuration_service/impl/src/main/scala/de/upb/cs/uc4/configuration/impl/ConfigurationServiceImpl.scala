@@ -4,11 +4,12 @@ import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.typesafe.config.Config
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.configuration.api.ConfigurationService
 import de.upb.cs.uc4.configuration.model.{ Configuration, JsonSemester, ValidationConfiguration }
+import de.upb.cs.uc4.shared.client.Utils
 import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, CourseLanguage, CourseType, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.{ SimpleError, UC4Exception }
-import de.upb.cs.uc4.shared.client.Utils
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 
 import scala.concurrent.duration._
@@ -32,7 +33,7 @@ class ConfigurationServiceImpl(implicit ec: ExecutionContext, config: Config) ex
   }
 
   /** Update the configuration */
-  override def setConfiguration(): ServiceCall[Configuration, Done] = ServiceCall[Configuration, Done] { _ =>
+  override def setConfiguration(): ServiceCall[Configuration, Done] = authenticated[Configuration, Done](AuthenticationRole.Admin) { _ =>
     throw UC4Exception.NotImplemented
   }
 
