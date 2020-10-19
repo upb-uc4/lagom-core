@@ -153,7 +153,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! DeleteUser(probe1.ref)
-      probe1.expectMessageType[Rejected]
+      probe1.expectMessageType[RejectedWithError]
     }
 
     "delete an existing user" in {
