@@ -3,7 +3,7 @@ package de.upb.cs.uc4.configuration.api
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
-import de.upb.cs.uc4.configuration.model.{ Configuration, JsonSemester, ValidationConfiguration }
+import de.upb.cs.uc4.configuration.model.{ Configuration, HyperledgerVersions, JsonSemester, ValidationConfiguration }
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
@@ -20,6 +20,9 @@ trait ConfigurationService extends UC4Service {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
   override val pathPrefix = "/configuration-management"
   override val name = "configuration"
+
+  /** Get hyperledger versions */
+  def getHyperledgerVersions: ServiceCall[NotUsed, HyperledgerVersions]
 
   /** Get configuration */
   def getConfiguration: ServiceCall[NotUsed, Configuration]
@@ -43,10 +46,12 @@ trait ConfigurationService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
+        restCall(Method.GET, pathPrefix + "/version/hyperledger", getHyperledgerVersions _),
         restCall(Method.GET, pathPrefix + "/configuration", getConfiguration _),
         restCall(Method.PUT, pathPrefix + "/configuration", setConfiguration _),
         restCall(Method.GET, pathPrefix + "/validation", getValidation _),
         restCall(Method.GET, pathPrefix + "/semester?date", getSemester _),
+        restCall(Method.OPTIONS, pathPrefix + "/version/hyperledger", allowedMethodsGET _),
         restCall(Method.OPTIONS, pathPrefix + "/configuration", allowedMethodsGETPUT _),
         restCall(Method.OPTIONS, pathPrefix + "/validation", allowedMethodsGET _),
         restCall(Method.OPTIONS, pathPrefix + "/semester", allowedMethodsGET _)

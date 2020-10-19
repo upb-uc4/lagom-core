@@ -6,7 +6,7 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.configuration.api.ConfigurationService
-import de.upb.cs.uc4.configuration.model.{ Configuration, JsonSemester, ValidationConfiguration }
+import de.upb.cs.uc4.configuration.model.{ Configuration, HyperledgerVersions, JsonSemester, ValidationConfiguration }
 import de.upb.cs.uc4.shared.client.Utils
 import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, CourseLanguage, CourseType, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.{ SimpleError, UC4Exception }
@@ -19,6 +19,11 @@ import scala.concurrent.{ ExecutionContext, Future }
 class ConfigurationServiceImpl(implicit ec: ExecutionContext, config: Config) extends ConfigurationService {
 
   implicit val timeout: Timeout = Timeout(15.seconds)
+
+  /** Get hyperledger versions */
+  override def getHyperledgerVersions: ServiceCall[NotUsed, HyperledgerVersions] = ServiceCall { _ =>
+    throw UC4Exception.NotImplemented
+  }
 
   /** Get configuration */
   override def getConfiguration: ServiceCall[NotUsed, Configuration] = ServiceCall[NotUsed, Configuration] { _ =>
@@ -63,4 +68,5 @@ class ConfigurationServiceImpl(implicit ec: ExecutionContext, config: Config) ex
   override def allowedMethodsGETPUT: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT")
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
+
 }
