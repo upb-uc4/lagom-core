@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
+import de.upb.cs.uc4.shared.client.configuration.RegexCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
@@ -41,8 +42,8 @@ case class Lecturer(
 
   /** @inheritdoc */
   override def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
-    val freeTextRegex = """[\s\S]{0,10000}""".r
-    val researchAreaRegex = """[\s\S]{0,200}""".r
+    val freeTextRegex = RegexCollection.Commons.longTextRegex
+    val researchAreaRegex = RegexCollection.Lecturer.researchAreaRegex
 
     super.validate.map { superErrors =>
       var errors = superErrors.toList

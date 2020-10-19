@@ -2,6 +2,7 @@
 ## Feature
 - The Circuit Breaker ignores now UC4NonCriticalExceptions
 ## Refactor
+- Moved configurations to shared
 ## Bugfix
 
 # [v.0.10.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.9.3...user-v0.10.1) (2020-10-15)

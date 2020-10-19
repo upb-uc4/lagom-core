@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.certificate.model
 
+import de.upb.cs.uc4.shared.client.configuration.RegexCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
@@ -8,9 +9,9 @@ import scala.concurrent.{ ExecutionContext, Future }
 case class EncryptedPrivateKey(key: String, iv: String, salt: String) {
 
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
-    val keyRegex = """[\s\S]{1,8192}""".r
-    val ivRegex = """[\s\S]{1,64}""".r
-    val saltRegex = """[\s\S]{1,256}""".r
+    val keyRegex = RegexCollection.EncryptedPrivateKey.keyRegex
+    val ivRegex = RegexCollection.EncryptedPrivateKey.ivRegex
+    val saltRegex = RegexCollection.EncryptedPrivateKey.saltRegex
 
     if (key.isEmpty && iv.isEmpty && salt.isEmpty) {
       Seq()
