@@ -43,8 +43,8 @@ object HyperledgerUtils {
                    |""".stripMargin
               )
           }
-        case exp: Throwable =>
-          UC4Exception.InternalServerError("Unknown Internal Error", exp.getMessage)
+        case ex: Throwable =>
+          UC4Exception.InternalServerError("Unknown Internal Error", ex.getMessage, ex)
       }
     }
   }
@@ -52,18 +52,18 @@ object HyperledgerUtils {
   private def errorMatching(uc4Error: UC4Error): UC4Exception = {
     uc4Error match {
       case genericError: GenericError => genericError.`type` match {
-        case ErrorType.HLUnknownTransactionId => new UC4Exception(500, genericError)
-        case ErrorType.HLNotFound => new UC4Exception(404, genericError)
-        case ErrorType.HLConflict => new UC4Exception(409, genericError)
-        case ErrorType.HLUnprocessableLedgerState => new UC4Exception(500, genericError)
+        case ErrorType.HLUnknownTransactionId => new UC4CriticalException(500, genericError, null)
+        case ErrorType.HLNotFound => new UC4NonCriticalException(404, genericError)
+        case ErrorType.HLConflict => new UC4NonCriticalException(409, genericError)
+        case ErrorType.HLUnprocessableLedgerState => new UC4CriticalException(500, genericError, null)
         case _ => UC4Exception.InternalServerError("Unknown GenericError", s"Hyperledger uses a new ErrorType ${genericError.`type`}")
       }
       case detailedError: DetailedError => detailedError.`type` match {
-        case ErrorType.HLUnprocessableEntity => new UC4Exception(422, detailedError)
+        case ErrorType.HLUnprocessableEntity => new UC4NonCriticalException(422, detailedError)
         case _ => UC4Exception.InternalServerError("Unknown DetailedError", s"Hyperledger uses a new ErrorType ${detailedError.`type`}")
       }
       case transactionError: TransactionError => transactionError.`type` match {
-        case ErrorType.HLInvalidTransactionCall => new UC4Exception(500, transactionError)
+        case ErrorType.HLInvalidTransactionCall => new UC4CriticalException(500, transactionError, null)
         case _ => UC4Exception.InternalServerError("Unknown TransactionError", s"Hyperledger uses a new ErrorType ${transactionError.`type`}")
       }
     }

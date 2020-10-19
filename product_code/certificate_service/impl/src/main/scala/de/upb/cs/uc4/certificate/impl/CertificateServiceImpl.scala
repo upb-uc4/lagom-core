@@ -17,7 +17,7 @@ import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, J
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4CriticalException, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 
@@ -42,7 +42,7 @@ class CertificateServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
 
   /** Forwards the certificate signing request from the given user */
-  override def setCertificate(username: String): ServerServiceCall[PostMessageCSR, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+  override def setCertificate(username: String): ServerServiceCall[PostMessageCSR, JsonCertificate] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUsername, _) =>
       ServerServiceCall { (_, pmcsrRaw) =>
         // One can only set his own certificate
@@ -60,7 +60,7 @@ class CertificateServiceImpl(
           case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
         if (validationErrors.nonEmpty) {
-          throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+          throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
         }
 
         getCertificateUser(username).flatMap {
@@ -69,9 +69,11 @@ class CertificateServiceImpl(
               val certificate = enrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
               entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
                 case Accepted =>
-                  (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+                  val header = ResponseHeader(201, MessageProtocol.empty, List())
+                    .addHeader("Location", s"$pathPrefix/certificates/$username/certificate")
+                  (header, JsonCertificate(certificate))
                 case RejectedWithError(code, reason) =>
-                  throw new UC4Exception(code, reason)
+                  throw UC4Exception(code, reason)
                 case _ =>
                   throw UC4Exception.InternalServerError("Unexpected Error", "Unexpected error occurred when fetching certificate")
               }

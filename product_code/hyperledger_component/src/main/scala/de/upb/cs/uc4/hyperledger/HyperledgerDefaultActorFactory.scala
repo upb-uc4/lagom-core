@@ -23,7 +23,7 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
       EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
     }
     catch {
-      case ex: Throwable => throw UC4Exception.InternalServerError("Enrollment Error in Actor", ex.getMessage)
+      case ex: Throwable => throw UC4Exception.InternalServerError("Enrollment Error in Actor", ex.getMessage, ex)
     }
     lazy val connection = createConnection
 

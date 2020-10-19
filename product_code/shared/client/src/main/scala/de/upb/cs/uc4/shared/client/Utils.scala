@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.shared.client
 
-import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ SimpleError, UC4Exception }
 
 object Utils {
 
