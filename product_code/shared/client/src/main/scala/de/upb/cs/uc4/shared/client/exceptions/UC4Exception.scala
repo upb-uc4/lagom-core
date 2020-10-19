@@ -61,5 +61,5 @@ object UC4Exception {
     new UC4CriticalException(500, DetailedError(ErrorType.InternalServer, invalidParams), throwable)
 
   //501
-  val NotImplemented = new UC4CriticalException(501, GenericError(ErrorType.NotImplemented), null)
+  val NotImplemented = new UC4NonCriticalException(501, GenericError(ErrorType.NotImplemented))
 }
