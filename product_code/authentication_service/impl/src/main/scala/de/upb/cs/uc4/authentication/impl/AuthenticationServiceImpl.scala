@@ -45,7 +45,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     entityRef(Hashing.sha256(user.username)).ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map {
       case Accepted => Done
       case RejectedWithError(code, errorResponse) =>
-        throw new UC4CriticalException(code, errorResponse)
+        throw UC4Exception(code, errorResponse)
     }
   }
 
@@ -86,7 +86,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
               case Accepted => // Update Successful
                 (ResponseHeader(200, MessageProtocol.empty, List()), Done)
               case RejectedWithError(code, errorResponse) =>
-                throw new UC4CriticalException(code, errorResponse)
+                throw UC4Exception(code, errorResponse)
             }
         }
     }(config, ec)

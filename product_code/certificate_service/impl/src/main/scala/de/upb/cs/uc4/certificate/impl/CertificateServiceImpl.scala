@@ -73,7 +73,7 @@ class CertificateServiceImpl(
                     .addHeader("Location", s"$pathPrefix/certificates/$username/certificate")
                   (header, JsonCertificate(certificate))
                 case RejectedWithError(code, reason) =>
-                  throw new UC4CriticalException(code, reason)
+                  throw UC4Exception(code, reason)
                 case _ =>
                   throw UC4Exception.InternalServerError("Unexpected Error", "Unexpected error occurred when fetching certificate")
               }

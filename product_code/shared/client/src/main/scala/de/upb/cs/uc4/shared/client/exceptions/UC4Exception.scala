@@ -12,6 +12,16 @@ abstract class UC4Exception(
 }
 
 object UC4Exception {
+
+  def apply(errorCode: Int, possibleErrorResponse: UC4Error, cause: Throwable = null): UC4Exception = {
+    if (errorCode >= 500) {
+      new UC4CriticalException(errorCode, possibleErrorResponse, cause)
+    }
+    else {
+      new UC4NonCriticalException(errorCode, possibleErrorResponse)
+    }
+  }
+
   //400
   val DeserializationError = new UC4NonCriticalException(400, GenericError(ErrorType.Deserialization))
   val MalformedRefreshToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedRefreshToken))

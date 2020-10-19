@@ -91,7 +91,6 @@ class UserServiceImpl(
           ResponseHeader(200, MessageProtocol.empty, List()),
           GetAllUsersResponse(students._2, lecturers._2, admins._2)
         )
-
       }
     }
 
@@ -173,8 +172,8 @@ class UserServiceImpl(
                           throw deletionException
                       }
                 }
-            case RejectedWithError(code, errorResponse) =>
-              throw new UC4CriticalException(code, errorResponse)
+            case RejectedWithError(code, reason) =>
+              throw UC4Exception(code, reason)
           }
       }
     }
@@ -242,8 +241,8 @@ class UserServiceImpl(
                   .map {
                     case Accepted => // Update successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case RejectedWithError(code, errorResponse) => //Update failed
-                      throw new UC4CriticalException(code, errorResponse)
+                    case RejectedWithError(code, reason) => //Update failed
+                      throw UC4Exception(code, reason)
                   }
             }
         }
@@ -259,8 +258,8 @@ class UserServiceImpl(
           .map {
             case Accepted => // Update Successful
               (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-            case Rejected("A user with the given username does not exist.") => // Already exists
-              throw UC4Exception.NotFound
+            case RejectedWithError(code, reason) =>
+              throw UC4Exception(code, reason)
           }
     }
   }
@@ -340,7 +339,7 @@ class UserServiceImpl(
       val ref = entityRef(matriculationUpdate.username)
       ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
         case Accepted => Done
-        case RejectedWithError(error, reason) => throw new UC4CriticalException(error, reason)
+        case RejectedWithError(error, reason) => throw UC4Exception(error, reason)
       }
   }
 

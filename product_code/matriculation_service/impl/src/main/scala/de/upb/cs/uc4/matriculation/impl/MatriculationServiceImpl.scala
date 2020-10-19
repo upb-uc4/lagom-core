@@ -83,7 +83,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
                           ))
                           (ResponseHeader(200, MessageProtocol.empty, List()), Done)
 
-                        case RejectedWithError(statusCode, reason) => throw new UC4CriticalException(statusCode, reason)
+                        case RejectedWithError(statusCode, reason) => throw UC4Exception(statusCode, reason)
                       }
 
                     case Failure(exception) =>
@@ -101,7 +101,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
                               ))
                               (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/$username"))), Done)
 
-                            case RejectedWithError(statusCode, reason) => throw new UC4CriticalException(statusCode, reason)
+                            case RejectedWithError(statusCode, reason) => throw UC4Exception(statusCode, reason)
                           }
 
                         case uc4Exception: UC4Exception => throw uc4Exception

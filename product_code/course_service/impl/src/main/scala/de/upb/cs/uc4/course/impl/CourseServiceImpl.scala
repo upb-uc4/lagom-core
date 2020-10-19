@@ -98,8 +98,8 @@ class CourseServiceImpl(
               .map {
                 case Accepted => // Creation Successful
                   (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
-                case RejectedWithError(code, errorResponse) =>
-                  throw new UC4NonCriticalException(code, errorResponse)
+                case RejectedWithError(code, reason) =>
+                  throw UC4Exception(code, reason)
               }
           }
         }
@@ -183,8 +183,8 @@ class CourseServiceImpl(
                   .map {
                     case Accepted => // Update Successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case RejectedWithError(code, errorResponse) =>
-                      throw new UC4CriticalException(code, errorResponse)
+                    case RejectedWithError(code, reason) =>
+                      throw UC4Exception(code, reason)
                   }
               }
             case None =>
