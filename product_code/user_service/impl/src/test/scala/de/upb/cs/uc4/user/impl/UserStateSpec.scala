@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 import de.upb.cs.uc4.user.impl.actor.UserBehaviour
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.model.user._
