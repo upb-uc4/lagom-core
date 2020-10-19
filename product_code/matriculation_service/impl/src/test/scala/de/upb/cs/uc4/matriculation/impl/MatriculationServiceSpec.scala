@@ -41,7 +41,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         var jsonStringList: Seq[String] = List()
 
         override def createActorFactory: MatriculationBehaviour = new MatriculationBehaviour(config) {
-          override protected def createConnection(): ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
+          override protected def createConnection: ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
 
             override def addMatriculationData(jsonMatriculationData: String): String = {
               val matriculationData = Json.parse(jsonMatriculationData).as[ImmatriculationData]

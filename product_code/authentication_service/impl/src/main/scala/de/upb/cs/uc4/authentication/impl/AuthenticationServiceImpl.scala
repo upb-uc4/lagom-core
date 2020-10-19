@@ -17,7 +17,7 @@ import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAu
 import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model._
-import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, DetailedError, ErrorType, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4CriticalException, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
@@ -45,7 +45,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
     entityRef(Hashing.sha256(user.username)).ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map {
       case Accepted => Done
       case RejectedWithError(code, errorResponse) =>
-        throw new UC4Exception(code, errorResponse)
+        throw UC4Exception(code, errorResponse)
     }
   }
 
@@ -72,11 +72,11 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
           }
 
           if (validationErrors.nonEmpty) {
-            throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+            throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
           }
 
           if (role != authUser.role) {
-            throw new UC4Exception(422, DetailedError(ErrorType.UneditableFields, List(SimpleError("role", "Role may not be manually changed."))))
+            throw new UC4NonCriticalException(422, DetailedError(ErrorType.UneditableFields, List(SimpleError("role", "Role may not be manually changed."))))
           }
 
           val ref = entityRef(Hashing.sha256(authUser.username))
@@ -86,7 +86,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
               case Accepted => // Update Successful
                 (ResponseHeader(200, MessageProtocol.empty, List()), Done)
               case RejectedWithError(code, errorResponse) =>
-                throw new UC4Exception(code, errorResponse)
+                throw UC4Exception(code, errorResponse)
             }
         }
     }(config, ec)
@@ -317,8 +317,8 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
       case _: MalformedJwtException    => throw UC4Exception.MalformedRefreshToken
       case _: SignatureException       => throw UC4Exception.RefreshTokenSignatureError
       case _: IllegalArgumentException => throw UC4Exception.RefreshTokenMissing
-      case ce: UC4Exception            => throw ce
-      case ex: Throwable               => throw UC4Exception.InternalServerError("Failed to create LoginToken", ex.getMessage)
+      case ue: UC4Exception            => throw ue
+      case ex: Throwable               => throw UC4Exception.InternalServerError("Failed to create LoginToken", ex.getMessage, ex)
     }
   }
 }

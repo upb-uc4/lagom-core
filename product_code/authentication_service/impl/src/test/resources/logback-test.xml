@@ -4,7 +4,9 @@
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
             <evaluator>
-                <expression>de.upb.cs.uc4.shared.client.exceptions.UC4Exception.class.isInstance(throwable)</expression>
+                <expression>
+                    return de.upb.cs.uc4.shared.client.exceptions.UC4NonCriticalException.class.isInstance(throwable);
+                </expression>
             </evaluator>
             <onMatch>DENY</onMatch>
         </filter>

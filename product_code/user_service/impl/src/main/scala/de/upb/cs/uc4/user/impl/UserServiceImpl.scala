@@ -91,7 +91,6 @@ class UserServiceImpl(
           ResponseHeader(200, MessageProtocol.empty, List()),
           GetAllUsersResponse(students._2, lecturers._2, admins._2)
         )
-
       }
     }
 
@@ -137,7 +136,7 @@ class UserServiceImpl(
 
       // Check, if username errors exist, since entityRef might fail if username is incorrect
       if (validationErrors.map(_.name).contains(userVariableName + ".username")) {
-        throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+        throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
       }
 
       val ref = entityRef(postMessageUser.getUser.username)
@@ -148,7 +147,7 @@ class UserServiceImpl(
         }
 
         if (validationErrors.nonEmpty) {
-          throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+          throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
         }
 
         ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
@@ -173,8 +172,8 @@ class UserServiceImpl(
                           throw deletionException
                       }
                 }
-            case RejectedWithError(code, errorResponse) =>
-              throw new UC4Exception(code, errorResponse)
+            case RejectedWithError(code, reason) =>
+              throw UC4Exception(code, reason)
           }
       }
     }
@@ -207,7 +206,7 @@ class UserServiceImpl(
             }
 
             if (validationErrors.map(_.name).contains("username")) {
-              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+              throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
             }
 
             val ref = entityRef(user.username)
@@ -216,7 +215,7 @@ class UserServiceImpl(
                 if (optUser.isEmpty) {
                   // Add to validation errors, and throw prematurely since uneditable fields are uncheckable
                   validationErrors :+= SimpleError("username", "Username not in use.")
-                  throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+                  throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
                 }
                 val oldUser = optUser.get
                 // Other users than admins can only edit specified fields
@@ -225,16 +224,16 @@ class UserServiceImpl(
                   editErrors ++= oldUser.checkProtectedFields(user)
                 }
                 if (editErrors.nonEmpty) {
-                  throw new UC4Exception(422, DetailedError(ErrorType.UneditableFields, editErrors))
+                  throw new UC4NonCriticalException(422, DetailedError(ErrorType.UneditableFields, editErrors))
                 }
                 if (validationErrors.nonEmpty) {
-                  throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+                  throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
                 }
 
                 oldUser match {
-                  case _: Student if !user.isInstanceOf[Student] => throw new UC4Exception(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
-                  case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new UC4Exception(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
-                  case _: Admin if !user.isInstanceOf[Admin] => throw new UC4Exception(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Admin, but received non-Admin"))
+                  case _: Student if !user.isInstanceOf[Student] => throw new UC4NonCriticalException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
+                  case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new UC4NonCriticalException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
+                  case _: Admin if !user.isInstanceOf[Admin] => throw new UC4NonCriticalException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Admin, but received non-Admin"))
                   case _ =>
                 }
 
@@ -242,8 +241,8 @@ class UserServiceImpl(
                   .map {
                     case Accepted => // Update successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case RejectedWithError(code, errorResponse) => //Update failed
-                      throw new UC4Exception(code, errorResponse)
+                    case RejectedWithError(code, reason) => //Update failed
+                      throw UC4Exception(code, reason)
                   }
             }
         }
@@ -259,8 +258,8 @@ class UserServiceImpl(
           .map {
             case Accepted => // Update Successful
               (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-            case Rejected("A user with the given username does not exist.") => // Already exists
-              throw UC4Exception.NotFound
+            case RejectedWithError(code, reason) =>
+              throw UC4Exception(code, reason)
           }
     }
   }
@@ -340,7 +339,7 @@ class UserServiceImpl(
       val ref = entityRef(matriculationUpdate.username)
       ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
         case Accepted => Done
-        case RejectedWithError(error, reason) => throw new UC4Exception(error, reason)
+        case RejectedWithError(error, reason) => throw UC4Exception(error, reason)
       }
   }
 
@@ -443,7 +442,7 @@ class UserServiceImpl(
                 else {
                   throw UC4Exception.UnsupportedMediaType
                 }
-              case None => throw new UC4Exception(400, DetailedError(ErrorType.MissingHeader, Seq(SimpleError("Content-Type", "Missing"))))
+              case None => throw new UC4NonCriticalException(400, DetailedError(ErrorType.MissingHeader, Seq(SimpleError("Content-Type", "Missing"))))
             }
         }
     }

@@ -1,3 +1,9 @@
+# [WIP v.0.10.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.10.1...matriculation-v0.10.2) (2020-XX-XX)
+## Feature
+- The Circuit Breaker ignores now UC4NonCriticalExceptions
+## Refactor
+## Bugfix
+
 # [v.0.10.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.10.0...matriculation-v0.10.1) (2020-10-15)
 ## Feature
 - Added Pseudonymisation by using enrollmentId instead of matriculationId

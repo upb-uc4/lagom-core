@@ -2,9 +2,9 @@ package de.upb.cs.uc4.authentication.impl
 
 import java.util.{ Base64, Calendar, Date }
 
+import akka.Done
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.util.Timeout
-import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.{ RequestHeader, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
@@ -14,9 +14,9 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication }
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, Tokens }
-import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, ErrorType }
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.messages.Confirmation
-import de.upb.cs.uc4.shared.server.{ Hashing, ServiceCallFactory }
 import de.upb.cs.uc4.user.UserServiceStub
 import de.upb.cs.uc4.user.api.UserService
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }

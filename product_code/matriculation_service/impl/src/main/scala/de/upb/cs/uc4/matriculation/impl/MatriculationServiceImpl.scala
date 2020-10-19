@@ -16,7 +16,7 @@ import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client.Utils
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4CriticalException, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -54,7 +54,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
         }
 
         if (validationList.nonEmpty) {
-          throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationList))
+          throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
         }
 
         userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
@@ -83,12 +83,12 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
                           ))
                           (ResponseHeader(200, MessageProtocol.empty, List()), Done)
 
-                        case RejectedWithError(statusCode, reason) => throw new UC4Exception(statusCode, reason)
+                        case RejectedWithError(statusCode, reason) => throw UC4Exception(statusCode, reason)
                       }
 
                     case Failure(exception) =>
                       exception match {
-                        case customException: UC4Exception if customException.errorCode.http == 404 =>
+                        case uc4Exception: UC4Exception if uc4Exception.errorCode.http == 404 =>
                           val data = ImmatriculationData(
                             enrollmentId,
                             message.matriculation
@@ -99,12 +99,15 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
                                 username,
                                 Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
                               ))
-                              (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/${username}"))), Done)
+                              (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/$username"))), Done)
 
-                            case RejectedWithError(statusCode, reason) => throw new UC4Exception(statusCode, reason)
+                            case RejectedWithError(statusCode, reason) => throw UC4Exception(statusCode, reason)
                           }
 
-                        case exception: Exception => throw exception
+                        case uc4Exception: UC4Exception => throw uc4Exception
+
+                        case ex: Throwable =>
+                          throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
                       }
                   }
               }
