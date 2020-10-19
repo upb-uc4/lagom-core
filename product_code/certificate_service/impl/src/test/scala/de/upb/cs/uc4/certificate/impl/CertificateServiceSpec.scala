@@ -175,7 +175,8 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
     "return an error enrollment uses an invalid csr object" in {
       val username = "student065"
-      creationStub.send(Usernames(username, username))
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
+      creationStub.send(container)
 
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("", EncryptedPrivateKey("", "", ""))).failed.map { answer =>
