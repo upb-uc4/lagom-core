@@ -7,23 +7,29 @@ import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
-import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exception }
 import de.upb.cs.uc4.shared.server.messages.RejectedWithError
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.util.Failure
 
 trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends HyperledgerAdminParts {
+
+  protected final val log: Logger = LoggerFactory.getLogger(getClass)
 
   /** The companion object */
   val companionObject: HyperledgerActorObject
 
   /** Creates an actor */
   def create(): Behavior[HyperledgerCommand] = Behaviors.setup { _ =>
-    try {
+    val enrolled = try {
       EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
+      true
     }
     catch {
-      case ex: Throwable => throw UC4Exception.InternalServerError("Enrollment Error in Actor", ex.getMessage, ex)
+      case ex: Throwable =>
+        log.error("Enrollment not possible in the creation", UC4Exception.InternalServerError("Enrollment Error in Actor", ex.getMessage, ex))
+        false
     }
     lazy val connection = createConnection
 
@@ -39,18 +45,28 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
               Behaviors.same
 
             case cmd: HyperledgerCommand =>
-              try {
-                applyCommand(connection, cmd)
+              if (enrolled) {
+                try {
+                  applyCommand(connection, cmd)
+                }
+                catch {
+                  case ex: Exception =>
+                    val uc4Exception = ex.toUC4Exception
+                    cmd match {
+                      case write: HyperledgerWriteCommand =>
+                        write.replyTo ! RejectedWithError(uc4Exception.errorCode.http, uc4Exception.possibleErrorResponse)
+                      case read: HyperledgerReadCommand[_] =>
+                        read.replyTo ! Failure(uc4Exception)
+                    }
+                }
               }
-              catch {
-                case ex: Exception =>
-                  val customException = ex.toUC4Exception
-                  cmd match {
-                    case write: HyperledgerWriteCommand =>
-                      write.replyTo ! RejectedWithError(customException.errorCode.http, customException.possibleErrorResponse)
-                    case read: HyperledgerReadCommand[_] =>
-                      read.replyTo ! Failure(customException)
-                  }
+              else {
+                cmd match {
+                  case write: HyperledgerWriteCommand =>
+                    write.replyTo ! RejectedWithError(500, GenericError(ErrorType.InternalServer, "No connection to the chain"))
+                  case read: HyperledgerReadCommand[_] =>
+                    read.replyTo ! Failure(UC4Exception.InternalServerError("Enrollment Error", "No connection to the chain"))
+                }
               }
               Behaviors.same
           }
