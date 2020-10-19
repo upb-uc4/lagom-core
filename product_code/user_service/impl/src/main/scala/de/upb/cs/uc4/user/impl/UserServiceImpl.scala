@@ -389,8 +389,8 @@ class UserServiceImpl(
     ServerServiceCall {
       (header, _) =>
         database.getThumbnail(username).flatMap {
-          case Some((array, contentType)) =>
-            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
+          case Some((array, _)) =>
+            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some(s"image/jpeg; charset=UTF-8")), List()), ByteString(array))
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
@@ -425,11 +425,13 @@ class UserServiceImpl(
                       }
 
                       convertedFuture.flatMap { converted =>
-                        imageProcessing.fit(profileWidth, profileHeight).invoke(converted).flatMap { profilePicture =>
+                        imageProcessing.smartCrop(profileWidth, profileHeight).invoke(converted).flatMap { profilePicture =>
                           imageProcessing.thumbnail(thumbnailWidth, thumbnailHeight).invoke(profilePicture).flatMap { thumbnail =>
-                            database.setImage(username, profilePicture.toArray, thumbnail.toArray, contentType).map {
-                              _ =>
-                                (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                            imageProcessing.convert("jpeg").invoke(thumbnail).flatMap { convertedThumbnail =>
+                              database.setImage(username, profilePicture.toArray, convertedThumbnail.toArray, contentType).map {
+                                _ =>
+                                  (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                              }
                             }
                           }
                         }

@@ -16,11 +16,11 @@ trait ImageProcessingService extends Service {
   /** rotates the image */
   def rotate(rotate: Int): ServiceCall[ByteString, ByteString]
 
-  /** fits the image */
-  def fit(width: Int, height: Int): ServiceCall[ByteString, ByteString]
-
   /** converts the image to a thumbnail */
   def thumbnail(width: Int, height: Int): ServiceCall[ByteString, ByteString]
+
+  /** crops the image */
+  def smartCrop(width: Int, height: Int, gravity: String = "smart", stripmeta: Boolean = true): ServiceCall[ByteString, ByteString]
 
   /** converts an image */
   def convert(`type`: String): ServiceCall[ByteString, ByteString]
@@ -31,9 +31,9 @@ trait ImageProcessingService extends Service {
       .withCalls(
         restCall(Method.POST, "/resize?width", resize _),
         restCall(Method.POST, "/rotate?rotate", rotate _),
-        restCall(Method.POST, "/fit?width&height", fit _),
         restCall(Method.POST, "/thumbnail?width&height", thumbnail _),
-        restCall(Method.POST, "/convert?type", convert _)
+        restCall(Method.POST, "/convert?type", convert _),
+        restCall(Method.POST, "/smartcrop?width&height&gravity&stripmeta", smartCrop _)
       )
       .withAutoAcl(false)
   }
