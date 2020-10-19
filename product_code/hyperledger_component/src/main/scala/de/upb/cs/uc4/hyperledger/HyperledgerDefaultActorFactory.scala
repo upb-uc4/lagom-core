@@ -51,12 +51,12 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
                 }
                 catch {
                   case ex: Exception =>
-                    val customException = ex.toUC4Exception
+                    val uc4Exception = ex.toUC4Exception
                     cmd match {
                       case write: HyperledgerWriteCommand =>
-                        write.replyTo ! RejectedWithError(customException.errorCode.http, customException.possibleErrorResponse)
+                        write.replyTo ! RejectedWithError(uc4Exception.errorCode.http, uc4Exception.possibleErrorResponse)
                       case read: HyperledgerReadCommand[_] =>
-                        read.replyTo ! Failure(customException)
+                        read.replyTo ! Failure(uc4Exception)
                     }
                 }
               }
