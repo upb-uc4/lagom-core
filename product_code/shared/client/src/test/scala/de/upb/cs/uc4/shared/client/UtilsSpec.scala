@@ -3,6 +3,7 @@ package de.upb.cs.uc4.shared.client
 import de.upb.cs.uc4.shared.client.Utils._
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import org.scalatest.PrivateMethodTester
+import org.scalatest.enablers.Emptiness
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -21,6 +22,18 @@ class UtilsSpec extends AnyWordSpecLike with Matchers with PrivateMethodTester {
     "find the latest semester" in {
       val semesterList = Seq("SS2020", "WS2019/20", "SS2020", "WS2020/21", "SS2019")
       findLatestSemester(semesterList) should ===("WS2020/21")
+    }
+
+    "derive early WS from a date" in {
+      dateToSemester("2020-10-14") should ===("WS2020/21")
+    }
+
+    "derive late WS from a date" in {
+      dateToSemester("2021-01-01") should ===("WS2020/21")
+    }
+
+    "derive SS from a date" in {
+      dateToSemester("2020-6-14") should ===("SS2020")
     }
   }
 

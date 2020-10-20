@@ -45,6 +45,7 @@ class ServiceCallFactorySpec extends AsyncWordSpec with Matchers with PrivateMet
           .compact()
 
       val thrown = the[UC4Exception] thrownBy serviceCall.handleRequestHeader(addTokenHeader(token)).invoke()
+
       thrown.possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
     }
 
