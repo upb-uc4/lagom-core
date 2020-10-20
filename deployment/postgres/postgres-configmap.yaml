@@ -8,3 +8,4 @@ metadata:
 data:
   POSTGRES_USER: postgresadmin
   POSTGRES_PASSWORD: admin1234
+  SERVICES: authentication course certificate user

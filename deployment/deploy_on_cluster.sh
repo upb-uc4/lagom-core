@@ -36,16 +36,9 @@ kubectl apply -f kafka/kafka-single.yaml  -n kafka
 
 echo
 echo "##############################"
-echo "#        Init Postgres       #"
+echo "# Wait for Kafka & Postgres  #"
 echo "##############################"
 kubectl wait --for=condition=Ready pods --all --timeout=300s -n postgres
-sleep 60
-./init_postgres.sh
-
-echo
-echo "##############################"
-echo "#       Wait for Kafka       #"
-echo "##############################"
 kubectl wait kafka/strimzi --for=condition=Ready --timeout=300s  -n kafka
 sleep 60
 
