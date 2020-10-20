@@ -69,6 +69,11 @@ class KafkaEncryptionUtility(secretKey: SecretKey) {
     cipher.updateAAD(container.classType.getBytes)
     //use everything from 12 bytes on as ciphertext
     val plainText = cipher.doFinal(cipherMessage, GCM_IV_LENGTH, cipherMessage.length - GCM_IV_LENGTH)
+
+    val expectedType: String = classOf[Type].getCanonicalName
+    if (expectedType != container.classType) {
+      throw UC4Exception.DeserializationError
+    }
     new String(plainText, StandardCharsets.UTF_8).fromJson[Type]
   }
 }
