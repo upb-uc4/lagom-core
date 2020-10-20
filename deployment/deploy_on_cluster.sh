@@ -77,3 +77,5 @@ kubectl apply -f services/matriculation.yaml
 kubectl apply -f secrets/certificate.yaml
 kubectl apply -f services/certificate-storage.yaml
 kubectl apply -f services/certificate.yaml
+
+kubectl apply -f services/configuration.yaml
