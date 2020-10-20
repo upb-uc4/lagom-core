@@ -1,6 +1,7 @@
 # [WIP v.0.10.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.10.1...matriculation-v0.10.2) (2020-XX-XX)
 ## Feature
 - The Circuit Breaker ignores now UC4NonCriticalExceptions
+- Support for new production deployment
 ## Refactor
 - Moved configurations to shared
 ## Bugfix
