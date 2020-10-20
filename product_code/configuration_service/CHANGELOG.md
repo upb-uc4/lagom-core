@@ -5,7 +5,6 @@
     - fetching regular expressions used for validation
     - fetching configuration data
 ## Refactor
-- Moved configurations to shared
 ## Bugfix
 - Added minimum size to gzip (512 Byte)
 
