@@ -20,6 +20,7 @@ spec:
         - name: certificate
           image: "uc4official/certificate_service:latest"
           imagePullPolicy: Always
+          
           env:
             - name: JAVA_OPTS
               value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf"
@@ -44,12 +45,6 @@ spec:
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
               value: "1"
-            - name: HYPERLEDGER_WALLET_PATH
-              value: /opt/docker/share/hyperledger/wallet_path
-            - name: HYPERLEDGER_NETWORK_DESCRIPTION_PATH
-              value: /var/lib/hyperledger/data/api/connection_profile_kubernetes.yaml
-            - name: HYPERLEDGER_TLS_CERT
-              value: /var/lib/hyperledger/data/api/org1/msp/cacerts/org1-ca-cert.pem
             - name: HYPERLEDGER_USERNAME
               value: scala-registration-admin-org1
             - name: HYPERLEDGER_PASSWORD
@@ -64,18 +59,27 @@ spec:
               value: uc4-cc
             - name: HYPERLEDGER_CA_URL
               value: "https://rca-org1.hlf:7054"
+              
           resources:
             limits:
               memory: 512Mi
             requests:
               cpu: 0.25
               memory: 512M
+              
           ports:
             - name: management
               containerPort: 8558
+              
           volumeMounts:
-            - name: hyperledgerdata
-              mountPath: /var/lib/hyperledger/data
+            - name: cert
+              mountPath: /var/secrets/cert.pem
+            - name: certorg1
+              mountPath: /var/secrets/org1-cert.pem
+            - name: connection
+              mountPath: /var/libs/configmaps
+              readOnly: true
+              
           readinessProbe:
             httpGet:
               path: "/ready"
@@ -83,6 +87,7 @@ spec:
             periodSeconds: 10
             failureThreshold: 10
             initialDelaySeconds: 20
+            
           livenessProbe:
             httpGet:
               path: "/alive"
@@ -90,10 +95,17 @@ spec:
             periodSeconds: 10
             failureThreshold: 10
             initialDelaySeconds: 20
+            
       volumes:
-        - name: hyperledgerdata
-          persistentVolumeClaim:
-            claimName: certificate-pv-claim
+        - name: cert
+          secret:
+            secretName: cert.tls-ca
+        - name: certorg1
+          secret:
+            secretName: cert.rca-org1
+        - name: connection
+          configMap:
+            name: connection-profile
 ---
 apiVersion: v1
 kind: Service
