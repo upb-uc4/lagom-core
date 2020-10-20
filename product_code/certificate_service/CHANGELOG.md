@@ -3,6 +3,7 @@
 - The Circuit Breaker ignores now UC4NonCriticalExceptions
 ## Refactor
 ## Bugfix
+- Added minimum size to gzip (512 Byte)
 
 # [v.0.10.3](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.2...certificate-v0.10.3) (2020-10-15)
 ## Feature
