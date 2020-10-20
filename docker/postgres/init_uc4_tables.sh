@@ -1,12 +1,16 @@
-for table in "uc4user" "uc4course" "uc4authentication" "uc4certificate"; do
-  kubectl exec --stdin svc/postgres -n postgres -- psql -U postgresadmin -d postgres \
-  -c "CREATE USER $table WITH LOGIN ENCRYPTED PASSWORD '$table';" \
-  -c "CREATE DATABASE $table WITH OWNER=$table;"
+#!/bin/bash
+
+echo "Creating tables for the following services: $SERVICES"
+
+for table in $SERVICES; do
+  psql \
+  -c "CREATE USER uc4$table WITH LOGIN ENCRYPTED PASSWORD 'uc4$table';" \
+  -c "CREATE DATABASE uc4$table WITH OWNER=uc4$table;"
 done
 
-for table in "uc4user" "uc4course" "uc4authentication" "uc4certificate"; do
-  kubectl exec --stdin svc/postgres -n postgres -- psql -U $table -d postgres \
-    -c "\c \"$table\"" \
+for table in $SERVICES; do
+  psql -U uc4$table -d postgres \
+    -c "\c \"uc4$table\"" \
     -c "CREATE TABLE IF NOT EXISTS journal (
       ordering BIGSERIAL,
       persistence_id VARCHAR(255) NOT NULL,
