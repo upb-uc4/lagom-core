@@ -502,29 +502,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           .recoverWith(cleanupOnFailure())
       }
 
-      "save the right content type" in {
-        prepare(Seq(student0)).flatMap { _ =>
-          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
-          val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
-            FakeHeaders(Seq(
-              ("Content-Type", "image/png"),
-              ("Cookie", createLoginToken(student0.username))
-            )), body)
-
-          val getHeader = FakeRequest(GET, s"/user-management/users/${student0.username}/image",
-            FakeHeaders(Seq(
-              ("Cookie", createLoginToken(student0.username))
-            )), "null")
-
-          route(server.application.application, putHeader).get.flatMap { _ =>
-            route(server.application.application, getHeader).get.map { result =>
-              result.body.contentType.get should ===("image/png; charset=UTF-8")
-            }
-          }
-        }.flatMap(cleanupOnSuccess)
-          .recoverWith(cleanupOnFailure())
-      }
-
       "return the right location header" in {
         prepare(Seq(student0)).flatMap { _ =>
           val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
@@ -581,7 +558,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
     "should return the default image if no picture is set" in {
       prepare(Seq(admin0)).map { _ =>
-        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
+        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.jpg"))
         val getHeader = FakeRequest(GET, s"/user-management/users/${admin0.username}/image",
           FakeHeaders(Seq(
             ("Cookie", createLoginToken(student0.username))
@@ -610,7 +587,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
             ("Cookie", createLoginToken(student0.username))
           )), "null")
 
-        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
+        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.jpg"))
         val getHeader = FakeRequest(GET, s"/user-management/users/${student0.username}/image",
           FakeHeaders(Seq(
             ("Cookie", createLoginToken(student0.username))

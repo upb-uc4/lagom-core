@@ -15,12 +15,14 @@ lazy val lagom = (project in file("."))
   .aggregate(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
+    configuration_service_api, configuration_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service)
   .dependsOn(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
+    configuration_service_api, configuration_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service)
@@ -121,6 +123,16 @@ lazy val certificate_service = (project in file("certificate_service/impl"))
   .settings(libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies)
   .settings(Settings.implSettings("certificate_service"))
   .dependsOn(certificate_service_api % withTests, user_service_api % withTests, shared_server, hyperledger_component)
+
+lazy val configuration_service_api =  (project in file("configuration_service/api"))
+  .settings(Settings.apiSettings("configuration_service_api"))
+  .dependsOn(shared_client)
+
+lazy val configuration_service = (project in file("configuration_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(libraryDependencies ++= Dependencies.implDefaultDependencies)
+  .settings(Settings.implSettings("configuration_service"))
+  .dependsOn(configuration_service_api % withTests, shared_client, shared_server)
 
 lazy val image_processing_api = (project in file("image_processing/api"))
   .settings(libraryDependencies ++= Dependencies.apiDefaultDependencies)

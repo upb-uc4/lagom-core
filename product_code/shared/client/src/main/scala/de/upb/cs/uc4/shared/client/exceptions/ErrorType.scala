@@ -5,7 +5,7 @@ import play.api.libs.json.{ Format, Json }
 object ErrorType extends Enumeration {
   type ErrorType = Value
   val Deserialization, KafkaDeserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
-  MissingHeader, //In an DetailedError
+  MissingHeader, QueryParameter, //In an DetailedError
   BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
   NotEnoughPrivileges, OwnerMismatch, //403
   KeyNotFound, NotEnrolled, //404
@@ -16,6 +16,7 @@ object ErrorType extends Enumeration {
   PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, //422
   Validation, UneditableFields, //422 In a DetailedError
   InternalServer, UndeserializableException, //500
+  NotImplemented, //501
   HLInternal, //In an InformativeError
   HLUnknownTransactionId, HLUnprocessableEntity, HLNotFound, HLConflict, HLUnprocessableLedgerState, //In a GenericError
   HLUnprocessableField, //In a DetailedError
@@ -38,6 +39,7 @@ object ErrorType extends Enumeration {
       case UnexpectedEntity => "Expected another entity" //In an InformativeError
       case MultipleAuthorization => "Multiple authorization given"
       case MissingHeader => "Missing required header" //In a DetailedError
+      case QueryParameter => "QueryParameter(s) invalid" //In a DetailedError
       //401
       case BasicAuthorization => "Username and password combination does not exist"
       case JwtAuthorization => "Authorization token missing"
@@ -70,6 +72,11 @@ object ErrorType extends Enumeration {
       case InternalServer => "An internal server error has occurred"
       case UndeserializableException => "Internal error while deserializing Exception"
       case HLInternal => "Hyperledger encountered an internal error" //In an InformativeError
+      //501
+      case NotImplemented => "The invoked method is not implemented yet"
+
+      //Hopefully never
+      case _ => "Undefined error title, please open a bug report at https://github.com/upb-uc4/lagom-core/issues/new?assignees=&labels=bug&template=bug_report.md&title="
     }
   }
 

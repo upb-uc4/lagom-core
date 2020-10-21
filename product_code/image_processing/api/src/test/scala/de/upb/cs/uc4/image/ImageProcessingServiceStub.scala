@@ -15,7 +15,7 @@ class ImageProcessingServiceStub extends ImageProcessingService {
     image => Future.successful(image)
   }
 
-  override def fit(width: Int, height: Int): ServiceCall[ByteString, ByteString] = {
+  override def smartCrop(width: Int, height: Int, gravity: String = "smart", stripmeta: Boolean = true): ServiceCall[ByteString, ByteString] = {
     image => Future.successful(image)
   }
 

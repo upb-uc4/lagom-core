@@ -30,6 +30,8 @@ object UC4Exception {
   val MalformedRefreshToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedRefreshToken))
   val MalformedLoginToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedLoginToken))
   val MultipleAuthorizationError = new UC4NonCriticalException(400, GenericError(ErrorType.MultipleAuthorization))
+  def QueryParameterError(invalidParams: SimpleError*) =
+    new UC4NonCriticalException(400, DetailedError(ErrorType.QueryParameter, invalidParams))
   //401
   val JwtAuthorizationError = new UC4NonCriticalException(401, GenericError(ErrorType.JwtAuthorization))
   val RefreshTokenMissing = new UC4NonCriticalException(401, GenericError(ErrorType.RefreshTokenMissing))
@@ -60,4 +62,7 @@ object UC4Exception {
 
   def InternalServerError(throwable: Throwable, invalidParams: SimpleError*) =
     new UC4CriticalException(500, DetailedError(ErrorType.InternalServer, invalidParams), throwable)
+
+  //501
+  val NotImplemented = new UC4NonCriticalException(501, GenericError(ErrorType.NotImplemented))
 }

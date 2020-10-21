@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.course.model
 
+import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json._
 
@@ -40,9 +41,9 @@ case class Course(
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 
-    val nameRegex = """[\s\S]{1,100}""".r // Allowed characters for coursename: 1-100 of everything
-    val descriptionRegex = """[\s\S]{0,10000}""".r // Allowed characters  for description
-    val dateRegex = """^(?:(?:(?:(?:(?:[1-9]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:[2468][048]|[13579][26])00))(-)(?:0?2\1(?:29)))|(?:(?:[1-9]\d{3})(-)(?:(?:(?:0?[13578]|1[02])\2(?:31))|(?:(?:0?[13-9]|1[0-2])\2(?:29|30))|(?:(?:0?[1-9])|(?:1[0-2]))\2(?:0?[1-9]|1\d|2[0-8])))))$""".r
+    val nameRegex = RegexCollection.Commons.nameRegex
+    val descriptionRegex = RegexCollection.Commons.longTextRegex
+    val dateRegex = RegexCollection.Commons.dateRegex
 
     var errors = List[SimpleError]()
 
@@ -84,5 +85,4 @@ case class Course(
 
 object Course {
   implicit val format: Format[Course] = Json.format
-
 }

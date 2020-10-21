@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.matriculation.model
 
 import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
+import de.upb.cs.uc4.shared.client.configuration.ConfigurationCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
@@ -21,8 +22,7 @@ case class SubjectMatriculation(fieldOfStudy: String, semesters: Seq[String]) {
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 
-    val fos = List("Computer Science", "Philosophy", "Media Sciences", "Economics", "Mathematics", "Physics", "Chemistry",
-      "Education", "Sports Science", "Japanology", "Spanish Culture", "Pedagogy", "Business Informatics", "Linguistics")
+    val fos = ConfigurationCollection.fieldOfStudies
 
     var errors = List[SimpleError]()
 

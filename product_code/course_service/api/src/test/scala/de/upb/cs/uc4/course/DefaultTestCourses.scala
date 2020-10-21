@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.course
 
-import de.upb.cs.uc4.course.model.{ Course, CourseLanguage, CourseType }
+import de.upb.cs.uc4.course.model.Course
+import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType }
 
 trait DefaultTestCourses {
   //Test courses
