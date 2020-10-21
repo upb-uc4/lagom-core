@@ -6,7 +6,7 @@ import play.api.libs.json.{ Format, Json }
 
 case class ValidationConfiguration(
     authenticationUser: AuthenticationUserRegex,
-    postMessageCSRRegex: PostMessageCSRRegex,
+    postMessageCSR: PostMessageCSRRegex,
     course: CourseRegex,
     user: UserRegex,
     lecturer: LecturerRegex,
