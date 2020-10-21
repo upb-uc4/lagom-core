@@ -20,6 +20,7 @@ case class AuthenticationUser(username: String, password: String, role: Authenti
 
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
     val usernameRegex = RegexCollection.AuthenticationUser.usernameRegex
+    val passwordRegex = RegexCollection.AuthenticationUser.passwordRegex
 
     var errors = List[SimpleError]()
     if (!usernameRegex.matches(username)) {
@@ -28,8 +29,8 @@ case class AuthenticationUser(username: String, password: String, role: Authenti
         "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'."
       )
     }
-    if (password == "") {
-      errors :+= SimpleError("password", "Password must not be empty.")
+    if (!passwordRegex.matches(password)) {
+      errors :+= SimpleError("password", "Password must not contain whitespaces and consist of at least 1 character.")
     }
     errors
   }

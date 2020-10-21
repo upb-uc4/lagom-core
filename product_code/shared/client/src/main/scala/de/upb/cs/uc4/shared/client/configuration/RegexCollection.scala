@@ -6,6 +6,11 @@ object RegexCollection {
 
   object AuthenticationUser {
     val usernameRegex: Regex = """[a-zA-Z0-9-.]{4,16}""".r
+    val passwordRegex: Regex = """[\s\S]+""".r
+  }
+
+  object PostMessageCSR {
+    val csrRegex: Regex = """[\s\S]+""".r
   }
 
   object EncryptedPrivateKey {
@@ -30,8 +35,22 @@ object RegexCollection {
     val nameRegex: Regex = """[a-zA-Z.,\s\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df0-9-]{1,50}""".r
   }
 
+  object Course {
+    val ectsRegex: Regex = """([1-9][0-9]{0,2})|[0]""".r
+    val maxParticipantsRegex: Regex = """[1-9][0-9]{0,3}""".r
+  }
+
   object Commons {
-    val dateRegex: Regex = """^(?:(?:(?:(?:(?:[1-9]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:[2468][048]|[13579][26])00))(-)(?:0?2\1(?:29)))|(?:(?:[1-9]\d{3})(-)(?:(?:(?:0?[13578]|1[02])\2(?:31))|(?:(?:0?[13-9]|1[0-2])\2(?:29|30))|(?:(?:0?[1-9])|(?:1[0-2]))\2(?:0?[1-9]|1\d|2[0-8])))))$""".r
+    /** The date regex supports all dates in the format yyyy-mm-dd
+      *
+      * ((((([0-9]{2})(0[48]|[2468][048]|[13579][26])|(([2468][048]|[13579][26])00))-(02-29))|    // This line handles all 29th of February
+      * (([0-9]{4})-                                                                              // This line handles all years
+      * (((0[13578]|1[02])-(31))|                                                                 // This line handles all 31st
+      * ((0[13-9]|1[0-2])-(29|30))|                                                               // This line handles all 29/30th
+      * ((0[1-9])|(1[0-2]))-(0[1-9]|1[0-9]|2[0-8])))))                                            // This line handles all day from 1st to 28th
+      */
+    val dateRegex: Regex = """((((([0-9]{2})(0[48]|[2468][048]|[13579][26])|(([2468][048]|[13579][26])00))-(02-29))|(([0-9]{4})-(((0[13578]|1[02])-(31))|((0[13-9]|1[0-2])-(29|30))|((0[1-9])|(1[0-2]))-(0[1-9]|1[0-9]|2[0-8])))))""".stripMargin.r
+
     val longTextRegex: Regex = """[\s\S]{0,10000}""".r
     val nameRegex: Regex = """[\s\S]{1,100}""".r // Allowed characters for name: 1-100 of everything
   }

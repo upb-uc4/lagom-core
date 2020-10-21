@@ -53,7 +53,7 @@ class CourseSpec extends AsyncWordSpecLike with Matchers {
 
     //ECTS
     "return a validation error for incorrect ects" in {
-      courseValid.copy(ects = 0).validate
+      courseValid.copy(ects = -1).validate
         .map(_.map(error => error.name) should contain theSameElementsAs Seq("ects"))
     }
 
