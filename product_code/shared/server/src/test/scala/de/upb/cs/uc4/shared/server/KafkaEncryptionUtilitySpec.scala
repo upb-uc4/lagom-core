@@ -3,6 +3,8 @@ package de.upb.cs.uc4.shared.server
 import java.security.InvalidKeyException
 
 import de.upb.cs.uc4.authentication.model.JsonUsername
+import de.upb.cs.uc4.shared.client.JsonVersionNumber
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
 import javax.crypto.AEADBadTagException
 import org.scalatest.PrivateMethodTester
@@ -41,6 +43,16 @@ class KafkaEncryptionUtilitySpec extends AsyncWordSpec with Matchers with Privat
       }
     }
 
+    "should not decrypt an object with an unexpected class type" in {
+      val objectToEncrypt = JsonUsername("David")
+      val encryptionContainer = kafkaEncryptionUtility.encrypt(objectToEncrypt)
+      Try(kafkaEncryptionUtility.decrypt[JsonVersionNumber](encryptionContainer)) match {
+        case Success(_)         => fail()
+        case Failure(exception: UC4Exception) => exception.possibleErrorResponse.`type` should ===(ErrorType.KafkaDeserialization)
+        case Failure(_) => fail()
+      }
+    }
+
     "should not decrypt an object with an altered data" in {
       val objectToEncrypt = JsonUsername("David")
       val encryptionContainer = kafkaEncryptionUtility.encrypt(objectToEncrypt)
@@ -69,5 +81,6 @@ class KafkaEncryptionUtilitySpec extends AsyncWordSpec with Matchers with Privat
         case Failure(exception) => exception shouldBe a[InvalidKeyException]
       }
     }
+
   }
 }

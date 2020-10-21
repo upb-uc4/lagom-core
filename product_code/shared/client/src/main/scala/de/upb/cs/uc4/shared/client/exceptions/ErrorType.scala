@@ -4,7 +4,7 @@ import play.api.libs.json.{ Format, Json }
 
 object ErrorType extends Enumeration {
   type ErrorType = Value
-  val Deserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
+  val Deserialization, KafkaDeserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
   MissingHeader, //In an DetailedError
   BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
   NotEnoughPrivileges, OwnerMismatch, //403

@@ -12,6 +12,8 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.{ AEADBadTagException, Cipher, SecretKey }
 import play.api.libs.json.{ Format, __ }
 
+import scala.reflect.{ ClassTag, classTag }
+
 /** Provides methods for encryption, decryption and authentication of objects which shall be send through Kafka
   *
   * @param secretKey symmetric key for authenticated encryption
@@ -58,7 +60,7 @@ class KafkaEncryptionUtility(secretKey: SecretKey) {
     * @throws Throwable javax.crypto exceptions, IO exceptions, Json deserialization exception if objectToEncrypt is invalid e.g. null, especially AEADBadTagException if auth tag has been altered
     * @return unencrypted object of provided Type
     */
-  def decrypt[Type](container: EncryptionContainer)(implicit format: Format[Type]): Type = {
+  def decrypt[Type: ClassTag](container: EncryptionContainer)(implicit format: Format[Type]): Type = {
     val cipherMessage = container.data
 
     val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -70,9 +72,9 @@ class KafkaEncryptionUtility(secretKey: SecretKey) {
     //use everything from 12 bytes on as ciphertext
     val plainText = cipher.doFinal(cipherMessage, GCM_IV_LENGTH, cipherMessage.length - GCM_IV_LENGTH)
 
-    val expectedType: String = classOf[Type].getCanonicalName
-    if (expectedType != container.classType) {
-      throw UC4Exception.DeserializationError
+    val expectedClassType: String = classTag[Type].runtimeClass.getCanonicalName
+    if (expectedClassType != container.classType) {
+      throw UC4Exception.KafkaDeserializationError(expectedClassType, container.classType)
     }
     new String(plainText, StandardCharsets.UTF_8).fromJson[Type]
   }
