@@ -30,7 +30,7 @@ case class AuthenticationUser(username: String, password: String, role: Authenti
       )
     }
     if (!passwordRegex.matches(password)) {
-      errors :+= SimpleError("password", "Password must not contain whitespaces and consist of at least 1 character.")
+      errors :+= SimpleError("password", "Password must not be empty.")
     }
     errors
   }
