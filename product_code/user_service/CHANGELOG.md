@@ -3,6 +3,7 @@
 - The Circuit Breaker ignores now UC4NonCriticalExceptions
 - Profile images are now properly cropped and stripped of their metadata
 - Images are now always jpegs for bandwidth reasons
+- Encrypted Kafka topics 
 ## Refactor
 - Moved configurations to shared
 ## Bugfix
