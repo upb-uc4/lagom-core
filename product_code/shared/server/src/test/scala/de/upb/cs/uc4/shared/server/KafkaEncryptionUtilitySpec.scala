@@ -47,7 +47,7 @@ class KafkaEncryptionUtilitySpec extends AsyncWordSpec with Matchers with Privat
       val objectToEncrypt = JsonUsername("David")
       val encryptionContainer = kafkaEncryptionUtility.encrypt(objectToEncrypt)
       Try(kafkaEncryptionUtility.decrypt[JsonVersionNumber](encryptionContainer)) match {
-        case Success(_)         => fail()
+        case Success(_) => fail()
         case Failure(exception: UC4Exception) => exception.possibleErrorResponse.`type` should ===(ErrorType.KafkaDeserialization)
         case Failure(_) => fail()
       }
