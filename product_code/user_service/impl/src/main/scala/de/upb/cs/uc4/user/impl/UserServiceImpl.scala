@@ -17,8 +17,10 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
 import de.upb.cs.uc4.image.api.ImageProcessingService
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
@@ -29,6 +31,7 @@ import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
 import de.upb.cs.uc4.user.model.user._
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -38,9 +41,11 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 class UserServiceImpl(
     clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
     readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase,
-    authentication: AuthenticationService, imageProcessing: ImageProcessingService
+    authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
   readSide.register(processor)
+
+  private final val log: Logger = LoggerFactory.getLogger(classOf[UserServiceImpl])
 
   private lazy val defaultProfilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.jpg"))
   private lazy val defaultThumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultThumbnail.jpg"))
@@ -343,26 +348,38 @@ class UserServiceImpl(
   }
 
   /** Publishes every new user */
-  override def userCreationTopic(): Topic[Usernames] = TopicProducer.singleStreamWithOffset { fromOffset =>
+  override def userCreationTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(UserEvent.Tag, fromOffset)
       .mapConcat {
         //Filter only OnUserCreate events
-        case EventStreamElement(_, OnUserCreate(user), offset) =>
-          immutable.Seq((Usernames(user.username, Hashing.sha256(user.username)), offset))
+        case EventStreamElement(_, OnUserCreate(user), offset) => try {
+          immutable.Seq((kafkaEncryptionUtility.encrypt(Usernames(user.username, Hashing.sha256(user.username))), offset))
+        }
+        catch {
+          case throwable: Throwable =>
+            log.error("UserService cannot send invalid topic message {}", throwable.toString)
+            Nil
+        }
         case _ => Nil
       }
   }
 
   /** Publishes every deletion of a user */
-  override def userDeletedTopic(): Topic[JsonUsername] = TopicProducer.singleStreamWithOffset {
+  override def userDeletionTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
     fromOffset =>
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)
         .mapConcat {
           //Filter only OnUserDelete events
-          case EventStreamElement(_, OnUserDelete(user), offset) =>
-            immutable.Seq((JsonUsername(user.username), offset))
+          case EventStreamElement(_, OnUserDelete(user), offset) => try {
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
+          }
+          catch {
+            case throwable: Throwable =>
+              log.error("UserService cannot send invalid topic message {}", throwable.toString)
+              Nil
+          }
           case _ => Nil
         }
   }

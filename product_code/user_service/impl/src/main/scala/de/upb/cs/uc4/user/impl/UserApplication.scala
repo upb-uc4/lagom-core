@@ -9,6 +9,7 @@ import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.image.api.ImageProcessingService
 import de.upb.cs.uc4.shared.server.UC4Application
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.{ UserBehaviour, UserState }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
@@ -18,7 +19,8 @@ abstract class UserApplication(context: LagomApplicationContext)
   extends UC4Application(context)
   with SlickPersistenceComponents
   with JdbcPersistenceComponents
-  with HikariCPComponents {
+  with HikariCPComponents
+  with KafkaEncryptionComponent {
 
   // Create ReadSide
   lazy val database: UserDatabase = wire[UserDatabase]

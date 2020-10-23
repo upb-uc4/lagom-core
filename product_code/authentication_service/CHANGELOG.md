@@ -1,6 +1,7 @@
 # [WIP v.0.10.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.10.0...authentication-v0.10.1) (2020-XX-XX)
 ## Feature
 - The Circuit Breaker ignores now UC4NonCriticalExceptions
+- Encrypted Kafka topics 
 ## Refactor
 - Moved configurations to shared
 ## Bugfix

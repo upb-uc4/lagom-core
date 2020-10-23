@@ -15,6 +15,7 @@ import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication }
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, Tokens }
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.UserServiceStub
@@ -34,7 +35,7 @@ import scala.concurrent.duration._
 class AuthenticationServiceSpec extends AsyncWordSpec
   with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures {
 
-  private var deletionStub: ProducerStub[JsonUsername] = _
+  private var deletionStub: ProducerStub[EncryptionContainer] = _
   private var applicationConfig: Config = _
 
   private val server = ServiceTest.startServer(
@@ -44,8 +45,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       new AuthenticationApplication(ctx) with LocalServiceLocator {
         // Declaration as lazy values forces right execution order
         lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
-        lazy val internDeletionStub: ProducerStub[JsonUsername] =
-          stubFactory.producer[JsonUsername](UserService.DELETE_TOPIC_NAME)
+        lazy val internDeletionStub: ProducerStub[EncryptionContainer] =
+          stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_NAME)
 
         deletionStub = internDeletionStub
         applicationConfig = config
@@ -183,7 +184,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
     //DELETE
     "remove a user over the topic" in {
       prepare("Test").flatMap { _ =>
-        deletionStub.send(JsonUsername("Test"))
+        val container = server.application.kafkaEncryptionUtility.encrypt(JsonUsername("Test"))
+        deletionStub.send(container)
 
         eventually(timeout(Span(20, Seconds))) {
           client.login.handleRequestHeader(addLoginHeader("Test", "Test")).invoke().failed.map { answer =>
@@ -529,8 +531,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   }
 }
 
-class UserServiceStubWithTopic(deletionStub: ProducerStub[JsonUsername]) extends UserServiceStub {
+class UserServiceStubWithTopic(deletionStub: ProducerStub[EncryptionContainer]) extends UserServiceStub {
 
-  override def userDeletedTopic(): Topic[JsonUsername] = deletionStub.topic
+  override def userDeletionTopic(): Topic[EncryptionContainer] = deletionStub.topic
 
 }

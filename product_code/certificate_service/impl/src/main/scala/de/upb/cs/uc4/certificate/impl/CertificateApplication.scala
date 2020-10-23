@@ -17,7 +17,10 @@ import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4Application
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Usernames
@@ -32,7 +35,8 @@ abstract class CertificateApplication(context: LagomApplicationContext)
   with SlickPersistenceComponents
   with JdbcPersistenceComponents
   with HikariCPComponents
-  with HyperledgerAdminParts {
+  with HyperledgerAdminParts
+  with KafkaEncryptionComponent {
 
   protected final val log: Logger = LoggerFactory.getLogger(classOf[CertificateApplication])
 
@@ -69,8 +73,15 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     .userCreationTopic()
     .subscribe
     .atLeastOnce(
-      Flow.fromFunction[Usernames, Future[Done]](usernames =>
-        registerUser(usernames.username, usernames.enrollmentId)).mapAsync(8)(done => done)
+      Flow.fromFunction[EncryptionContainer, Future[Done]](container => try {
+        val usernames = kafkaEncryptionUtility.decrypt[Usernames](container)
+        registerUser(usernames.username, usernames.enrollmentId)
+      }
+      catch {
+        case throwable: Throwable =>
+          log.error("CertificateService received invalid topic message: {}", throwable.toString)
+          Future.successful(Done)
+      }).mapAsync(8)(done => done)
     )
 
   private def registerUser(username: String, enrollmentId: String): Future[Done] = {

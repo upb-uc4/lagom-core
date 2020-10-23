@@ -8,6 +8,7 @@ import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, ServiceCall }
 import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.shared.client.UC4Service
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 import de.upb.cs.uc4.user.model.post.PostMessageUser
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
@@ -82,10 +83,10 @@ trait UserService extends UC4Service {
   def allowedDeleteGetPut: ServiceCall[NotUsed, Done]
 
   /** Publishes every new user */
-  def userCreationTopic(): Topic[Usernames]
+  def userCreationTopic(): Topic[EncryptionContainer]
 
   /** Publishes every deletion of a user */
-  def userDeletedTopic(): Topic[JsonUsername]
+  def userDeletionTopic(): Topic[EncryptionContainer]
 
   final override def descriptor: Descriptor = {
     import Service._
@@ -154,7 +155,7 @@ trait UserService extends UC4Service {
       )
       .addTopics(
         topic(UserService.ADD_TOPIC_NAME, userCreationTopic _),
-        topic(UserService.DELETE_TOPIC_NAME, userDeletedTopic _)
+        topic(UserService.DELETE_TOPIC_NAME, userDeletionTopic _)
       )
   }
 }
