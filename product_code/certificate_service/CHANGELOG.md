@@ -2,6 +2,7 @@
 ## Feature
 - The Circuit Breaker ignores now UC4NonCriticalExceptions
 - Support for new production deployment
+- Encrypted Kafka topics
 ## Refactor
 ## Bugfix
 - Added minimum size to gzip (512 Byte)

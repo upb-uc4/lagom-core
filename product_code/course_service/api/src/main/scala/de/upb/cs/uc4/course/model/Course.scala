@@ -44,6 +44,8 @@ case class Course(
     val nameRegex = RegexCollection.Commons.nameRegex
     val descriptionRegex = RegexCollection.Commons.longTextRegex
     val dateRegex = RegexCollection.Commons.dateRegex
+    val ectsRegex = RegexCollection.Course.ectsRegex
+    val maxParticipantsRegex = RegexCollection.Course.maxParticipantsRegex
 
     var errors = List[SimpleError]()
 
@@ -61,13 +63,13 @@ case class Course(
     if (!dateRegex.matches(endDate)) {
       errors :+= SimpleError("endDate", "End date must be of the following format \"yyyy-mm-dd\".")
     }
-    if (ects <= 0 || ects > 1000) {
-      errors :+= SimpleError("ects", "ECTS must be a positive integer between 1 and 999.")
+    if (!ectsRegex.matches(ects.toString)) {
+      errors :+= SimpleError("ects", "ECTS must be a positive integer between 0 and 999.")
     }
-    if (lecturerId.isEmpty) {
+    if (!nameRegex.matches(lecturerId)) {
       errors :+= SimpleError("lecturerId", "LecturerID must not be empty.")
     }
-    if (maxParticipants <= 0 || maxParticipants > 10000) {
+    if (!maxParticipantsRegex.matches(maxParticipants.toString)) {
       errors :+= SimpleError("maxParticipants", "Number of maximum participants must be a positive integer between 1 and 9999.")
     }
     if (currentParticipants < 0 || currentParticipants > maxParticipants) {

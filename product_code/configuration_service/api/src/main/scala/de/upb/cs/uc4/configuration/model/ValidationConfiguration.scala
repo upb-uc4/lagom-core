@@ -6,6 +6,7 @@ import play.api.libs.json.{ Format, Json }
 
 case class ValidationConfiguration(
     authenticationUser: AuthenticationUserRegex,
+    postMessageCSR: PostMessageCSRRegex,
     course: CourseRegex,
     user: UserRegex,
     lecturer: LecturerRegex,
@@ -13,12 +14,17 @@ case class ValidationConfiguration(
 )
 
 object ValidationConfiguration {
-  case class AuthenticationUserRegex(username: String)
+  case class AuthenticationUserRegex(username: String, password: String)
   object AuthenticationUserRegex {
     implicit val format: Format[AuthenticationUserRegex] = Json.format
   }
 
-  case class CourseRegex(courseName: String, startDate: String, endDate: String, courseDescription: String)
+  case class PostMessageCSRRegex(certificateSigningRequest: String)
+  object PostMessageCSRRegex {
+    implicit val format: Format[PostMessageCSRRegex] = Json.format
+  }
+
+  case class CourseRegex(courseName: String, startDate: String, endDate: String, ects: String, lecturerId: String, maxParticipants: String, courseDescription: String)
   object CourseRegex {
     implicit val format: Format[CourseRegex] = Json.format
   }
@@ -33,18 +39,25 @@ object ValidationConfiguration {
     implicit val format: Format[LecturerRegex] = Json.format
   }
 
-  case class AddressRegex(street: String, city: String)
+  case class AddressRegex(street: String, houseNumber: String, city: String)
   object AddressRegex {
     implicit val format: Format[AddressRegex] = Json.format
   }
 
   def build: ValidationConfiguration = {
     ValidationConfiguration(
-      AuthenticationUserRegex(RegexCollection.AuthenticationUser.usernameRegex.regex),
+      AuthenticationUserRegex(
+        RegexCollection.AuthenticationUser.usernameRegex.regex,
+        RegexCollection.AuthenticationUser.passwordRegex.regex
+      ),
+      PostMessageCSRRegex(RegexCollection.PostMessageCSR.csrRegex.regex),
       CourseRegex(
         RegexCollection.Commons.nameRegex.regex,
         RegexCollection.Commons.dateRegex.regex,
         RegexCollection.Commons.dateRegex.regex,
+        RegexCollection.Course.ectsRegex.regex,
+        RegexCollection.Commons.nameRegex.regex,
+        RegexCollection.Course.maxParticipantsRegex.regex,
         RegexCollection.Commons.longTextRegex.regex
       ),
       UserRegex(
@@ -61,6 +74,7 @@ object ValidationConfiguration {
       ),
       AddressRegex(
         RegexCollection.Address.nameRegex.regex,
+        RegexCollection.Address.houseNumberRegex.regex,
         RegexCollection.Address.nameRegex.regex
       )
     )

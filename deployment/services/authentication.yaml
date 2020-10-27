@@ -40,6 +40,16 @@ spec:
                 secretKeyRef:
                   name: postgres-authentication
                   key: password
+            - name: UC4_MASTER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: uc4-master-secret
+                  key: secret
+            - name: UC4_KAFKA_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: uc4-kafka-salt
+                  key: secret
             - name: KAFKA_SERVICE_NAME
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
