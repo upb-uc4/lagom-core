@@ -3,7 +3,7 @@
 echo "Creating tables for the following services: $SERVICES"
 
 for table in $SERVICES; do
-  psql \
+  psql -U $POSTGRES_USER \
   -c "CREATE USER uc4$table WITH LOGIN ENCRYPTED PASSWORD 'uc4$table';" \
   -c "CREATE DATABASE uc4$table WITH OWNER=uc4$table;"
 done
