@@ -10,6 +10,13 @@ kubectl apply -f traefik/traefik-router.yaml
 
 echo
 echo "##############################"
+echo "#      Starting Support      #"
+echo "##############################"
+kubectl create namespace uc4-support
+kubectl apply -f support/imaginary.yaml
+
+echo
+echo "##############################"
 echo "#     Starting Postgres      #"
 echo "##############################"
 kubectl create namespace postgres
@@ -29,16 +36,9 @@ kubectl apply -f kafka/kafka-single.yaml  -n kafka
 
 echo
 echo "##############################"
-echo "#        Init Postgres       #"
+echo "# Wait for Kafka & Postgres  #"
 echo "##############################"
 kubectl wait --for=condition=Ready pods --all --timeout=300s -n postgres
-sleep 60
-./init_postgres.sh
-
-echo
-echo "##############################"
-echo "#       Wait for Kafka       #"
-echo "##############################"
 kubectl wait kafka/strimzi --for=condition=Ready --timeout=300s  -n kafka
 sleep 60
 
@@ -54,6 +54,8 @@ echo "##############################"
 echo "#     Starting Services      #"
 echo "##############################"
 kubectl create secret generic application-secret --from-literal=secret="$(openssl rand -base64 48)" -n uc4-lagom
+kubectl create secret generic uc4-master-secret --from-literal=secret="$(openssl rand -base64 48)" -n uc4-lagom
+kubectl create secret generic uc4-kafka-salt --from-literal=secret="$(openssl rand -base64 48)" -n uc4-lagom
 
 kubectl apply -f secrets/user.yaml
 kubectl apply -f services/user.yaml
@@ -64,9 +66,9 @@ kubectl apply -f services/authentication.yaml
 kubectl apply -f secrets/course.yaml
 kubectl apply -f services/course.yaml
 
-kubectl apply -f services/matriculation-storage.yaml
 kubectl apply -f services/matriculation.yaml
 
 kubectl apply -f secrets/certificate.yaml
-kubectl apply -f services/certificate-storage.yaml
 kubectl apply -f services/certificate.yaml
+
+kubectl apply -f services/configuration.yaml

@@ -3,7 +3,10 @@ package de.upb.cs.uc4.user.impl
 import java.util.Calendar
 
 import akka.Done
+import akka.actor.ActorSystem
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
+import akka.stream.testkit.scaladsl.TestSink
 import com.google.common.io.ByteStreams
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
@@ -11,13 +14,17 @@ import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
+import de.upb.cs.uc4.image.ImageProcessingServiceStub
+import de.upb.cs.uc4.image.api.ImageProcessingService
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, Role }
+import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, Role, Usernames }
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -40,13 +47,19 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       .withJdbc()
   ) { ctx =>
       new UserApplication(ctx) with LocalServiceLocator with TestTopicComponents {
+
         override lazy val authentication: AuthenticationService = new AuthenticationServiceStub()
+
+        override lazy val imageProcessing: ImageProcessingService = new ImageProcessingServiceStub()
       }
     }
 
+  implicit val system: ActorSystem = server.actorSystem
+  implicit val mat: Materializer = server.materializer
+
   val client: UserService = server.serviceClient.implement[UserService]
 
-  val deletionTopic: Source[JsonUsername, _] = client.userDeletedTopic().subscribe.atMostOnceSource
+  val deletionTopic: Source[EncryptionContainer, _] = client.userDeletionTopic().subscribe.atMostOnceSource
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -187,6 +200,30 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
 
   /** Tests only working if the whole instance is started */
   "UserService service" should {
+
+    "test topics, which" must {
+      "publish a created user" in {
+        val creationSource: Source[EncryptionContainer, _] = client.userCreationTopic().subscribe.atMostOnceSource
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(student0Auth, student0))
+
+        val containerSeq: Seq[EncryptionContainer] = creationSource
+          .runWith(TestSink.probe[EncryptionContainer])
+          .request(4)
+          .expectNextN(4)
+        server.application.kafkaEncryptionUtility.decrypt[Usernames](containerSeq(3)) should ===(Usernames(student0.username, Hashing.sha256(student0.username)))
+      }
+
+      "publish a deleted user" in {
+        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopic().subscribe.atMostOnceSource
+        client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+
+        val container: EncryptionContainer = deletionSource
+          .runWith(TestSink.probe[EncryptionContainer])
+          .request(1)
+          .expectNext(FiniteDuration(15, SECONDS))
+        server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student0.username))
+      }
+    }
 
     "get all users with default users" in {
       eventually(timeout(Span(15, Seconds))) {
@@ -465,29 +502,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
           .recoverWith(cleanupOnFailure())
       }
 
-      "save the right content type" in {
-        prepare(Seq(student0)).flatMap { _ =>
-          val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
-          val putHeader = FakeRequest(PUT, s"/user-management/users/${student0.username}/image",
-            FakeHeaders(Seq(
-              ("Content-Type", "image/png"),
-              ("Cookie", createLoginToken(student0.username))
-            )), body)
-
-          val getHeader = FakeRequest(GET, s"/user-management/users/${student0.username}/image",
-            FakeHeaders(Seq(
-              ("Cookie", createLoginToken(student0.username))
-            )), "null")
-
-          route(server.application.application, putHeader).get.flatMap { _ =>
-            route(server.application.application, getHeader).get.map { result =>
-              result.body.contentType.get should ===("image/png; charset=UTF-8")
-            }
-          }
-        }.flatMap(cleanupOnSuccess)
-          .recoverWith(cleanupOnFailure())
-      }
-
       "return the right location header" in {
         prepare(Seq(student0)).flatMap { _ =>
           val body = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
@@ -544,7 +558,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
     "should return the default image if no picture is set" in {
       prepare(Seq(admin0)).map { _ =>
-        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
+        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.jpg"))
         val getHeader = FakeRequest(GET, s"/user-management/users/${admin0.username}/image",
           FakeHeaders(Seq(
             ("Cookie", createLoginToken(student0.username))
@@ -573,7 +587,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
             ("Cookie", createLoginToken(student0.username))
           )), "null")
 
-        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
+        val default = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.jpg"))
         val getHeader = FakeRequest(GET, s"/user-management/users/${student0.username}/image",
           FakeHeaders(Seq(
             ("Cookie", createLoginToken(student0.username))

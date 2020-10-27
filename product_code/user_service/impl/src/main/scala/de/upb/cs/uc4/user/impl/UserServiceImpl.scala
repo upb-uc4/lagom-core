@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.user.impl
 
+import java.util
+
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
@@ -13,9 +15,12 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
+import de.upb.cs.uc4.image.api.ImageProcessingService
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
@@ -26,6 +31,7 @@ import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
 import de.upb.cs.uc4.user.model.user._
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -35,11 +41,19 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 class UserServiceImpl(
     clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
     readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase,
-    authentication: AuthenticationService
+    authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
   readSide.register(processor)
 
-  private lazy val defaultProfilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.png"))
+  private final val log: Logger = LoggerFactory.getLogger(classOf[UserServiceImpl])
+
+  private lazy val defaultProfilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultProfile.jpg"))
+  private lazy val defaultThumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultThumbnail.jpg"))
+  private lazy val supportedTypes: util.List[String] = config.getStringList("uc4.image.supportedTypes")
+  private lazy val profileWidth: Int = config.getInt("uc4.image.profileWidth")
+  private lazy val profileHeight: Int = config.getInt("uc4.image.profileHeight")
+  private lazy val thumbnailWidth: Int = config.getInt("uc4.image.thumbnailWidth")
+  private lazy val thumbnailHeight: Int = config.getInt("uc4.image.thumbnailHeight")
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[UserCommand] =
@@ -81,7 +95,6 @@ class UserServiceImpl(
           ResponseHeader(200, MessageProtocol.empty, List()),
           GetAllUsersResponse(students._2, lecturers._2, admins._2)
         )
-
       }
     }
 
@@ -127,7 +140,7 @@ class UserServiceImpl(
 
       // Check, if username errors exist, since entityRef might fail if username is incorrect
       if (validationErrors.map(_.name).contains(userVariableName + ".username")) {
-        throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+        throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
       }
 
       val ref = entityRef(postMessageUser.getUser.username)
@@ -138,7 +151,7 @@ class UserServiceImpl(
         }
 
         if (validationErrors.nonEmpty) {
-          throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+          throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
         }
 
         ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
@@ -163,8 +176,8 @@ class UserServiceImpl(
                           throw deletionException
                       }
                 }
-            case RejectedWithError(code, errorResponse) =>
-              throw new UC4Exception(code, errorResponse)
+            case RejectedWithError(code, reason) =>
+              throw UC4Exception(code, reason)
           }
       }
     }
@@ -197,7 +210,7 @@ class UserServiceImpl(
             }
 
             if (validationErrors.map(_.name).contains("username")) {
-              throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+              throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
             }
 
             val ref = entityRef(user.username)
@@ -206,7 +219,7 @@ class UserServiceImpl(
                 if (optUser.isEmpty) {
                   // Add to validation errors, and throw prematurely since uneditable fields are uncheckable
                   validationErrors :+= SimpleError("username", "Username not in use.")
-                  throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+                  throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
                 }
                 val oldUser = optUser.get
                 // Other users than admins can only edit specified fields
@@ -215,16 +228,16 @@ class UserServiceImpl(
                   editErrors ++= oldUser.checkProtectedFields(user)
                 }
                 if (editErrors.nonEmpty) {
-                  throw new UC4Exception(422, DetailedError(ErrorType.UneditableFields, editErrors))
+                  throw new UC4NonCriticalException(422, DetailedError(ErrorType.UneditableFields, editErrors))
                 }
                 if (validationErrors.nonEmpty) {
-                  throw new UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+                  throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
                 }
 
                 oldUser match {
-                  case _: Student if !user.isInstanceOf[Student] => throw new UC4Exception(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
-                  case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new UC4Exception(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
-                  case _: Admin if !user.isInstanceOf[Admin] => throw new UC4Exception(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Admin, but received non-Admin"))
+                  case _: Student if !user.isInstanceOf[Student] => throw new UC4NonCriticalException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
+                  case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new UC4NonCriticalException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))
+                  case _: Admin if !user.isInstanceOf[Admin] => throw new UC4NonCriticalException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Admin, but received non-Admin"))
                   case _ =>
                 }
 
@@ -232,8 +245,8 @@ class UserServiceImpl(
                   .map {
                     case Accepted => // Update successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case RejectedWithError(code, errorResponse) => //Update failed
-                      throw new UC4Exception(code, errorResponse)
+                    case RejectedWithError(code, reason) => //Update failed
+                      throw UC4Exception(code, reason)
                   }
             }
         }
@@ -249,8 +262,8 @@ class UserServiceImpl(
           .map {
             case Accepted => // Update Successful
               (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-            case Rejected("A user with the given username does not exist.") => // Already exists
-              throw UC4Exception.NotFound
+            case RejectedWithError(code, reason) =>
+              throw UC4Exception(code, reason)
           }
     }
   }
@@ -330,31 +343,43 @@ class UserServiceImpl(
       val ref = entityRef(matriculationUpdate.username)
       ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
         case Accepted => Done
-        case RejectedWithError(error, reason) => throw new UC4Exception(error, reason)
+        case RejectedWithError(error, reason) => throw UC4Exception(error, reason)
       }
   }
 
   /** Publishes every new user */
-  override def userCreationTopic(): Topic[Usernames] = TopicProducer.singleStreamWithOffset { fromOffset =>
+  override def userCreationTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(UserEvent.Tag, fromOffset)
       .mapConcat {
         //Filter only OnUserCreate events
-        case EventStreamElement(_, OnUserCreate(user), offset) =>
-          immutable.Seq((Usernames(user.username, Hashing.sha256(user.username)), offset))
+        case EventStreamElement(_, OnUserCreate(user), offset) => try {
+          immutable.Seq((kafkaEncryptionUtility.encrypt(Usernames(user.username, Hashing.sha256(user.username))), offset))
+        }
+        catch {
+          case throwable: Throwable =>
+            log.error("UserService cannot send invalid topic message {}", throwable.toString)
+            Nil
+        }
         case _ => Nil
       }
   }
 
   /** Publishes every deletion of a user */
-  override def userDeletedTopic(): Topic[JsonUsername] = TopicProducer.singleStreamWithOffset {
+  override def userDeletionTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
     fromOffset =>
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)
         .mapConcat {
           //Filter only OnUserDelete events
-          case EventStreamElement(_, OnUserDelete(user), offset) =>
-            immutable.Seq((JsonUsername(user.username), offset))
+          case EventStreamElement(_, OnUserDelete(user), offset) => try {
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
+          }
+          catch {
+            case throwable: Throwable =>
+              log.error("UserService cannot send invalid topic message {}", throwable.toString)
+              Nil
+          }
           case _ => Nil
         }
   }
@@ -364,12 +389,28 @@ class UserServiceImpl(
     ServerServiceCall {
       (header, _) =>
         database.getImage(username).flatMap {
-          case Some((array, contentType)) =>
-            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some(s"$contentType; charset=UTF-8")), List()), ByteString(array))
+          case Some(array) =>
+            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List()), ByteString(array))
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
-                (ResponseHeader(200, MessageProtocol(contentType = Some(s"image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
+            }
+        }
+    }
+  }
+
+  /** Gets the thumbnail of the user */
+  override def getThumbnail(username: String): ServiceCall[NotUsed, ByteString] = authenticated[NotUsed, ByteString](AuthenticationRole.All: _*) {
+    ServerServiceCall {
+      (header, _) =>
+        database.getThumbnail(username).flatMap {
+          case Some(array) =>
+            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List()), ByteString(array))
+          case None =>
+            getUser(username).invokeWithHeaders(header, NotUsed).map {
+              _ =>
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List()), ByteString(defaultThumbnail))
             }
         }
     }
@@ -386,20 +427,30 @@ class UserServiceImpl(
             }
 
             header.getHeader("Content-Type") match {
-              case Some(contentType) =>
-                if (config.getStringList("uc4.image.supportedTypes").contains(contentType.trim)) {
+              case Some(contentTypeRaw) =>
+                var contentType = contentTypeRaw.trim
+                if (supportedTypes.contains(contentType)) {
                   getUser(username).invokeWithHeaders(header, NotUsed).flatMap {
                     _ =>
-                      database.setImage(username, image, contentType).map {
-                        _ =>
-                          (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                      imageProcessing.convert("jpeg").invoke(ByteString(image)).flatMap { converted =>
+                        imageProcessing.smartCrop(profileWidth, profileHeight).invoke(converted).flatMap { profilePicture =>
+                          imageProcessing.thumbnail(thumbnailWidth, thumbnailHeight).invoke(profilePicture).flatMap { thumbnail =>
+                            database.setImage(username, profilePicture.toArray, thumbnail.toArray).map {
+                              _ =>
+                                (ResponseHeader(200, MessageProtocol.empty, List(("Location", s"$pathPrefix/users/$username/image"))), Done)
+                            }
+                          }
+                        }
                       }
+                        .recover {
+                          case ex: Throwable => throw UC4Exception.InternalServerError("Error processing the image", ex.getMessage)
+                        }
                   }
                 }
                 else {
                   throw UC4Exception.UnsupportedMediaType
                 }
-              case None => throw new UC4Exception(400, DetailedError(ErrorType.MissingHeader, Seq(SimpleError("Content-Type", "Missing"))))
+              case None => throw new UC4NonCriticalException(400, DetailedError(ErrorType.MissingHeader, Seq(SimpleError("Content-Type", "Missing"))))
             }
         }
     }

@@ -1,3 +1,22 @@
+# [v.0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.10.1...user-v0.11.0) (2020-10-26)
+## Feature
+- The Circuit Breaker ignores now UC4NonCriticalExceptions
+- Profile images are now properly cropped and stripped of their metadata
+- Images are now always jpegs for bandwidth reasons
+- Encrypted Kafka topics 
+## Refactor
+- Moved configurations to shared
+## Bugfix
+- Added minimum size to gzip (512 Byte)
+
+# [v.0.10.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.9.3...user-v0.10.1) (2020-10-15)
+## Feature
+ - Added thumbnail picture for each profile
+ - Added support for gif and webp
+ - Added basic image processing
+## Refactor
+## Bugfix
+
 # [v.0.9.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.9.2...user-v0.9.3) (2020-10-09)
 ## Feature
  - Wrapped Validation in Future to enable timeouts

@@ -22,7 +22,7 @@ spec:
           imagePullPolicy: Always
           env:
             - name: JAVA_OPTS
-              value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf"
+              value: "-Xms256m -Xmx256m -Dconfig.resource=prod-application.conf -Dlagom.akka.discovery.service-name-mappings.imageprocessing.lookup=_http._tcp.imaginary.uc4-support"
             - name: APPLICATION_SECRET
               valueFrom:
                 secretKeyRef:
@@ -40,6 +40,16 @@ spec:
                 secretKeyRef:
                   name: postgres-user
                   key: password
+            - name: UC4_MASTER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: uc4-master-secret
+                  key: secret
+            - name: UC4_KAFKA_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: uc4-kafka-salt
+                  key: secret
             - name: KAFKA_SERVICE_NAME
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR

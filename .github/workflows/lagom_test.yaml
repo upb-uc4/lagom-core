@@ -8,8 +8,8 @@ on:
   pull_request:
     branches: 
       - develop
-      - release
-      - master
+      - release/*
+      - main
 
 jobs:
   RunAllTests:

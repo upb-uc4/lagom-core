@@ -14,12 +14,17 @@ import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateS
 import de.upb.cs.uc4.certificate.impl.commands.RegisterUser
 import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
-import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
+import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
+import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4Application
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Usernames
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
 import scala.concurrent.Future
@@ -30,7 +35,10 @@ abstract class CertificateApplication(context: LagomApplicationContext)
   with SlickPersistenceComponents
   with JdbcPersistenceComponents
   with HikariCPComponents
-  with HyperledgerAdminParts {
+  with HyperledgerAdminParts
+  with KafkaEncryptionComponent {
+
+  protected final val log: Logger = LoggerFactory.getLogger(classOf[CertificateApplication])
 
   lazy val enrollmentManager: EnrollmentManagerTrait = EnrollmentManager
   lazy val registrationManager: RegistrationManagerTrait = RegistrationManager
@@ -50,6 +58,13 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     )
   )
 
+  try {
+    EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
+  }
+  catch {
+    case e: Throwable => throw e.toUC4Exception
+  }
+
   implicit val timeout: Timeout = Timeout(15.seconds)
 
   lazy val userService: UserService = serviceClient.implement[UserService]
@@ -58,14 +73,28 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     .userCreationTopic()
     .subscribe
     .atLeastOnce(
-      Flow.fromFunction[Usernames, Future[Done]](usernames =>
-        registerUser(usernames.username, usernames.enrollmentId)).mapAsync(8)(done => done)
+      Flow.fromFunction[EncryptionContainer, Future[Done]](container => try {
+        val usernames = kafkaEncryptionUtility.decrypt[Usernames](container)
+        registerUser(usernames.username, usernames.enrollmentId)
+      }
+      catch {
+        case throwable: Throwable =>
+          log.error("CertificateService received invalid topic message: {}", throwable.toString)
+          Future.successful(Done)
+      }).mapAsync(8)(done => done)
     )
 
   private def registerUser(username: String, enrollmentId: String): Future[Done] = {
-    val secret = registrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
-    clusterSharding.entityRefFor(CertificateState.typeKey, username)
-      .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, replyTo)).map(_ => Done)
+    try {
+      val secret = registrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
+      clusterSharding.entityRefFor(CertificateState.typeKey, username)
+        .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, replyTo)).map(_ => Done)
+    }
+    catch {
+      case e: Throwable =>
+        log.error("Registration failed", e.toUC4Exception)
+        Future.successful(Done)
+    }
   }
 }
 

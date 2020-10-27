@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.course.model
 
+import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json._
 
@@ -40,9 +41,11 @@ case class Course(
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 
-    val nameRegex = """[\s\S]{1,100}""".r // Allowed characters for coursename: 1-100 of everything
-    val descriptionRegex = """[\s\S]{0,10000}""".r // Allowed characters  for description
-    val dateRegex = """^(?:(?:(?:(?:(?:[1-9]\d)(?:0[48]|[2468][048]|[13579][26])|(?:(?:[2468][048]|[13579][26])00))(-)(?:0?2\1(?:29)))|(?:(?:[1-9]\d{3})(-)(?:(?:(?:0?[13578]|1[02])\2(?:31))|(?:(?:0?[13-9]|1[0-2])\2(?:29|30))|(?:(?:0?[1-9])|(?:1[0-2]))\2(?:0?[1-9]|1\d|2[0-8])))))$""".r
+    val nameRegex = RegexCollection.Commons.nameRegex
+    val descriptionRegex = RegexCollection.Commons.longTextRegex
+    val dateRegex = RegexCollection.Commons.dateRegex
+    val ectsRegex = RegexCollection.Course.ectsRegex
+    val maxParticipantsRegex = RegexCollection.Course.maxParticipantsRegex
 
     var errors = List[SimpleError]()
 
@@ -60,13 +63,13 @@ case class Course(
     if (!dateRegex.matches(endDate)) {
       errors :+= SimpleError("endDate", "End date must be of the following format \"yyyy-mm-dd\".")
     }
-    if (ects <= 0 || ects > 1000) {
-      errors :+= SimpleError("ects", "ECTS must be a positive integer between 1 and 999.")
+    if (!ectsRegex.matches(ects.toString)) {
+      errors :+= SimpleError("ects", "ECTS must be a positive integer between 0 and 999.")
     }
-    if (lecturerId.isEmpty) {
+    if (!nameRegex.matches(lecturerId)) {
       errors :+= SimpleError("lecturerId", "LecturerID must not be empty.")
     }
-    if (maxParticipants <= 0 || maxParticipants > 10000) {
+    if (!maxParticipantsRegex.matches(maxParticipants.toString)) {
       errors :+= SimpleError("maxParticipants", "Number of maximum participants must be a positive integer between 1 and 9999.")
     }
     if (currentParticipants < 0 || currentParticipants > maxParticipants) {
@@ -84,5 +87,4 @@ case class Course(
 
 object Course {
   implicit val format: Format[Course] = Json.format
-
 }

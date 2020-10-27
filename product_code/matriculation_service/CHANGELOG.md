@@ -1,3 +1,19 @@
+# [v.0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.10.1...matriculation-v0.11.0) (2020-10-26)
+## Feature
+- The Circuit Breaker ignores now UC4NonCriticalExceptions
+- Support for new production deployment
+## Refactor
+- Moved configurations to shared
+## Bugfix
+- Added minimum size to gzip (512 Byte)
+
+# [v.0.10.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.10.0...matriculation-v0.10.1) (2020-10-15)
+## Feature
+- Added Pseudonymisation by using enrollmentId instead of matriculationId
+- Removed FirstName, LastName and BirthDate from MatriculationData
+## Refactor
+## Bugfix
+
 # [v.0.10.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.9.0...matriculation-v0.10.0) (2020-10-12)
 ## Feature
 - Wrap Validation in Future to enable timeouts

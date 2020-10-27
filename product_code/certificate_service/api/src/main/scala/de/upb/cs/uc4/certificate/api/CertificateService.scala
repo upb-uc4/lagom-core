@@ -20,7 +20,7 @@ trait CertificateService extends UC4Service {
   override val name = "certificate"
 
   /** Forwards the certificate signing request from the given user */
-  def setCertificate(username: String): ServiceCall[PostMessageCSR, Done]
+  def setCertificate(username: String): ServiceCall[PostMessageCSR, JsonCertificate]
 
   /** Returns the certificate of the given user */
   def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate]
@@ -31,14 +31,25 @@ trait CertificateService extends UC4Service {
   /** Returns the encrypted private key of the given user */
   def getPrivateKey(username: String): ServiceCall[NotUsed, EncryptedPrivateKey]
 
+  // OPTIONS
+  /** Allows POST */
+  def allowedPost: ServiceCall[NotUsed, Done]
+
+  /** Allows GET */
+  def allowedGet: ServiceCall[NotUsed, Done]
+
   final override def descriptor: Descriptor = {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.POST, pathPrefix + "/certificates/:username", setCertificate _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/certificates/:username", setCertificate _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/certificates/:username/certificate", getCertificate _),
         restCall(Method.GET, pathPrefix + "/certificates/:username/enrollmentId", getEnrollmentId _),
-        restCall(Method.GET, pathPrefix + "/certificates/:username/privateKey", getPrivateKey _)
+        restCall(Method.GET, pathPrefix + "/certificates/:username/privateKey", getPrivateKey _),
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/:username", allowedPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/certificate", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/enrollmentId", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/privateKey", allowedGet _)
       )
       .withAutoAcl(true)
   }

@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.shared.client
 
-import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, SimpleError }
+import de.upb.cs.uc4.shared.client.exceptions.{ SimpleError, UC4Exception }
 
 object Utils {
 
@@ -47,7 +47,6 @@ object Utils {
         semesterToNumber(semester).compareTo(semesterToNumber(other))
       }
     }
-
   }
 
   /** Finds the latest semester in a list of semesters
@@ -59,6 +58,18 @@ object Utils {
       throw UC4Exception.InternalServerError("Semester validation error", "The semester string was used to find latest without being validated")
     }
     semesters.distinct.sortWith((a, b) => a.compareSemester(b) != 1).last
+  }
+
+  def dateToSemester(date: String): String = {
+    date match {
+      case s"${ y }-${ m }-${ d }" => m.toInt match {
+        case month if month <= 3 => s"WS${y.toInt - 1}/${y.substring(2)}"
+        case month if month <= 9 =>
+          s"SS$y"
+        case _ => s"WS$y/${(y.toInt + 1).toString.substring(2)}"
+      }
+      case _ => throw UC4Exception.InternalServerError("date", "Received invalid date while trying to convert to semester.")
+    }
   }
 
   private def semesterToNumber(semester: String): Double = {

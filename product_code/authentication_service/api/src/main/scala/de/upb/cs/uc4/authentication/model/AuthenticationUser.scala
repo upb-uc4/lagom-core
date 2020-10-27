@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.authentication.model
 
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
+import de.upb.cs.uc4.shared.client.configuration.RegexCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
@@ -18,7 +19,8 @@ case class AuthenticationUser(username: String, password: String, role: Authenti
   }
 
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
-    val usernameRegex = """[a-zA-Z0-9-.]{4,16}""".r
+    val usernameRegex = RegexCollection.AuthenticationUser.usernameRegex
+    val passwordRegex = RegexCollection.AuthenticationUser.passwordRegex
 
     var errors = List[SimpleError]()
     if (!usernameRegex.matches(username)) {
@@ -27,7 +29,7 @@ case class AuthenticationUser(username: String, password: String, role: Authenti
         "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'."
       )
     }
-    if (password == "") {
+    if (!passwordRegex.matches(password)) {
       errors :+= SimpleError("password", "Password must not be empty.")
     }
     errors
