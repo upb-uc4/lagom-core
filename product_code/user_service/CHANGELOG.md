@@ -1,4 +1,4 @@
-# [WIP v.0.10.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.10.1...user-v0.10.2) (2020-XX-XX)
+# [v.0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.10.1...user-v0.11.0) (2020-10-26)
 ## Feature
 - The Circuit Breaker ignores now UC4NonCriticalExceptions
 - Profile images are now properly cropped and stripped of their metadata

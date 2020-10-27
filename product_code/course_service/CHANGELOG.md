@@ -1,4 +1,4 @@
-# [WIP v.0.10.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.10.0...course-v0.10.1) (2020-XX-XX)
+# [v.0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.10.0...course-v0.11.0) (2020-10-26)
 ## Feature
 - The Circuit Breaker ignores now UC4NonCriticalExceptions
 - Added 0 as possible ects value
