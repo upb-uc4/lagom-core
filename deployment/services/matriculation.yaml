@@ -67,9 +67,9 @@ spec:
               
           volumeMounts:
             - name: cert
-              mountPath: /var/secrets/cert.pem
+              mountPath: /var/secrets
             - name: certorg1
-              mountPath: /var/secrets/org-cert.pem
+              mountPath: /var/secrets/org
             - name: connection
               mountPath: /var/libs/configmaps
               readOnly: true
