@@ -15,7 +15,7 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
-/** Implementation of the CourseService */
+/** Implementation of the ConfigurationService */
 class ConfigurationServiceImpl(implicit ec: ExecutionContext, config: Config) extends ConfigurationService {
 
   implicit val timeout: Timeout = Timeout(15.seconds)
