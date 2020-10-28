@@ -1,40 +1,40 @@
-# [v.0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.3...certificate-v0.11.0) (2020-10-26)
+# [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.3...certificate-v0.11.0) (2020-10-26)
 ## Feature
-- The Circuit Breaker ignores now UC4NonCriticalExceptions
-- Support for new production deployment
-- Encrypted Kafka topics
+ - Changed Circuit Breaker to ignore UC4NonCriticalExceptions
+ - Added support for new production deployment
+ - Added encrypted Kafka topics
 ## Refactor
 ## Bugfix
-- Added minimum size to gzip (512 Byte)
+ - Added minimum size to gzip (512 Byte)
 
-# [v.0.10.3](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.2...certificate-v0.10.3) (2020-10-15)
+# [v0.10.3](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.2...certificate-v0.10.3) (2020-10-15)
 ## Feature
 ## Refactor
 ## Bugfix
  - Fixed wrong response code of 202 being sent, instead of 201
 
-# [v.0.10.2](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.1...certificate-v0.10.2) (2020-10-13)
+# [v0.10.2](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.1...certificate-v0.10.2) (2020-10-13)
 ## Feature
 ## Refactor
 ## Bugfix
- - Fix missing OPTIONS call
- - Add exception handling for hyperledger exceptions
- - Add better and correct validation for csr
+ - Fixed missing OPTIONS call
+ - Added exception handling for hyperledger exceptions
+ - Added better and correct validation for csr
 
-# [v.0.10.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.9.2...certificate-v0.10.1) (2020-10-13)
+# [v0.10.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.9.2...certificate-v0.10.1) (2020-10-13)
 ## Feature
 ## Refactor
 ## Bugfix
- - Fix missing enrollment
+ - Fixed missing enrollment
 
-# [v.0.9.2](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.9.1...certificate-v0.9.2) (2020-10-09)
+# [v0.9.2](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.9.1...certificate-v0.9.2) (2020-10-09)
 ## Feature
 ## Refactor
 ## Bugfix
- - Fix wrong ENV variable
+ - Fixed wrong ENV variable
 
 
-# [v.0.9.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.9.1...certificate-v0.9.1) (2020-10-09)
+# [v0.9.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.9.1...certificate-v0.9.1) (2020-10-09)
 ## Feature
  - Added functionality for 
     - user registration and enrollment (with Hyperledger)
