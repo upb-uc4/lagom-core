@@ -1,61 +1,61 @@
-# [v.0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.10.0...authentication-v0.11.0) (2020-10-26)
+# [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.10.0...authentication-v0.11.0) (2020-10-26)
 ## Feature
-- The Circuit Breaker ignores now UC4NonCriticalExceptions
-- Encrypted Kafka topics 
+ - Changed Circuit Breaker to ignore UC4NonCriticalExceptions
+ - Added encrypted Kafka topics
 ## Refactor
-- Moved configurations to shared
+ - Moved configurations to shared
 ## Bugfix
-- Added minimum size to gzip (512 Byte)
+ - Added minimum size to gzip (512 Byte)
 
-# [v.0.10.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.9.0...authentication-v0.10.0) (2020-10-12)
+# [v0.10.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.9.0...authentication-v0.10.0) (2020-10-12)
 ## Feature
-- Wrap Validation in Future to enable timeouts
+ - Wrapped Validation in Future to enable timeouts
 ## Refactor
 ## Bugfix
 
-# [v.0.9.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.2...authentication-v0.9.0) (2020-09-28)
+# [v0.9.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.2...authentication-v0.9.0) (2020-09-28)
 ## Feature
 ## Refactor
- - Authentication Tests are now Unit-Tests
+ - Refactored tests to Unit-Tests
 ## Bugfix
  - Fixed bug that prevented authentication users being deleted from the tables
  - Fixed bug that lead to a wrong error being shown when the refresh token was missing for machine users
 
 
-# [v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.1...authentication-v0.8.2) (2020-09-22)
+# [v0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.8.1...authentication-v0.8.2) (2020-09-22)
 ## Feature
  - Added Gzipping in Options Header
 ## Refactor
  - Created more precise error code for missing refresh token
 ## Bugfix
 
-# [v.0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.7.1...authentication-v0.8.1) (2020-09-15)
+# [v0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.7.1...authentication-v0.8.1) (2020-09-15)
 ## Feature
- - Enabling Machine User Login with Bearer Authentication
- - Enabling Gzipping
+ - Enabled Machine User Login with Bearer Authentication
+ - Enabled Gzipping
 ## Refactor
 ## Bugfix
- - Fix hard coded HTTP Secret
+ - Fixed hard coded HTTP Secret
 
-# [v.0.7.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.7.0...authentication-v0.7.1) (2020-09-01)
+# [v0.7.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.7.0...authentication-v0.7.1) (2020-09-01)
 ## Feature
- - JWT Token uses now Strict Same Site restriction again
+ - Changed JWT Tokens to Strict Same Site restriction again
 ## Refactor
 ## Bugfix
 
-# [v.0.7.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.6.0...authentication-v0.7.0) (2020-09-01)
+# [v0.7.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.6.0...authentication-v0.7.0) (2020-09-01)
 ## Feature
  - Added custom deserialization exceptions
- - Switch to JWT Token
+ - Switched to JWT Token
     - Added login endpoint which uses basic to create a refresh and a login token
     - Added refresh endpoint to create a new login token with the refresh token
- - The authentication service is now only needed for the first login 
 ## Refactor
+ - Refactored authentication service to only be necessary for the first login 
  - Added ServiceStub for testing to reduce code duplication
  - Added default AuthenticationUsers for easier maintainability in testing
 ## Bugfix
 
-# [v.0.6.0](https://github.com/upb-uc4/University-Credits-4.0/compare/v0.5.0...authentication-v0.6.0) (2020-08-17)
+# [v0.6.0](https://github.com/upb-uc4/University-Credits-4.0/compare/v0.5.0...authentication-v0.6.0) (2020-08-17)
 ## Feature
  - Added predefined standard exceptions to CustomException
 ## Refactor

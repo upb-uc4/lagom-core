@@ -1,25 +1,25 @@
-# [v.0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.10.0...course-v0.11.0) (2020-10-26)
+# [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.10.0...course-v0.11.0) (2020-10-26)
 ## Feature
-- The Circuit Breaker ignores now UC4NonCriticalExceptions
-- Added 0 as possible ects value
+ - Changed Circuit Breaker to ignore UC4NonCriticalExceptions
+ - Added 0 as possible ECTS value
 ## Refactor
-- Moved configurations to shared
+ - Moved configurations to shared
 ## Bugfix
-- Added minimum size to gzip (512 Byte)
+ - Added minimum size to gzip (512 Byte)
 
-# [v.0.10.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.9.0...course-v0.10.0) (2020-10-12)
+# [v0.10.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.9.0...course-v0.10.0) (2020-10-12)
 ## Feature
-- Wrap Validation in Future to enable timeouts
+ - Wrapped Validation in Future to enable timeouts
 ## Refactor
-## Bugfix
-
-# [v.0.9.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.8.2...course-v0.9.0) (2020-10-02)
-## Feature
-## Refactor
- - Rebuild to implement new user-service API
 ## Bugfix
 
-# [v.0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.8.1...course-v0.8.2) (2020-09-22)
+# [v0.9.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.8.2...course-v0.9.0) (2020-10-02)
+## Feature
+## Refactor
+ - Rebuilt to implement new user-service API
+## Bugfix
+
+# [v0.8.2](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.8.1...course-v0.8.2) (2020-09-22)
 ## Feature
  - Added Gzipping in Options Header
 ## Refactor
@@ -27,31 +27,31 @@
 ## Bugfix
  - Fixed empty lecturerId causing an internal 404
 
-# [v.0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.7.1...course-v0.8.1) (2020-09-15)
+# [v0.8.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.7.1...course-v0.8.1) (2020-09-15)
 ## Feature
-- Supports Bearer Authentication with JWT token
- - Enabling Gzipping
+ - Added support for Bearer Authentication with JWT token
+ - Enabled Gzipping
 ## Refactor
 ## Bugfix
- - Fix hard coded HTTP Secret
+ - Fixed hard coded HTTP Secret
 
-# [v.0.7.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.7.0...course-v0.7.1) (2020-09-01)
+# [v0.7.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.7.0...course-v0.7.1) (2020-09-01)
 ## Feature
 ## Refactor
 ## Bugfix
  - Fixed adding/updating of courses with non-existing lecturers
 
-# [v.0.7.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.6.0...course-v0.7.0) (2020-09-01)
+# [v0.7.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.6.0...course-v0.7.0) (2020-09-01)
 ## Feature
  - Added custom deserialization exceptions 
 ## Refactor
 ## Bugfix
 
-# [v.0.6.0](https://github.com/upb-uc4/University-Credits-4.0/compare/v0.5.0...course-v0.6.0) (2020-08-17)
+# [v0.6.0](https://github.com/upb-uc4/University-Credits-4.0/compare/v0.5.0...course-v0.6.0) (2020-08-17)
 ## Feature
  - Added predefined standard exceptions to CustomException
 ## Refactor
  - Changed exceptions to use these standard exceptions whereever possible
 ## Bugfix
-- Fixed ambigous endpoints caused by UC4Service Trait
-- Fixed search for courseName not being fuzzy
+ - Fixed ambigous endpoints caused by UC4Service Trait
+ - Fixed search for courseName not being fuzzy
