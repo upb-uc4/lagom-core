@@ -1,10 +1,12 @@
 package de.upb.cs.uc4.matriculation.impl
 
-import java.util.Calendar
+import java.nio.charset.StandardCharsets
+import java.util.{ Base64, Calendar }
 
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
@@ -12,7 +14,6 @@ import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
-import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -35,8 +36,6 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
 
         userService.resetToDefaults()
-        certificateService.setup(student0.username)
-        student0EnrollmentId = certificateService.get(student0.username).enrollmentId
 
         var jsonStringList: Seq[String] = List()
 
@@ -127,16 +126,17 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               }
             }
 
-            override val contractName: String = ""
+            override def getProposalAddMatriculationData(jSonMatriculationData: String): Array[Byte] =
+              jSonMatriculationData.getBytes
 
-            override def getProposalAddMatriculationData(jSonMatriculationData: String): Array[Byte] = Array.emptyByteArray
-
-            override def getProposalAddEntriesToMatriculationData(enrollmentId: String, subjectMatriculationList: String): Array[Byte] = Array.emptyByteArray
+            override def getProposalAddEntriesToMatriculationData(enrollmentId: String, subjectMatriculationList: String): Array[Byte] =
+              (enrollmentId + "#" + subjectMatriculationList).getBytes()
 
             override def getProposalUpdateMatriculationData(jSonMatriculationData: String): Array[Byte] = Array.emptyByteArray
 
             override def getProposalGetMatriculationData(enrollmentId: String): Array[Byte] = Array.emptyByteArray
 
+            override val contractName: String = ""
             override val contract: ContractImpl = null
             override val gateway: GatewayImpl = null
             override val draftContract: ContractImpl = null
@@ -147,10 +147,21 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     }
 
   val client: MatriculationService = server.serviceClient.implement[MatriculationService]
+  val certificate: CertificateServiceStub = server.application.certificateService
 
   override protected def afterAll(): Unit = server.stop()
 
-  def addAuthorizationHeader(): RequestHeader => RequestHeader = { header =>
+  def createLoginToken(username: String = "admin"): String = {
+
+    var role = AuthenticationRole.Admin
+
+    if (username.contains("student")) {
+      role = AuthenticationRole.Student
+    }
+    else if (username.contains("lecturer")) {
+      role = AuthenticationRole.Lecturer
+    }
+
     val time = Calendar.getInstance()
     time.add(Calendar.DATE, 1)
 
@@ -158,13 +169,16 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
       Jwts.builder()
         .setSubject("login")
         .setExpiration(time.getTime)
-        .claim("username", "admin")
-        .claim("authenticationRole", "Admin")
+        .claim("username", username)
+        .claim("authenticationRole", role.toString)
         .signWith(SignatureAlgorithm.HS256, "changeme")
         .compact()
 
-    header.withHeader("Cookie", s"login=$token")
+    s"login=$token"
   }
+
+  def addAuthorizationHeader(username: String = "admin"): RequestHeader => RequestHeader =
+    header => header.withHeader("Cookie", createLoginToken(username))
 
   def prepare(matriculations: Seq[ImmatriculationData]): Unit = {
     server.application.jsonStringList ++= matriculations.map(_.toJson)
@@ -175,27 +189,28 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
   }
 
   private def createSingleMatriculation(field: String, semester: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester))))
+  private def asString(unsignedProposal: String) = new String(Base64.getDecoder.decode(unsignedProposal), StandardCharsets.UTF_8)
 
   var student0EnrollmentId: String = _
 
   "MatriculationService service" should {
 
     "add matriculation data for a student" in {
-      client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
-        .invoke(PutMessageMatriculation(Seq(SubjectMatriculation("Computer Science", Seq("SS2020"))))).flatMap { _ =>
-          client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-            answer =>
-              answer.enrollmentId should ===(student0EnrollmentId)
-              answer.matriculationStatus should contain theSameElementsAs
-                Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
-          }
-        }.andThen {
-          case _ => cleanup()
-        }
+      val message = createSingleMatriculation("Computer Science", "SS2020")
+      certificate.setup(student0.username)
+      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+        val data = ImmatriculationData(jsonId.id, message.matriculation)
 
+        client.getMatriculationDataProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+          .invoke(message).map { proposal =>
+            asString(proposal.unsignedProposal) should ===(data.toJson)
+          }.andThen {
+            case _ => cleanup()
+          }
+      }
     }
 
-    "not add empty matriculation data for a student" in {
+    /*"not add empty matriculation data for a student" in {
       client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
         .invoke(PutMessageMatriculation(Seq())).failed.map { answer =>
           answer.asInstanceOf[UC4Exception].errorCode.http should ===(422)
@@ -243,6 +258,6 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         }.andThen {
           case _ => cleanup()
         }
-    }
+    }*/
   }
 }
