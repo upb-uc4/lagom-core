@@ -43,7 +43,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
               chaincode: String, networkDescriptionPath: Path): String = s"certificate for $enrollmentID"
 
           override def enroll(caURL: String, caCert: Path, walletPath: Path, enrollmentID: String, enrollmentSecret: String,
-              organisationId: String, channel: String, chaincode: String, networkDescriptionPath: Path): Unit = {}
+              organisationId: String, channel: String, chaincode: String, networkDescriptionPath: Path): String = s"certificate for $enrollmentID"
         }
 
         override lazy val registrationManager: RegistrationManagerTrait =

@@ -15,7 +15,7 @@ import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatric
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
-import org.hyperledger.fabric.gateway.{ Contract, Gateway }
+import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -47,7 +47,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               val matriculationData = Json.parse(jsonMatriculationData).as[ImmatriculationData]
               if (matriculationData.matriculationStatus.isEmpty) {
                 throw new TransactionExceptionTrait() {
-                  override val transactionId: String = "addEntriesToMatriculationData"
+                  override val transactionName: String = "addEntriesToMatriculationData"
                   override val payload: String =
                     """{
                       |  "type": "HLUnprocessableEntity",
@@ -71,7 +71,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
 
               if (matriculationList.isEmpty) {
                 throw new TransactionExceptionTrait() {
-                  override val transactionId: String = "addEntriesToMatriculationData"
+                  override val transactionName: String = "addEntriesToMatriculationData"
                   override val payload: String =
                     """{
                       |  "type": "HLUnprocessableEntity",
@@ -117,7 +117,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               }
               else {
                 throw new TransactionExceptionTrait() {
-                  override val transactionId: String = "getMatriculationData"
+                  override val transactionName: String = "getMatriculationData"
                   override val payload: String =
                     """{
                     |  "type": "HLNotFound",
@@ -127,9 +127,20 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
               }
             }
 
-            override val contract: Contract = null
-            override val gateway: Gateway = null
             override val contractName: String = ""
+
+            override def getProposalAddMatriculationData(jSonMatriculationData: String): Array[Byte] = Array.emptyByteArray
+
+            override def getProposalAddEntriesToMatriculationData(enrollmentId: String, subjectMatriculationList: String): Array[Byte] = Array.emptyByteArray
+
+            override def getProposalUpdateMatriculationData(jSonMatriculationData: String): Array[Byte] = Array.emptyByteArray
+
+            override def getProposalGetMatriculationData(enrollmentId: String): Array[Byte] = Array.emptyByteArray
+
+            override val contract: ContractImpl = null
+            override val gateway: GatewayImpl = null
+            override val draftContract: ContractImpl = null
+            override val draftGateway: GatewayImpl = null
           }
         }
       }
