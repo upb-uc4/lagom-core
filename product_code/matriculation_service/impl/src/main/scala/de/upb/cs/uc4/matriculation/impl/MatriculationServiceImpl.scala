@@ -42,7 +42,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
   override def addMatriculationData(username: String): ServiceCall[SignedTransactionProposal, Done] =
     identifiedAuthenticated[SignedTransactionProposal, Done](AuthenticationRole.Student) { (authUser, _) =>
       ServerServiceCall { (header, message) =>
-        if(authUser != username.trim) {
+        if (authUser != username.trim) {
           throw UC4Exception.OwnerMismatch
         }
 
@@ -50,7 +50,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
           .flatMap { jsonEnrollmentId =>
             val enrollmentId = jsonEnrollmentId.id
 
-            entityRef.ask[Confirmation](replyTo => SubmitProposal(message, replyTo)).map{
+            entityRef.ask[Confirmation](replyTo => SubmitProposal(message, replyTo)).map {
               case Accepted =>
                 (ResponseHeader(202, MessageProtocol.empty, List()), Done)
               case RejectedWithError(statusCode, reason) =>
@@ -64,7 +64,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
     identifiedAuthenticated[PutMessageMatriculation, TransactionProposal](AuthenticationRole.Student) { (authUser, _) =>
       ServerServiceCall { (header, rawMessage) =>
 
-        if(authUser != username.trim) {
+        if (authUser != username.trim) {
           throw UC4Exception.OwnerMismatch
         }
 

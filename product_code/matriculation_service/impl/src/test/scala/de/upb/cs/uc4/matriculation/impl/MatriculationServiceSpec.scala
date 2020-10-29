@@ -191,8 +191,6 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
   private def createSingleMatriculation(field: String, semester: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester))))
   private def asString(unsignedProposal: String) = new String(Base64.getDecoder.decode(unsignedProposal), StandardCharsets.UTF_8)
 
-  var student0EnrollmentId: String = _
-
   "MatriculationService service" should {
 
     "add matriculation data for a student" in {
