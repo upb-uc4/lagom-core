@@ -5,7 +5,7 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.Future
 
 class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
 

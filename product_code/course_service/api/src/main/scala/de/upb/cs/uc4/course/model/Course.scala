@@ -1,6 +1,5 @@
 package de.upb.cs.uc4.course.model
 
-import de.upb.cs.uc4.examreg.model.Module
 import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json._

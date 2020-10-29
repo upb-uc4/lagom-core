@@ -16,7 +16,7 @@ import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4CriticalException, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
