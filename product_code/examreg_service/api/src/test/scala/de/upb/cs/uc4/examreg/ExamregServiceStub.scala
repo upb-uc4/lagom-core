@@ -12,7 +12,7 @@ class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
   val examRegs = Seq(examReg0, examReg1)
 
   /** Get all examination regulations, or the ones specified by the query parameter */
-  override def getExaminationRegulations(regulations: Option[String], active: Option[Boolean]): ServiceCall[NotUsed, Seq[ExaminationRegulation]] = ServiceCall{
+  override def getExaminationRegulations(regulations: Option[String], active: Option[Boolean]): ServiceCall[NotUsed, Seq[ExaminationRegulation]] = ServiceCall {
     _ =>
       Future.successful(
         examRegs
@@ -22,7 +22,7 @@ class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
   }
 
   /** Get all names of examination regulations */
-  override def getExaminationRegulationsNames(active: Option[Boolean]): ServiceCall[NotUsed, Seq[String]] = ServiceCall{
+  override def getExaminationRegulationsNames(active: Option[Boolean]): ServiceCall[NotUsed, Seq[String]] = ServiceCall {
     _ =>
       Future.successful(
         examRegs.
@@ -31,7 +31,7 @@ class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
   }
 
   /** Get modules from all examination regulations, optionally filtered by Ids */
-  override def getModules(moduleIds: Option[String], active: Option[Boolean]): ServiceCall[NotUsed, Seq[Module]] = ServiceCall{
+  override def getModules(moduleIds: Option[String], active: Option[Boolean]): ServiceCall[NotUsed, Seq[Module]] = ServiceCall {
     _ =>
       Future.successful(
         examRegs
@@ -41,8 +41,8 @@ class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
   }
 
   /** Allows GET */
-  override def allowedMethodsGET: ServiceCall[NotUsed, Done] = ServiceCall{ _ => Future.successful(Done)}
+  override def allowedMethodsGET: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
   /** This Methods needs to allow a GET-Method */
-  override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall{ _ => Future.successful(Done)}
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 }

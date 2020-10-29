@@ -26,18 +26,18 @@ import scala.concurrent.Future
 /** Tests for the CourseService
   * All tests need to be started in the defined order
   */
-class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestCourses with DefaultTestExamRegs{
+class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestCourses with DefaultTestExamRegs {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new CourseApplication(ctx) with LocalServiceLocator {
-      override lazy val userService: UserServiceStub = new UserServiceStub()
-      userService.resetToDefaults()
-      override lazy val examregService: ExamregService = new ExamregServiceStub()
+      new CourseApplication(ctx) with LocalServiceLocator {
+        override lazy val userService: UserServiceStub = new UserServiceStub()
+        userService.resetToDefaults()
+        override lazy val examregService: ExamregService = new ExamregServiceStub()
+      }
     }
-  }
 
   val client: CourseService = server.serviceClient.implement[CourseService]
 
@@ -203,10 +203,10 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "not create a course as an Admin with a non existing module" in {
       client.addCourse().handleRequestHeader(addAuthorizationHeader())
         .invoke(course0.copy(moduleIds = Seq("nonExisting", examReg0.modules.head.id, "nonExisting2"))).failed.map {
-        answer =>
-          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
-            contain theSameElementsAs Seq("moduleIds[0]", "moduleIds[2]")
-      }.flatMap(cleanupOnSuccess)
+          answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
+              contain theSameElementsAs Seq("moduleIds[0]", "moduleIds[2]")
+        }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
