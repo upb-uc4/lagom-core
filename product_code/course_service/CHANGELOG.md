@@ -1,3 +1,11 @@
+# [v0.11.1 - WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.11.0...course-v0.11.1) (2020-XX-XX)
+## Feature
+ - Added "moduleIds" to Course object
+ - Added query parameter for module Ids
+ - Added dependency; CourseService dependant on ExamReg
+## Refactor
+## Bugfix
+
 # [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.10.0...course-v0.11.0) (2020-10-26)
 ## Feature
  - Changed Circuit Breaker to ignore UC4NonCriticalExceptions

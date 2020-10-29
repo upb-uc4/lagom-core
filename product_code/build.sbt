@@ -73,7 +73,7 @@ lazy val hyperledger_component = (project in file("hyperledger_component"))
 lazy val course_service_api = (project in file("course_service/api"))
   .settings(Settings.apiSettings("course_service_api"))
   .settings(libraryDependencies += Dependencies.uuid % Test)
-  .dependsOn(shared_client)
+  .dependsOn(shared_client, examreg_service_api % withTests)
 
 lazy val course_service = (project in file("course_service/impl"))
   .enablePlugins(LagomScala)
@@ -82,7 +82,7 @@ lazy val course_service = (project in file("course_service/impl"))
     libraryDependencies += Dependencies.uuid
   )
   .settings(Settings.implSettings("course_service"))
-  .dependsOn(course_service_api % withTests, user_service_api % withTests, shared_server)
+  .dependsOn(course_service_api % withTests, user_service_api % withTests, examreg_service_api % withTests, shared_server)
 
 lazy val authentication_service_api = (project in file("authentication_service/api"))
   .settings(Settings.apiSettings("authentication_service_api"))

@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.course.model
 
+import de.upb.cs.uc4.examreg.model.Module
 import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json._
@@ -8,6 +9,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 case class Course(
     courseId: String,
+    moduleIds: Seq[String],
     courseName: String,
     courseType: String,
     startDate: String,
@@ -22,6 +24,7 @@ case class Course(
   def trim: Course = {
     copy(
       courseId,
+      moduleIds,
       courseName.trim,
       courseType,
       startDate.trim,

@@ -15,6 +15,7 @@ import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
 import de.upb.cs.uc4.course.model.Course
+import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4CriticalException, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
@@ -25,7 +26,7 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(
-    clusterSharding: ClusterSharding, userService: UserService,
+    clusterSharding: ClusterSharding, userService: UserService, examregService: ExamregService,
     readSide: ReadSide, processor: CourseEventProcessor, database: CourseDatabase
 )(implicit ec: ExecutionContext, config: Config) extends CourseService {
   readSide.register(processor)
@@ -39,7 +40,7 @@ class CourseServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
 
   /** @inheritdoc */
-  override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated(AuthenticationRole.All: _*) { _ =>
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = ServiceCall { _ =>
     database.getAll
       .map(seq => seq
         .map(entityRef(_).ask[Option[Course]](replyTo => GetCourse(replyTo))) //Future[Seq[Future[Option[Course]]]]
@@ -54,7 +55,22 @@ class CourseServiceImpl(
           //If courseName query is set, we check that every whitespace seperated parameter is contained
           courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
         }
-        .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get))
+        .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
+        .filter {
+          course =>
+            moduleIds match {
+              case None => true
+              case Some(listOfModuleIds) =>
+                listOfModuleIds.split(',').foreach {
+                  moduleId =>
+                    if (course.moduleIds.contains(moduleId)) {
+                      true
+                    }
+                }
+                false
+            }
+        })
+
   }
 
   /** @inheritdoc */
@@ -67,12 +83,38 @@ class CourseServiceImpl(
             throw UC4Exception.OwnerMismatch
           }
 
-          val validationErrors = try {
+          var validationErrors = try {
             Await.result(courseProposal.validate, validationTimeout)
           }
           catch {
             case _: TimeoutException => throw UC4Exception.ValidationTimeout
             case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          }
+
+          if (courseProposal.moduleIds.nonEmpty) {
+            val moduleCheckFuture = examregService.getModules(None, Some(true)).invoke().map {
+              modules =>
+                if (modules.isEmpty) {
+                  for (index <- courseProposal.moduleIds.indices) {
+                    validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                  }
+                }
+                else {
+                  val moduleIdList = modules.map(_.id)
+                  for (index <- courseProposal.moduleIds.indices) {
+                    if (!moduleIdList.contains(courseProposal.moduleIds(index)))
+                      validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                  }
+                }
+            }
+            try {
+              // TODO use another timeout variable, for internal server communication
+              Await.result(moduleCheckFuture, validationTimeout)
+            }
+            catch {
+              case _: TimeoutException => throw UC4Exception.ValidationTimeout
+              case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+            }
           }
 
           // If lecturerId is empty, the userService call cannot be found, therefore check and abort
@@ -102,6 +144,7 @@ class CourseServiceImpl(
                   throw UC4Exception(code, reason)
               }
           }
+
         }
     }
 
@@ -132,7 +175,7 @@ class CourseServiceImpl(
     }
 
   /** @inheritdoc */
-  override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) { _ =>
+  override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = ServiceCall { _ =>
     entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
       case Some(course) => course
       case None         => throw UC4Exception.NotFound
@@ -149,12 +192,38 @@ class CourseServiceImpl(
           throw UC4Exception.PathParameterMismatch
         }
 
-        val validationErrors = try {
+        var validationErrors = try {
           Await.result(updatedCourse.validate, validationTimeout)
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
           case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        }
+
+        if (updatedCourse.moduleIds.nonEmpty) {
+          val moduleCheckFuture = examregService.getModules(None, Some(true)).invoke().map {
+            modules =>
+              if (modules.isEmpty) {
+                for (index <- updatedCourse.moduleIds.indices) {
+                  validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                }
+              }
+              else {
+                val moduleIdList = modules.map(_.id)
+                for (index <- updatedCourse.moduleIds.indices) {
+                  if (!moduleIdList.contains(updatedCourse.moduleIds(index)))
+                    validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                }
+              }
+          }
+          try {
+            // TODO use another timeout variable, for internal server communication
+            Await.result(moduleCheckFuture, validationTimeout)
+          }
+          catch {
+            case _: TimeoutException => throw UC4Exception.ValidationTimeout
+            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          }
         }
 
         // If lecturerId is empty, the userService call cannot be found, therefore check and abort

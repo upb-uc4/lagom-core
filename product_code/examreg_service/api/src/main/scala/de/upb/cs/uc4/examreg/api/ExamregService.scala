@@ -3,7 +3,7 @@ package de.upb.cs.uc4.examreg.api
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
-import de.upb.cs.uc4.examreg.model.{ JsonExamRegNameList, JsonExaminationRegulations }
+import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
 import de.upb.cs.uc4.shared.client.UC4Service
 
 /** The ExamregService interface.
@@ -13,14 +13,17 @@ import de.upb.cs.uc4.shared.client.UC4Service
   */
 trait ExamregService extends UC4Service {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
-  override val pathPrefix = "/exam-reg-management"
+  override val pathPrefix = "/examreg-management"
   override val name = "examreg"
 
   /** Get all examination regulations, or the ones specified by the query parameter */
-  def getExaminationRegulations(regulations: Option[String]): ServiceCall[NotUsed, JsonExaminationRegulations]
+  def getExaminationRegulations(regulations: Option[String], active: Option[Boolean]): ServiceCall[NotUsed, Seq[ExaminationRegulation]]
 
   /** Get all names of examination regulations */
-  def getExaminationRegulationsNames: ServiceCall[NotUsed, JsonExamRegNameList]
+  def getExaminationRegulationsNames(active: Option[Boolean]): ServiceCall[NotUsed, Seq[String]]
+
+  /** Get modules from all examination regulations, optionally filtered by Ids*/
+  def getModules(moduleIds: Option[String], active: Option[Boolean]): ServiceCall[NotUsed, Seq[Module]]
 
   /** Allows GET */
   def allowedMethodsGET: ServiceCall[NotUsed, Done]
@@ -29,9 +32,11 @@ trait ExamregService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/examination-regulations?regulations", getExaminationRegulations _),
-        restCall(Method.GET, pathPrefix + "/examination-regulations/names", getExaminationRegulationsNames _),
+        restCall(Method.GET, pathPrefix + "/examination-regulations?regulations&active", getExaminationRegulations _),
+        restCall(Method.GET, pathPrefix + "/examination-regulations/modules?moduleIds&active", getModules _),
+        restCall(Method.GET, pathPrefix + "/examination-regulations/names?active", getExaminationRegulationsNames _),
         restCall(Method.OPTIONS, pathPrefix + "/examination-regulations", allowedMethodsGET _),
+        restCall(Method.OPTIONS, pathPrefix + "/examination-regulations/modules", allowedMethodsGET _),
         restCall(Method.OPTIONS, pathPrefix + "/examination-regulations/names", allowedMethodsGET _),
       )
   }

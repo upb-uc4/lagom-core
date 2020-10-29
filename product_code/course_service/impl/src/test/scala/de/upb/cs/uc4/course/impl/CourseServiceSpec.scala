@@ -10,6 +10,8 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.DefaultTestCourses
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
+import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
+import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.user.UserServiceStub
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
@@ -24,17 +26,18 @@ import scala.concurrent.Future
 /** Tests for the CourseService
   * All tests need to be started in the defined order
   */
-class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestCourses {
+class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestCourses with DefaultTestExamRegs{
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-      new CourseApplication(ctx) with LocalServiceLocator {
-        override lazy val userService: UserServiceStub = new UserServiceStub()
-        userService.resetToDefaults()
-      }
+    new CourseApplication(ctx) with LocalServiceLocator {
+      override lazy val userService: UserServiceStub = new UserServiceStub()
+      userService.resetToDefaults()
+      override lazy val examregService: ExamregService = new ExamregServiceStub()
     }
+  }
 
   val client: CourseService = server.serviceClient.implement[CourseService]
 
@@ -71,7 +74,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   }
 
   def deleteAllCourses(): Future[Assertion] = {
-    client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap {
+    client.getAllCourses(None, None, None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap {
       list =>
         Future.sequence(
           list.map { course =>
@@ -106,7 +109,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   "CourseService" should {
 
     "get all courses with no courses" in {
-      client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader())
+      client.getAllCourses(None, None, None).handleRequestHeader(addAuthorizationHeader())
         .invoke().map { answer =>
           answer shouldBe empty
         }.flatMap(cleanupOnSuccess)
@@ -115,7 +118,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "get all courses with matching names" in {
       prepare(Seq(course0, course1, course2)).flatMap { _ =>
-        client.getAllCourses(Some("Course 1"), None).handleRequestHeader(addAuthorizationHeader())
+        client.getAllCourses(Some("Course 1"), None, None).handleRequestHeader(addAuthorizationHeader())
           .invoke().map { answer =>
             answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1, course2)
           }
@@ -125,7 +128,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "get all courses with matching lecturerIds" in {
       prepare(Seq(course0, course1, course2)).flatMap { _ =>
-        client.getAllCourses(None, Some("lecturer0")).handleRequestHeader(addAuthorizationHeader())
+        client.getAllCourses(None, Some("lecturer0"), None).handleRequestHeader(addAuthorizationHeader())
           .invoke().map { answer =>
             answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course0, course1)
           }
@@ -135,7 +138,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "get all courses with matching names and lecturerIds" in {
       prepare(Seq(course0, course1, course2)).flatMap { _ =>
-        client.getAllCourses(Some("Course 1"), Some("lecturer0")).handleRequestHeader(addAuthorizationHeader())
+        client.getAllCourses(Some("Course 1"), Some("lecturer0"), None).handleRequestHeader(addAuthorizationHeader())
           .invoke().map { answer =>
             answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1)
           }
@@ -165,7 +168,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         .invoke(course0).flatMap { createdCourse =>
 
           eventually(timeout(Span(15, Seconds))) {
-            client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader())
+            client.getAllCourses(None, None, None).handleRequestHeader(addAuthorizationHeader())
               .invoke().map { answer =>
                 answer should contain theSameElementsAs Seq(createdCourse)
               }
@@ -179,7 +182,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
         .invoke(course0.copy(lecturerId = "lecturer0")).flatMap { createdCourse =>
 
           eventually(timeout(Span(15, Seconds))) {
-            client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader())
+            client.getAllCourses(None, None, None).handleRequestHeader(addAuthorizationHeader())
               .invoke().map { answer =>
                 answer should contain theSameElementsAs Seq(createdCourse)
               }
@@ -194,6 +197,16 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
           answer =>
             answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
         }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not create a course as an Admin with a non existing module" in {
+      client.addCourse().handleRequestHeader(addAuthorizationHeader())
+        .invoke(course0.copy(moduleIds = Seq("nonExisting", examReg0.modules.head.id, "nonExisting2"))).failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
+            contain theSameElementsAs Seq("moduleIds[0]", "moduleIds[2]")
+      }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
@@ -227,7 +240,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
           .invoke().flatMap { _ =>
 
             eventually(timeout(Span(15, Seconds))) {
-              client.getAllCourses(None, None).handleRequestHeader(addAuthorizationHeader())
+              client.getAllCourses(None, None, None).handleRequestHeader(addAuthorizationHeader())
                 .invoke().map { answer =>
                   answer should not contain createdCourses.head
                 }
