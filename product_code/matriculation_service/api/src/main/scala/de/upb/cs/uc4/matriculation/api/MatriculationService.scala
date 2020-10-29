@@ -5,7 +5,7 @@ import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
-import de.upb.cs.uc4.shared.client.UC4Service
+import de.upb.cs.uc4.shared.client.{ SignedTransactionProposal, TransactionProposal, UC4Service }
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
 /** The MatriculationService interface.
@@ -20,13 +20,16 @@ trait MatriculationService extends UC4Service {
   override val name: String = "matriculation"
 
   /** Immatriculates a student */
-  def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done]
+  def addMatriculationData(username: String): ServiceCall[SignedTransactionProposal, Done]
+
+  /** Get proposal to immatriculates a student */
+  def getMatriculationDataProposal(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal]
 
   /** Returns the ImmatriculationData of a student with the given username */
   def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData]
 
-  /** Allows PUT */
-  def allowedPut: ServiceCall[NotUsed, Done]
+  /** Allows POST */
+  def allowedPost: ServiceCall[NotUsed, Done]
 
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
@@ -35,9 +38,11 @@ trait MatriculationService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/matriculation/:username/submit", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/matriculation/:username/proposal", getMatriculationDataProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/history/:username", getMatriculationData _),
-        restCall(Method.OPTIONS, pathPrefix + "/:username", allowedPut _),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/submit", allowedPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/history/:username", allowedGet _),
       )
   }
