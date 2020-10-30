@@ -83,8 +83,8 @@ class CertificateServiceImpl(
             }
           case (_, _, Some(_), _) =>
             throw UC4Exception.AlreadyEnrolled
-          case _ =>
-            throw UC4Exception.InternalServerError("Failed to enroll user", "Unexpected actor content, maybe registration failed")
+          case actorContent =>
+            throw UC4Exception.InternalServerError("Failed to enroll user", s"Unexpected actor content; $actorContent")
         }
       }
   }
