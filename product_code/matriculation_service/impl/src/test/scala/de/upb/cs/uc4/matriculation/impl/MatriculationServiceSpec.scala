@@ -230,18 +230,18 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         ))
         client.getProposalAddMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(createSingleMatriculation("Computer Science", "WS2020/21")).flatMap {
-          proposal =>
-            client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
-              .invoke(SignedTransactionProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
-              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
-                answer =>
-                  answer.matriculationStatus should contain theSameElementsAs
-                    Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
-              }
-            }
-        }.andThen {
-          case _ => cleanup()
-        }
+            proposal =>
+              client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+                .invoke(SignedTransactionProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
+                  client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
+                    answer =>
+                      answer.matriculationStatus should contain theSameElementsAs
+                        Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
+                  }
+                }
+          }.andThen {
+            case _ => cleanup()
+          }
       }
     }
 
@@ -256,20 +256,20 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
         ))
         client.getProposalAddMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(createSingleMatriculation("Mathematics", "WS2021/22")).flatMap { proposal =>
-          client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+            client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
               .invoke(SignedTransactionProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
-            client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
-              answer =>
-                answer.matriculationStatus should contain theSameElementsAs
-                  Seq(
-                    SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")),
-                    SubjectMatriculation("Mathematics", Seq("WS2021/22"))
-                  )
-            }
+                client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
+                  answer =>
+                    answer.matriculationStatus should contain theSameElementsAs
+                      Seq(
+                        SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")),
+                        SubjectMatriculation("Mathematics", Seq("WS2021/22"))
+                      )
+                }
+              }
+          }.andThen {
+            case _ => cleanup()
           }
-        }.andThen {
-          case _ => cleanup()
-        }
       }
     }
   }
