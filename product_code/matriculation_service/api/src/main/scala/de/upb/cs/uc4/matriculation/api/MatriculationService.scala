@@ -23,7 +23,7 @@ trait MatriculationService extends UC4Service {
   def addMatriculationData(username: String): ServiceCall[SignedTransactionProposal, Done]
 
   /** Get proposal to immatriculates a student */
-  def getMatriculationDataProposal(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal]
+  def getProposalAddMatriculationData(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal]
 
   /** Returns the ImmatriculationData of a student with the given username */
   def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData]
@@ -39,7 +39,7 @@ trait MatriculationService extends UC4Service {
     super.descriptor
       .addCalls(
         restCall(Method.POST, pathPrefix + "/matriculation/:username/submit", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/matriculation/:username/proposal", getMatriculationDataProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/matriculation/:username/proposal", getProposalAddMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/history/:username", getMatriculationData _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/submit", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/proposal", allowedPost _),

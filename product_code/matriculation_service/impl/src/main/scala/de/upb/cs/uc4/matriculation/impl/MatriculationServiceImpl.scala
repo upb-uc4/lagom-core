@@ -60,7 +60,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
       }
     }
 
-  override def getMatriculationDataProposal(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal] =
+  override def getProposalAddMatriculationData(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal] =
     identifiedAuthenticated[PutMessageMatriculation, TransactionProposal](AuthenticationRole.Student) { (authUser, _) =>
       ServerServiceCall { (header, rawMessage) =>
 
