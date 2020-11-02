@@ -16,7 +16,7 @@ import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client.Utils
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4CriticalException, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
@@ -132,7 +132,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
               .flatMap { jsonEnrollmentId =>
                 val enrollmentId = jsonEnrollmentId.id
                 entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(enrollmentId, replyTo)).map {
-                  case Success(data)      => (ResponseHeader(200, MessageProtocol.empty, List()), data)
+                  case Success(data)      => createETagHeader(header, data)
                   case Failure(exception) => throw exception
                 }
               }

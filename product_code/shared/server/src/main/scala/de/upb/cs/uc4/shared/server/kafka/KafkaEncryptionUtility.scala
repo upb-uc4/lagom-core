@@ -6,7 +6,7 @@ import java.security.SecureRandom
 
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
-import de.upb.cs.uc4.shared.server.JsonUtility._
+import de.upb.cs.uc4.shared.client.JsonUtility._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility.{ GCM_IV_LENGTH, secureRandom }
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.{ AEADBadTagException, Cipher, SecretKey }
