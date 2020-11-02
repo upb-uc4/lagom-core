@@ -1,3 +1,9 @@
+# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.11.0...authentication-v0.11.1) (2020-XX-XX)
+## Feature
+ - Added support for ETags
+## Refactor
+## Bugfix
+
 # [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.10.0...authentication-v0.11.0) (2020-10-26)
 ## Feature
  - Changed Circuit Breaker to ignore UC4NonCriticalExceptions

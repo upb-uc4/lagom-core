@@ -5,7 +5,7 @@ import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.authentication.impl.AuthenticationApplication
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.events.{ AuthenticationEvent, OnDelete, OnSet }
-import de.upb.cs.uc4.shared.server.Hashing
+import de.upb.cs.uc4.shared.client.Hashing
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import play.api.libs.json.{ Format, Json }
 

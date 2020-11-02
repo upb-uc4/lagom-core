@@ -1,5 +1,6 @@
-# [WIP - v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.11.0...user-v0.11.1) (2020-XX-XX)
+# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.11.0...user-v0.11.1) (2020-XX-XX)
 ## Feature
+ - Added support for ETags
 ## Refactor
  - Changed email addresses, first names and last names for the default users
 ## Bugfix
