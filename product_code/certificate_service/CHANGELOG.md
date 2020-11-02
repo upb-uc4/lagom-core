@@ -1,3 +1,10 @@
+# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.11.0...certificate-v0.11.1) (2020-XX-XX)
+## Feature
+## Refactor
+## Bugfix
+- Added certificate state deletion if corresponding user gets deleted
+
+
 # [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.3...certificate-v0.11.0) (2020-10-26)
 ## Feature
  - Changed Circuit Breaker to ignore UC4NonCriticalExceptions
