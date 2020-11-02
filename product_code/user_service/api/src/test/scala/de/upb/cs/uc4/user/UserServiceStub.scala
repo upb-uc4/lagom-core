@@ -2,9 +2,9 @@ package de.upb.cs.uc4.user
 
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
+import com.google.common.io.BaseEncoding
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.user.api.UserService
@@ -13,6 +13,7 @@ import de.upb.cs.uc4.user.model.post.PostMessageUser
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 
 import scala.concurrent.Future
+import scala.util.Random
 
 class UserServiceStub extends UserService with DefaultTestUsers {
 
@@ -98,7 +99,10 @@ class UserServiceStub extends UserService with DefaultTestUsers {
   override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { _ => Future.successful(Done) }
 
   override def addUser(): ServiceCall[PostMessageUser, User] = ServiceCall { pmu =>
-    users ++= Seq(pmu.getUser)
+    val rnd = new Random
+    val bytes = new Array[Byte](enrollmentIdSecretByteLength)
+    rnd.nextBytes(bytes)
+    users ++= Seq(pmu.getUser.copyUser(enrollmentIdSecret = BaseEncoding.base64().encode(bytes)))
     Future.successful(pmu.getUser)
   }
 

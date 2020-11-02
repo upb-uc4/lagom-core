@@ -5,7 +5,7 @@ import java.util
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
-import com.google.common.io.ByteStreams
+import com.google.common.io.{ BaseEncoding, ByteStreams }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport._
@@ -21,7 +21,7 @@ import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
@@ -36,6 +36,7 @@ import org.slf4j.{ Logger, LoggerFactory }
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
+import scala.util.Random
 
 /** Implementation of the UserService */
 class UserServiceImpl(
@@ -154,14 +155,19 @@ class UserServiceImpl(
           throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
         }
 
-        ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
+        //Set enrollmentIdSecret in User object
+        val postMessageFinalized = postMessageUser.copyWithUser(
+          postMessageUser.getUser.copyUser(enrollmentIdSecret = createEnrollmentIdSecret())
+        )
+
+        ref.ask[Confirmation](replyTo => CreateUser(postMessageFinalized.getUser, postMessageFinalized.governmentId, replyTo))
           .flatMap {
             case Accepted => // Creation Successful
-              authentication.setAuthentication().invoke(postMessageUser.authUser)
+              authentication.setAuthentication().invoke(postMessageFinalized.authUser)
                 .map { _ =>
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
-                    .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
-                  (header, postMessageUser.getUser)
+                    .addHeader("Location", s"$pathPrefix/users/students/${postMessageFinalized.getUser.username}")
+                  (header, postMessageFinalized.getUser)
                 }
                 // In case the password cant be saved
                 .recoverWith {
@@ -353,8 +359,8 @@ class UserServiceImpl(
       .eventStream(UserEvent.Tag, fromOffset)
       .mapConcat {
         //Filter only OnUserCreate events
-        case EventStreamElement(_, OnUserCreate(user), offset) => try {
-          immutable.Seq((kafkaEncryptionUtility.encrypt(Usernames(user.username, Hashing.sha256(user.username))), offset))
+        case EventStreamElement(_, OnUserCreate(user, governmentId), offset) => try {
+          immutable.Seq((kafkaEncryptionUtility.encrypt(Usernames(user.username, Hashing.sha256(s"$governmentId${user.enrollmentIdSecret}"))), offset))
         }
         catch {
           case throwable: Throwable =>
@@ -467,6 +473,13 @@ class UserServiceImpl(
             }
         }
     }
+  }
+
+  def createEnrollmentIdSecret(): String = {
+    val rnd = new Random
+    val bytes = new Array[Byte](enrollmentIdSecretByteLength)
+    rnd.nextBytes(bytes)
+    BaseEncoding.base64().encode(bytes)
   }
 
   /** Allows GET, POST */

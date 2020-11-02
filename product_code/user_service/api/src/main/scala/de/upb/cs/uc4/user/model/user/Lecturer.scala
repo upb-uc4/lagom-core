@@ -10,6 +10,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 case class Lecturer(
     username: String,
+    enrollmentIdSecret: String,
     role: Role,
     address: Address,
     firstName: String,
@@ -23,6 +24,7 @@ case class Lecturer(
 
   def copyUser(
       username: String = this.username,
+      enrollmentIdSecret: String = this.enrollmentIdSecret,
       role: Role = this.role,
       address: Address = this.address,
       firstName: String = this.firstName,
@@ -31,7 +33,7 @@ case class Lecturer(
       phoneNumber: String = this.phoneNumber,
       birthDate: String = this.birthDate
   ): Lecturer =
-    copy(username, role, address, firstName, lastName, email, phoneNumber, birthDate)
+    copy(username, enrollmentIdSecret, role, address, firstName, lastName, email, phoneNumber, birthDate)
 
   override def trim: Lecturer =
     super.trim.asInstanceOf[Lecturer].copy(freeText = freeText.trim, researchArea = researchArea.trim)

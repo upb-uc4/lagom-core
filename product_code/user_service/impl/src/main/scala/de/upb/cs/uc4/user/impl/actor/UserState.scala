@@ -23,9 +23,9 @@ case class UserState(optUser: Option[User]) {
     cmd match {
       case GetUser(replyTo) => Effect.reply(replyTo)(optUser)
 
-      case CreateUser(user, replyTo) =>
+      case CreateUser(user, governmentId, replyTo) =>
         if (optUser.isEmpty) {
-          Effect.persist(OnUserCreate(user)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnUserCreate(user, governmentId)).thenReply(replyTo) { _ => Accepted }
         }
         else {
           Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
@@ -72,7 +72,7 @@ case class UserState(optUser: Option[User]) {
     */
   def applyEvent(evt: UserEvent): UserState =
     evt match {
-      case OnUserCreate(user) =>
+      case OnUserCreate(user, _) =>
         copy(Some(user))
       case OnUserUpdate(user) =>
         copy(Some(user))

@@ -6,9 +6,21 @@ import org.scalatest.wordspec.AsyncWordSpecLike
 
 class PostMessageUserSpec extends AsyncWordSpecLike with Matchers with DefaultTestUsers {
 
-  private val postMessageStudentValid = PostMessageStudent(student0Auth, student0)
-  private val postMessageLecturerValid = PostMessageLecturer(lecturer0Auth, lecturer0)
-  private val postMessageAdminValid = PostMessageAdmin(admin0Auth, admin0)
+  private val postMessageStudentValid = PostMessageStudent(student0Auth, "governmentIdStudent", student0)
+  private val postMessageLecturerValid = PostMessageLecturer(lecturer0Auth, "governmentIdLecturer", lecturer0)
+  private val postMessageAdminValid = PostMessageAdmin(admin0Auth, "governmentIdAdmin", admin0)
+
+  "A PostMessageUser" should {
+
+    "return a validation error for having no governmentId" in {
+      postMessageStudentValid.copy(governmentId = "", student = student0.copy(enrollmentIdSecret = "")).validate
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("governmentId"))
+    }
+    "return a validation error for having an enrollmentIdSecret" in {
+      postMessageStudentValid.copy(student = student0.copy(enrollmentIdSecret = "something")).validate
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("student.enrollmentIdSecret"))
+    }
+  }
 
   "A PostMessageStudent" should {
     "be validated" in {

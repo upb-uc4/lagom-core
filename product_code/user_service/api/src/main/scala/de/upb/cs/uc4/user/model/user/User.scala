@@ -10,6 +10,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 trait User {
   val username: String
+  val enrollmentIdSecret: String
   val role: Role
   val address: Address
   val firstName: String
@@ -20,6 +21,7 @@ trait User {
 
   def copyUser(
       username: String = this.username,
+      enrollmentIdSecret: String = this.enrollmentIdSecret,
       role: Role = this.role,
       address: Address = this.address,
       firstName: String = this.firstName,
@@ -30,13 +32,13 @@ trait User {
   ): User
 
   def trim: User = copyUser(
-    username.trim, role, address.trim, firstName.trim, lastName.trim,
+    username.trim, enrollmentIdSecret.trim, role, address.trim, firstName.trim, lastName.trim,
     email.trim, phoneNumber.trim, birthDate.trim
   )
 
   def clean: User = trim.copyUser(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
 
-  def toPublic: User = copyUser(address = Address.empty, birthDate = "")
+  def toPublic: User = copyUser(address = Address.empty, birthDate = "", enrollmentIdSecret = "")
 
   /** Validates the object by checking predefined conditions like correct charsets, syntax, etc.
     * Returns a list of SimpleErrors[[SimpleError]]
@@ -131,6 +133,10 @@ trait User {
 
     if (role != user.role) {
       errors :+= SimpleError("role", "Role must not be changed.")
+    }
+
+    if (enrollmentIdSecret != user.enrollmentIdSecret) {
+      errors :+= SimpleError("enrollmentIdSecret", "enrollmentIdSecret must not be changed.")
     }
 
     errors

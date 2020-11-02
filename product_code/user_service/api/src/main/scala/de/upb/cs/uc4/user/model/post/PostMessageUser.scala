@@ -2,24 +2,43 @@ package de.upb.cs.uc4.user.model.post
 
 import de.upb.cs.uc4.authentication.model.AuthenticationUser
 import de.upb.cs.uc4.shared.client.exceptions.{ SimpleError, UC4Exception }
-import de.upb.cs.uc4.user.model.user.User
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 trait PostMessageUser {
   val authUser: AuthenticationUser
+  val governmentId: String
 
   def copyPostMessageUser(
-      authUser: AuthenticationUser = this.authUser
+      authUser: AuthenticationUser = this.authUser,
+      governmentId: String = this.governmentId
   ): PostMessageUser
 
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
     authUser.validate.map {
-      _.map {
-        simpleError =>
-          SimpleError("authUser." + simpleError.name, simpleError.reason)
-      }
+      authErrors =>
+        var errorList = authErrors
+        errorList.map {
+          simpleError =>
+            SimpleError("authUser." + simpleError.name, simpleError.reason)
+        }
+
+        if (governmentId.isEmpty) {
+          errorList :+= SimpleError("governmentId", "GovernmentId must not be empty.")
+        }
+
+        if (getUser.enrollmentIdSecret.nonEmpty) {
+          val userString = this match {
+            case _: PostMessageStudent  => "student"
+            case _: PostMessageLecturer => "lecturer"
+            case _: PostMessageAdmin    => "admin"
+          }
+          errorList :+= SimpleError(s"$userString.enrollmentIdSecret", "EnrollmentIdSecret must be empty.")
+        }
+
+        errorList
     }
   }
 
@@ -31,12 +50,32 @@ trait PostMessageUser {
     }
   }
 
+  def copyWithUser(user: User): PostMessageUser = {
+    this match {
+      case postStudent: PostMessageStudent =>
+        if (!user.isInstanceOf[Student]) {
+          throw UC4Exception.InternalServerError("Parser Error", "Tried to set user in PostMessageStudent to non-Student")
+        }
+        postStudent.copy(student = user.asInstanceOf[Student])
+      case postLecturer: PostMessageLecturer =>
+        if (!user.isInstanceOf[Lecturer]) {
+          throw UC4Exception.InternalServerError("Parser Error", "Tried to set user in PostMessageLecturer to non-Lecturer")
+        }
+        postLecturer.copy(lecturer = user.asInstanceOf[Lecturer])
+      case postAdmin: PostMessageAdmin =>
+        if (!user.isInstanceOf[Admin]) {
+          throw UC4Exception.InternalServerError("Parser Error", "Tried to set user in PostMessageAdmin to non-Admin")
+        }
+        postAdmin.copy(admin = user.asInstanceOf[Admin])
+    }
+  }
+
   def trim: PostMessageUser = {
-    copyPostMessageUser(authUser.trim)
+    copyPostMessageUser(authUser.trim, governmentId.trim)
   }
 
   def clean: PostMessageUser = {
-    trim.copyPostMessageUser(authUser.clean)
+    trim.copyPostMessageUser(authUser.clean, governmentId)
   }
 }
 
