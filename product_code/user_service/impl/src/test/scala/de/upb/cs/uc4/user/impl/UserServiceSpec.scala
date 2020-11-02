@@ -16,9 +16,9 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
 import de.upb.cs.uc4.image.ImageProcessingServiceStub
 import de.upb.cs.uc4.image.api.ImageProcessingService
+import de.upb.cs.uc4.shared.client.Hashing
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
-import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role

@@ -4,7 +4,8 @@ import play.api.libs.json.{ Format, Json }
 
 object ErrorType extends Enumeration {
   type ErrorType = Value
-  val Deserialization, KafkaDeserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
+  val NotModified, //304
+  Deserialization, KafkaDeserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
   MissingHeader, QueryParameter, //In an DetailedError
   BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
   NotEnoughPrivileges, OwnerMismatch, //403
@@ -31,6 +32,8 @@ object ErrorType extends Enumeration {
     errorType match {
       //HL errors are missing, but as they are given to us with a title, we do not need to find a fitting title
       //If not stated otherwise, the type is contained in a  GenericError
+      //304
+      case NotModified => "The requested resource has not been modified"
       //400
       case Deserialization => "Syntax of the provided json object was incorrect"
       case JsonValidation => "The provided json object did not validate" //In a DetailedError
