@@ -1,10 +1,12 @@
 package de.upb.cs.uc4.shared.client
 
 import akka.{ Done, NotUsed }
-import com.lightbend.lagom.scaladsl.api.transport.{ Method, RequestHeader }
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, Method, RequestHeader, ResponseHeader }
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, ServiceCall }
-import de.upb.cs.uc4.shared.client.exceptions.UC4ExceptionSerializer
+import de.upb.cs.uc4.shared.client.JsonUtility._
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, UC4ExceptionSerializer }
 import play.api.Environment
+import play.api.libs.json.Writes
 
 import scala.concurrent.Future
 
@@ -54,4 +56,19 @@ trait UC4Service extends Service {
         .addHeader("Cookie", serviceHeader.getHeader("Cookie").getOrElse(""))
         .addHeader("Authorization", serviceHeader.getHeader("Authorization").getOrElse(""))
   }
+
+  protected def checkETag[T](serviceHeader: RequestHeader, obj: T)(implicit writes: Writes[T]): String = {
+    val eTag = serviceHeader.getHeader("If-None-Match").getOrElse("")
+    val newTag = Hashing.sha256(obj.toJson)
+
+    if (newTag == eTag) {
+      throw UC4Exception.NotModified
+    }
+    else {
+      newTag
+    }
+  }
+
+  protected def createETagHeader[T](requestHeader: RequestHeader, obj: T, code: Int = 200, headers: List[(String, String)] = List())(implicit writes: Writes[T]): (ResponseHeader, T) =
+    (ResponseHeader(code, MessageProtocol.empty, headers).addHeader("ETag", checkETag(requestHeader, obj)), obj)
 }
