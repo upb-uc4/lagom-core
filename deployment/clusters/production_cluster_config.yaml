@@ -7,6 +7,12 @@ nodes:
       containerPath: /mnt/database
     - hostPath: /data/production/hyperledger
       containerPath: /mnt/hyperledger  
+- role: worker
+  extraMounts:
+    - hostPath: /data/production/database
+      containerPath: /mnt/database
+    - hostPath: /data/production/hyperledger
+      containerPath: /mnt/hyperledger  
 - role: control-plane
   extraMounts:
     - hostPath: /data/production/database
