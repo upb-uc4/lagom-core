@@ -9,6 +9,8 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 case class PostMessageLecturer(authUser: AuthenticationUser, governmentId: String, lecturer: Lecturer) extends PostMessageUser {
 
+  override val userString: String = "lecturer"
+
   def copyPostMessageUser(
       authUser: AuthenticationUser = this.authUser,
       governmentId: String = this.governmentId

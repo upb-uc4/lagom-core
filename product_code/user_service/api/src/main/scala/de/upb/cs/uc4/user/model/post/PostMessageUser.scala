@@ -11,6 +11,8 @@ trait PostMessageUser {
   val authUser: AuthenticationUser
   val governmentId: String
 
+  val userString: String
+
   def copyPostMessageUser(
       authUser: AuthenticationUser = this.authUser,
       governmentId: String = this.governmentId
@@ -30,11 +32,6 @@ trait PostMessageUser {
         }
 
         if (getUser.enrollmentIdSecret.nonEmpty) {
-          val userString = this match {
-            case _: PostMessageStudent  => "student"
-            case _: PostMessageLecturer => "lecturer"
-            case _: PostMessageAdmin    => "admin"
-          }
           errorList :+= SimpleError(s"$userString.enrollmentIdSecret", "EnrollmentIdSecret must be empty.")
         }
 
