@@ -3,8 +3,8 @@ package de.upb.cs.uc4.certificate.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.certificate.impl.CertificateApplication
-import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, RegisterUser, SetCertificateAndKey }
-import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet, OnRegisterUser }
+import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, DeleteCertificateUser, GetCertificateUser, RegisterUser, SetCertificateAndKey }
+import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet, OnCertificateUserDelete, OnRegisterUser }
 import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
 import de.upb.cs.uc4.shared.server.messages.Accepted
 import play.api.libs.json.{ Format, Json }
@@ -29,6 +29,8 @@ case class CertificateState(
         Effect.reply(replyTo)(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey)
       case SetCertificateAndKey(certificate, encryptedPrivateKey, replyTo) =>
         Effect.persist(OnCertficateAndKeySet(certificate, encryptedPrivateKey)).thenReply(replyTo) { _ => Accepted }
+      case DeleteCertificateUser(username, replyTo) =>
+        Effect.persist(OnCertificateUserDelete(username)).thenReply(replyTo) { _ => Accepted }
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -44,6 +46,8 @@ case class CertificateState(
         copy(enrollmentId = Some(id), enrollmentSecret = Some(secret))
       case OnCertficateAndKeySet(cert, key) =>
         copy(certificate = Some(cert), encryptedPrivateKey = Some(key))
+      case OnCertificateUserDelete(username) =>
+        CertificateState.initial
       case _ =>
         println("Unknown Event")
         this
