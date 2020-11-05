@@ -7,7 +7,7 @@ import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
@@ -17,7 +17,7 @@ import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Usernames
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{ Assertion, BeforeAndAfterAll }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
@@ -29,6 +29,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
 
   private var creationStub: ProducerStub[EncryptionContainer] = _ //EncryptionContainer[Usernames]
+  private var deletionStub: ProducerStub[EncryptionContainer] = _ //EncryptionContainer[Usernames]
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -52,11 +53,13 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
         lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
         lazy val internCreationStub: ProducerStub[EncryptionContainer] =
           stubFactory.producer[EncryptionContainer](UserService.ADD_TOPIC_NAME)
-
         creationStub = internCreationStub
+        lazy val internDeletionStub: ProducerStub[EncryptionContainer] =
+          stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_NAME)
+        deletionStub = internDeletionStub
 
         // Create a userService with ProducerStub as topic
-        override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internCreationStub)
+        override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internCreationStub, internDeletionStub)
       }
     }
 
@@ -99,6 +102,26 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       eventually(timeout(Span(30, Seconds))) {
         client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
           answer => answer.id should ===(username + "enroll")
+        }
+      }
+    }
+
+    "reset certificate state on user deletion" in {
+      val username = "student005"
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
+      val deletionContainer = server.application.kafkaEncryptionUtility.encrypt(JsonUsername(username))
+      creationStub.send(container)
+
+      eventually(timeout(Span(30, Seconds))) {
+        client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+          answer => answer.id should ===(username + "enroll")
+        }
+      }.flatMap { _ =>
+        deletionStub.send(deletionContainer)
+        eventually(timeout(Span(30, Seconds))) {
+          client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
+            answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+          }
         }
       }
     }
@@ -230,8 +253,10 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
   }
 }
 
-class UserServiceStubWithTopic(creationStub: ProducerStub[EncryptionContainer]) extends UserServiceStub {
+class UserServiceStubWithTopic(creationStub: ProducerStub[EncryptionContainer], deletionStub: ProducerStub[EncryptionContainer]) extends UserServiceStub {
 
   override def userCreationTopic(): Topic[EncryptionContainer] = creationStub.topic
+
+  override def userDeletionTopic(): Topic[EncryptionContainer] = deletionStub.topic
 
 }

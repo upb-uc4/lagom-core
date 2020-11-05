@@ -3,6 +3,7 @@ package de.upb.cs.uc4.configuration.impl
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.configuration.api.ConfigurationService
@@ -26,13 +27,16 @@ class ConfigurationServiceImpl(implicit ec: ExecutionContext, config: Config) ex
   }
 
   /** Get configuration */
-  override def getConfiguration: ServiceCall[NotUsed, Configuration] = ServiceCall[NotUsed, Configuration] { _ =>
+  override def getConfiguration: ServiceCall[NotUsed, Configuration] = ServerServiceCall { (header, _) =>
     Future.successful(
-      Configuration(
-        ConfigurationCollection.fieldOfStudies,
-        ConfigurationCollection.countries,
-        CourseLanguage.All.map(_.toString),
-        CourseType.All.map(_.toString)
+      createETagHeader(
+        header,
+        Configuration(
+          ConfigurationCollection.fieldOfStudies,
+          ConfigurationCollection.countries,
+          CourseLanguage.All.map(_.toString),
+          CourseType.All.map(_.toString)
+        )
       )
     )
   }
@@ -43,9 +47,9 @@ class ConfigurationServiceImpl(implicit ec: ExecutionContext, config: Config) ex
   }
 
   /** Get validation specific configuration */
-  override def getValidation: ServiceCall[NotUsed, ValidationConfiguration] = ServiceCall[NotUsed, ValidationConfiguration] { _ =>
+  override def getValidation: ServiceCall[NotUsed, ValidationConfiguration] = ServerServiceCall { (header, _) =>
     Future.successful(
-      ValidationConfiguration.build
+      createETagHeader(header, ValidationConfiguration.build)
     )
   }
 
@@ -61,10 +65,8 @@ class ConfigurationServiceImpl(implicit ec: ExecutionContext, config: Config) ex
     Future.successful(JsonSemester(Utils.dateToSemester(date.get)))
   }
 
-  /** @inheritdoc */
   override def allowedMethodsGET: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
-  /** @inheritdoc */
   override def allowedMethodsGETPUT: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, PUT")
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")

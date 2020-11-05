@@ -14,9 +14,9 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication }
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, Tokens }
+import de.upb.cs.uc4.shared.client.Hashing
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
-import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.UserServiceStub
 import de.upb.cs.uc4.user.api.UserService

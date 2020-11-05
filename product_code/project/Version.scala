@@ -6,9 +6,9 @@ object Version {
     "certificate_service" -> "v0.11.0",
     "configuration_service" -> "v0.11.0",
     "course_service" -> "v0.11.0",
-    "examreg_service" -> "v0.11.1",
-    "hyperledger_api" -> "0.11.0",
-    "matriculation_service" -> "v0.11.0",
+    "examreg_service" -> "0.11.1",
+    "hyperledger_api" -> "0.11.5",
+    "matriculation_service" -> "v0.11.2",
     "user_service" -> "v0.11.0"
   )
 

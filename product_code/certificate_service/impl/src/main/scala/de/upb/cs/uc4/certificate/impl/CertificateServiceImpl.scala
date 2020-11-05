@@ -17,7 +17,7 @@ import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, J
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4CriticalException, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 
@@ -83,36 +83,40 @@ class CertificateServiceImpl(
             }
           case (_, _, Some(_), _) =>
             throw UC4Exception.AlreadyEnrolled
-          case _ =>
-            throw UC4Exception.InternalServerError("Failed to enroll user", "Unexpected actor content, maybe registration failed")
+          case actorContent =>
+            throw UC4Exception.InternalServerError("Failed to enroll user", s"Unexpected actor content: $actorContent")
         }
       }
   }
 
   /** Returns the certificate of the given user */
-  override def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate] = authenticated(AuthenticationRole.All: _*) { _ =>
-    getCertificateUser(username).map {
-      case (_, _, Some(certificate), _) =>
-        JsonCertificate(certificate)
-      case _ =>
-        throw UC4Exception.NotFound
+  override def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate] = authenticated(AuthenticationRole.All: _*) {
+    ServerServiceCall { (header, _) =>
+      getCertificateUser(username).map {
+        case (_, _, Some(certificate), _) =>
+          createETagHeader(header, JsonCertificate(certificate))
+        case _ =>
+          throw UC4Exception.NotFound
+      }
     }
   }
 
   /** Returns the enrollment id of the given user */
-  override def getEnrollmentId(username: String): ServiceCall[NotUsed, JsonEnrollmentId] = authenticated(AuthenticationRole.All: _*) { _ =>
-    getCertificateUser(username).map {
-      case (Some(id), _, _, _) =>
-        JsonEnrollmentId(id)
-      case _ =>
-        throw UC4Exception.NotFound
+  override def getEnrollmentId(username: String): ServiceCall[NotUsed, JsonEnrollmentId] = authenticated(AuthenticationRole.All: _*) {
+    ServerServiceCall { (header, _) =>
+      getCertificateUser(username).map {
+        case (Some(id), _, _, _) =>
+          createETagHeader(header, JsonEnrollmentId(id))
+        case _ =>
+          throw UC4Exception.NotFound
+      }
     }
   }
 
   /** Returns the encrypted private key of the given user */
   override def getPrivateKey(username: String): ServiceCall[NotUsed, EncryptedPrivateKey] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUsername, _) =>
-      ServerServiceCall { (_, _) =>
+      ServerServiceCall { (header, _) =>
 
         if (authUsername != username) {
           throw UC4Exception.OwnerMismatch
@@ -120,7 +124,7 @@ class CertificateServiceImpl(
 
         getCertificateUser(username).map {
           case (_, _, _, Some(key)) =>
-            (ResponseHeader(200, MessageProtocol.empty, List()), key)
+            createETagHeader(header, key)
           case _ =>
             throw UC4Exception.NotEnrolled
         }

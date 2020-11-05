@@ -40,37 +40,40 @@ class CourseServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
 
   /** @inheritdoc */
-  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = ServiceCall { _ =>
-    database.getAll
-      .map(seq => seq
-        .map(entityRef(_).ask[Option[Course]](replyTo => GetCourse(replyTo))) //Future[Seq[Future[Option[Course]]]]
-      )
-      .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[Course]]]
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = authenticated[NotUsed, Seq[Course]](AuthenticationRole.All: _*) {
+    ServerServiceCall { (header, _) =>
+      database.getAll
         .map(seq => seq
-          .filter(opt => opt.isDefined) //Filter every not existing course
-          .map(opt => opt.get) //Future[Seq[Course]]
-        ))
-      .map(seq => seq
-        .filter { course =>
-          //If courseName query is set, we check that every whitespace seperated parameter is contained
-          courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
-        }
-        .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
-        .filter {
-          course =>
-            moduleIds match {
-              case None => true
-              case Some(listOfModuleIds) =>
-                listOfModuleIds.split(',').foreach {
-                  moduleId =>
-                    if (course.moduleIds.contains(moduleId)) {
-                      true
-                    }
-                }
-                false
+          .map(entityRef(_).ask[Option[Course]](replyTo => GetCourse(replyTo))) //Future[Seq[Future[Option[Course]]]]
+        )
+        .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[Course]]]
+          .map(seq => seq
+            .filter(opt => opt.isDefined) //Filter every not existing course
+            .map(opt => opt.get) //Future[Seq[Course]]
+          ))
+        .map { seq =>
+          seq
+            .filter { course =>
+              //If courseName query is set, we check that every whitespace seperated parameter is contained
+              courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
             }
-        })
-
+            .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
+            .filter {
+              course =>
+                moduleIds match {
+                  case None => true
+                  case Some(listOfModuleIds) =>
+                    listOfModuleIds.split(',').foreach {
+                      moduleId =>
+                        if (course.moduleIds.contains(moduleId)) {
+                          true
+                        }
+                    }
+                    false
+                }
+            }
+        }.map(courses => createETagHeader(header, courses))
+    }
   }
 
   /** @inheritdoc */
@@ -175,10 +178,12 @@ class CourseServiceImpl(
     }
 
   /** @inheritdoc */
-  override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = ServiceCall { _ =>
-    entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
-      case Some(course) => course
-      case None         => throw UC4Exception.NotFound
+  override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) {
+    ServerServiceCall { (header, _) =>
+      entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
+        case Some(course) => createETagHeader(header, course)
+        case None         => throw UC4Exception.NotFound
+      }
     }
   }
 

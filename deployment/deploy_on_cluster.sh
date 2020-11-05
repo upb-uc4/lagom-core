@@ -20,6 +20,7 @@ echo "##############################"
 echo "#     Starting Postgres      #"
 echo "##############################"
 kubectl create namespace postgres
+kubectl apply -f postgres/postgres-config.yaml
 kubectl apply -f postgres/postgres-configmap.yaml
 kubectl apply -f postgres/postgres-storage.yaml
 kubectl apply -f postgres/postgres-deployment.yaml

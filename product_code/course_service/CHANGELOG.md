@@ -1,8 +1,10 @@
-# [v0.11.1 - WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.11.0...course-v0.11.1) (2020-XX-XX)
+# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.11.0...course-v0.11.1) (2020-XX-XX)
 ## Feature
  - Added "moduleIds" to Course object
  - Added query parameter for module Ids
  - Added dependency; CourseService dependant on ExamReg
+ - Added support for ETags
+
 ## Refactor
 ## Bugfix
 
