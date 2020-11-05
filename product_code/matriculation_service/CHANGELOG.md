@@ -1,3 +1,9 @@
+# [v0.11.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.1...matriculation-v0.11.2) (2020-11-05)
+## Feature
+ - Implemented new hyperledger API
+## Refactor
+## Bugfix
+
 # [v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.0...matriculation-v0.11.1) (2020-11-05)
 ## Feature
  - Changed Matriculation to the new proposal system
