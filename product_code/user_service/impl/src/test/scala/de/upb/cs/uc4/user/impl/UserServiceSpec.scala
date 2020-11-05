@@ -16,9 +16,9 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
 import de.upb.cs.uc4.image.ImageProcessingServiceStub
 import de.upb.cs.uc4.image.api.ImageProcessingService
+import de.upb.cs.uc4.shared.client.Hashing
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
-import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
@@ -190,6 +190,8 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     server.application.database.getAll(role)
   }
 
+  private def createUsernames(username: String): Usernames = Usernames(username, Hashing.sha256(username))
+
   //Additional variables needed for some tests
   val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012")
   val student0UpdatedProtected: Student = student0UpdatedUneditable.copy(firstName = "Dieter", lastName = "Dietrich", birthDate = "1996-12-11", matriculationId = "1333337")
@@ -206,11 +208,25 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
         val creationSource: Source[EncryptionContainer, _] = client.userCreationTopic().subscribe.atMostOnceSource
         client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(student0Auth, student0))
 
-        val containerSeq: Seq[EncryptionContainer] = creationSource
-          .runWith(TestSink.probe[EncryptionContainer])
-          .request(4)
-          .expectNextN(4)
-        server.application.kafkaEncryptionUtility.decrypt[Usernames](containerSeq(3)) should ===(Usernames(student0.username, Hashing.sha256(student0.username)))
+        val source = creationSource
+          .runWith(TestSink.probe[EncryptionContainer]).request(4)
+
+        val containerSeq = Seq(
+          source.expectNext(FiniteDuration(15, SECONDS)),
+          source.expectNext(FiniteDuration(15, SECONDS)),
+          source.expectNext(FiniteDuration(15, SECONDS)),
+          source.expectNext(FiniteDuration(15, SECONDS))
+        )
+
+        containerSeq.map {
+          container =>
+            server.application.kafkaEncryptionUtility.decrypt[Usernames](container)
+        } should contain theSameElementsAs Seq(
+          createUsernames("student"),
+          createUsernames("lecturer"),
+          createUsernames("admin"),
+          createUsernames(student0.username)
+        )
       }
 
       "publish a deleted user" in {

@@ -8,4 +8,5 @@ metadata:
 data:
   POSTGRES_USER: postgresadmin
   POSTGRES_PASSWORD: admin1234
+  PGOPTIONS: -c max_connections=300 -c shared_buffers=256MB
   SERVICES: authentication course certificate user

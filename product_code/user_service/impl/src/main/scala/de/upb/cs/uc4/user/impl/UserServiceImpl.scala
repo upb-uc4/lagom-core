@@ -16,12 +16,12 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
 import de.upb.cs.uc4.image.api.ImageProcessingService
+import de.upb.cs.uc4.shared.client.Hashing
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
-import de.upb.cs.uc4.shared.server.Hashing
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
@@ -67,16 +67,16 @@ class UserServiceImpl(
   override def getUser(username: String): ServerServiceCall[NotUsed, User] =
     identifiedAuthenticated(AuthenticationRole.All: _*) {
       (authUsername, role) =>
-        ServerServiceCall { _ =>
+        ServerServiceCall { (header, _) =>
           val ref = entityRef(username)
 
           ref.ask[Option[User]](replyTo => GetUser(replyTo)).map {
             case Some(user) =>
               if (role != AuthenticationRole.Admin && username != authUsername) {
-                user.toPublic
+                createETagHeader(header, user.toPublic)
               }
               else {
-                user
+                createETagHeader(header, user)
               }
             case None => throw UC4Exception.NotFound
           }
@@ -91,10 +91,7 @@ class UserServiceImpl(
           students <- getAllStudents(usernames).invokeWithHeaders(header, notUsed)
           lecturers <- getAllLecturers(usernames).invokeWithHeaders(header, notUsed)
           admins <- getAllAdmins(usernames).invokeWithHeaders(header, notUsed)
-        } yield (
-          ResponseHeader(200, MessageProtocol.empty, List()),
-          GetAllUsersResponse(students._2, lecturers._2, admins._2)
-        )
+        } yield createETagHeader(header, GetAllUsersResponse(students._2, lecturers._2, admins._2))
       }
     }
 
@@ -270,46 +267,58 @@ class UserServiceImpl(
 
   /** Get all students from the database */
   override def getAllStudents(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Student]] =
-    identifiedAuthenticated[NotUsed, Seq[Student]](AuthenticationRole.All: _*) { (_, role) => _ =>
-      usernames match {
-        case None if role != AuthenticationRole.Admin =>
-          throw UC4Exception.NotEnoughPrivileges
-        case None if role == AuthenticationRole.Admin =>
-          getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
-        case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-          getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student].toPublic))
-        case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-          getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
+    identifiedAuthenticated[NotUsed, Seq[Student]](AuthenticationRole.All: _*) { (_, role) =>
+      ServerServiceCall { (header, _) =>
+        (usernames match {
+          case None if role != AuthenticationRole.Admin =>
+            throw UC4Exception.NotEnoughPrivileges
+          case None if role == AuthenticationRole.Admin =>
+            getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
+          case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
+            getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student].toPublic))
+          case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
+            getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
+        }).map { students =>
+          createETagHeader(header, students)
+        }
       }
     }
 
   /** Get all lecturers from the database */
   def getAllLecturers(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Lecturer]] =
-    identifiedAuthenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.All: _*) { (_, role) => _ =>
-      usernames match {
-        case None if role != AuthenticationRole.Admin =>
-          throw UC4Exception.NotEnoughPrivileges
-        case None if role == AuthenticationRole.Admin =>
-          getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
-        case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-          getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer].toPublic))
-        case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-          getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
+    identifiedAuthenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.All: _*) { (_, role) =>
+      ServerServiceCall { (header, _) =>
+        (usernames match {
+          case None if role != AuthenticationRole.Admin =>
+            throw UC4Exception.NotEnoughPrivileges
+          case None if role == AuthenticationRole.Admin =>
+            getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
+          case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
+            getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer].toPublic))
+          case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
+            getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
+        }).map { lecturers =>
+          createETagHeader(header, lecturers)
+        }
       }
     }
 
   /** Get all admins from the database */
   override def getAllAdmins(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Admin]] =
-    identifiedAuthenticated[NotUsed, Seq[Admin]](AuthenticationRole.All: _*) { (_, role) => _ =>
-      usernames match {
-        case None if role != AuthenticationRole.Admin =>
-          throw UC4Exception.NotEnoughPrivileges
-        case None if role == AuthenticationRole.Admin =>
-          getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
-        case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-          getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin].toPublic))
-        case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-          getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
+    identifiedAuthenticated[NotUsed, Seq[Admin]](AuthenticationRole.All: _*) { (_, role) =>
+      ServerServiceCall { (header, _) =>
+        (usernames match {
+          case None if role != AuthenticationRole.Admin =>
+            throw UC4Exception.NotEnoughPrivileges
+          case None if role == AuthenticationRole.Admin =>
+            getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
+          case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
+            getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin].toPublic))
+          case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
+            getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
+        }).map { admins =>
+          createETagHeader(header, admins)
+        }
       }
     }
 
@@ -332,7 +341,7 @@ class UserServiceImpl(
       ServerServiceCall {
         (header, _) =>
           getUser(username).invokeWithHeaders(header, NotUsed).map {
-            case (_, user) => (ResponseHeader(200, MessageProtocol.empty, List()), JsonRole(user.role))
+            case (_, user) => createETagHeader(header, JsonRole(user.role))
           }
       }
     }
@@ -390,11 +399,13 @@ class UserServiceImpl(
       (header, _) =>
         database.getImage(username).flatMap {
           case Some(array) =>
-            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List()), ByteString(array))
+            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List())
+              .addHeader("ETag", checkImageETag(header, array)), ByteString(array))
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
-                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List()), ByteString(defaultProfilePicture))
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List())
+                  .addHeader("ETag", checkImageETag(header, defaultProfilePicture)), ByteString(defaultProfilePicture))
             }
         }
     }
@@ -406,13 +417,27 @@ class UserServiceImpl(
       (header, _) =>
         database.getThumbnail(username).flatMap {
           case Some(array) =>
-            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List()), ByteString(array))
+            Future.successful(ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List())
+              .addHeader("ETag", checkImageETag(header, array)), ByteString(array))
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
-                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List()), ByteString(defaultThumbnail))
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List())
+                  .addHeader("ETag", checkImageETag(header, defaultThumbnail)), ByteString(defaultThumbnail))
             }
         }
+    }
+  }
+
+  protected def checkImageETag(serviceHeader: RequestHeader, image: Array[Byte]): String = {
+    val eTag = serviceHeader.getHeader("If-None-Match").getOrElse("")
+    val newTag = Hashing.sha256(image)
+
+    if (newTag == eTag) {
+      throw UC4Exception.NotModified
+    }
+    else {
+      newTag
     }
   }
 
@@ -428,7 +453,7 @@ class UserServiceImpl(
 
             header.getHeader("Content-Type") match {
               case Some(contentTypeRaw) =>
-                var contentType = contentTypeRaw.trim
+                val contentType = contentTypeRaw.trim
                 if (supportedTypes.contains(contentType)) {
                   getUser(username).invokeWithHeaders(header, NotUsed).flatMap {
                     _ =>

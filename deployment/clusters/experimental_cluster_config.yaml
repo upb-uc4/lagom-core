@@ -7,6 +7,12 @@ nodes:
       containerPath: /mnt/database
     - hostPath: /data/experimental/hyperledger
       containerPath: /mnt/hyperledger  
+- role: worker
+  extraMounts:
+    - hostPath: /data/experimental/database
+      containerPath: /mnt/database
+    - hostPath: /data/experimental/hyperledger
+      containerPath: /mnt/hyperledger  
 - role: control-plane
   extraMounts:
     - hostPath: /data/experimental/database
