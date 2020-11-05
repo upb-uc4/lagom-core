@@ -4,11 +4,11 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown }
+import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown, SubmitProposal }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exception }
-import de.upb.cs.uc4.shared.server.messages.RejectedWithError
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, RejectedWithError }
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.util.Failure
@@ -47,7 +47,12 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
             case cmd: HyperledgerCommand =>
               if (enrolled) {
                 try {
-                  applyCommand(connection, cmd)
+                  cmd match {
+                    case SubmitProposal(proposal, signature, replyTo) =>
+                      connection.submitSignedProposal(proposal, signature)
+                      replyTo ! Accepted
+                    case _ => applyCommand(connection, cmd)
+                  }
                 }
                 catch {
                   case ex: Exception =>
@@ -79,6 +84,7 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
   protected def createConnection: Connection
 
   /** Gets called every time when the actor receives a command.
+    * [[SubmitProposal]] does not need to be handled here.
     * Errors which this method will thrown will be handled accordingly
     * if the command implements [[HyperledgerReadCommand]] or the
     * [[HyperledgerWriteCommand]].

@@ -7,7 +7,7 @@ import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadC
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionMatriculation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
-import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData }
+import de.upb.cs.uc4.matriculation.impl.commands.{ GetProposalForAddMatriculationData, GetMatriculationData, GetProposalForAddEntriesToMatriculationData }
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.shared.server.messages.Accepted
 
@@ -29,13 +29,11 @@ class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActor
     */
   override protected def applyCommand(connection: ConnectionMatriculationTrait, command: HyperledgerCommand): Unit = command match {
 
-    case AddEntriesToMatriculationData(matriculationId, matriculation, replyTo) =>
-      connection.addEntriesToMatriculationData(matriculationId, matriculation.toJson)
-      replyTo ! Accepted
+    case GetProposalForAddEntriesToMatriculationData(enrollmentId, matriculation, replyTo) =>
+      replyTo ! Success(connection.getProposalAddEntriesToMatriculationData(enrollmentId, matriculation.toJson))
 
-    case AddMatriculationData(data, replyTo) =>
-      connection.addMatriculationData(data.toJson)
-      replyTo ! Accepted
+    case GetProposalForAddMatriculationData(data, replyTo) =>
+      replyTo ! Success(connection.getProposalAddMatriculationData(data.toJson))
 
     case GetMatriculationData(matriculationId, replyTo) =>
       replyTo ! Success(connection.getMatriculationData(matriculationId).fromJson[ImmatriculationData])

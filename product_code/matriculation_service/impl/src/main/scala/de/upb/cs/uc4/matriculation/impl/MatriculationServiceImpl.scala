@@ -10,17 +10,18 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.hyperledger.commands.HyperledgerCommand
+import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, SubmitProposal }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
-import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData }
+import de.upb.cs.uc4.matriculation.impl.commands.{ GetMatriculationData, GetProposalForAddEntriesToMatriculationData, GetProposalForAddMatriculationData }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.{ SignedTransactionProposal, TransactionProposal }
 import de.upb.cs.uc4.shared.client.Utils
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.MatriculationUpdate
 import de.upb.cs.uc4.user.model.user.Student
 
 import scala.concurrent.duration._
@@ -39,10 +40,32 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
 
-  /** Immatriculates a student */
-  override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done] =
-    authenticated[PutMessageMatriculation, Done](AuthenticationRole.Admin) {
+  /** Submits a proposal to matriculate a student */
+  override def submitMatriculationProposal(username: String): ServiceCall[SignedTransactionProposal, Done] =
+    identifiedAuthenticated[SignedTransactionProposal, Done](AuthenticationRole.Student) { (authUser, _) =>
+      ServerServiceCall { (_, message) =>
+        if (authUser != username.trim) {
+          throw UC4Exception.OwnerMismatch
+        }
+
+        entityRef.ask[Confirmation](replyTo => SubmitProposal(message, replyTo)).map {
+          case Accepted =>
+            (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+          case RejectedWithError(statusCode, reason) =>
+            throw UC4Exception(statusCode, reason)
+        }
+      }
+    }
+
+  /** Get proposal to matriculate a student */
+  override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal] =
+    identifiedAuthenticated[PutMessageMatriculation, TransactionProposal](AuthenticationRole.Student) { (authUser, _) =>
       ServerServiceCall { (header, rawMessage) =>
+
+        if (authUser != username.trim) {
+          throw UC4Exception.OwnerMismatch
+        }
+
         val message = rawMessage.trim
 
         val validationList = try {
@@ -57,58 +80,42 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
           throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
         }
 
-        userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-          .flatMap { user =>
-            if (!user.isInstanceOf[Student]) {
-              //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
-              throw UC4Exception.NotFound
-            }
+        certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+          .flatMap { jsonEnrollmentId =>
+            val enrollmentId = jsonEnrollmentId.id
 
-            certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-              .flatMap { jsonEnrollmentId =>
-                val enrollmentId = jsonEnrollmentId.id
+            entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(enrollmentId, replyTo))
+              .flatMap {
+                case Success(_) =>
+                  entityRef.ask[Try[Array[Byte]]](replyTo => GetProposalForAddEntriesToMatriculationData(
+                    enrollmentId,
+                    message.matriculation,
+                    replyTo
+                  )).map {
+                    case Success(array) =>
+                      (ResponseHeader(200, MessageProtocol.empty, List()), TransactionProposal(array))
 
-                entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(enrollmentId, replyTo))
-                  .flatMap {
-                    case Success(_) =>
-                      entityRef.ask[Confirmation](replyTo => AddEntriesToMatriculationData(
+                    case Failure(error) => throw error
+                  }
+
+                case Failure(exception) =>
+                  exception match {
+                    case uc4Exception: UC4Exception if uc4Exception.errorCode.http == 404 =>
+                      val data = ImmatriculationData(
                         enrollmentId,
-                        message.matriculation,
-                        replyTo
-                      )).map {
-                        case Accepted =>
-                          userService.updateLatestMatriculation().invoke(MatriculationUpdate(
-                            username,
-                            Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
-                          ))
-                          (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                        message.matriculation
+                      )
+                      entityRef.ask[Try[Array[Byte]]](replyTo => GetProposalForAddMatriculationData(data, replyTo)).map {
+                        case Success(array) =>
+                          (ResponseHeader(200, MessageProtocol.empty, List()), TransactionProposal(array))
 
-                        case RejectedWithError(statusCode, reason) => throw UC4Exception(statusCode, reason)
+                        case Failure(error) => throw error
                       }
 
-                    case Failure(exception) =>
-                      exception match {
-                        case uc4Exception: UC4Exception if uc4Exception.errorCode.http == 404 =>
-                          val data = ImmatriculationData(
-                            enrollmentId,
-                            message.matriculation
-                          )
-                          entityRef.ask[Confirmation](replyTo => AddMatriculationData(data, replyTo)).map {
-                            case Accepted =>
-                              userService.updateLatestMatriculation().invoke(MatriculationUpdate(
-                                username,
-                                Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
-                              ))
-                              (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/$username"))), Done)
+                    case uc4Exception: UC4Exception => throw uc4Exception
 
-                            case RejectedWithError(statusCode, reason) => throw UC4Exception(statusCode, reason)
-                          }
-
-                        case uc4Exception: UC4Exception => throw uc4Exception
-
-                        case ex: Throwable =>
-                          throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
-                      }
+                    case ex: Throwable =>
+                      throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
                   }
               }
           }
@@ -144,9 +151,8 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
   override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
   /** Allows PUT */
-  override def allowedPut: ServiceCall[NotUsed, Done] = allowedMethodsCustom("PUT")
+  override def allowedPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("POST")
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
-
 }

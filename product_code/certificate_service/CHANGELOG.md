@@ -3,6 +3,8 @@
  - Added support for ETags
 ## Refactor
 ## Bugfix
+- Added certificate state deletion if corresponding user gets deleted
+
 
 # [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.3...certificate-v0.11.0) (2020-10-26)
 ## Feature
