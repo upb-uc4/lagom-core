@@ -43,23 +43,19 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
   /** Submits a proposal to matriculate a student */
   override def submitMatriculationProposal(username: String): ServiceCall[SignedTransactionProposal, Done] =
     identifiedAuthenticated[SignedTransactionProposal, Done](AuthenticationRole.Student) { (authUser, _) =>
-      ServerServiceCall { (header, message) =>
+      ServerServiceCall { (_, message) =>
         if (authUser != username.trim) {
           throw UC4Exception.OwnerMismatch
         }
 
-        certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-          .flatMap { jsonEnrollmentId =>
-
-            entityRef.ask[Confirmation](replyTo => SubmitProposal(message, replyTo)).map {
-              case Accepted =>
-                (ResponseHeader(202, MessageProtocol.empty, List()), Done)
-              case RejectedWithError(statusCode, reason) =>
-                throw UC4Exception(statusCode, reason)
+        entityRef.ask[Confirmation](replyTo => SubmitProposal(message, replyTo)).map {
+          case Accepted =>
+            (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+          case RejectedWithError(statusCode, reason) =>
+            throw UC4Exception(statusCode, reason)
             }
           }
       }
-    }
 
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal] =
