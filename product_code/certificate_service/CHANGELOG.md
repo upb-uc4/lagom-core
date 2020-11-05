@@ -1,4 +1,4 @@
-# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.11.0...certificate-v0.11.1) (2020-XX-XX)
+# [v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.11.0...certificate-v0.11.1) (2020-11-05)
 ## Feature
  - Added support for ETags
 ## Refactor
