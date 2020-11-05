@@ -4,7 +4,7 @@ metadata:
   namespace: uc4-lagom
   name: matriculation
 spec:
-  replicas: 1
+  replicas: 2
 
   selector:
     matchLabels:
@@ -32,7 +32,7 @@ spec:
             - name: KAFKA_SERVICE_NAME
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
-              value: "1"
+              value: "2"
             - name: HYPERLEDGER_USERNAME
               valueFrom:
                 secretKeyRef:
