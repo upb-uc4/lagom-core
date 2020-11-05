@@ -30,8 +30,7 @@ import org.scalatest.{ Assertion, BeforeAndAfterAll }
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-/** Tests for the AuthenticationService
-  */
+/** Tests for the AuthenticationService */
 class AuthenticationServiceSpec extends AsyncWordSpec
   with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures {
 

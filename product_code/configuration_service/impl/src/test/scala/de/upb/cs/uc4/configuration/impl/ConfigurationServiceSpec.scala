@@ -8,6 +8,7 @@ import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, Cour
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
+/** Tests for the ConfigurationService */
 class ConfigurationServiceSpec extends AsyncWordSpec with Matchers {
 
   private val server = ServiceTest.startServer(
