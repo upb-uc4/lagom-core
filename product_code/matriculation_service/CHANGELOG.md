@@ -1,4 +1,4 @@
-# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.0...matriculation-v0.11.1) (2020-XX-XX)
+# [v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.0...matriculation-v0.11.1) (2020-11-05)
 ## Feature
  - Changed Matriculation to the new proposal system
  - Added support for ETags
