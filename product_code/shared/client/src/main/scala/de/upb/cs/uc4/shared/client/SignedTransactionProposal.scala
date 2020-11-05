@@ -9,7 +9,7 @@ case class SignedTransactionProposal(unsignedProposal: String, signature: String
 
   def unsignedProposalAsByteArray: Array[Byte] = Base64.getDecoder.decode(unsignedProposal)
 
-  def signatureAsByteString: ByteString = ByteString.copyFrom(Base64.getDecoder.decode(signature))
+  def signatureAsByteArray: Array[Byte] = Base64.getDecoder.decode(signature)
 }
 
 object SignedTransactionProposal {

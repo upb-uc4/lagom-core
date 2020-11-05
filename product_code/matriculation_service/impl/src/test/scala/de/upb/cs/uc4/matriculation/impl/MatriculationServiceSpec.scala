@@ -1,9 +1,9 @@
 package de.upb.cs.uc4.matriculation.impl
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.Path
 import java.util.{ Base64, Calendar }
 
-import com.google.protobuf.ByteString
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
@@ -66,7 +66,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
             override def getProposalAddEntriesToMatriculationData(enrollmentId: String, subjectMatriculationList: String): Array[Byte] =
               (enrollmentId + "#" + subjectMatriculationList).getBytes()
 
-            override def submitSignedProposal(proposalBytes: Array[Byte], signature: ByteString): String = {
+            override def submitSignedProposal(proposalBytes: Array[Byte], signature: Array[Byte]): String = {
               new String(proposalBytes, StandardCharsets.UTF_8) match {
                 case s"$enrollmentId#$subjectMatriculationList" =>
                   var data = Json.parse(jsonStringList.find(json => json.contains(enrollmentId)).get).as[ImmatriculationData]
@@ -139,10 +139,13 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
             override def getProposalUpdateMatriculationData(jSonMatriculationData: String): Array[Byte] = Array.emptyByteArray
             override def getProposalGetMatriculationData(enrollmentId: String): Array[Byte] = Array.emptyByteArray
             override val contractName: String = ""
-            override val contract: ContractImpl = null
-            override val gateway: GatewayImpl = null
-            override val draftContract: ContractImpl = null
-            override val draftGateway: GatewayImpl = null
+            override lazy val contract: ContractImpl = null
+            override lazy val gateway: GatewayImpl = null
+            override val username: String = ""
+            override val channel: String = ""
+            override val chaincode: String = ""
+            override val walletPath: Path = null
+            override val networkDescriptionPath: Path = null
           }
         }
       }
