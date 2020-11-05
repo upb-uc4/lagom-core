@@ -53,9 +53,9 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
             (ResponseHeader(202, MessageProtocol.empty, List()), Done)
           case RejectedWithError(statusCode, reason) =>
             throw UC4Exception(statusCode, reason)
-            }
-          }
+        }
       }
+    }
 
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal] =
