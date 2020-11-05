@@ -40,8 +40,8 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
 
-  /** Immatriculates a student */
-  override def addMatriculationData(username: String): ServiceCall[SignedTransactionProposal, Done] =
+  /** Submits a proposal to matriculate a student */
+  override def submitMatriculationProposal(username: String): ServiceCall[SignedTransactionProposal, Done] =
     identifiedAuthenticated[SignedTransactionProposal, Done](AuthenticationRole.Student) { (authUser, _) =>
       ServerServiceCall { (header, message) =>
         if (authUser != username.trim) {
@@ -50,7 +50,6 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
 
         certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
           .flatMap { jsonEnrollmentId =>
-            val enrollmentId = jsonEnrollmentId.id
 
             entityRef.ask[Confirmation](replyTo => SubmitProposal(message, replyTo)).map {
               case Accepted =>
@@ -62,8 +61,8 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
       }
     }
 
-  /** Get proposal to immatriculates a student */
-  override def getProposalAddMatriculationData(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal] =
+  /** Get proposal to matriculate a student */
+  override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal] =
     identifiedAuthenticated[PutMessageMatriculation, TransactionProposal](AuthenticationRole.Student) { (authUser, _) =>
       ServerServiceCall { (header, rawMessage) =>
 

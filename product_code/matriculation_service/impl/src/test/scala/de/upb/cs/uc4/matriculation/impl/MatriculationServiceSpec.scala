@@ -201,7 +201,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
       certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
         val data = ImmatriculationData(jsonId.id, message.matriculation)
 
-        client.getProposalAddMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+        client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(message).map { proposal =>
             asString(proposal.unsignedProposal) should ===(data.toJson)
           }.andThen {
@@ -211,7 +211,7 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
     }
 
     "not add empty matriculation data for a student" in {
-      client.getProposalAddMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+      client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
         .invoke(createSingleMatriculation("", "")).failed.map { answer =>
           answer.asInstanceOf[UC4Exception].errorCode.http should ===(422)
         }.andThen {
@@ -228,10 +228,10 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
             Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
           )
         ))
-        client.getProposalAddMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+        client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(createSingleMatriculation("Computer Science", "WS2020/21")).flatMap {
             proposal =>
-              client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+              client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
                 .invoke(SignedTransactionProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
                   client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
                     answer =>
@@ -254,9 +254,9 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
             Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
           )
         ))
-        client.getProposalAddMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+        client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(createSingleMatriculation("Mathematics", "WS2021/22")).flatMap { proposal =>
-            client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+            client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
               .invoke(SignedTransactionProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
                 client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
                   answer =>
