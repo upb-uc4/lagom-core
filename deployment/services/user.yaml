@@ -4,7 +4,7 @@ metadata:
   namespace: uc4-lagom
   name: user
 spec:
-  replicas: 2
+  replicas: 1
 
   selector:
     matchLabels:
@@ -53,7 +53,7 @@ spec:
             - name: KAFKA_SERVICE_NAME
               value: "_tcp-clients._tcp.strimzi-kafka-brokers.kafka"
             - name: REQUIRED_CONTACT_POINT_NR
-              value: "2"
+              value: "1"
           resources:
             limits:
               memory: 512Mi
