@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import de.upb.cs.uc4.certificate.impl.actor.CertificateBehaviour
+import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateUser }
 import de.upb.cs.uc4.certificate.impl.commands.{ DeleteCertificateUser, GetCertificateUser, RegisterUser, SetCertificateAndKey }
 import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
@@ -22,10 +22,10 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
 
     //FETCH
     "get a CertificateUser" in {
-      val probe = createTestProbe[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])]()
+      val probe = createTestProbe[CertificateUser]()
       val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-1")))
       ref ! GetCertificateUser(probe.ref)
-      probe.expectMessage((None, None, None, None))
+      probe.expectMessage(CertificateUser(None, None, None, None))
     }
 
     "get a registered CertificateUser" in {
@@ -37,9 +37,9 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
       probe1.expectMessageType[Accepted]
 
       //fetch a registered user
-      val probe2 = createTestProbe[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])]()
+      val probe2 = createTestProbe[CertificateUser]()
       ref ! GetCertificateUser(probe2.ref)
-      probe2.expectMessage((Some("enrollmentId"), Some("enrollmentSecret"), None, None))
+      probe2.expectMessage(CertificateUser(Some("enrollmentId"), Some("enrollmentSecret"), None, None))
     }
 
     "get the enrollmentId, enrollmentSecret, certificate and key of a CertificateUser" in {
@@ -56,9 +56,9 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
       probe2.expectMessageType[Accepted]
 
       //fetch a registered user
-      val probe3 = createTestProbe[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])]()
+      val probe3 = createTestProbe[CertificateUser]()
       ref ! GetCertificateUser(probe3.ref)
-      probe3.expectMessage((Some("enrollmentId"), Some("enrollmentSecret"), Some("certificate"), Some(EncryptedPrivateKey("key", "iv", "salt"))))
+      probe3.expectMessage(CertificateUser(Some("enrollmentId"), Some("enrollmentSecret"), Some("certificate"), Some(EncryptedPrivateKey("key", "iv", "salt"))))
     }
 
     //REGISTER
@@ -88,7 +88,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
     "delete a CertificateUser" in {
       val probe1 = createTestProbe[Confirmation]()
       val probe2 = createTestProbe[Confirmation]()
-      val probe3 = createTestProbe[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])]()
+      val probe3 = createTestProbe[CertificateUser]()
 
       val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
 
@@ -99,7 +99,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
       probe2.expectMessageType[Accepted]
 
       ref ! GetCertificateUser(probe3.ref)
-      probe3.expectMessage((None, None, None, None))
+      probe3.expectMessage(CertificateUser(None, None, None, None))
     }
   }
 }

@@ -26,7 +26,7 @@ case class CertificateState(
       case RegisterUser(enrollmentId, secret, replyTo) =>
         Effect.persist(OnRegisterUser(enrollmentId, secret)).thenReply(replyTo) { _ => Accepted.default }
       case GetCertificateUser(replyTo) =>
-        Effect.reply(replyTo)(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey)
+        Effect.reply(replyTo)(CertificateUser(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey))
       case SetCertificateAndKey(certificate, encryptedPrivateKey, replyTo) =>
         Effect.persist(OnCertficateAndKeySet(certificate, encryptedPrivateKey)).thenReply(replyTo) { _ => Accepted.default }
       case DeleteCertificateUser(username, replyTo) =>
