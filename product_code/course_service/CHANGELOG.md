@@ -1,4 +1,4 @@
-# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.11.0...course-v0.11.1) (2020-XX-XX)
+# [v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.11.0...course-v0.11.1) (2020-11-06)
 ## Feature
  - Added "moduleIds" to Course object
  - Added query parameter for module Ids
@@ -7,6 +7,7 @@
 
 ## Refactor
 ## Bugfix
+ - Added all messages to serialization registry
 
 # [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.10.0...course-v0.11.0) (2020-10-26)
 ## Feature

@@ -1,13 +1,19 @@
 #!/bin/bash
 
+echo "Copy config from /uc4"
+cp /uc4/postgresql.conf /var/lib/postgresql/data/postgresql.conf 2> /dev/null
+
+echo
 echo "Creating tables for the following services: $SERVICES"
 
+echo
 for table in $SERVICES; do
   psql -U $POSTGRES_USER \
   -c "CREATE USER uc4$table WITH LOGIN ENCRYPTED PASSWORD 'uc4$table';" \
   -c "CREATE DATABASE uc4$table WITH OWNER=uc4$table;"
 done
 
+echo
 for table in $SERVICES; do
   psql -U uc4$table -d postgres \
     -c "\c \"uc4$table\"" \

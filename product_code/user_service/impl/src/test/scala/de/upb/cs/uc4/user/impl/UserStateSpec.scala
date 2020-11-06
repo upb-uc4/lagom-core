@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.impl.actor.UserBehaviour
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.model.user._
@@ -62,7 +62,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val probe2 = createTestProbe[Confirmation]()
       ref ! CreateUser(admin1, probe2.ref)
       val message = probe2.receiveMessage()
-      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 500)
+      assert(message.isInstanceOf[Rejected] && message.asInstanceOf[Rejected].statusCode == 500)
     }
 
     //UPDATE
@@ -72,7 +72,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val probe1 = createTestProbe[Confirmation]()
       ref ! UpdateUser(lecturer0, probe1.ref)
       val message = probe1.receiveMessage()
-      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 500)
+      assert(message.isInstanceOf[Rejected] && message.asInstanceOf[Rejected].statusCode == 500)
     }
 
     "update an existing user" in {
@@ -153,7 +153,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! DeleteUser(probe1.ref)
-      probe1.expectMessageType[RejectedWithError]
+      probe1.expectMessageType[Rejected]
     }
 
     "delete an existing user" in {

@@ -3,6 +3,7 @@
  - Added support for ETags
 ## Refactor
 ## Bugfix
+ - Added all messages to serialization registry
 
 # [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.10.0...authentication-v0.11.0) (2020-10-26)
 ## Feature

@@ -7,7 +7,7 @@ import de.upb.cs.uc4.course.impl.commands._
 import de.upb.cs.uc4.course.impl.events.{ CourseEvent, OnCourseCreate, OnCourseDelete, OnCourseUpdate }
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError }
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import play.api.libs.json.{ Format, Json }
 
 /** The current state of a Course */
@@ -25,7 +25,7 @@ case class CourseState(optCourse: Option[Course]) {
           Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
+          Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
       case UpdateCourse(course, replyTo) =>
@@ -33,7 +33,7 @@ case class CourseState(optCourse: Option[Course]) {
           Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
+          Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
       case GetCourse(replyTo) =>
@@ -44,7 +44,7 @@ case class CourseState(optCourse: Option[Course]) {
           Effect.persist(OnCourseDelete(id)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(Rejected("A course with the given Id does not exist."))
+          Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
       case _ =>

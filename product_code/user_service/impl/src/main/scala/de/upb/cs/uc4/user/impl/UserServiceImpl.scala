@@ -21,7 +21,7 @@ import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
@@ -173,7 +173,7 @@ class UserServiceImpl(
                           throw deletionException
                       }
                 }
-            case RejectedWithError(code, reason) =>
+            case Rejected(code, reason) =>
               throw UC4Exception(code, reason)
           }
       }
@@ -242,7 +242,7 @@ class UserServiceImpl(
                   .map {
                     case Accepted => // Update successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case RejectedWithError(code, reason) => //Update failed
+                    case Rejected(code, reason) => //Update failed
                       throw UC4Exception(code, reason)
                   }
             }
@@ -259,7 +259,7 @@ class UserServiceImpl(
           .map {
             case Accepted => // Update Successful
               (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-            case RejectedWithError(code, reason) =>
+            case Rejected(code, reason) =>
               throw UC4Exception(code, reason)
           }
     }
@@ -351,8 +351,8 @@ class UserServiceImpl(
     matriculationUpdate =>
       val ref = entityRef(matriculationUpdate.username)
       ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
-        case Accepted => Done
-        case RejectedWithError(error, reason) => throw UC4Exception(error, reason)
+        case Accepted                => Done
+        case Rejected(error, reason) => throw UC4Exception(error, reason)
       }
   }
 

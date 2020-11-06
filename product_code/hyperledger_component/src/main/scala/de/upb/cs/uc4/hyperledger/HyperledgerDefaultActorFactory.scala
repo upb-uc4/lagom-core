@@ -8,7 +8,7 @@ import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadC
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exception }
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.util.Failure
@@ -59,7 +59,7 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
                     val uc4Exception = ex.toUC4Exception
                     cmd match {
                       case write: HyperledgerWriteCommand =>
-                        write.replyTo ! RejectedWithError(uc4Exception.errorCode.http, uc4Exception.possibleErrorResponse)
+                        write.replyTo ! Rejected(uc4Exception.errorCode.http, uc4Exception.possibleErrorResponse)
                       case read: HyperledgerReadCommand[_] =>
                         read.replyTo ! Failure(uc4Exception)
                     }
@@ -68,7 +68,7 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
               else {
                 cmd match {
                   case write: HyperledgerWriteCommand =>
-                    write.replyTo ! RejectedWithError(500, GenericError(ErrorType.InternalServer, "No connection to the chain"))
+                    write.replyTo ! Rejected(500, GenericError(ErrorType.InternalServer, "No connection to the chain"))
                   case read: HyperledgerReadCommand[_] =>
                     read.replyTo ! Failure(UC4Exception.InternalServerError("Enrollment Error", "No connection to the chain"))
                 }

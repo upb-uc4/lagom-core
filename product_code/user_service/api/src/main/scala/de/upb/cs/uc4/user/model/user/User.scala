@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import de.upb.cs.uc4.shared.client.configuration.RegexCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Role.Role
@@ -8,6 +9,7 @@ import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 trait User {
   val username: String
   val role: Role
@@ -29,14 +31,14 @@ trait User {
       birthDate: String = this.birthDate
   ): User
 
+  def toPublic: User
+
   def trim: User = copyUser(
     username.trim, role, address.trim, firstName.trim, lastName.trim,
     email.trim, phoneNumber.trim, birthDate.trim
   )
 
   def clean: User = trim.copyUser(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
-
-  def toPublic: User = copyUser(address = Address.empty, birthDate = "")
 
   /** Validates the object by checking predefined conditions like correct charsets, syntax, etc.
     * Returns a list of SimpleErrors[[SimpleError]]
