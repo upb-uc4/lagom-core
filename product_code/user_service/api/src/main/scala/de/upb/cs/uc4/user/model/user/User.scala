@@ -29,14 +29,14 @@ trait User {
       birthDate: String = this.birthDate
   ): User
 
+  def toPublic: User
+
   def trim: User = copyUser(
     username.trim, role, address.trim, firstName.trim, lastName.trim,
     email.trim, phoneNumber.trim, birthDate.trim
   )
 
   def clean: User = trim.copyUser(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
-
-  def toPublic: User = copyUser(address = Address.empty, birthDate = "")
 
   /** Validates the object by checking predefined conditions like correct charsets, syntax, etc.
     * Returns a list of SimpleErrors[[SimpleError]]

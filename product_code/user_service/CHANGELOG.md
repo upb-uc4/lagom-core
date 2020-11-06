@@ -3,6 +3,7 @@
  - Added support for ETags
 ## Refactor
  - Changed email addresses, first names and last names for the default users
+ - Changed toPublic to fill in the public information, instead of removing the private information
 ## Bugfix
  - Added all messages to serialization registry
  
