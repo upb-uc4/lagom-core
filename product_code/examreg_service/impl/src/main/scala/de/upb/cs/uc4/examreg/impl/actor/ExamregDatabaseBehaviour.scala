@@ -8,7 +8,7 @@ import com.lightbend.lagom.scaladsl.persistence.AkkaTaggerAdapter
 import de.upb.cs.uc4.examreg.impl.commands.ExamregCommand
 import de.upb.cs.uc4.examreg.impl.events.ExamregEvent
 
-object ExamregBehaviour {
+object ExamregDatabaseBehaviour {
 
   /** Given a sharding [[EntityContext]] this function produces an Akka [[Behavior]] for the aggregate.
     */

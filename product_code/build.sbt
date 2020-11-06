@@ -149,4 +149,4 @@ lazy val examreg_service = (project in file("examreg_service/impl"))
     libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
   )
   .settings(Settings.implSettings("examreg_service"))
-  .dependsOn(examreg_service_api % withTests, shared_client, shared_server)
+  .dependsOn(examreg_service_api % withTests, shared_client, shared_server, hyperledger_component)

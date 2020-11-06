@@ -7,25 +7,27 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.typesafe.config.Config
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.examreg.impl.actor.ExamregState
+import de.upb.cs.uc4.examreg.impl.actor.{ ExamregHyperledgerBehaviour, ExamregState }
 import de.upb.cs.uc4.examreg.impl.commands.{ ExamregCommand, GetExamreg }
 import de.upb.cs.uc4.examreg.impl.readside.{ ExamregDatabase, ExamregEventProcessor }
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
+import de.upb.cs.uc4.hyperledger.commands.HyperledgerCommand
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 
-import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the ExamregService */
 class ExamregServiceImpl(clusterSharding: ClusterSharding, readSide: ReadSide,
-    processor: ExamregEventProcessor, database: ExamregDatabase)(implicit ec: ExecutionContext, config: Config) extends ExamregService {
+    processor: ExamregEventProcessor, database: ExamregDatabase)(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ExamregService {
   readSide.register(processor)
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[ExamregCommand] =
     clusterSharding.entityRefFor(ExamregState.typeKey, id)
 
-  implicit val timeout: Timeout = Timeout(15.seconds)
+  /** Returns the entity for Hyperledger */
+  private def entityRefHyperledger: EntityRef[HyperledgerCommand] =
+    clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, ExamregHyperledgerBehaviour.entityId)
 
   // TODO All ExamReg Tests
   // TODO Default ExamRegs

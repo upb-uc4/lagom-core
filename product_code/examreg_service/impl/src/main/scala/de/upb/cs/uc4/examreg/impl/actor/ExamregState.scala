@@ -3,7 +3,7 @@ package de.upb.cs.uc4.examreg.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.examreg.impl.ExamregApplication
-import de.upb.cs.uc4.examreg.impl.commands.{ CreateExamreg, ExamregCommand, GetExamreg }
+import de.upb.cs.uc4.examreg.impl.commands.{ CreateExamregDatabase, CreateExamregHyperledger, ExamregCommand, GetExamreg }
 import de.upb.cs.uc4.examreg.impl.events.{ ExamregEvent, OnExamregCreate }
 import de.upb.cs.uc4.examreg.model.ExaminationRegulation
 import de.upb.cs.uc4.shared.server.messages.Accepted
@@ -21,7 +21,7 @@ case class ExamregState(optExaminationRegulation: Option[ExaminationRegulation])
       case GetExamreg(replyTo) =>
         Effect.reply(replyTo)(optExaminationRegulation)
 
-      case CreateExamreg(examreg, replyTo) =>
+      case CreateExamregDatabase(examreg, replyTo) =>
         Effect.persist(OnExamregCreate(examreg)).thenReply(replyTo) { _ => Accepted }
 
       case _ =>

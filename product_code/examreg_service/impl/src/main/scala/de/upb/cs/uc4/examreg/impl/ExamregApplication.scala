@@ -1,26 +1,39 @@
 package de.upb.cs.uc4.examreg.impl
 
 import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.examreg.impl.actor.{ ExamregBehaviour, ExamregState }
+import de.upb.cs.uc4.examreg.impl.actor.{ ExamregDatabaseBehaviour, ExamregHyperledgerBehaviour, ExamregState }
+import de.upb.cs.uc4.examreg.impl.commands.{ CreateExamregDatabase, CreateExamregHyperledger }
 import de.upb.cs.uc4.examreg.impl.readside.{ ExamregDatabase, ExamregEventProcessor }
+import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
+import de.upb.cs.uc4.hyperledger.HyperledgerComponent
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.UC4Application
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import play.api.db.HikariCPComponents
+
+import scala.concurrent.duration._
 
 abstract class ExamregApplication(context: LagomApplicationContext)
   extends UC4Application(context)
   with SlickPersistenceComponents
   with JdbcPersistenceComponents
-  with HikariCPComponents {
+  with HikariCPComponents
+  with HyperledgerComponent {
 
   // Create ReadSide
   lazy val database: ExamregDatabase = wire[ExamregDatabase]
   lazy val processor: ExamregEventProcessor = wire[ExamregEventProcessor]
+
+  implicit val timeout: Timeout = Timeout(15.seconds)
+
+  override def createActorFactory: ExamregHyperledgerBehaviour = wire[ExamregHyperledgerBehaviour]
 
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = ExamregSerializerRegistry
@@ -32,12 +45,27 @@ abstract class ExamregApplication(context: LagomApplicationContext)
   // a given sharding entity typeKey.
   clusterSharding.init(
     Entity(ExamregState.typeKey)(
-      entityContext => ExamregBehaviour.create(entityContext)
+      entityContext => ExamregDatabaseBehaviour.create(entityContext)
     )
   )
+  val defaultExamReg: ExaminationRegulation = ExaminationRegulation(
+    "Computer Science v3",
+    active = true,
+    Seq(Module("M.1275.01158", "Math 1"))
+  )
+  clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, ExamregHyperledgerBehaviour.entityId)
+    .ask[Confirmation](replyTo => CreateExamregHyperledger(defaultExamReg, replyTo)).map {
+      case Accepted => clusterSharding.entityRefFor(ExamregState.typeKey, defaultExamReg.name)
+        .ask[Confirmation](replyTo => CreateExamregDatabase(defaultExamReg, replyTo)).map {
+          case Accepted                     =>
+          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+        }
+      case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+    }
 }
 
 object ExamregApplication {
   /** Functions as offset for the database */
   val offset: String = "UniversityCredits4Examreg"
+  val hlOffset: String = "UniversityCredits4HLExamreg"
 }
