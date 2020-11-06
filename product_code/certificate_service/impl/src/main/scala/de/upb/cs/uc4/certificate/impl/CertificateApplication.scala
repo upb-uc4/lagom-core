@@ -60,7 +60,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
   )
 
   try {
-    EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
+    enrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
   }
   catch {
     case e: Throwable => throw e.toUC4Exception
