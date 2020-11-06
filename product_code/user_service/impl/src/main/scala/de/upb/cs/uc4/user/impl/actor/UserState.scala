@@ -28,7 +28,7 @@ case class UserState(optUser: Option[User]) {
           Effect.persist(OnUserCreate(user)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
+          Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
       case UpdateUser(user, replyTo) =>
@@ -36,7 +36,7 @@ case class UserState(optUser: Option[User]) {
           Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
+          Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
       case UpdateLatestMatriculation(semester, replyTo) =>
@@ -50,7 +50,7 @@ case class UserState(optUser: Option[User]) {
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
+          Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
       case DeleteUser(replyTo) =>
@@ -58,7 +58,7 @@ case class UserState(optUser: Option[User]) {
           Effect.persist(OnUserDelete(optUser.get)).thenReply(replyTo) { _ => Accepted }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(404, GenericError(ErrorType.KeyNotFound)))
+          Effect.reply(replyTo)(Rejected(404, GenericError(ErrorType.KeyNotFound)))
         }
 
       case _ =>

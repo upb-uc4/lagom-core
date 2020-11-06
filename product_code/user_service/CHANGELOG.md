@@ -1,11 +1,12 @@
-# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.11.0...user-v0.11.1) (2020-XX-XX)
+# [v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.11.0...user-v0.11.1) (2020-11-06)
 ## Feature
  - Added support for ETags
 ## Refactor
  - Changed email addresses, first names and last names for the default users
  - Changed toPublic to fill in the public information, instead of removing the private information
 ## Bugfix
-
+ - Added all messages to serialization registry
+ 
 # [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.10.1...user-v0.11.0) (2020-10-26)
 ## Feature
  - Changed the Circuit Breaker to ignore UC4NonCriticalExceptions

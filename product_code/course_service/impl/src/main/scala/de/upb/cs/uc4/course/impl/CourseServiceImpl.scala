@@ -17,7 +17,7 @@ import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 
 import scala.concurrent.duration._
@@ -101,7 +101,7 @@ class CourseServiceImpl(
               .map {
                 case Accepted => // Creation Successful
                   (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
-                case RejectedWithError(code, reason) =>
+                case Rejected(code, reason) =>
                   throw UC4Exception(code, reason)
               }
           }
@@ -124,8 +124,8 @@ class CourseServiceImpl(
                   .map {
                     case Accepted => // OK
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case Rejected(reason) => // Not Found
-                      throw UC4Exception.InternalServerError("Course Deletion Error", reason)
+                    case Rejected(code, reason) => // Not Found
+                      throw UC4Exception(code, reason)
                   }
               }
             case None =>
@@ -188,7 +188,7 @@ class CourseServiceImpl(
                   .map {
                     case Accepted => // Update Successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case RejectedWithError(code, reason) =>
+                    case Rejected(code, reason) =>
                       throw UC4Exception(code, reason)
                   }
               }

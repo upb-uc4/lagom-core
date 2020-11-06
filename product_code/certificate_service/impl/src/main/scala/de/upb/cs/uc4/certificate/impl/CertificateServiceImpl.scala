@@ -19,7 +19,7 @@ import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
@@ -72,7 +72,7 @@ class CertificateServiceImpl(
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
                     .addHeader("Location", s"$pathPrefix/certificates/$username/certificate")
                   (header, JsonCertificate(certificate))
-                case RejectedWithError(code, reason) =>
+                case Rejected(code, reason) =>
                   throw UC4Exception(code, reason)
                 case _ =>
                   throw UC4Exception.InternalServerError("Unexpected Error", "Unexpected error occurred when fetching certificate")

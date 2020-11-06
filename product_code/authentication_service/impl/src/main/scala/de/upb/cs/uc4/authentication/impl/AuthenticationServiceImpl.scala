@@ -18,9 +18,9 @@ import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model._
 import de.upb.cs.uc4.shared.client.Hashing
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4CriticalException, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import io.jsonwebtoken._
 
 import scala.concurrent.duration._
@@ -44,7 +44,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
   override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { user =>
     entityRef(Hashing.sha256(user.username)).ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map {
       case Accepted => Done
-      case RejectedWithError(code, errorResponse) =>
+      case Rejected(code, errorResponse) =>
         throw UC4Exception(code, errorResponse)
     }
   }
@@ -85,7 +85,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
             .map {
               case Accepted => // Update Successful
                 (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-              case RejectedWithError(code, errorResponse) =>
+              case Rejected(code, errorResponse) =>
                 throw UC4Exception(code, errorResponse)
             }
         }
