@@ -2,12 +2,10 @@ package de.upb.cs.uc4.matriculation.impl
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
-import java.util.{ Base64, Calendar }
+import java.util.Base64
 
-import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
@@ -17,8 +15,8 @@ import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
 import de.upb.cs.uc4.shared.client.SignedTransactionProposal
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
-import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -28,7 +26,8 @@ import play.api.libs.json.Json
 import scala.language.reflectiveCalls
 
 /** Tests for the MatriculationService */
-class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with DefaultTestUsers {
+class MatriculationServiceSpec extends AsyncWordSpec
+  with UC4SpecUtils with Matchers with BeforeAndAfterAll with DefaultTestUsers {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup.withCluster()
@@ -155,35 +154,6 @@ class MatriculationServiceSpec extends AsyncWordSpec with Matchers with BeforeAn
   val certificate: CertificateServiceStub = server.application.certificateService
 
   override protected def afterAll(): Unit = server.stop()
-
-  def createLoginToken(username: String = "admin"): String = {
-
-    var role = AuthenticationRole.Admin
-
-    if (username.contains("student")) {
-      role = AuthenticationRole.Student
-    }
-    else if (username.contains("lecturer")) {
-      role = AuthenticationRole.Lecturer
-    }
-
-    val time = Calendar.getInstance()
-    time.add(Calendar.DATE, 1)
-
-    val token =
-      Jwts.builder()
-        .setSubject("login")
-        .setExpiration(time.getTime)
-        .claim("username", username)
-        .claim("authenticationRole", role.toString)
-        .signWith(SignatureAlgorithm.HS256, "changeme")
-        .compact()
-
-    s"login=$token"
-  }
-
-  def addAuthorizationHeader(username: String = "admin"): RequestHeader => RequestHeader =
-    header => header.withHeader("Cookie", createLoginToken(username))
 
   def prepare(matriculations: Seq[ImmatriculationData]): Unit = {
     server.application.jsonStringList ++= matriculations.map(_.toJson)
