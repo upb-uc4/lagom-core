@@ -4,21 +4,21 @@ import java.nio.file.Path
 
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
-import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
+import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents}
+import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR }
-import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4Exception }
+import de.upb.cs.uc4.certificate.model.{EncryptedPrivateKey, PostMessageCSR}
+import de.upb.cs.uc4.hyperledger.utilities.traits.{EnrollmentManagerTrait, RegistrationManagerTrait}
+import de.upb.cs.uc4.shared.client.exceptions.{DetailedError, ErrorType, GenericError, UC4Exception}
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Usernames
-import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
-import org.scalatest.{ Assertion, BeforeAndAfterAll }
+import de.upb.cs.uc4.user.{DefaultTestUsers, UserServiceStub}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{ Seconds, Span }
+import org.scalatest.time.{Seconds, Span}
 import org.scalatest.wordspec.AsyncWordSpec
 
 /** Tests for the CertificateService */
