@@ -6,6 +6,7 @@ import de.upb.cs.uc4.authentication.impl.AuthenticationApplication
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.events.{ AuthenticationEvent, OnDelete, OnSet }
 import de.upb.cs.uc4.shared.client.Hashing
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError }
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import play.api.libs.json.{ Format, Json }
 
@@ -27,7 +28,7 @@ case class AuthenticationState(optEntry: Option[AuthenticationEntry]) {
         case Some(entry) =>
           Effect.persist(OnDelete(entry.username)).thenReply(replyTo) { _ => Accepted }
         case None =>
-          Effect.reply(replyTo)(Rejected("AuthenticationUser does not exist."))
+          Effect.reply(replyTo)(Accepted)
       }
       case GetAuthentication(replyTo) => Effect.reply(replyTo)(optEntry)
       case _ =>
