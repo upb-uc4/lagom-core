@@ -16,6 +16,7 @@ import de.upb.cs.uc4.hyperledger.HyperledgerComponent
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
 import scala.concurrent.duration._
@@ -27,11 +28,13 @@ abstract class ExamregApplication(context: LagomApplicationContext)
   with HikariCPComponents
   with HyperledgerComponent {
 
+  private final val log: Logger = LoggerFactory.getLogger(classOf[ExamregApplication])
+
   // Create ReadSide
   lazy val database: ExamregDatabase = wire[ExamregDatabase]
   lazy val processor: ExamregEventProcessor = wire[ExamregEventProcessor]
 
-  implicit val timeout: Timeout = Timeout(15.seconds)
+  implicit val timeout: Timeout = Timeout(30.seconds)
 
   override def createActorFactory: ExamregHyperledgerBehaviour = wire[ExamregHyperledgerBehaviour]
 
@@ -57,10 +60,12 @@ abstract class ExamregApplication(context: LagomApplicationContext)
     .ask[Confirmation](replyTo => CreateExamregHyperledger(defaultExamReg, replyTo)).map {
       case Accepted => clusterSharding.entityRefFor(ExamregState.typeKey, defaultExamReg.name)
         .ask[Confirmation](replyTo => CreateExamregDatabase(defaultExamReg, replyTo)).map {
-          case Accepted                     =>
-          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+          case Accepted                     => log.info("Default exam reg created successfully")
+          case Rejected(statusCode, reason) => log.error("Failed database operation of creating default exam reg", UC4Exception(statusCode, reason))
         }
-      case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+      case Rejected(statusCode, reason) => log.error("Failed hyperledger operation of creating default exam reg", UC4Exception(statusCode, reason))
+    }.recover {
+      case t: Throwable => log.error("Error in Exam application", t)
     }
 }
 
