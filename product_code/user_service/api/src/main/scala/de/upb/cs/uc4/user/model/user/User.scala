@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import de.upb.cs.uc4.shared.client.configuration.RegexCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Role.Role
@@ -8,6 +9,7 @@ import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+@JsonTypeInfo(use=JsonTypeInfo.Id.MINIMAL_CLASS, include=JsonTypeInfo.As.PROPERTY, property="@class")
 trait User {
   val username: String
   val role: Role
