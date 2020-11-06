@@ -1,10 +1,15 @@
+# [v0.11.2](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.11.1...certificate-v0.11.2) (2020-11-06)
+## Feature
+## Refactor
+## Bugfix
+ - Added all messages to serialization registry
+ 
 # [v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.11.0...certificate-v0.11.1) (2020-11-05)
 ## Feature
  - Added support for ETags
 ## Refactor
 ## Bugfix
-- Added certificate state deletion if corresponding user gets deleted
-
+ - Added certificate state deletion if corresponding user gets deleted
 
 # [v0.11.0](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.10.3...certificate-v0.11.0) (2020-10-26)
 ## Feature
