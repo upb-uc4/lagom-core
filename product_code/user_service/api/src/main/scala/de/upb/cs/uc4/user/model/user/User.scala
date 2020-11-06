@@ -9,7 +9,7 @@ import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-@JsonTypeInfo(use=JsonTypeInfo.Id.MINIMAL_CLASS, include=JsonTypeInfo.As.PROPERTY, property="@class")
+@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 trait User {
   val username: String
   val role: Role
