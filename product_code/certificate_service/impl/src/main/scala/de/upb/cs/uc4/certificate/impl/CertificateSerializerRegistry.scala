@@ -3,6 +3,7 @@ package de.upb.cs.uc4.certificate.impl
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.certificate.impl.actor.CertificateState
 import de.upb.cs.uc4.certificate.impl.events.{ OnCertficateAndKeySet, OnCertificateUserDelete, OnRegisterUser }
+import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq
@@ -20,6 +21,7 @@ object CertificateSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[OnRegisterUser],
     JsonSerializer[OnCertficateAndKeySet],
     JsonSerializer[OnCertificateUserDelete],
-    JsonSerializer[CertificateState]
+    JsonSerializer[CertificateState],
+    JsonSerializer[EncryptedPrivateKey]
   )
 }
