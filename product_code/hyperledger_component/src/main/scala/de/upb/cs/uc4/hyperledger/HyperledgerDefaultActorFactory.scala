@@ -50,7 +50,7 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
                   cmd match {
                     case SubmitProposal(proposal, signature, replyTo) =>
                       connection.submitSignedProposal(proposal, signature)
-                      replyTo ! Accepted
+                      replyTo ! Accepted.default
                     case _ => applyCommand(connection, cmd)
                   }
                 }

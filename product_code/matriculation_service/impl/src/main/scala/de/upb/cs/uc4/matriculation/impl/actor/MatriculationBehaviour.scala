@@ -7,9 +7,8 @@ import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadC
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionMatriculation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
-import de.upb.cs.uc4.matriculation.impl.commands.{ GetProposalForAddMatriculationData, GetMatriculationData, GetProposalForAddEntriesToMatriculationData }
+import de.upb.cs.uc4.matriculation.impl.commands.{ GetMatriculationData, GetProposalForAddEntriesToMatriculationData, GetProposalForAddMatriculationData }
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
-import de.upb.cs.uc4.shared.server.messages.Accepted
 
 import scala.util.Success
 

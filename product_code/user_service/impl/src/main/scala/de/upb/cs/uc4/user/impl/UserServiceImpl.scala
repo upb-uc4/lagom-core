@@ -153,7 +153,7 @@ class UserServiceImpl(
 
         ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
           .flatMap {
-            case Accepted => // Creation Successful
+            case Accepted(_) => // Creation Successful
               authentication.setAuthentication().invoke(postMessageUser.authUser)
                 .map { _ =>
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
@@ -240,7 +240,7 @@ class UserServiceImpl(
 
                 ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
                   .map {
-                    case Accepted => // Update successful
+                    case Accepted(_) => // Update successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case Rejected(code, reason) => //Update failed
                       throw UC4Exception(code, reason)
@@ -257,7 +257,7 @@ class UserServiceImpl(
 
         ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
           .map {
-            case Accepted => // Update Successful
+            case Accepted(_) => // Update Successful
               (ResponseHeader(200, MessageProtocol.empty, List()), Done)
             case Rejected(code, reason) =>
               throw UC4Exception(code, reason)
@@ -351,7 +351,7 @@ class UserServiceImpl(
     matriculationUpdate =>
       val ref = entityRef(matriculationUpdate.username)
       ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
-        case Accepted                => Done
+        case Accepted(_)             => Done
         case Rejected(error, reason) => throw UC4Exception(error, reason)
       }
   }

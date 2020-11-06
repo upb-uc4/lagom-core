@@ -43,7 +43,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
   /** Sets the authentication data of a user */
   override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { user =>
     entityRef(Hashing.sha256(user.username)).ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map {
-      case Accepted => Done
+      case Accepted(_) => Done
       case Rejected(code, errorResponse) =>
         throw UC4Exception(code, errorResponse)
     }
@@ -83,7 +83,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
 
           ref.ask[Confirmation](replyTo => SetAuthentication(authUser, replyTo))
             .map {
-              case Accepted => // Update Successful
+              case Accepted(_) => // Update Successful
                 (ResponseHeader(200, MessageProtocol.empty, List()), Done)
               case Rejected(code, errorResponse) =>
                 throw UC4Exception(code, errorResponse)

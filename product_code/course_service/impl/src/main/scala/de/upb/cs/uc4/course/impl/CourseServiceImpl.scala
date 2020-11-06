@@ -99,7 +99,7 @@ class CourseServiceImpl(
 
             ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
               .map {
-                case Accepted => // Creation Successful
+                case Accepted(_) => // Creation Successful
                   (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
                 case Rejected(code, reason) =>
                   throw UC4Exception(code, reason)
@@ -122,7 +122,7 @@ class CourseServiceImpl(
               else {
                 entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
                   .map {
-                    case Accepted => // OK
+                    case Accepted(_) => // OK
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case Rejected(code, reason) => // Not Found
                       throw UC4Exception(code, reason)
@@ -186,7 +186,7 @@ class CourseServiceImpl(
               else {
                 ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
                   .map {
-                    case Accepted => // Update Successful
+                    case Accepted(_) => // Update Successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case Rejected(code, reason) =>
                       throw UC4Exception(code, reason)

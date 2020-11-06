@@ -68,7 +68,7 @@ class CertificateServiceImpl(
             try {
               val certificate = enrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
               entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
-                case Accepted =>
+                case Accepted(_) =>
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
                     .addHeader("Location", s"$pathPrefix/certificates/$username/certificate")
                   (header, JsonCertificate(certificate))

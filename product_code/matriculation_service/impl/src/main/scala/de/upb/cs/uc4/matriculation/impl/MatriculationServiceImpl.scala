@@ -17,8 +17,6 @@ import de.upb.cs.uc4.matriculation.impl.commands.{ GetMatriculationData, GetProp
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.{ SignedTransactionProposal, TransactionProposal }
-import de.upb.cs.uc4.shared.client.Utils
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
@@ -49,7 +47,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
         }
 
         entityRef.ask[Confirmation](replyTo => SubmitProposal(message, replyTo)).map {
-          case Accepted =>
+          case Accepted(_) =>
             (ResponseHeader(202, MessageProtocol.empty, List()), Done)
           case Rejected(statusCode, reason) =>
             throw UC4Exception(statusCode, reason)
