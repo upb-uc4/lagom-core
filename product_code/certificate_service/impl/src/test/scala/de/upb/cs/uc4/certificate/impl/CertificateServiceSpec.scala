@@ -52,7 +52,7 @@ class CertificateServiceSpec extends AsyncWordSpec
           stubFactory.producer[EncryptionContainer](UserService.ADD_TOPIC_NAME)
         creationStub = internCreationStub
         lazy val internDeletionStub: ProducerStub[EncryptionContainer] =
-          stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_NAME)
+          stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_MINIMAL_NAME)
         deletionStub = internDeletionStub
 
         // Create a userService with ProducerStub as topic

@@ -196,7 +196,7 @@ class UserServiceSpec extends AsyncWordSpec
         )
       }
 
-      "publish a deleted user" in {
+      "publish a deleted user in minimal format" in {
         val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
         client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
 
@@ -207,7 +207,7 @@ class UserServiceSpec extends AsyncWordSpec
         server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student0.username))
       }
 
-      "publish a deleted user" in {
+      "publish a deleted user in precise format" in {
         val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicPrecise().subscribe.atMostOnceSource
         client.deleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke()
 
@@ -215,8 +215,9 @@ class UserServiceSpec extends AsyncWordSpec
           .runWith(TestSink.probe[EncryptionContainer])
           .request(1)
           .expectNext(FiniteDuration(15, SECONDS))
-        server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student0.username,Role.Student))
+        server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student0.username, Role.Student))
       }
+
     }
 
     "get all users with default users" in {

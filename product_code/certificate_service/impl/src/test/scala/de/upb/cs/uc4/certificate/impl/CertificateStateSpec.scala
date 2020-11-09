@@ -114,14 +114,14 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
       ref ! RegisterUser("enrollmentId", "enrollmentSecret", probe1.ref)
       probe1.expectMessage(Accepted)
 
-      ref ! SetCertificateAndKey("certificate", EncryptedPrivateKey("Key","IV","Salt"), probe2.ref)
+      ref ! SetCertificateAndKey("certificate", EncryptedPrivateKey("Key", "IV", "Salt"), probe2.ref)
       probe2.expectMessage(Accepted)
 
       ref ! DeleteCertificateUser("SomeUsername", Role.Lecturer, probe3.ref)
       probe3.expectMessage(Accepted)
 
       ref ! GetCertificateUser(probe4.ref)
-      probe4.expectMessage((Some("enrollmentId"), Some("enrollmentSecret"), Some("certificate"), Some(EncryptedPrivateKey("","",""))))
+      probe4.expectMessage((Some("enrollmentId"), Some("enrollmentSecret"), Some("certificate"), Some(EncryptedPrivateKey("", "", ""))))
     }
   }
 }

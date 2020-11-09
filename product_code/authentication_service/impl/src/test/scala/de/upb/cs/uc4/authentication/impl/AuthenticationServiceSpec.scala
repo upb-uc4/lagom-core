@@ -45,7 +45,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
         // Declaration as lazy values forces right execution order
         lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
         lazy val internDeletionStub: ProducerStub[EncryptionContainer] =
-          stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_NAME)
+          stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_MINIMAL_NAME)
 
         deletionStub = internDeletionStub
         applicationConfig = config

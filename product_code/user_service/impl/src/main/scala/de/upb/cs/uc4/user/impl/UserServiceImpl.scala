@@ -401,7 +401,7 @@ class UserServiceImpl(
         .mapConcat {
           //Filter only OnUserDelete events
           case EventStreamElement(_, OnUserDelete(user), offset) => try {
-            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username,user.role)), offset))
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username, user.role)), offset))
           }
           catch {
             case throwable: Throwable =>
@@ -411,8 +411,6 @@ class UserServiceImpl(
           case _ => Nil
         }
   }
-
-
 
   /** Gets the image of the user */
   override def getImage(username: String): ServiceCall[NotUsed, ByteString] = authenticated[NotUsed, ByteString](AuthenticationRole.All: _*) {
