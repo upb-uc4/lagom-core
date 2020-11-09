@@ -5,14 +5,12 @@ import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
-import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateState, CertificateUser }
 import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
-import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
@@ -20,6 +18,7 @@ import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import play.api.Environment
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
@@ -27,7 +26,8 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 /** Implementation of the UserService */
 class CertificateServiceImpl(
     clusterSharding: ClusterSharding,
-    enrollmentManager: EnrollmentManagerTrait
+    enrollmentManager: EnrollmentManagerTrait,
+    override val environment: Environment
 )(implicit ec: ExecutionContext, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
 

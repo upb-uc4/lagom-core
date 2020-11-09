@@ -20,11 +20,16 @@ import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import io.jsonwebtoken._
+import play.api.Environment
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
-class AuthenticationServiceImpl(clusterSharding: ClusterSharding, config: Config)(implicit ec: ExecutionContext) extends AuthenticationService {
+class AuthenticationServiceImpl(
+    clusterSharding: ClusterSharding,
+    config: Config,
+    override val environment: Environment
+)(implicit ec: ExecutionContext) extends AuthenticationService {
 
   private def entityRef(id: String): EntityRef[AuthenticationCommand] =
     clusterSharding.entityRefFor(AuthenticationState.typeKey, id)

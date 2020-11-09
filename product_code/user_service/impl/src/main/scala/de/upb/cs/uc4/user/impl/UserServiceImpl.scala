@@ -32,6 +32,7 @@ import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
 import de.upb.cs.uc4.user.model.user._
 import org.slf4j.{ Logger, LoggerFactory }
+import play.api.Environment
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -40,7 +41,8 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 /** Implementation of the UserService */
 class UserServiceImpl(
     clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry, database: UserDatabase,
-    authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService
+    authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService,
+    override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
 
   private final val log: Logger = LoggerFactory.getLogger(classOf[UserServiceImpl])

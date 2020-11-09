@@ -17,6 +17,7 @@ trait UC4Service extends Service {
   val name: String
   /** This services uses auto acl (Default: True) */
   val autoAcl: Boolean = true
+  val environment: Environment = Environment.simple()
 
   private lazy val versionNumber = getClass.getPackage.getImplementationVersion
 
@@ -36,7 +37,7 @@ trait UC4Service extends Service {
         restCall(Method.OPTIONS, pathPrefix + "/version", allowVersionNumber _)
       )
       .withExceptionSerializer(
-        new UC4ExceptionSerializer(Environment.simple())
+        new UC4ExceptionSerializer(environment)
       )
 
     if (autoAcl) {

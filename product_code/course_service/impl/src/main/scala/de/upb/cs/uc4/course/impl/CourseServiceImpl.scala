@@ -18,13 +18,17 @@ import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
+import play.api.Environment
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(
-    clusterSharding: ClusterSharding, userService: UserService, database: CourseDatabase
+    clusterSharding: ClusterSharding,
+    userService: UserService,
+    database: CourseDatabase,
+    override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config) extends CourseService {
 
   /** Looks up the entity for the given ID */

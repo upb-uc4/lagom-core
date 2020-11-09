@@ -21,12 +21,18 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.Student
+import play.api.Environment
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
 
 /** Implementation of the MatriculationService */
-class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: UserService, certificateService: CertificateService)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
+class MatriculationServiceImpl(
+    clusterSharding: ClusterSharding,
+    userService: UserService,
+    certificateService: CertificateService,
+    override val environment: Environment
+)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
   extends MatriculationService {
 
   /** Looks up the entity for the given ID */
