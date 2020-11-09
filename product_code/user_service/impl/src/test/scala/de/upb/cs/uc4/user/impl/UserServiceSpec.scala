@@ -22,7 +22,7 @@ import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, Role, Usernames }
+import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonUserData, Role, Usernames }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
@@ -55,7 +55,7 @@ class UserServiceSpec extends AsyncWordSpec
 
   val client: UserService = server.serviceClient.implement[UserService]
 
-  val deletionTopic: Source[EncryptionContainer, _] = client.userDeletionTopic().subscribe.atMostOnceSource
+  val deletionTopic: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -78,19 +78,19 @@ class UserServiceSpec extends AsyncWordSpec
   def checkUserCreation(users: Seq[User]): Future[Assertion] = {
     for {
       studentList <- if (users.exists(_.role == Role.Student)) {
-        client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke()
+        client.getAllStudents(None, None).handleRequestHeader(addAuthorizationHeader()).invoke()
       }
       else {
         Future.successful(Seq())
       }
       lecturerList <- if (users.exists(_.role == Role.Lecturer)) {
-        client.getAllLecturers(None).handleRequestHeader(addAuthorizationHeader()).invoke()
+        client.getAllLecturers(None, None).handleRequestHeader(addAuthorizationHeader()).invoke()
       }
       else {
         Future.successful(Seq())
       }
       adminList <- if (users.exists(_.role == Role.Admin)) {
-        client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader()).invoke()
+        client.getAllAdmins(None, None).handleRequestHeader(addAuthorizationHeader()).invoke()
       }
       else {
         Future.successful(Seq())
@@ -126,9 +126,9 @@ class UserServiceSpec extends AsyncWordSpec
     // For Lecturer and Admin as well
     val roleString = role.toString.toLowerCase
     val futureUserList: Future[Seq[User]] = role match {
-      case Role.Student  => client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke()
-      case Role.Lecturer => client.getAllLecturers(None).handleRequestHeader(addAuthorizationHeader()).invoke()
-      case Role.Admin    => client.getAllAdmins(None).handleRequestHeader(addAuthorizationHeader()).invoke()
+      case Role.Student  => client.getAllStudents(None, None).handleRequestHeader(addAuthorizationHeader()).invoke()
+      case Role.Lecturer => client.getAllLecturers(None, None).handleRequestHeader(addAuthorizationHeader()).invoke()
+      case Role.Admin    => client.getAllAdmins(None, None).handleRequestHeader(addAuthorizationHeader()).invoke()
     }
     futureUserList.map {
       _.filter(_.username != roleString).map { user =>
@@ -160,9 +160,9 @@ class UserServiceSpec extends AsyncWordSpec
   private def createUsernames(username: String): Usernames = Usernames(username, Hashing.sha256(username))
 
   //Additional variables needed for some tests
-  val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012")
+  val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012", isActive = false)
   val student0UpdatedProtected: Student = student0UpdatedUneditable.copy(firstName = "Dieter", lastName = "Dietrich", birthDate = "1996-12-11", matriculationId = "1333337")
-  val uneditableErrorSize: Int = 1
+  val uneditableErrorSize: Int = 2
   val protectedErrorSize: Int = 4 + uneditableErrorSize
 
   val lecturer0Updated: Lecturer = lecturer0.copy(email = "noreply@scam.ng", address = address1, freeText = "Morgen kommt der große Gauss.", researchArea = "Physics")
@@ -197,7 +197,7 @@ class UserServiceSpec extends AsyncWordSpec
       }
 
       "publish a deleted user" in {
-        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopic().subscribe.atMostOnceSource
+        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
         client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
 
         val container: EncryptionContainer = deletionSource
@@ -206,11 +206,22 @@ class UserServiceSpec extends AsyncWordSpec
           .expectNext(FiniteDuration(15, SECONDS))
         server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student0.username))
       }
+
+      "publish a deleted user" in {
+        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicPrecise().subscribe.atMostOnceSource
+        client.deleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+
+        val container: EncryptionContainer = deletionSource
+          .runWith(TestSink.probe[EncryptionContainer])
+          .request(1)
+          .expectNext(FiniteDuration(15, SECONDS))
+        server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student0.username,Role.Student))
+      }
     }
 
     "get all users with default users" in {
       eventually(timeout(Span(15, Seconds))) {
-        client.getAllUsers(None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+        client.getAllUsers(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
 
           answer.admins should have size 1
           answer.lecturers should have size 1
@@ -223,7 +234,7 @@ class UserServiceSpec extends AsyncWordSpec
     "add a student" in {
       client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(student0Auth, student0))
       eventually(timeout(Span(15, Seconds))) {
-        client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
+        client.getAllStudents(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
           answer should contain(student0)
         }
       }.flatMap(cleanupOnSuccess)
@@ -302,7 +313,7 @@ class UserServiceSpec extends AsyncWordSpec
 
     "fetch the public information of all specified Students, as a non-Admin" in {
       prepare(Seq(student0)).flatMap { _ =>
-        client.getAllStudents(Some(student0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
+        client.getAllStudents(Some(student0.username), None).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
           answer should contain theSameElementsAs Seq(student0.toPublic)
         }
       }.flatMap(cleanupOnSuccess)
@@ -310,7 +321,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
     "fetch the public information of all specified Lecturers, as a non-Admin" in {
       prepare(Seq(lecturer0)).flatMap { _ =>
-        client.getAllLecturers(Some(lecturer0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
+        client.getAllLecturers(Some(lecturer0.username), None).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
           answer should contain theSameElementsAs Seq(lecturer0.toPublic)
         }
       }.flatMap(cleanupOnSuccess)
@@ -318,7 +329,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
     "fetch the public information of all specified Admins, as a non-Admin" in {
       prepare(Seq(admin0)).flatMap { _ =>
-        client.getAllAdmins(Some(admin0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
+        client.getAllAdmins(Some(admin0.username), None).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
           answer should contain theSameElementsAs Seq(admin0.toPublic)
         }
       }.flatMap(cleanupOnSuccess)
@@ -326,7 +337,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
     "fetch the information of all specified Students, as an Admin" in {
       prepare(Seq(student0)).flatMap { _ =>
-        client.getAllStudents(Some(student0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
+        client.getAllStudents(Some(student0.username), None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
           answer should contain theSameElementsAs Seq(student0)
         }
       }.flatMap(cleanupOnSuccess)
@@ -334,7 +345,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
     "fetch the information of all specified Lecturers, as an Admin" in {
       prepare(Seq(lecturer0)).flatMap { _ =>
-        client.getAllLecturers(Some(lecturer0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
+        client.getAllLecturers(Some(lecturer0.username), None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
           answer should contain theSameElementsAs Seq(lecturer0)
         }
       }.flatMap(cleanupOnSuccess)
@@ -342,7 +353,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
     "fetch the information of all specified Admins, as an Admin" in {
       prepare(Seq(admin0)).flatMap { _ =>
-        client.getAllAdmins(Some(admin0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
+        client.getAllAdmins(Some(admin0.username), None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
           answer should contain theSameElementsAs Seq(admin0)
         }
       }.flatMap(cleanupOnSuccess)
@@ -350,7 +361,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
     "fetch the public information of all specified Users, as a non-Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
-        client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
+        client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username), None).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
           answer should ===(GetAllUsersResponse(Seq(student0.toPublic), Seq(lecturer0.toPublic), Seq(admin0.toPublic)))
         }
       }.flatMap(cleanupOnSuccess)
@@ -358,7 +369,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
     "fetch the information of all specified Users, as an Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
-        client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
+        client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username), None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
           answer should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
         }
       }.flatMap(cleanupOnSuccess)

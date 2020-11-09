@@ -12,6 +12,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 trait User {
   val username: String
+  val isActive: Boolean
   val role: Role
   val address: Address
   val firstName: String
@@ -22,6 +23,7 @@ trait User {
 
   def copyUser(
       username: String = this.username,
+      isActive: Boolean = this.isActive,
       role: Role = this.role,
       address: Address = this.address,
       firstName: String = this.firstName,
@@ -34,7 +36,7 @@ trait User {
   def toPublic: User
 
   def trim: User = copyUser(
-    username.trim, role, address.trim, firstName.trim, lastName.trim,
+    username.trim, isActive, role, address.trim, firstName.trim, lastName.trim,
     email.trim, phoneNumber.trim, birthDate.trim
   )
 
@@ -133,6 +135,9 @@ trait User {
 
     if (role != user.role) {
       errors :+= SimpleError("role", "Role must not be changed.")
+    }
+    if (isActive != user.isActive) {
+      errors :+= SimpleError("isActive", "IsActive must not be changed.")
     }
 
     errors

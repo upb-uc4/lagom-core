@@ -24,7 +24,7 @@ import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.Usernames
+import de.upb.cs.uc4.user.model.{ JsonUserData, Usernames }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
@@ -86,14 +86,14 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     )
 
   userService
-    .userDeletionTopic()
+    .userDeletionTopicPrecise()
     .subscribe
     .atLeastOnce(
       Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
         try {
-          val jsonUsername = kafkaEncryptionUtility.decrypt[JsonUsername](container)
-          clusterSharding.entityRefFor(CertificateState.typeKey, jsonUsername.username)
-            .ask[Confirmation](replyTo => DeleteCertificateUser(jsonUsername.username, replyTo)).map(_ => Done)
+          val jsonUserData = kafkaEncryptionUtility.decrypt[JsonUserData](container)
+          clusterSharding.entityRefFor(CertificateState.typeKey, jsonUserData.username)
+            .ask[Confirmation](replyTo => DeleteCertificateUser(jsonUserData.username, jsonUserData.role, replyTo)).map(_ => Done)
         }
         catch {
           case throwable: Throwable =>

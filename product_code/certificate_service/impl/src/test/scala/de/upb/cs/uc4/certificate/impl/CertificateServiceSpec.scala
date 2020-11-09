@@ -228,6 +228,6 @@ class UserServiceStubWithTopic(creationStub: ProducerStub[EncryptionContainer], 
 
   override def userCreationTopic(): Topic[EncryptionContainer] = creationStub.topic
 
-  override def userDeletionTopic(): Topic[EncryptionContainer] = deletionStub.topic
+  override def userDeletionTopicMinimal(): Topic[EncryptionContainer] = deletionStub.topic
 
 }

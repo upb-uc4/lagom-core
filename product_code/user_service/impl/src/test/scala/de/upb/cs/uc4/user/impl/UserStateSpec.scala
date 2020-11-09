@@ -22,12 +22,12 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
   //Test users
   val address: Address = Address("ExampleStreet", "42a", "13337", "ExampleCity", "Germany")
 
-  val student0: Student = Student("student0", Role.Student, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1990-12-11", "", "7421769")
-  val lecturer0: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
-  val admin0: Admin = Admin("admin0", Role.Admin, address, "firstName", "LastName", "example1@mail.de", "+49123456789", "1992-12-11")
-  val admin1: Admin = Admin("admin0", Role.Admin, address, "firstNameDifferent", "LastNameDifferent", "example2@mail.de", "+49123456789", "1992-12-11")
+  val student0: Student = Student("student0", isActive = true, Role.Student, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1990-12-11", "", "7421769")
+  val lecturer0: Lecturer = Lecturer("lecturer0", isActive = true, Role.Lecturer, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+  val admin0: Admin = Admin("admin0", isActive = true, Role.Admin, address, "firstName", "LastName", "example1@mail.de", "+49123456789", "1992-12-11")
+  val admin1: Admin = Admin("admin0", isActive = true, Role.Admin, address, "firstNameDifferent", "LastNameDifferent", "example2@mail.de", "+49123456789", "1992-12-11")
 
-  val emptyLecturer: Lecturer = Lecturer("lecturer0", Role.Lecturer, address, "", "", "", "", "", "", "") //name for update test
+  val emptyLecturer: Lecturer = Lecturer("lecturer0", isActive = true, Role.Lecturer, address, "", "", "", "", "", "", "") //name for update test
 
   "UserState" should {
 

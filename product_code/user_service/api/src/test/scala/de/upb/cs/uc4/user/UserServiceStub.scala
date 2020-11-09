@@ -4,7 +4,6 @@ import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.user.api.UserService
@@ -25,7 +24,7 @@ class UserServiceStub extends UserService with DefaultTestUsers {
     users = Seq()
   }
 
-  override def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse] = ServiceCall { _ =>
+  override def getAllUsers(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse] = ServiceCall { _ =>
     val response = GetAllUsersResponse(
       users.filter(_.role == Role.Student).map(_.asInstanceOf[Student]),
       users.filter(_.role == Role.Lecturer).map(_.asInstanceOf[Lecturer]),
@@ -40,7 +39,7 @@ class UserServiceStub extends UserService with DefaultTestUsers {
       Future.successful(Done)
   }
 
-  override def getAllStudents(usernames: Option[String]): ServiceCall[NotUsed, Seq[Student]] = ServiceCall { _ =>
+  override def getAllStudents(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Student]] = ServiceCall { _ =>
     Future.successful(users.filter(_.role == Role.Student).map(_.asInstanceOf[Student]))
   }
 
@@ -58,7 +57,7 @@ class UserServiceStub extends UserService with DefaultTestUsers {
   override def updateUser(username: String): ServiceCall[User, Done] = ServiceCall { updatedUser =>
     val optUser = users.find(_.username == username)
     optUser match {
-      case Some(user) =>
+      case Some(_) =>
         users = users.filter(_.username != username)
         users :+= updatedUser
         Future.successful(Done)
@@ -67,11 +66,11 @@ class UserServiceStub extends UserService with DefaultTestUsers {
     }
   }
 
-  override def getAllLecturers(usernames: Option[String]): ServiceCall[NotUsed, Seq[Lecturer]] = ServiceCall { _ =>
+  override def getAllLecturers(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Lecturer]] = ServiceCall { _ =>
     Future.successful(users.filter(_.role == Role.Lecturer).map(_.asInstanceOf[Lecturer]))
   }
 
-  override def getAllAdmins(usernames: Option[String]): ServiceCall[NotUsed, Seq[Admin]] = ServiceCall { _ =>
+  override def getAllAdmins(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Admin]] = ServiceCall { _ =>
     Future.successful(users.filter(_.role == Role.Admin).map(_.asInstanceOf[Admin]))
   }
 
@@ -91,7 +90,7 @@ class UserServiceStub extends UserService with DefaultTestUsers {
 
   override def userCreationTopic(): Topic[EncryptionContainer] = null //EncryptionContainer[Usernames]
 
-  override def userDeletionTopic(): Topic[EncryptionContainer] = null //EncryptionContainer[JsonUsername]
+  override def userDeletionTopicMinimal(): Topic[EncryptionContainer] = null //EncryptionContainer[JsonUsername]
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 

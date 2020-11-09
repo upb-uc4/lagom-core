@@ -84,13 +84,13 @@ class UserServiceImpl(
     }
 
   /** Get all users from the database */
-  override def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse] =
+  override def getAllUsers(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse] =
     authenticated[NotUsed, GetAllUsersResponse](AuthenticationRole.All: _*) {
       ServerServiceCall { (header, notUsed) =>
         for {
-          students <- getAllStudents(usernames).invokeWithHeaders(header, notUsed)
-          lecturers <- getAllLecturers(usernames).invokeWithHeaders(header, notUsed)
-          admins <- getAllAdmins(usernames).invokeWithHeaders(header, notUsed)
+          students <- getAllStudents(usernames, onlyActive).invokeWithHeaders(header, notUsed)
+          lecturers <- getAllLecturers(usernames, onlyActive).invokeWithHeaders(header, notUsed)
+          admins <- getAllAdmins(usernames, onlyActive).invokeWithHeaders(header, notUsed)
         } yield createETagHeader(header, GetAllUsersResponse(students._2, lecturers._2, admins._2))
       }
     }
@@ -266,7 +266,7 @@ class UserServiceImpl(
   }
 
   /** Get all students from the database */
-  override def getAllStudents(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Student]] =
+  override def getAllStudents(usernames: Option[String], onlyActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Student]] =
     identifiedAuthenticated[NotUsed, Seq[Student]](AuthenticationRole.All: _*) { (_, role) =>
       ServerServiceCall { (header, _) =>
         (usernames match {
@@ -279,13 +279,13 @@ class UserServiceImpl(
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
             getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
         }).map { students =>
-          createETagHeader(header, students)
+          createETagHeader(header, students.filter(onlyActive.isEmpty || _.isActive == onlyActive.get))
         }
       }
     }
 
   /** Get all lecturers from the database */
-  def getAllLecturers(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Lecturer]] =
+  override def getAllLecturers(usernames: Option[String], onlyActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Lecturer]] =
     identifiedAuthenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.All: _*) { (_, role) =>
       ServerServiceCall { (header, _) =>
         (usernames match {
@@ -298,13 +298,13 @@ class UserServiceImpl(
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
             getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
         }).map { lecturers =>
-          createETagHeader(header, lecturers)
+          createETagHeader(header, lecturers.filter(onlyActive.isEmpty || _.isActive == onlyActive.get))
         }
       }
     }
 
   /** Get all admins from the database */
-  override def getAllAdmins(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Admin]] =
+  override def getAllAdmins(usernames: Option[String], onlyActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Admin]] =
     identifiedAuthenticated[NotUsed, Seq[Admin]](AuthenticationRole.All: _*) { (_, role) =>
       ServerServiceCall { (header, _) =>
         (usernames match {
@@ -317,7 +317,7 @@ class UserServiceImpl(
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
             getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
         }).map { admins =>
-          createETagHeader(header, admins)
+          createETagHeader(header, admins.filter(onlyActive.isEmpty || _.isActive == onlyActive.get))
         }
       }
     }
@@ -375,7 +375,7 @@ class UserServiceImpl(
   }
 
   /** Publishes every deletion of a user */
-  override def userDeletionTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
+  override def userDeletionTopicMinimal(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
     fromOffset =>
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)
@@ -392,6 +392,27 @@ class UserServiceImpl(
           case _ => Nil
         }
   }
+
+  /** Publishes every deletion of a user */
+  override def userDeletionTopicPrecise(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
+    fromOffset =>
+      persistentEntityRegistry
+        .eventStream(UserEvent.Tag, fromOffset)
+        .mapConcat {
+          //Filter only OnUserDelete events
+          case EventStreamElement(_, OnUserDelete(user), offset) => try {
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username,user.role)), offset))
+          }
+          catch {
+            case throwable: Throwable =>
+              log.error("UserService cannot send invalid topic message {}", throwable.toString)
+              Nil
+          }
+          case _ => Nil
+        }
+  }
+
+
 
   /** Gets the image of the user */
   override def getImage(username: String): ServiceCall[NotUsed, ByteString] = authenticated[NotUsed, ByteString](AuthenticationRole.All: _*) {

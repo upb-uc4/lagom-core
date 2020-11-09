@@ -67,9 +67,9 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       students.schema.createIfNotExists.andFinally(DBIO.successful {
         //Add default users
         val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
-        val student: User = Student("student", Role.Student, address, "Stu", "Dent", "student@mail.de", "+49123456789", "1990-12-11", "", "7421769")
-        val lecturer: User = Lecturer("lecturer", Role.Lecturer, address, "Lect", "Urer", "lecturer@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
-        val admin: User = Admin("admin", Role.Admin, address, "Ad", "Min", "admin@mail.de", "+49123456789", "1992-12-10")
+        val student: User = Student("student", isActive = true, Role.Student, address, "Stu", "Dent", "student@mail.de", "+49123456789", "1990-12-11", "", "7421769")
+        val lecturer: User = Lecturer("lecturer", isActive = true, Role.Lecturer, address, "Lect", "Urer", "lecturer@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+        val admin: User = Admin("admin", isActive = true, Role.Admin, address, "Ad", "Min", "admin@mail.de", "+49123456789", "1992-12-10")
 
         addDefaultUser(student)
         addDefaultUser(lecturer)

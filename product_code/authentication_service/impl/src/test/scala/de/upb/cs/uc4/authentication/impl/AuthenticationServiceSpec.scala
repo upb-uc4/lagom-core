@@ -532,6 +532,6 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
 class UserServiceStubWithTopic(deletionStub: ProducerStub[EncryptionContainer]) extends UserServiceStub {
 
-  override def userDeletionTopic(): Topic[EncryptionContainer] = deletionStub.topic
+  override def userDeletionTopicMinimal(): Topic[EncryptionContainer] = deletionStub.topic
 
 }
