@@ -6,7 +6,7 @@ abstract class UC4Exception(
     val errorCode: TransportErrorCode,
     val possibleErrorResponse: UC4Error,
     val cause: Throwable
-) extends Exception(possibleErrorResponse.title, cause, true, true) {
+) extends Exception(possibleErrorResponse.title, cause, true, true) with UC4ExceptionSerializable {
 
   override def getMessage: String = super.getMessage + "\n" + possibleErrorResponse.toString
 }
