@@ -71,4 +71,9 @@ trait UC4Service extends Service {
 
   protected def createETagHeader[T](requestHeader: RequestHeader, obj: T, code: Int = 200, headers: List[(String, String)] = List())(implicit writes: Writes[T]): (ResponseHeader, T) =
     (ResponseHeader(code, MessageProtocol.empty, headers).addHeader("ETag", checkETag(requestHeader, obj)), obj)
+
+  protected def handleException[T](name: String): PartialFunction[Throwable, T] = {
+    case ue: UC4Exception => throw ue
+    case ex: Throwable    => throw UC4Exception.InternalServerError(name, "unknown exception", ex)
+  }
 }

@@ -1,9 +1,10 @@
 package de.upb.cs.uc4.matriculation.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.pattern.StatusReply
 import com.typesafe.config.Config
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil._
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
+import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionMatriculation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
@@ -26,16 +27,16 @@ class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActor
     * @param connection the current active connection
     * @param command which should get executed
     */
-  override protected def applyCommand(connection: ConnectionMatriculationTrait, command: HyperledgerCommand): Unit = command match {
+  override protected def applyCommand(connection: ConnectionMatriculationTrait, command: HyperledgerCommand[_]): Unit = command match {
 
     case GetProposalForAddEntriesToMatriculationData(enrollmentId, matriculation, replyTo) =>
-      replyTo ! Success(connection.getProposalAddEntriesToMatriculationData(enrollmentId, matriculation.toJson))
+      replyTo ! StatusReply.success(connection.getProposalAddEntriesToMatriculationData(enrollmentId, matriculation.toJson))
 
     case GetProposalForAddMatriculationData(data, replyTo) =>
-      replyTo ! Success(connection.getProposalAddMatriculationData(data.toJson))
+      replyTo ! StatusReply.success(connection.getProposalAddMatriculationData(data.toJson))
 
     case GetMatriculationData(matriculationId, replyTo) =>
-      replyTo ! Success(connection.getMatriculationData(matriculationId).fromJson[ImmatriculationData])
+      replyTo ! StatusReply.success(connection.getMatriculationData(matriculationId).fromJson[ImmatriculationData])
   }
 
   /** The companion object */
@@ -44,7 +45,7 @@ class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActor
 
 object MatriculationBehaviour extends HyperledgerActorObject {
   /** The EntityTypeKey of this actor */
-  override val typeKey: EntityTypeKey[HyperledgerCommand] = EntityTypeKey[HyperledgerCommand]("uc4matriculation")
+  override val typeKey: EntityTypeKey[HyperledgerBaseCommand] = EntityTypeKey[HyperledgerBaseCommand]("uc4matriculation")
   /** The reference to the entity */
   override val entityId: String = "matriculation"
 }
