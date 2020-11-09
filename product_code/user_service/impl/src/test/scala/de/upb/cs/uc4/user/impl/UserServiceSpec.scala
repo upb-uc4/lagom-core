@@ -234,7 +234,7 @@ class UserServiceSpec extends AsyncWordSpec
       client.addUser().handleRequestHeader(addAuthorizationHeader())
         .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
         .failed.map {
-          answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(422)
+          answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
         }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -366,7 +366,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
     "find a non-existing User" in {
       client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
     }
 
@@ -438,7 +438,7 @@ class UserServiceSpec extends AsyncWordSpec
     "delete a non-existing user" in {
       client.deleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
         answer =>
-          answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
     }
     "delete a user from the database" in {

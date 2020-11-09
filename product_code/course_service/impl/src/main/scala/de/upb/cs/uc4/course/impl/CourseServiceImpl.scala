@@ -83,7 +83,7 @@ class CourseServiceImpl(
           // Check if the lecturer does exist
           userService.getUser(courseProposal.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
             //If the lecturer does not exist, we throw a validation error containing that info
-            case ex: UC4Exception if ex.errorCode.http == 404 =>
+            case ex: UC4Exception if ex.errorCode == 404 =>
               throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist")))
           }.flatMap { _ =>
             if (validationErrors.nonEmpty) {
@@ -166,7 +166,7 @@ class CourseServiceImpl(
 
         // Check if the lecturer does exist
         userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-          case ex: UC4Exception if ex.errorCode.http == 404 =>
+          case ex: UC4Exception if ex.errorCode == 404 =>
             throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist.")))
         }.flatMap { _ =>
           val ref = entityRef(id)

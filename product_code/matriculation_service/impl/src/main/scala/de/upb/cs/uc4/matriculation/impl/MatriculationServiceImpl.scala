@@ -93,7 +93,7 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
                   }.recover(handleException("Creation of add entry proposal failed"))
 
               }.recoverWith {
-                case uc4Exception: UC4Exception if uc4Exception.errorCode.http == 404 =>
+                case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
                   val data = ImmatriculationData(
                     enrollmentId,
                     message.matriculation
