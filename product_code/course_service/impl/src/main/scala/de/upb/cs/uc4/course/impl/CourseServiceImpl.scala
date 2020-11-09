@@ -6,14 +6,13 @@ import akka.{ Done, NotUsed }
 import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
-import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
-import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
+import de.upb.cs.uc4.course.impl.readside.CourseDatabase
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
@@ -25,10 +24,8 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(
-    clusterSharding: ClusterSharding, userService: UserService,
-    readSide: ReadSide, processor: CourseEventProcessor, database: CourseDatabase
+    clusterSharding: ClusterSharding, userService: UserService, database: CourseDatabase
 )(implicit ec: ExecutionContext, config: Config) extends CourseService {
-  readSide.register(processor)
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CourseCommand] =

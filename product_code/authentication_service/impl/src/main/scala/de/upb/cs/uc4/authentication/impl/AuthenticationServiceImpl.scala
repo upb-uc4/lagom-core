@@ -8,13 +8,11 @@ import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
-import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, AuthenticationState }
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
-import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model._
 import de.upb.cs.uc4.shared.client.Hashing
@@ -26,10 +24,7 @@ import io.jsonwebtoken._
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
-class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEventProcessor,
-    clusterSharding: ClusterSharding, config: Config)(implicit ec: ExecutionContext) extends AuthenticationService {
-
-  readSide.register(processor)
+class AuthenticationServiceImpl(clusterSharding: ClusterSharding, config: Config)(implicit ec: ExecutionContext) extends AuthenticationService {
 
   private def entityRef(id: String): EntityRef[AuthenticationCommand] =
     clusterSharding.entityRefFor(AuthenticationState.typeKey, id)

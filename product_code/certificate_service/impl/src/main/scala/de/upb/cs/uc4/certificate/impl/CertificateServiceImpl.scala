@@ -27,11 +27,9 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 /** Implementation of the UserService */
 class CertificateServiceImpl(
     clusterSharding: ClusterSharding,
-    enrollmentManager: EnrollmentManagerTrait,
-    readSide: ReadSide, processor: CertificateEventProcessor
+    enrollmentManager: EnrollmentManagerTrait
 )(implicit ec: ExecutionContext, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
-  readSide.register(processor)
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CertificateCommand] =
