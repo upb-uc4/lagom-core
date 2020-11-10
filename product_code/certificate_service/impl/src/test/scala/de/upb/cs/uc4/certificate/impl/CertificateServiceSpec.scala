@@ -13,7 +13,7 @@ import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, Generi
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.Usernames
+import de.upb.cs.uc4.user.model.{ JsonUserData, Usernames }
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
@@ -52,7 +52,7 @@ class CertificateServiceSpec extends AsyncWordSpec
           stubFactory.producer[EncryptionContainer](UserService.ADD_TOPIC_NAME)
         creationStub = internCreationStub
         lazy val internDeletionStub: ProducerStub[EncryptionContainer] =
-          stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_MINIMAL_NAME)
+          stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_PRECISE_NAME)
         deletionStub = internDeletionStub
 
         // Create a userService with ProducerStub as topic
@@ -80,7 +80,7 @@ class CertificateServiceSpec extends AsyncWordSpec
     "reset certificate state on user deletion" in {
       val username = "student005"
       val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
-      val deletionContainer = server.application.kafkaEncryptionUtility.encrypt(JsonUsername(username))
+      val deletionContainer = server.application.kafkaEncryptionUtility.encrypt(JsonUserData("student005", student0.role, forceDelete = true))
       creationStub.send(container)
 
       eventually(timeout(Span(30, Seconds))) {
@@ -228,6 +228,6 @@ class UserServiceStubWithTopic(creationStub: ProducerStub[EncryptionContainer], 
 
   override def userCreationTopic(): Topic[EncryptionContainer] = creationStub.topic
 
-  override def userDeletionTopicMinimal(): Topic[EncryptionContainer] = deletionStub.topic
+  override def userDeletionTopicPrecise(): Topic[EncryptionContainer] = deletionStub.topic
 
 }

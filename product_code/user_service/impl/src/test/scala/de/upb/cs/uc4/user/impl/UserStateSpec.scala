@@ -148,15 +148,15 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     //DELETE
-    "not delete a non-existing user" in {
+    "not force delete a non-existing user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-6")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! DeleteUser(probe1.ref)
+      ref ! ForceDeleteUser(probe1.ref)
       probe1.expectMessageType[Rejected]
     }
 
-    "delete an existing user" in {
+    "force delete an existing user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
 
       val probe1 = createTestProbe[Confirmation]()
@@ -164,12 +164,36 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       probe1.expectMessage(Accepted)
 
       val probe2 = createTestProbe[Confirmation]()
-      ref ! DeleteUser(probe2.ref)
+      ref ! ForceDeleteUser(probe2.ref)
       probe2.expectMessage(Accepted)
 
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)
       probe3.expectMessage(None)
+    }
+
+    "not soft delete a non-existing user" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! SoftDeleteUser(probe1.ref)
+      probe1.expectMessageType[Rejected]
+    }
+
+    "soft delete an existing user" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-9")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! CreateUser(lecturer0, probe1.ref)
+      probe1.expectMessage(Accepted)
+
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! SoftDeleteUser(probe2.ref)
+      probe2.expectMessage(Accepted)
+
+      val probe3 = createTestProbe[Option[User]]()
+      ref ! GetUser(probe3.ref)
+      probe3.expectMessage(Some(lecturer0.softDelete))
     }
   }
 }

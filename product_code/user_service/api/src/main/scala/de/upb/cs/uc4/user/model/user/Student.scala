@@ -115,6 +115,11 @@ case class Student(
       throw UC4Exception.InternalServerError("Wrong Entity", s"Expected a student, got a ${user.role}")
     }
   }
+
+  /** @inheritdoc */
+  override def softDelete: Student = {
+    super.softDelete.copyUser(firstName = "", lastName = "").asInstanceOf[Student]
+  }
 }
 
 object Student {

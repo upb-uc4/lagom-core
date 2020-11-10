@@ -39,8 +39,11 @@ trait UserService extends UC4Service {
   /** Update an existing user */
   def updateUser(username: String): ServiceCall[User, Done]
 
-  /** Delete a user from the database */
-  def deleteUser(username: String): ServiceCall[NotUsed, Done]
+  /** Completely deletes a users from the database */
+  def forceDeleteUser(username: String): ServiceCall[NotUsed, Done]
+
+  /** Flags a user as deleted and deletes (not required) personal info */
+  def softDeleteUser(username: String): ServiceCall[NotUsed, Done]
 
   // STUDENT
   /** Get all students from the database */
@@ -100,7 +103,7 @@ trait UserService extends UC4Service {
         restCall(Method.OPTIONS, pathPrefix + "/users", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/users/:username", getUser _),
-        restCall(Method.DELETE, pathPrefix + "/users/:username", deleteUser _),
+        restCall(Method.DELETE, pathPrefix + "/users/:username", softDeleteUser _),
         restCall(Method.PUT, pathPrefix + "/users/:username", updateUser _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDeleteGetPut _),
 
@@ -125,7 +128,8 @@ trait UserService extends UC4Service {
 
         //Not exposed
         restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
-        restCall(Method.PUT, pathPrefix + "/image/:username", setImage _)
+        restCall(Method.PUT, pathPrefix + "/image/:username", setImage _),
+        restCall(Method.DELETE, pathPrefix + "/users/:username/force", forceDeleteUser _)
       )
       .addAcls(
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users\\E" + "(\\?([^\\/\\?]+))?"),

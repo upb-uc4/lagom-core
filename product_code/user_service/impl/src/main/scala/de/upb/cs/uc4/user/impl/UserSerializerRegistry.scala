@@ -3,7 +3,7 @@ package de.upb.cs.uc4.user.impl
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 import de.upb.cs.uc4.user.impl.actor.UserState
-import de.upb.cs.uc4.user.impl.events.{ OnLatestMatriculationUpdate, OnUserCreate, OnUserDelete, OnUserUpdate }
+import de.upb.cs.uc4.user.impl.events.{ OnLatestMatriculationUpdate, OnUserCreate, OnUserForceDelete, OnUserSoftDelete, OnUserUpdate }
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 
@@ -24,7 +24,8 @@ object UserSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[UserState],
     //Events
     JsonSerializer[OnUserCreate],
-    JsonSerializer[OnUserDelete],
+    JsonSerializer[OnUserForceDelete],
+    JsonSerializer[OnUserSoftDelete],
     JsonSerializer[OnUserUpdate],
     JsonSerializer[OnLatestMatriculationUpdate],
     //Data

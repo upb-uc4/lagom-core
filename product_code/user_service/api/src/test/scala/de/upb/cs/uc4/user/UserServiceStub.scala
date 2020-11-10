@@ -33,7 +33,7 @@ class UserServiceStub extends UserService with DefaultTestUsers {
     Future.successful(response)
   }
 
-  override def deleteUser(username: String): ServiceCall[NotUsed, Done] = ServiceCall {
+  override def forceDeleteUser(username: String): ServiceCall[NotUsed, Done] = ServiceCall {
     _ =>
       users = users.filter(_.username != username)
       Future.successful(Done)
@@ -110,4 +110,17 @@ class UserServiceStub extends UserService with DefaultTestUsers {
   override def setImage(username: String): ServiceCall[Array[Byte], Done] = ServiceCall { _ => Future.successful(Done) }
 
   override def deleteImage(username: String): ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  /** Flags a user as deleted and deletes personal info from now on unrequired */
+  override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = ServiceCall {
+    _ =>
+      val optUser = users.find(_.username == username)
+      if (optUser.isEmpty) {
+        Future.failed(UC4Exception.NotFound)
+      }
+      else {
+        users = users.filter(_.username != username) :+ optUser.get.softDelete
+        Future.successful(Done)
+      }
+  }
 }

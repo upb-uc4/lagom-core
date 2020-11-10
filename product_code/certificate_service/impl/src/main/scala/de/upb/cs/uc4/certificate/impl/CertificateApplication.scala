@@ -12,7 +12,7 @@ import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateState }
-import de.upb.cs.uc4.certificate.impl.commands.{ DeleteCertificateUser, RegisterUser }
+import de.upb.cs.uc4.certificate.impl.commands.{ ForceDeleteCertificateUser, RegisterUser, SoftDeleteCertificateUser }
 import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
@@ -92,8 +92,15 @@ abstract class CertificateApplication(context: LagomApplicationContext)
       Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
         try {
           val jsonUserData = kafkaEncryptionUtility.decrypt[JsonUserData](container)
-          clusterSharding.entityRefFor(CertificateState.typeKey, jsonUserData.username)
-            .ask[Confirmation](replyTo => DeleteCertificateUser(jsonUserData.username, jsonUserData.role, replyTo)).map(_ => Done)
+          if (jsonUserData.forceDelete) {
+            clusterSharding.entityRefFor(CertificateState.typeKey, jsonUserData.username)
+              .ask[Confirmation](replyTo => ForceDeleteCertificateUser(jsonUserData.username, jsonUserData.role, replyTo)).map(_ => Done)
+          }
+          else {
+            clusterSharding.entityRefFor(CertificateState.typeKey, jsonUserData.username)
+              .ask[Confirmation](replyTo => SoftDeleteCertificateUser(jsonUserData.username, jsonUserData.role, replyTo)).map(_ => Done)
+          }
+
         }
         catch {
           case throwable: Throwable =>

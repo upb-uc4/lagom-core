@@ -25,7 +25,7 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{ OnUserCreate, OnUserDelete, UserEvent }
+import de.upb.cs.uc4.user.impl.events.{ OnUserCreate, OnUserForceDelete, OnUserSoftDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
@@ -163,7 +163,7 @@ class UserServiceImpl(
                 // In case the password cant be saved
                 .recoverWith {
                   case authenticationException: UC4Exception =>
-                    ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+                    ref.ask[Confirmation](replyTo => ForceDeleteUser(replyTo))
                       .map[(ResponseHeader, User)] { _ =>
                         throw authenticationException
                       }
@@ -249,19 +249,41 @@ class UserServiceImpl(
         }
     }
 
-  /** Delete a users from the database */
-  override def deleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
+  /** Completely deletes a users from the database */
+  override def forceDeleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall {
       (_, _) =>
         val ref = entityRef(username)
 
-        ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+        ref.ask[Confirmation](replyTo => ForceDeleteUser(replyTo))
           .map {
             case Accepted => // Update Successful
               (ResponseHeader(200, MessageProtocol.empty, List()), Done)
             case Rejected(code, reason) =>
               throw UC4Exception(code, reason)
           }
+    }
+  }
+
+  /** Flags a user as deleted and deletes personal info from now on unrequired */
+  override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
+    ServerServiceCall {
+      (_, _) =>
+        val ref = entityRef(username)
+        ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
+          optUser =>
+            if (optUser.isEmpty) {
+              throw UC4Exception.NotFound
+            }
+
+            ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
+              .map {
+                case Accepted => // Soft Deletion successful
+                  (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                case Rejected(code, reason) => //Update failed
+                  throw UC4Exception(code, reason)
+              }
+        }
     }
   }
 
@@ -380,8 +402,11 @@ class UserServiceImpl(
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)
         .mapConcat {
-          //Filter only OnUserDelete events
-          case EventStreamElement(_, OnUserDelete(user), offset) => try {
+          //Filter OnUserDelete events
+          case EventStreamElement(_, OnUserForceDelete(user), offset) => try {
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
+          }
+          case EventStreamElement(_, OnUserSoftDelete(user), offset) => try {
             immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
           }
           catch {
@@ -399,9 +424,12 @@ class UserServiceImpl(
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)
         .mapConcat {
-          //Filter only OnUserDelete events
-          case EventStreamElement(_, OnUserDelete(user), offset) => try {
-            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username, user.role)), offset))
+          //Filter OnUserDelete events
+          case EventStreamElement(_, OnUserForceDelete(user), offset) => try {
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username, user.role, forceDelete = true)), offset))
+          }
+          case EventStreamElement(_, OnUserSoftDelete(user), offset) => try {
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username, user.role, forceDelete = false)), offset))
           }
           catch {
             case throwable: Throwable =>

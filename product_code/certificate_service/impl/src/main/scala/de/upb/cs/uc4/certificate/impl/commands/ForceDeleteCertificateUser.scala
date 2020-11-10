@@ -4,4 +4,4 @@ import akka.actor.typed.ActorRef
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.model.Role.Role
 
-case class DeleteCertificateUser(username: String, role: Role, replyTo: ActorRef[Confirmation]) extends CertificateCommand
+case class ForceDeleteCertificateUser(username: String, role: Role, replyTo: ActorRef[Confirmation]) extends CertificateCommand

@@ -132,7 +132,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
     futureUserList.map {
       _.filter(_.username != roleString).map { user =>
-        client.deleteUser(user.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+        client.forceDeleteUser(user.username).handleRequestHeader(addAuthorizationHeader()).invoke()
       }
     }.flatMap { list =>
       Future.sequence(list)
@@ -198,7 +198,7 @@ class UserServiceSpec extends AsyncWordSpec
 
       "publish a deleted user in minimal format" in {
         val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
-        client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+        client.forceDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
 
         val container: EncryptionContainer = deletionSource
           .runWith(TestSink.probe[EncryptionContainer])
@@ -209,13 +209,13 @@ class UserServiceSpec extends AsyncWordSpec
 
       "publish a deleted user in precise format" in {
         val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicPrecise().subscribe.atMostOnceSource
-        client.deleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+        client.forceDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke()
 
         val container: EncryptionContainer = deletionSource
           .runWith(TestSink.probe[EncryptionContainer])
           .request(1)
           .expectNext(FiniteDuration(15, SECONDS))
-        server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student0.username, Role.Student))
+        server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student0.username, Role.Student, forceDelete = true))
       }
 
     }
@@ -447,19 +447,38 @@ class UserServiceSpec extends AsyncWordSpec
     }
 
     //DELETE TESTS
-    "delete a non-existing user" in {
-      client.deleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
+    "return an error on force deleting a non-existing user" in {
+      client.forceDeleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
         answer =>
           answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
       }
     }
-    "delete a user from the database" in {
+    "force delete a user from the database" in {
       prepare(Seq(student0)).flatMap { createdUser =>
-        client.deleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+        client.forceDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
             retrieveTable(createdUser.head.role).map {
               usernames =>
                 usernames should not contain createdUser.head.username
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "return an error on soft deleting a non-existing user" in {
+      client.softDeleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+      }
+    }
+    "soft delete a user from the database" in {
+      prepare(Seq(student0)).flatMap { createdUser =>
+        client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { deletedUser =>
+              deletedUser should ===(createdUser.head.softDelete)
             }
           }
         }

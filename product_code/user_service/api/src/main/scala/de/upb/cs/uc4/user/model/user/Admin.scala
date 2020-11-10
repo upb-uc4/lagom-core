@@ -37,6 +37,11 @@ case class Admin(
   //override def toPublic: Admin = super.toPublic.asInstanceOf[Admin]
 
   override def clean: Admin = super.clean.asInstanceOf[Admin]
+
+  /** @inheritdoc */
+  override def softDelete: Admin = {
+    super.softDelete.copyUser(firstName = "", lastName = "").asInstanceOf[Admin]
+  }
 }
 
 object Admin {

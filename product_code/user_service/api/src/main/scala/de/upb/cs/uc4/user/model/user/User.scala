@@ -142,6 +142,14 @@ trait User {
 
     errors
   }
+
+  /** Creates a copy of this user, with most personal info deleted
+    *
+    * @return A new user, with (most) personal info deleted
+    */
+  def softDelete: User = {
+    copyUser(isActive = false, address = Address.empty, email = "", phoneNumber = "", birthDate = "")
+  }
 }
 
 object User {

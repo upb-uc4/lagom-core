@@ -59,6 +59,11 @@ case class Lecturer(
       errors
     }
   }
+
+  /** @inheritdoc */
+  override def softDelete: Lecturer = {
+    super.softDelete.asInstanceOf[Lecturer]
+  }
 }
 
 object Lecturer {
