@@ -13,8 +13,13 @@ case class ValidationConfiguration(
     address: AddressRegex
 )
 
+case class ValidationPair(regex: String, message: String)
+object ValidationPair {
+  implicit val format: Format[ValidationPair] = Json.format
+}
+
 object ValidationConfiguration {
-  case class AuthenticationUserRegex(username: String, password: String)
+  case class AuthenticationUserRegex(username: ValidationPair, password: ValidationPair)
   object AuthenticationUserRegex {
     implicit val format: Format[AuthenticationUserRegex] = Json.format
   }
@@ -47,8 +52,8 @@ object ValidationConfiguration {
   def build: ValidationConfiguration = {
     ValidationConfiguration(
       AuthenticationUserRegex(
-        RegexCollection.AuthenticationUser.usernameRegex.regex,
-        RegexCollection.AuthenticationUser.passwordRegex.regex
+        ValidationPair(RegexCollection.AuthenticationUser.usernameRegex.regex, ""),
+        ValidationPair(RegexCollection.AuthenticationUser.passwordRegex.regex, "")
       ),
       PostMessageCSRRegex(RegexCollection.PostMessageCSR.csrRegex.regex),
       CourseRegex(
