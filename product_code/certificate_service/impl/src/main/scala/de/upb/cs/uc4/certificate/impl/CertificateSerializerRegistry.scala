@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.certificate.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
-import de.upb.cs.uc4.certificate.impl.actor.CertificateState
+import de.upb.cs.uc4.certificate.impl.actor.{ CertificateState, CertificateUser }
 import de.upb.cs.uc4.certificate.impl.events.{ OnCertficateAndKeySet, OnCertificateUserDelete, OnRegisterUser }
 import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
@@ -22,6 +22,7 @@ object CertificateSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[OnCertficateAndKeySet],
     JsonSerializer[OnCertificateUserDelete],
     JsonSerializer[CertificateState],
-    JsonSerializer[EncryptedPrivateKey]
+    JsonSerializer[EncryptedPrivateKey],
+    JsonSerializer[CertificateUser]
   )
 }

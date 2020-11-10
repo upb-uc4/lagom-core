@@ -1,10 +1,12 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import de.upb.cs.uc4.shared.client.exceptions.ErrorType.ErrorType
 import play.api.http.{ ContentTypeOf, ContentTypes, Writeable }
 import play.api.libs.json._
 import play.api.mvc.Codec
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 trait UC4Error {
   val `type`: ErrorType
   val title: String

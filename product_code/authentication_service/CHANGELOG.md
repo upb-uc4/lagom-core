@@ -2,6 +2,7 @@
 ## Feature
  - Added support for ETags
 ## Refactor
+ - Bumped Version of Lagom to 1.6.4
 ## Bugfix
  - Added all messages to serialization registry
 

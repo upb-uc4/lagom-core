@@ -18,7 +18,6 @@ import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
-import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
@@ -44,6 +43,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
   lazy val enrollmentManager: EnrollmentManagerTrait = EnrollmentManager
   lazy val registrationManager: RegistrationManagerTrait = RegistrationManager
   lazy val processor: CertificateEventProcessor = wire[CertificateEventProcessor]
+  readSide.register(processor)
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CertificateService](wire[CertificateServiceImpl])

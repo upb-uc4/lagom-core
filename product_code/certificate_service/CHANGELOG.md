@@ -1,3 +1,9 @@
+# [WIP v0.11.3](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.11.2...certificate-v0.11.3) (2020-XX-XX)
+## Feature
+## Refactor
+ - Bumped Version of Lagom to 1.6.4
+## Bugfix
+
 # [v0.11.2](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.11.1...certificate-v0.11.2) (2020-11-06)
 ## Feature
 ## Refactor

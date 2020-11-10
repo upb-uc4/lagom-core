@@ -24,6 +24,7 @@ abstract class CourseApplication(context: LagomApplicationContext)
   // Create ReadSide
   lazy val database: CourseDatabase = wire[CourseDatabase]
   lazy val processor: CourseEventProcessor = wire[CourseEventProcessor]
+  readSide.register(processor)
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CourseService](wire[CourseServiceImpl])

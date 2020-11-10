@@ -1,9 +1,10 @@
 package de.upb.cs.uc4.shared.server.messages
 
+import de.upb.cs.uc4.shared.client.exceptions.UC4Error
 import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
 /** Used as return value if a command was executed successfully */
-trait Confirmation
+sealed trait Confirmation
 
 /** Handles json parsing */
 case object Confirmation {
@@ -20,4 +21,20 @@ case object Confirmation {
       }
     }
   }
+}
+
+/** Accepted version of the Confirmation */
+final case class Accepted(summary: String) extends Confirmation
+
+object Accepted {
+  val default: Accepted = Accepted("The command was successful")
+
+  implicit val format: Format[Accepted] = Json.format
+}
+
+/** Rejected version of the Confirmation */
+final case class Rejected(statusCode: Int, reason: UC4Error) extends Confirmation
+
+object Rejected {
+  implicit def format: Format[Rejected] = Json.format
 }

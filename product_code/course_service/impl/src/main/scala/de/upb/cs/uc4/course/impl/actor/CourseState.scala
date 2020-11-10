@@ -22,7 +22,7 @@ case class CourseState(optCourse: Option[Course]) {
       case CreateCourse(course, replyTo) =>
 
         if (optCourse.isEmpty) {
-          Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnCourseCreate(course)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
@@ -30,7 +30,7 @@ case class CourseState(optCourse: Option[Course]) {
 
       case UpdateCourse(course, replyTo) =>
         if (optCourse.isDefined) {
-          Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnCourseUpdate(course)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
@@ -41,7 +41,7 @@ case class CourseState(optCourse: Option[Course]) {
 
       case DeleteCourse(id, replyTo) =>
         if (optCourse.isDefined) {
-          Effect.persist(OnCourseDelete(id)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnCourseDelete(id)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
