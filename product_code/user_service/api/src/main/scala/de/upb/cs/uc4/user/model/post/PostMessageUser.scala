@@ -9,9 +9,11 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 trait PostMessageUser {
   val authUser: AuthenticationUser
+  val user: User
 
   def copyPostMessageUser(
-      authUser: AuthenticationUser = this.authUser
+      authUser: AuthenticationUser = this.authUser,
+      user: User = this.user
   ): PostMessageUser
 
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
@@ -23,20 +25,12 @@ trait PostMessageUser {
     }
   }
 
-  def getUser: User = {
-    this match {
-      case postStudent: PostMessageStudent   => postStudent.student
-      case postLecturer: PostMessageLecturer => postLecturer.lecturer
-      case postAdmin: PostMessageAdmin       => postAdmin.admin
-    }
-  }
-
   def trim: PostMessageUser = {
-    copyPostMessageUser(authUser.trim)
+    copyPostMessageUser(authUser.trim, user.trim)
   }
 
   def clean: PostMessageUser = {
-    trim.copyPostMessageUser(authUser.clean)
+    trim.copyPostMessageUser(authUser.clean, user.clean)
   }
 }
 

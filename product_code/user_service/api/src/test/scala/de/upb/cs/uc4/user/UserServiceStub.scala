@@ -98,8 +98,8 @@ class UserServiceStub extends UserService with DefaultTestUsers {
   override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { _ => Future.successful(Done) }
 
   override def addUser(): ServiceCall[PostMessageUser, User] = ServiceCall { pmu =>
-    users ++= Seq(pmu.getUser)
-    Future.successful(pmu.getUser)
+    users ++= Seq(pmu.user)
+    Future.successful(pmu.user)
   }
 
   override def getImage(username: String): ServiceCall[NotUsed, ByteString] = ServiceCall { _ => Future.successful(null) }

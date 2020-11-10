@@ -21,7 +21,7 @@ class PostMessageUserSpec extends AsyncWordSpecLike with Matchers with DefaultTe
     }
 
     "return a validation error for having a non-empty String in latestImmatriculation" in {
-      postMessageStudentValid.copy(student = student0.copy(latestImmatriculation = "SS2020")).validate
+      postMessageStudentValid.copy(user = student0.copy(latestImmatriculation = "SS2020")).validate
         .map(_.map(error => error.name) should contain theSameElementsAs Seq("student.latestImmatriculation"))
     }
   }

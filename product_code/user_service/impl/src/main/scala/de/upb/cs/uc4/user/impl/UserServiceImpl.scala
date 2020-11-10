@@ -112,7 +112,7 @@ class UserServiceImpl(
           postMessageStudent.validate.flatMap { studentValidationErrorsImmutable =>
 
             var studentValidationErrors = studentValidationErrorsImmutable
-            val student = postMessageUser.getUser.asInstanceOf[Student]
+            val student = postMessageStudent.user
             getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
               matDuplicate =>
                 if (matDuplicate) {
@@ -140,7 +140,7 @@ class UserServiceImpl(
         throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
       }
 
-      val ref = entityRef(postMessageUser.getUser.username)
+      val ref = entityRef(postMessageUser.user.username)
       ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap { optUser =>
         // If username is already in use, add that error to the validation list
         if (optUser.isDefined) {
@@ -151,14 +151,14 @@ class UserServiceImpl(
           throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
         }
 
-        ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.getUser, replyTo))
+        ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.user, replyTo))
           .flatMap {
             case Accepted => // Creation Successful
               authentication.setAuthentication().invoke(postMessageUser.authUser)
                 .map { _ =>
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
-                    .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.getUser.username}")
-                  (header, postMessageUser.getUser)
+                    .addHeader("Location", s"$pathPrefix/users/students/${postMessageUser.user.username}")
+                  (header, postMessageUser.user)
                 }
                 // In case the password cant be saved
                 .recoverWith {
