@@ -1,10 +1,10 @@
 package de.upb.cs.uc4.course.model
 
-import de.upb.cs.uc4.shared.client.configuration.{CourseLanguage, CourseType, ErrorMessageCollection, RegexCollection}
+import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType, ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 case class Course(
     courseId: String,
@@ -51,6 +51,7 @@ case class Course(
     val startDateMessage = ErrorMessageCollection.Course.startDateMessage
     val endDateMessage = ErrorMessageCollection.Course.endDateMessage
     val ectsMessage = ErrorMessageCollection.Course.ectsMessage
+    val lecturerNameMessage = ErrorMessageCollection.Course.lecturerNameMessage
     val maxParticipantsMessage = ErrorMessageCollection.Course.maxParticipantsMessage
 
     var errors = List[SimpleError]()
@@ -73,7 +74,7 @@ case class Course(
       errors :+= SimpleError("ects", ectsMessage)
     }
     if (!nameRegex.matches(lecturerId)) {
-      errors :+= SimpleError("lecturerId", "LecturerID must not be empty.")
+      errors :+= SimpleError("lecturerId", lecturerNameMessage)
     }
     if (!maxParticipantsRegex.matches(maxParticipants.toString)) {
       errors :+= SimpleError("maxParticipants", maxParticipantsMessage)

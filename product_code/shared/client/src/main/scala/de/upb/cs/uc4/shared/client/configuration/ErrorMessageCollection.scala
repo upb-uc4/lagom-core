@@ -18,28 +18,38 @@ object ErrorMessageCollection {
   }
 
   object Course {
-    val nameMessage: String = "Course name must contain between 1 and 100 characters."
+    val courseNameMessage: String = "Course name must contain between 1 and 100 characters."
     val descriptionMessage: String = "Description must contain 0 to 10000 characters."
     val startDateMessage: String = "Start date must be of the following format \"yyyy-mm-dd\"."
     val endDateMessage: String = "End date must be of the following format \"yyyy-mm-dd\"."
     val ectsMessage: String = "ECTS must be a positive integer between 0 and 999."
+    val lecturerNameMessage: String = "LecturerID must not be empty."
     val maxParticipantsMessage: String = "Number of maximum participants must be a positive integer between 1 and 9999."
   }
 
   object Lecturer {
-    val researchAreaRegex: String = ""
+    val researchAreaMessage: String = "Research area must contain 0 to 200 characters."
   }
 
   object User {
-    val generalRegex: String = ""// Allowed characters for general strings TBD
-    val usernameRegex: String = ""
-    val mailRegex: String = ""
-    val phoneNumberRegex: String = ""
+    val generalMessage: String = "" // Allowed characters for general strings TBD
+    val usernameMessage: String = "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'."
+    val mailMessage: String = "Email must be in email format example@xyz.com."
+    val phoneNumberMessage: String = "Phone number must be of the following format \"+xxxxxxxxxxxx\"."
+    val firstNameMessage: String = "First name must contain between 1 and 100 characters."
+    val lastNameMessage: String = "Last name must contain between 1 and 100 characters."
   }
 
   object Address {
-    val houseNumberRegex: String = ""
-    val nameRegex: String = ""
+    val houseNumberMessage: String = "House number must start with digits and may have trailing letters."
+    val streetNameMessage: String = "Street must only contain at letters and '-''."
+    val cityNameMessage: String = "City name contains illegal characters."
+  }
+
+  object Commons {
+    val dateMessage: String = "Birthdate must be of the following format \"yyyy-mm-dd\"."
+    val longTextMessage: String = "Text must contain 0 to 10000 characters."
+    val nameMessage: String = "Name must contain between 1 and 100 characters."
   }
 
 }

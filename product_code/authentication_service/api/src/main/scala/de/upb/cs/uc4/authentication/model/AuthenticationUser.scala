@@ -1,11 +1,11 @@
 package de.upb.cs.uc4.authentication.model
 
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
-import de.upb.cs.uc4.shared.client.configuration.{ErrorMessageCollection, RegexCollection}
+import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 /** Used to be sent to the AuthenticationService. Includes only relevant data for that service. */
 case class AuthenticationUser(username: String, password: String, role: AuthenticationRole) {
