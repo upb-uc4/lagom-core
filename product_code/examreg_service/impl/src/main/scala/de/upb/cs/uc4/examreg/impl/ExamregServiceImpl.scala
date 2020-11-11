@@ -38,13 +38,14 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, readSide: ReadSide,
       database.getAll
         .map(names => names
           .map(entityRef(_).ask[Option[ExaminationRegulation]](replyTo => GetExamreg(replyTo))))
-        .flatMap(seq => Future.sequence(seq)
-          .map(seq => seq
+        .flatMap{seq => Future.sequence(seq)
+          .map{seq => seq
             .filter(opt => opt.isDefined) //Filter every not existing examination regulation
             .map(opt => opt.get)
             .filter(examReg => regulations.isEmpty || regulations.get.split(",").contains(examReg.name))
-            .filter(examReg => active.isEmpty || active.get == examReg.active)))
-
+            .filter(examReg => active.isEmpty || active.get == examReg.active)
+          }
+        }
     }
 
   /** @inheritdoc */
