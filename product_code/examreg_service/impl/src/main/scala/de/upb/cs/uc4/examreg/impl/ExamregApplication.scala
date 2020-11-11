@@ -57,15 +57,16 @@ abstract class ExamregApplication(context: LagomApplicationContext)
     Seq(Module("M.1275.01158", "Math 1"))
   )
   clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, ExamregHyperledgerBehaviour.entityId)
-    .ask[Confirmation](replyTo => CreateExamregHyperledger(defaultExamReg, replyTo)).map {
-      case Accepted => clusterSharding.entityRefFor(ExamregState.typeKey, defaultExamReg.name)
+    .askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(defaultExamReg, replyTo)).map {
+      case Accepted(_) => clusterSharding.entityRefFor(ExamregState.typeKey, defaultExamReg.name)
         .ask[Confirmation](replyTo => CreateExamregDatabase(defaultExamReg, replyTo)).map {
-          case Accepted                     => log.info("Default exam reg created successfully")
+          case Accepted(_)                  => log.info("Default exam reg created successfully")
           case Rejected(statusCode, reason) => log.error("Failed database operation of creating default exam reg", UC4Exception(statusCode, reason))
         }
       case Rejected(statusCode, reason) => log.error("Failed hyperledger operation of creating default exam reg", UC4Exception(statusCode, reason))
     }.recover {
-      case t: Throwable => log.error("Error in Exam application", t)
+      case ue: UC4Exception => log.error("Failed operation of creating default exam reg", ue)
+      case t: Throwable     => log.error("Error in Exam application", t)
     }
 }
 

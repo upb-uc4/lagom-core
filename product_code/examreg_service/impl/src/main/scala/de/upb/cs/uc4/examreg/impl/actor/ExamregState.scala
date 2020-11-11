@@ -22,7 +22,7 @@ case class ExamregState(optExaminationRegulation: Option[ExaminationRegulation])
         Effect.reply(replyTo)(optExaminationRegulation)
 
       case CreateExamregDatabase(examreg, replyTo) =>
-        Effect.persist(OnExamregCreate(examreg)).thenReply(replyTo) { _ => Accepted }
+        Effect.persist(OnExamregCreate(examreg)).thenReply(replyTo) { _ => Accepted.default }
 
       case _ =>
         println("Unknown Command")

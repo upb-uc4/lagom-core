@@ -11,7 +11,7 @@ import de.upb.cs.uc4.examreg.impl.actor.{ ExamregHyperledgerBehaviour, ExamregSt
 import de.upb.cs.uc4.examreg.impl.commands.{ ExamregCommand, GetExamreg }
 import de.upb.cs.uc4.examreg.impl.readside.{ ExamregDatabase, ExamregEventProcessor }
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
-import de.upb.cs.uc4.hyperledger.commands.HyperledgerCommand
+import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -26,7 +26,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, readSide: ReadSide,
     clusterSharding.entityRefFor(ExamregState.typeKey, id)
 
   /** Returns the entity for Hyperledger */
-  private def entityRefHyperledger: EntityRef[HyperledgerCommand] =
+  private def entityRefHyperledger: EntityRef[HyperledgerBaseCommand] =
     clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, ExamregHyperledgerBehaviour.entityId)
 
   // TODO All ExamReg Tests
@@ -38,13 +38,15 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, readSide: ReadSide,
       database.getAll
         .map(names => names
           .map(entityRef(_).ask[Option[ExaminationRegulation]](replyTo => GetExamreg(replyTo))))
-        .flatMap{seq => Future.sequence(seq)
-          .map{seq => seq
-            .filter(opt => opt.isDefined) //Filter every not existing examination regulation
-            .map(opt => opt.get)
-            .filter(examReg => regulations.isEmpty || regulations.get.split(",").contains(examReg.name))
-            .filter(examReg => active.isEmpty || active.get == examReg.active)
-          }
+        .flatMap { seq =>
+          Future.sequence(seq)
+            .map { seq =>
+              seq
+                .filter(opt => opt.isDefined) //Filter every not existing examination regulation
+                .map(opt => opt.get)
+                .filter(examReg => regulations.isEmpty || regulations.get.split(",").contains(examReg.name))
+                .filter(examReg => active.isEmpty || active.get == examReg.active)
+            }
         }
     }
 

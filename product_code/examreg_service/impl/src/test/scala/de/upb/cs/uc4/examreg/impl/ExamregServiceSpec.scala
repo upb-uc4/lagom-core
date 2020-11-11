@@ -25,49 +25,49 @@ class ExamregServiceSpec extends AsyncWordSpec
     ServiceTest.defaultSetup
       .withJdbc()
   ) { ctx =>
-    new ExamregApplication(ctx) with LocalServiceLocator {
-      override def createActorFactory: ExamregHyperledgerBehaviour = new ExamregHyperledgerBehaviour(config) {
-        override protected def createConnection: ConnectionExaminationRegulationTrait = new ConnectionExaminationRegulationTrait() {
+      new ExamregApplication(ctx) with LocalServiceLocator {
+        override def createActorFactory: ExamregHyperledgerBehaviour = new ExamregHyperledgerBehaviour(config) {
+          override protected def createConnection: ConnectionExaminationRegulationTrait = new ConnectionExaminationRegulationTrait() {
 
-          var examRegList: Seq[ExaminationRegulation] = Seq[ExaminationRegulation]()
-          override def getProposalAddExaminationRegulation(examinationRegulation: String): Array[Byte] = "getProposalAddExaminationRegulation".getBytes
+            var examRegList: Seq[ExaminationRegulation] = Seq[ExaminationRegulation]()
+            override def getProposalAddExaminationRegulation(examinationRegulation: String): Array[Byte] = "getProposalAddExaminationRegulation".getBytes
 
-          override def getProposalGetExaminationRegulations(namesList: String): Array[Byte] = "getProposalGetExaminationRegulations".getBytes
+            override def getProposalGetExaminationRegulations(namesList: String): Array[Byte] = "getProposalGetExaminationRegulations".getBytes
 
-          override def getProposalCloseExaminationRegulation(name: String): Array[Byte] = "getProposalCloseExaminationRegulation".getBytes
+            override def getProposalCloseExaminationRegulation(name: String): Array[Byte] = "getProposalCloseExaminationRegulation".getBytes
 
-          override def addExaminationRegulation(examinationRegulation: String): String = {
-            val examReg = examinationRegulation.fromJson[ExaminationRegulation]
-            if (examRegList.map(_.name).contains(examReg.name)){
-              throw UC4Exception.Duplicate
-            }
-            examinationRegulation
-          }
-
-          override def getExaminationRegulations(namesList: String): String = {
-            examRegList.filter( examReg => namesList.contains(examReg.name))
-            examRegList.toJson
-          }
-
-          override def closeExaminationRegulation(name: String): String = {
-            examRegList.map{
-              examReg =>
-                if (name == examReg.name){
-                  examReg.copy(active = false)
+            override def addExaminationRegulation(examinationRegulation: String): String = {
+              val examReg = examinationRegulation.fromJson[ExaminationRegulation]
+              if (examRegList.map(_.name).contains(examReg.name)) {
+                throw UC4Exception.Duplicate
               }
+              examinationRegulation
             }
-            examRegList.toJson
-          }
 
-          override val username: String = ""
-          override val channel: String = ""
-          override val chaincode: String = ""
-          override val walletPath: Path = null
-          override val networkDescriptionPath: Path = null
+            override def getExaminationRegulations(namesList: String): String = {
+              examRegList.filter(examReg => namesList.contains(examReg.name))
+              examRegList.toJson
+            }
+
+            override def closeExaminationRegulation(name: String): String = {
+              examRegList.map {
+                examReg =>
+                  if (name == examReg.name) {
+                    examReg.copy(active = false)
+                  }
+              }
+              examRegList.toJson
+            }
+
+            override val username: String = ""
+            override val channel: String = ""
+            override val chaincode: String = ""
+            override val walletPath: Path = null
+            override val networkDescriptionPath: Path = null
+          }
         }
       }
     }
-  }
 
   implicit val system: ActorSystem = server.actorSystem
   implicit val mat: Materializer = server.materializer
@@ -78,9 +78,9 @@ class ExamregServiceSpec extends AsyncWordSpec
 
   "ExamregService" should {
     "Have a default examination regulation" in {
-      client.getExaminationRegulationsNames(None).invoke().map{
+      client.getExaminationRegulationsNames(None).invoke().map {
         examRegNames =>
-          examRegNames should contain ("Computer Science v3")
+          examRegNames should contain("Computer Science v3")
       }
     }
   }
