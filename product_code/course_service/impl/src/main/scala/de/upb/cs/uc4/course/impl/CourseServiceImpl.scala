@@ -65,13 +65,7 @@ class CourseServiceImpl(
                 moduleIds match {
                   case None => true
                   case Some(listOfModuleIds) =>
-                    listOfModuleIds.split(',').foreach {
-                      moduleId =>
-                        if (course.moduleIds.contains(moduleId)) {
-                          true
-                        }
-                    }
-                    false
+                    listOfModuleIds.split(',').exists(moduleId => course.moduleIds.contains(moduleId.trim))
                 }
             }
         }.map(courses => createETagHeader(header, courses))

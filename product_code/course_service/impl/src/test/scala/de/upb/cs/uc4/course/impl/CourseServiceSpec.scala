@@ -83,6 +83,9 @@ class CourseServiceSpec extends AsyncWordSpec
       }
   }
 
+  val course1WithModules: Course = course1.copy(moduleIds = Seq(examReg0.modules.head.id))
+  val course2WithModules: Course = course2.copy(moduleIds = examReg0.modules.map(_.id))
+
   /** Tests only working if the whole instance is started */
   "CourseService" should {
 
@@ -114,11 +117,21 @@ class CourseServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
-    "get all courses with matching names and lecturerIds" in {
-      prepare(Seq(course0, course1, course2)).flatMap { _ =>
-        client.getAllCourses(Some("Course 1"), Some("lecturer0"), None).handleRequestHeader(addAuthorizationHeader())
+    "get all courses with matching moduleId" in {
+      prepare(Seq(course0, course1WithModules, course2WithModules)).flatMap { _ =>
+        client.getAllCourses(None, None, Some(examReg0.modules.head.id)).handleRequestHeader(addAuthorizationHeader())
           .invoke().map { answer =>
-            answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1)
+            answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1WithModules, course2WithModules)
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "get all courses with matching names and lecturerIds and moduleId" in {
+      prepare(Seq(course0, course1WithModules, course2)).flatMap { _ =>
+        client.getAllCourses(Some(course1WithModules.courseName), Some(course1WithModules.lecturerId), Some(course1WithModules.moduleIds.head)).handleRequestHeader(addAuthorizationHeader())
+          .invoke().map { answer =>
+            answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1WithModules)
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
