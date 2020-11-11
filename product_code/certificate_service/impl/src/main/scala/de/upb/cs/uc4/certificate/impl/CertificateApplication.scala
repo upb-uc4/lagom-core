@@ -9,15 +9,15 @@ import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
+import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateState }
-import de.upb.cs.uc4.certificate.impl.commands.RegisterUser
+import de.upb.cs.uc4.certificate.impl.commands.{ DeleteCertificateUser, RegisterUser }
 import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
-import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
@@ -43,6 +43,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
   lazy val enrollmentManager: EnrollmentManagerTrait = EnrollmentManager
   lazy val registrationManager: RegistrationManagerTrait = RegistrationManager
   lazy val processor: CertificateEventProcessor = wire[CertificateEventProcessor]
+  readSide.register(processor)
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[CertificateService](wire[CertificateServiceImpl])
@@ -82,6 +83,25 @@ abstract class CertificateApplication(context: LagomApplicationContext)
           log.error("CertificateService received invalid topic message: {}", throwable.toString)
           Future.successful(Done)
       }).mapAsync(8)(done => done)
+    )
+
+  userService
+    .userDeletionTopic()
+    .subscribe
+    .atLeastOnce(
+      Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
+        try {
+          val jsonUsername = kafkaEncryptionUtility.decrypt[JsonUsername](container)
+          clusterSharding.entityRefFor(CertificateState.typeKey, jsonUsername.username)
+            .ask[Confirmation](replyTo => DeleteCertificateUser(jsonUsername.username, replyTo)).map(_ => Done)
+        }
+        catch {
+          case throwable: Throwable =>
+            log.error("AuthenticationService received invalid topic message: {}", throwable.toString)
+            Future.successful(Done)
+        }
+      }
+        .mapAsync(8)(done => done)
     )
 
   private def registerUser(username: String, enrollmentId: String): Future[Done] = {

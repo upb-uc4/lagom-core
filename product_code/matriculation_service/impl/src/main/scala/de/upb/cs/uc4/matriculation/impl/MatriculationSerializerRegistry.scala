@@ -1,6 +1,8 @@
 package de.upb.cs.uc4.matriculation.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
+import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, SubjectMatriculation }
+import de.upb.cs.uc4.shared.client.TransactionProposal
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq
@@ -15,6 +17,9 @@ import scala.collection.immutable.Seq
   */
 object MatriculationSerializerRegistry extends SharedSerializerRegistry {
   override def customSerializers: Seq[JsonSerializer[_]] = Seq( // state and events can use play-json, but commands should use jackson because of ActorRef[T] (see application.conf)
-  //States
+    //Data
+    JsonSerializer[ImmatriculationData],
+    JsonSerializer[SubjectMatriculation],
+    JsonSerializer[TransactionProposal]
   )
 }

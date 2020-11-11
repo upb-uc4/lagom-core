@@ -1,34 +1,32 @@
 package de.upb.cs.uc4.certificate.impl
 
 import java.nio.file.Path
-import java.util.Calendar
 
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
+import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4Exception }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Usernames
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
-import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
-/** Tests for the CertificateService
-  * All tests need to be started in the defined order
-  */
-class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
+/** Tests for the CertificateService */
+class CertificateServiceSpec extends AsyncWordSpec
+  with UC4SpecUtils with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
 
   private var creationStub: ProducerStub[EncryptionContainer] = _ //EncryptionContainer[Usernames]
+  private var deletionStub: ProducerStub[EncryptionContainer] = _ //EncryptionContainer[Usernames]
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -43,7 +41,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
               chaincode: String, networkDescriptionPath: Path): String = s"certificate for $enrollmentID"
 
           override def enroll(caURL: String, caCert: Path, walletPath: Path, enrollmentID: String, enrollmentSecret: String,
-              organisationId: String, channel: String, chaincode: String, networkDescriptionPath: Path): Unit = {}
+              organisationId: String, channel: String, chaincode: String, networkDescriptionPath: Path): String = s"certificate for $enrollmentID"
         }
 
         override lazy val registrationManager: RegistrationManagerTrait =
@@ -52,43 +50,19 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
         lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
         lazy val internCreationStub: ProducerStub[EncryptionContainer] =
           stubFactory.producer[EncryptionContainer](UserService.ADD_TOPIC_NAME)
-
         creationStub = internCreationStub
+        lazy val internDeletionStub: ProducerStub[EncryptionContainer] =
+          stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_NAME)
+        deletionStub = internDeletionStub
 
         // Create a userService with ProducerStub as topic
-        override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internCreationStub)
+        override lazy val userService: UserServiceStubWithTopic = new UserServiceStubWithTopic(internCreationStub, internDeletionStub)
       }
     }
 
   val client: CertificateService = server.serviceClient.implement[CertificateService]
 
   override protected def afterAll(): Unit = server.stop()
-
-  def addAuthorizationHeader(username: String = "admin"): RequestHeader => RequestHeader = { header =>
-
-    var role = AuthenticationRole.Admin
-
-    if (username.contains("student")) {
-      role = AuthenticationRole.Student
-    }
-    else if (username.contains("lecturer")) {
-      role = AuthenticationRole.Lecturer
-    }
-
-    val time = Calendar.getInstance()
-    time.add(Calendar.DATE, 1)
-
-    val token =
-      Jwts.builder()
-        .setSubject("login")
-        .setExpiration(time.getTime)
-        .claim("username", username)
-        .claim("authenticationRole", role.toString)
-        .signWith(SignatureAlgorithm.HS256, "changeme")
-        .compact()
-
-    header.withHeader("Cookie", s"login=$token")
-  }
 
   "The CertificateService" should {
     "register a user and get enrollmentId" in {
@@ -103,10 +77,30 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
       }
     }
 
+    "reset certificate state on user deletion" in {
+      val username = "student005"
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll"))
+      val deletionContainer = server.application.kafkaEncryptionUtility.encrypt(JsonUsername(username))
+      creationStub.send(container)
+
+      eventually(timeout(Span(30, Seconds))) {
+        client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+          answer => answer.id should ===(username + "enroll")
+        }
+      }.flatMap { _ =>
+        deletionStub.send(deletionContainer)
+        eventually(timeout(Span(30, Seconds))) {
+          client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
+            answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+          }
+        }
+      }
+    }
+
     "return an error when fetching the enrollmentId of a non-existing user" in {
       val username = "student01"
       client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
-        answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+        answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
     }
 
@@ -129,7 +123,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
       client.getCertificate(username).handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map {
-          answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
         }
     }
 
@@ -230,8 +224,10 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
   }
 }
 
-class UserServiceStubWithTopic(creationStub: ProducerStub[EncryptionContainer]) extends UserServiceStub {
+class UserServiceStubWithTopic(creationStub: ProducerStub[EncryptionContainer], deletionStub: ProducerStub[EncryptionContainer]) extends UserServiceStub {
 
   override def userCreationTopic(): Topic[EncryptionContainer] = creationStub.topic
+
+  override def userDeletionTopic(): Topic[EncryptionContainer] = deletionStub.topic
 
 }

@@ -40,7 +40,7 @@ case class Student(
     )
 
   override def toPublic: Student =
-    super.toPublic.asInstanceOf[Student].copy(latestImmatriculation = "", matriculationId = "")
+    Student(this.username, this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "", "", "")
 
   override def clean: Student = super.clean.asInstanceOf[Student]
 

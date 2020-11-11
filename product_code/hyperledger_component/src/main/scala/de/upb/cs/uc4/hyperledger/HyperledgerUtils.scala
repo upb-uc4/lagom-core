@@ -12,7 +12,7 @@ object HyperledgerUtils {
       exception match {
         case exp: HyperledgerExceptionTrait =>
           UC4Exception.InternalServerError(
-            s"HyperledgerException thrown by ${exp.transactionId}",
+            s"HyperledgerException thrown by ${exp.actionName}",
             exp.innerException.getMessage
           )
         case exp: NetworkExceptionTrait =>
@@ -38,7 +38,7 @@ object HyperledgerUtils {
             case _: Throwable =>
               UC4Exception.InternalServerError(
                 "Broken TransactionException",
-                s"""id:      ${transactionEx.transactionId}
+                s"""id:      ${transactionEx.transactionName}
                    |payload: ${transactionEx.payload}
                    |""".stripMargin
               )

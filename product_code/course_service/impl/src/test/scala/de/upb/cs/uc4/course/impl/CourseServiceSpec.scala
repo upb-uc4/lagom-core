@@ -1,18 +1,13 @@
 package de.upb.cs.uc4.course.impl
 
-import java.util.Calendar
-
-import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
-import de.upb.cs.uc4.authentication.model.AuthenticationRole
-import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.course.DefaultTestCourses
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.UserServiceStub
-import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
@@ -21,10 +16,9 @@ import org.scalatest.{ Assertion, BeforeAndAfterAll }
 
 import scala.concurrent.Future
 
-/** Tests for the CourseService
-  * All tests need to be started in the defined order
-  */
-class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestCourses {
+/** Tests for the CourseService */
+class CourseServiceSpec extends AsyncWordSpec
+  with UC4SpecUtils with Matchers with BeforeAndAfterAll with Eventually with DefaultTestCourses {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -39,22 +33,6 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
   val client: CourseService = server.serviceClient.implement[CourseService]
 
   override protected def afterAll(): Unit = server.stop()
-
-  def addAuthorizationHeader(username: String = "username", role: AuthenticationRole = AuthenticationRole.Admin): RequestHeader => RequestHeader = { header =>
-    val time = Calendar.getInstance()
-    time.add(Calendar.DATE, 1)
-
-    val token =
-      Jwts.builder()
-        .setSubject("login")
-        .setExpiration(time.getTime)
-        .claim("username", username)
-        .claim("authenticationRole", role.toString)
-        .signWith(SignatureAlgorithm.HS256, "changeme")
-        .compact()
-
-    header.withHeader("Cookie", s"login=$token")
-  }
 
   def prepare(courses: Seq[Course]): Future[Seq[Course]] = {
     Future.sequence(courses.map { course =>
@@ -146,7 +124,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     "fail in finding a non-existing course" in {
       client.findCourseByCourseId("42").handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map { answer =>
-          answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
         }
     }
 
@@ -175,7 +153,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "create a course as a lecturer" in {
-      client.addCourse().handleRequestHeader(addAuthorizationHeader("lecturer0", AuthenticationRole.Lecturer))
+      client.addCourse().handleRequestHeader(addAuthorizationHeader("lecturer0"))
         .invoke(course0.copy(lecturerId = "lecturer0")).flatMap { createdCourse =>
 
           eventually(timeout(Span(15, Seconds))) {
@@ -198,7 +176,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
     }
 
     "not create a course for another lecturer, as a lecturer" in {
-      client.addCourse().handleRequestHeader(addAuthorizationHeader("lecturer0", AuthenticationRole.Lecturer))
+      client.addCourse().handleRequestHeader(addAuthorizationHeader("lecturer0"))
         .invoke(course0.copy(lecturerId = "lecturer1")).failed.map { answer =>
           answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
         }.flatMap(cleanupOnSuccess)
@@ -217,7 +195,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
       client.deleteCourse("42").handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map {
           answer =>
-            answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
         }
     }
 
@@ -247,7 +225,7 @@ class CourseServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterA
 
     "not update a course of another lecturer, as a lecturer" in {
       prepare(Seq(course0)).flatMap { createdCourses =>
-        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader("lecturer1", AuthenticationRole.Lecturer))
+        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader("lecturer1"))
           .invoke(createdCourses.head.copy(startDate = "1996-05-21")).failed.map {
             answer =>
               answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)

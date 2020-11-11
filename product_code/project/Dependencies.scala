@@ -12,7 +12,7 @@ object Dependencies {
   val postgresDriver = "org.postgresql" % "postgresql" % "42.2.8"
   val uuid = "com.fasterxml.uuid" % "java-uuid-generator" % "3.1.0"
   val janino = "org.codehaus.janino" % "janino" % "2.5.16"
-  val hyperledger_api = "de.upb.cs.uc4" % "hlf_api" % Version("hyperledger_api")
+  val hyperledgerApi = "de.upb.cs.uc4" % "hlf-api" % Version("hyperledger_api")
 
   val apiDefaultDependencies = Seq(
     lagomScaladslApi,

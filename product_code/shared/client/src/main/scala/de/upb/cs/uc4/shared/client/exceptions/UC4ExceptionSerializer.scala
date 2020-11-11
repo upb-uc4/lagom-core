@@ -15,13 +15,17 @@ class UC4ExceptionSerializer(environment: Environment) extends DefaultExceptionS
   override def serialize(exception: Throwable, accept: Seq[MessageProtocol]): RawExceptionMessage = {
     val (errorCode, message) = exception match {
       case ce: UC4Exception if environment.mode == Mode.Prod && ce.possibleErrorResponse.`type` == ErrorType.InternalServer =>
-        (ce.errorCode, GenericError(ErrorType.InternalServer))
-      case ce: UC4Exception => (ce.errorCode, ce.possibleErrorResponse)
+        (TransportErrorCode(ce.errorCode, 1003, "Error"), GenericError(ErrorType.InternalServer))
+
+      case ce: UC4Exception => (TransportErrorCode(ce.errorCode, 1003, "Error"), ce.possibleErrorResponse)
+
       case te: TransportException =>
         (te.errorCode, te.exceptionMessage)
+
       case _ if environment.mode == Mode.Prod =>
         // By default, don't give out information about generic exceptions.
         (TransportErrorCode.InternalServerError, GenericError(ErrorType.InternalServer))
+
       case e =>
         // Ok to give out exception information in dev and test
         val writer = new CharArrayWriter
@@ -100,6 +104,6 @@ class UC4ExceptionSerializer(environment: Environment) extends DefaultExceptionS
   def fromCodeAndMessageCustom(
       transportErrorCode: TransportErrorCode,
       customError: UC4Error
-  ): Throwable = new UC4NonCriticalException(transportErrorCode, customError)
+  ): Throwable = new UC4NonCriticalException(transportErrorCode.http, customError)
 }
 

@@ -5,8 +5,8 @@ import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.authentication.impl.AuthenticationApplication
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.impl.events.{ AuthenticationEvent, OnDelete, OnSet }
-import de.upb.cs.uc4.shared.server.Hashing
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
+import de.upb.cs.uc4.shared.client.Hashing
+import de.upb.cs.uc4.shared.server.messages.Accepted
 import play.api.libs.json.{ Format, Json }
 
 import scala.util.Random
@@ -21,13 +21,13 @@ case class AuthenticationState(optEntry: Option[AuthenticationEntry]) {
   def applyCommand(cmd: AuthenticationCommand): ReplyEffect[AuthenticationEvent, AuthenticationState] =
     cmd match {
       case SetAuthentication(user, replyTo) =>
-        Effect.persist(OnSet(user)).thenReply(replyTo) { _ => Accepted }
+        Effect.persist(OnSet(user)).thenReply(replyTo) { _ => Accepted.default }
 
       case DeleteAuthentication(replyTo) => optEntry match {
         case Some(entry) =>
-          Effect.persist(OnDelete(entry.username)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnDelete(entry.username)).thenReply(replyTo) { _ => Accepted.default }
         case None =>
-          Effect.reply(replyTo)(Rejected("AuthenticationUser does not exist."))
+          Effect.reply(replyTo)(Accepted.default)
       }
       case GetAuthentication(replyTo) => Effect.reply(replyTo)(optEntry)
       case _ =>
