@@ -1,3 +1,9 @@
+# [v0.12.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.3...matriculation-v0.12.0) (2020-11-10)
+## Feature
+## Refactor
+ - Bumped Version of Lagom to 1.6.4
+## Bugfix
+
 # [v0.11.3](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.2...matriculation-v0.11.3) (2020-11-06)
 ## Feature
 ## Refactor

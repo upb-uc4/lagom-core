@@ -6,30 +6,32 @@ import akka.{ Done, NotUsed }
 import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
-import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
-import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
+import de.upb.cs.uc4.course.impl.readside.CourseDatabase
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
+import play.api.Environment
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(
-    clusterSharding: ClusterSharding, userService: UserService, examregService: ExamregService,
-    readSide: ReadSide, processor: CourseEventProcessor, database: CourseDatabase
+    clusterSharding: ClusterSharding,
+    userService: UserService,
+    examregService: ExamregService,
+    database: CourseDatabase,
+    override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config) extends CourseService {
-  readSide.register(processor)
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CourseCommand] =
@@ -128,7 +130,7 @@ class CourseServiceImpl(
           // Check if the lecturer does exist
           userService.getUser(courseProposal.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
             //If the lecturer does not exist, we throw a validation error containing that info
-            case ex: UC4Exception if ex.errorCode.http == 404 =>
+            case ex: UC4Exception if ex.errorCode == 404 =>
               throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist")))
           }.flatMap { _ =>
             if (validationErrors.nonEmpty) {
@@ -141,7 +143,7 @@ class CourseServiceImpl(
 
             ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
               .map {
-                case Accepted => // Creation Successful
+                case Accepted(_) => // Creation Successful
                   (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
                 case Rejected(code, reason) =>
                   throw UC4Exception(code, reason)
@@ -165,7 +167,7 @@ class CourseServiceImpl(
               else {
                 entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
                   .map {
-                    case Accepted => // OK
+                    case Accepted(_) => // OK
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case Rejected(code, reason) => // Not Found
                       throw UC4Exception(code, reason)
@@ -238,7 +240,7 @@ class CourseServiceImpl(
 
         // Check if the lecturer does exist
         userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-          case ex: UC4Exception if ex.errorCode.http == 404 =>
+          case ex: UC4Exception if ex.errorCode == 404 =>
             throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist.")))
         }.flatMap { _ =>
           val ref = entityRef(id)
@@ -255,7 +257,7 @@ class CourseServiceImpl(
               else {
                 ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
                   .map {
-                    case Accepted => // Update Successful
+                    case Accepted(_) => // Update Successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case Rejected(code, reason) =>
                       throw UC4Exception(code, reason)

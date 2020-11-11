@@ -42,6 +42,7 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
   // Create ReadSide
   lazy val database: AuthenticationDatabase = wire[AuthenticationDatabase]
   lazy val processor: AuthenticationEventProcessor = wire[AuthenticationEventProcessor]
+  readSide.register(processor)
 
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[AuthenticationService](wire[AuthenticationServiceImpl])

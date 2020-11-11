@@ -127,7 +127,7 @@ class CourseServiceSpec extends AsyncWordSpec
     "fail in finding a non-existing course" in {
       client.findCourseByCourseId("42").handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map { answer =>
-          answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
         }
     }
 
@@ -208,7 +208,7 @@ class CourseServiceSpec extends AsyncWordSpec
       client.deleteCourse("42").handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map {
           answer =>
-            answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
         }
     }
 

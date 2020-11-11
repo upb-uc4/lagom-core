@@ -6,7 +6,11 @@
 - [INSERT CHANGES HERE]
 #### Certificate Service
 - [INSERT CHANGES HERE]
+#### Configuration Service
+- [INSERT CHANGES HERE]
 #### Course Service
+- [INSERT CHANGES HERE]
+#### Examreg Service
 - [INSERT CHANGES HERE]
 #### Matriculation Service
 - [INSERT CHANGES HERE]
@@ -18,6 +22,8 @@ This release of version v0.0.0 consists of the following individual versions for
 |---|---|
 |Authentication |v0.0.0|
 |Certificate    |v0.0.0|
+|Configuration  |v0.0.0|
 |Course         |v0.0.0|
+|Examreg        |v0.0.0|
 |Matriculation  |v0.0.0|
 |User           |v0.0.0|

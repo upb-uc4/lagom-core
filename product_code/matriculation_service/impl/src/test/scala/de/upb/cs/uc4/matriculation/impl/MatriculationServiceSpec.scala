@@ -14,7 +14,7 @@ import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
 import de.upb.cs.uc4.shared.client.SignedTransactionProposal
-import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -186,7 +186,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
     "not add empty matriculation data for a student" in {
       client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
         .invoke(createSingleMatriculation("", "")).failed.map { answer =>
-          answer.asInstanceOf[UC4Exception].errorCode.http should ===(422)
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
         }.andThen {
           case _ => cleanup()
         }

@@ -1,22 +1,32 @@
 package de.upb.cs.uc4.hyperledger.commands
 
 import akka.actor.typed.ActorRef
+import akka.pattern.StatusReply
+import de.upb.cs.uc4.shared.client.SignedTransactionProposal
 import de.upb.cs.uc4.shared.server.messages.Confirmation
-
-import scala.util.Try
 
 /** The trait for the commands needed in the state
   * Every command is a case class containing the
   * necessary information to execute the command
   */
-sealed trait HyperledgerCommand extends HyperledgerCommandSerializable
+sealed trait HyperledgerBaseCommand extends HyperledgerCommandSerializable
 
-trait HyperledgerReadCommand[PayloadType] extends HyperledgerCommand {
-  val replyTo: ActorRef[Try[PayloadType]]
+final case class Shutdown() extends HyperledgerBaseCommand
+
+sealed trait HyperledgerInternCommand[PayloadType] extends HyperledgerBaseCommand {
+  val replyTo: ActorRef[StatusReply[PayloadType]]
 }
 
-trait HyperledgerWriteCommand extends HyperledgerCommand {
-  val replyTo: ActorRef[Confirmation]
+final case class SubmitProposal(unsignedProposal: Array[Byte], signature: Array[Byte], replyTo: ActorRef[StatusReply[Confirmation]]) extends HyperledgerInternCommand[Confirmation]
+
+object SubmitProposal {
+  def apply(proposal: SignedTransactionProposal, replyTo: ActorRef[StatusReply[Confirmation]]) =
+    new SubmitProposal(proposal.unsignedProposalAsByteArray, proposal.signatureAsByteArray, replyTo)
 }
 
-case class Shutdown() extends HyperledgerCommand
+trait HyperledgerCommand[PayloadType] extends HyperledgerInternCommand[PayloadType]
+
+trait HyperledgerReadCommand[PayloadType] extends HyperledgerCommand[PayloadType]
+
+trait HyperledgerWriteCommand extends HyperledgerCommand[Confirmation]
+
