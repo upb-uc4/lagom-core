@@ -15,11 +15,13 @@ import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
 class ExamregServiceSpec extends AsyncWordSpec
-  with UC4SpecUtils with Matchers with BeforeAndAfterAll {
+  with UC4SpecUtils with Matchers with BeforeAndAfterAll with Eventually {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -27,6 +29,18 @@ class ExamregServiceSpec extends AsyncWordSpec
   ) { ctx =>
       new ExamregApplication(ctx) with LocalServiceLocator {
         override def createActorFactory: ExamregHyperledgerBehaviour = new ExamregHyperledgerBehaviour(config) {
+
+          override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
+          override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
+          override val tlsCert: Path = retrievePath("uc4.hyperledger.tlsCert", "")
+
+          override val channel: String = "myc"
+          override val chaincode: String = "mycc"
+          override val caURL: String = ""
+
+          override val adminUsername: String = "cli"
+          override val adminPassword: String = ""
+
           override protected def createConnection: ConnectionExaminationRegulationTrait = new ConnectionExaminationRegulationTrait() {
 
             var examRegList: Seq[ExaminationRegulation] = Seq[ExaminationRegulation]()
@@ -78,9 +92,11 @@ class ExamregServiceSpec extends AsyncWordSpec
 
   "ExamregService" should {
     "Have a default examination regulation" in {
-      client.getExaminationRegulationsNames(None).invoke().map {
-        examRegNames =>
-          examRegNames should contain("Computer Science v3")
+      eventually(timeout(Span(15, Seconds))) {
+        client.getExaminationRegulationsNames(None).invoke().map {
+          examRegNames =>
+            examRegNames should contain("Computer Science v3")
+        }
       }
     }
   }

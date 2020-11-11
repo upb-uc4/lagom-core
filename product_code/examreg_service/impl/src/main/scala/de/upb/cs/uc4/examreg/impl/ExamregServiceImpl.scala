@@ -17,9 +17,7 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the ExamregService */
-class ExamregServiceImpl(clusterSharding: ClusterSharding, readSide: ReadSide,
-    processor: ExamregEventProcessor, database: ExamregDatabase)(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ExamregService {
-  readSide.register(processor)
+class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregDatabase)(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ExamregService {
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[ExamregCommand] =

@@ -34,6 +34,8 @@ abstract class ExamregApplication(context: LagomApplicationContext)
   lazy val database: ExamregDatabase = wire[ExamregDatabase]
   lazy val processor: ExamregEventProcessor = wire[ExamregEventProcessor]
 
+  readSide.register(processor)
+
   implicit val timeout: Timeout = Timeout(30.seconds)
 
   override def createActorFactory: ExamregHyperledgerBehaviour = wire[ExamregHyperledgerBehaviour]

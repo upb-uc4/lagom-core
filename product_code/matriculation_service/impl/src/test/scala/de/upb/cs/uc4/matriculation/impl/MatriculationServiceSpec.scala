@@ -41,6 +41,18 @@ class MatriculationServiceSpec extends AsyncWordSpec
         var jsonStringList: Seq[String] = List()
 
         override def createActorFactory: MatriculationBehaviour = new MatriculationBehaviour(config) {
+
+          override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
+          override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
+          override val tlsCert: Path = retrievePath("uc4.hyperledger.tlsCert", "")
+
+          override val channel: String = "myc"
+          override val chaincode: String = "mycc"
+          override val caURL: String = ""
+
+          override val adminUsername: String = "cli"
+          override val adminPassword: String = ""
+
           override protected def createConnection: ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
             override def getMatriculationData(matId: String): String = {
               val mat = jsonStringList.find(json => json.contains(matId))
