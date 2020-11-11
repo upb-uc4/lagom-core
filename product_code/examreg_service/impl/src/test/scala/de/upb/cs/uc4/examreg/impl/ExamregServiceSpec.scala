@@ -90,12 +90,30 @@ class ExamregServiceSpec extends AsyncWordSpec
 
   override protected def afterAll(): Unit = server.stop()
 
+  val defaultExamReg: ExaminationRegulation = server.application.defaultExamReg
+
   "ExamregService" should {
-    "Have a default examination regulation" in {
+    "Have a default examination regulation and get names of examination regulations" in {
       eventually(timeout(Span(15, Seconds))) {
         client.getExaminationRegulationsNames(None).invoke().map {
           examRegNames =>
-            examRegNames should contain("Computer Science v3")
+            examRegNames should contain(defaultExamReg.name)
+        }
+      }
+    }
+    "Fetch examination regulations" in {
+      eventually(timeout(Span(15, Seconds))) {
+        client.getExaminationRegulations(Some(defaultExamReg.name), None).invoke().map {
+          examRegs =>
+            examRegs should contain(defaultExamReg)
+        }
+      }
+    }
+    "Fetch modules of examination regulations" in {
+      eventually(timeout(Span(15, Seconds))) {
+        client.getModules(None, None).invoke().map {
+          modules =>
+            modules should contain theSameElementsAs defaultExamReg.modules
         }
       }
     }
