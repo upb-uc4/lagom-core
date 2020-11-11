@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.certificate.model
 
-import de.upb.cs.uc4.shared.client.configuration.RegexCollection
+import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
@@ -12,9 +12,10 @@ case class PostMessageCSR(certificateSigningRequest: String, encryptedPrivateKey
     var errors = List[SimpleError]()
 
     val csrRegex = RegexCollection.PostMessageCSR.csrRegex
+    val csrMessage = ErrorMessageCollection.PostMessageCSR.csrMessage
 
     if (!csrRegex.matches(certificateSigningRequest)) {
-      errors :+= SimpleError("certificateSigningRequest", "The certificateSigningRequest must be set.")
+      errors :+= SimpleError("certificateSigningRequest", csrMessage)
     }
 
     errors ++ result

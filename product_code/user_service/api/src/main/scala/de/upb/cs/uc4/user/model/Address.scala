@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model
 
-import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, RegexCollection }
+import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
@@ -28,11 +28,15 @@ case class Address(
     val houseNumberRegex = RegexCollection.Address.houseNumberRegex
     val nameRegex = RegexCollection.Address.nameRegex
 
+    val streetNameMessage = ErrorMessageCollection.Address.streetNameMessage
+    val cityNameMessage = ErrorMessageCollection.Address.cityNameMessage
+    val houseNumberMessage = ErrorMessageCollection.Address.houseNumberMessage
+
     val countryList = ConfigurationCollection.countries
 
     var errors = List[SimpleError]()
     if (!nameRegex.matches(street)) {
-      errors :+= SimpleError("street", "Street must only contain at letters and '-''.")
+      errors :+= SimpleError("street", streetNameMessage)
     }
     houseNumber match {
       case "" =>
@@ -40,7 +44,7 @@ case class Address(
       case _ if houseNumber.startsWith("0") =>
         errors :+= SimpleError("houseNumber", "House number must not have a leading zero.")
       case _ if !houseNumberRegex.matches(houseNumber) =>
-        errors :+= SimpleError("houseNumber", "House number must start with digits and may have trailing letters.")
+        errors :+= SimpleError("houseNumber", houseNumberMessage)
       case _ =>
     }
 
@@ -48,7 +52,7 @@ case class Address(
       errors :+= SimpleError("zipCode", "Zipcode must consist of exactly five digits.")
     }
     if (!nameRegex.matches(city)) {
-      errors :+= SimpleError("city", "City name contains illegal characters.")
+      errors :+= SimpleError("city", cityNameMessage)
     }
     if (!countryList.contains(country)) {
       errors :+= SimpleError("country", "Country must be one of " + countryList.reduce((a, b) => a + ", " + b) + ".")
