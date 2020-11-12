@@ -25,6 +25,7 @@ abstract class UserApplication(context: LagomApplicationContext)
   // Create ReadSide
   lazy val database: UserDatabase = wire[UserDatabase]
   lazy val processor: UserEventProcessor = wire[UserEventProcessor]
+  readSide.register(processor)
 
   // Bind  services
   lazy val authentication: AuthenticationService = serviceClient.implement[AuthenticationService]

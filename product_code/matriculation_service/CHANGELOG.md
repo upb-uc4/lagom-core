@@ -1,3 +1,15 @@
+# [v0.12.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.3...matriculation-v0.12.0) (2020-11-10)
+## Feature
+## Refactor
+ - Bumped Version of Lagom to 1.6.4
+## Bugfix
+
+# [v0.11.3](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.2...matriculation-v0.11.3) (2020-11-06)
+## Feature
+## Refactor
+## Bugfix
+ - Added all messages to serialization registry
+
 # [v0.11.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.1...matriculation-v0.11.2) (2020-11-05)
 ## Feature
  - Implemented new hyperledger API

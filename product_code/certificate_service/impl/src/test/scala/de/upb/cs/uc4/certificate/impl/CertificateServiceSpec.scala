@@ -1,32 +1,29 @@
 package de.upb.cs.uc4.certificate.impl
 
 import java.nio.file.Path
-import java.util.Calendar
 
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
+import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4Exception }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Usernames
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
-import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
-import org.scalatest.{ Assertion, BeforeAndAfterAll }
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
-/** Tests for the CertificateService
-  * All tests need to be started in the defined order
-  */
-class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
+/** Tests for the CertificateService */
+class CertificateServiceSpec extends AsyncWordSpec
+  with UC4SpecUtils with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
 
   private var creationStub: ProducerStub[EncryptionContainer] = _ //EncryptionContainer[Usernames]
   private var deletionStub: ProducerStub[EncryptionContainer] = _ //EncryptionContainer[Usernames]
@@ -67,32 +64,6 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
   override protected def afterAll(): Unit = server.stop()
 
-  def addAuthorizationHeader(username: String = "admin"): RequestHeader => RequestHeader = { header =>
-
-    var role = AuthenticationRole.Admin
-
-    if (username.contains("student")) {
-      role = AuthenticationRole.Student
-    }
-    else if (username.contains("lecturer")) {
-      role = AuthenticationRole.Lecturer
-    }
-
-    val time = Calendar.getInstance()
-    time.add(Calendar.DATE, 1)
-
-    val token =
-      Jwts.builder()
-        .setSubject("login")
-        .setExpiration(time.getTime)
-        .claim("username", username)
-        .claim("authenticationRole", role.toString)
-        .signWith(SignatureAlgorithm.HS256, "changeme")
-        .compact()
-
-    header.withHeader("Cookie", s"login=$token")
-  }
-
   "The CertificateService" should {
     "register a user and get enrollmentId" in {
       val username = "student00"
@@ -129,7 +100,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
     "return an error when fetching the enrollmentId of a non-existing user" in {
       val username = "student01"
       client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
-        answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+        answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
     }
 
@@ -152,7 +123,7 @@ class CertificateServiceSpec extends AsyncWordSpec with Matchers with BeforeAndA
 
       client.getCertificate(username).handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map {
-          answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
         }
     }
 

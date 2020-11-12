@@ -8,7 +8,7 @@ import de.upb.cs.uc4.course.impl.actor.CourseBehaviour
 import de.upb.cs.uc4.course.impl.commands.{ CreateCourse, DeleteCourse, GetCourse, UpdateCourse }
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType }
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -39,7 +39,7 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateCourse(course0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Option[Course]]()
       ref ! GetCourse(probe2.ref)
@@ -51,11 +51,11 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateCourse(course0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! CreateCourse(course3, probe2.ref)
-      probe2.expectMessageType[RejectedWithError]
+      probe2.expectMessageType[Rejected]
     }
 
     "update a non-existing course" in {
@@ -63,7 +63,7 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! UpdateCourse(course3, probe1.ref)
-      probe1.expectMessageType[RejectedWithError]
+      probe1.expectMessageType[Rejected]
     }
 
     "update an existing course" in {
@@ -71,11 +71,11 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateCourse(course0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! UpdateCourse(course3, probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[Course]]()
       ref ! GetCourse(probe3.ref)
@@ -95,11 +95,11 @@ class CourseStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateCourse(course0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! DeleteCourse(course0.courseId, probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[Course]]()
       ref ! GetCourse(probe3.ref)

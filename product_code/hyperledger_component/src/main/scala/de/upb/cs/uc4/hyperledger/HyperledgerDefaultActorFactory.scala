@@ -3,15 +3,14 @@ package de.upb.cs.uc4.hyperledger
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.pattern.StatusReply
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, Shutdown, SubmitProposal }
+import de.upb.cs.uc4.hyperledger.commands._
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
-import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exception }
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, RejectedWithError }
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.server.messages.Accepted
 import org.slf4j.{ Logger, LoggerFactory }
-
-import scala.util.Failure
 
 trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends HyperledgerAdminParts {
 
@@ -21,7 +20,7 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
   val companionObject: HyperledgerActorObject
 
   /** Creates an actor */
-  def create(): Behavior[HyperledgerCommand] = Behaviors.setup { _ =>
+  def create(): Behavior[HyperledgerBaseCommand] = Behaviors.setup { _ =>
     val enrolled = try {
       EnrollmentManager.enroll(caURL, tlsCert, walletPath, adminUsername, adminPassword, organisationId, channel, chaincode, networkDescriptionPath)
       true
@@ -33,10 +32,10 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
     }
     lazy val connection = createConnection
 
-    def start(): Behavior[HyperledgerCommand] =
+    def start(): Behavior[HyperledgerBaseCommand] =
       Behaviors.receive {
-        case (_, cmd) =>
-          cmd match {
+        case (_, internCommand) =>
+          internCommand match {
 
             case Shutdown() =>
               if (connection != null) {
@@ -44,34 +43,23 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
               }
               Behaviors.same
 
-            case cmd: HyperledgerCommand =>
+            case cmd: HyperledgerInternCommand[_] =>
               if (enrolled) {
                 try {
                   cmd match {
                     case SubmitProposal(proposal, signature, replyTo) =>
                       connection.submitSignedProposal(proposal, signature)
-                      replyTo ! Accepted
-                    case _ => applyCommand(connection, cmd)
+                      replyTo ! StatusReply.success(Accepted.default)
+                    case command: HyperledgerCommand[_] => applyCommand(connection, command)
                   }
                 }
                 catch {
                   case ex: Exception =>
-                    val uc4Exception = ex.toUC4Exception
-                    cmd match {
-                      case write: HyperledgerWriteCommand =>
-                        write.replyTo ! RejectedWithError(uc4Exception.errorCode.http, uc4Exception.possibleErrorResponse)
-                      case read: HyperledgerReadCommand[_] =>
-                        read.replyTo ! Failure(uc4Exception)
-                    }
+                    cmd.replyTo ! StatusReply.error(ex.toUC4Exception)
                 }
               }
               else {
-                cmd match {
-                  case write: HyperledgerWriteCommand =>
-                    write.replyTo ! RejectedWithError(500, GenericError(ErrorType.InternalServer, "No connection to the chain"))
-                  case read: HyperledgerReadCommand[_] =>
-                    read.replyTo ! Failure(UC4Exception.InternalServerError("Enrollment Error", "No connection to the chain"))
-                }
+                cmd.replyTo ! StatusReply.error(UC4Exception.InternalServerError("Enrollment Error", "No connection to the chain"))
               }
               Behaviors.same
           }
@@ -92,13 +80,13 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
     * @param connection the current active connection
     * @param command which should get executed
     */
-  protected def applyCommand(connection: Connection, command: HyperledgerCommand): Unit
+  protected def applyCommand(connection: Connection, command: HyperledgerCommand[_]): Unit
 }
 
 trait HyperledgerActorObject {
 
   /** The EntityTypeKey of this actor */
-  val typeKey: EntityTypeKey[HyperledgerCommand]
+  val typeKey: EntityTypeKey[HyperledgerBaseCommand]
 
   /** The reference to the entity */
   val entityId: String

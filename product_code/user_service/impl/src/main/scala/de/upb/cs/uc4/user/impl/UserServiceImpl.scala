@@ -10,7 +10,7 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport._
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
-import com.lightbend.lagom.scaladsl.persistence.{ EventStreamElement, PersistentEntityRegistry, ReadSide }
+import com.lightbend.lagom.scaladsl.persistence.{ EventStreamElement, PersistentEntityRegistry }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
@@ -21,17 +21,18 @@ import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{ OnUserCreate, OnUserDelete, UserEvent }
-import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
+import de.upb.cs.uc4.user.impl.readside.UserDatabase
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model._
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
 import de.upb.cs.uc4.user.model.user._
 import org.slf4j.{ Logger, LoggerFactory }
+import play.api.Environment
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -39,11 +40,10 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the UserService */
 class UserServiceImpl(
-    clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry,
-    readSide: ReadSide, processor: UserEventProcessor, database: UserDatabase,
-    authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService
+    clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry, database: UserDatabase,
+    authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService,
+    override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config) extends UserService {
-  readSide.register(processor)
 
   private final val log: Logger = LoggerFactory.getLogger(classOf[UserServiceImpl])
 
@@ -153,7 +153,7 @@ class UserServiceImpl(
 
         ref.ask[Confirmation](replyTo => CreateUser(postMessageUser.user, replyTo))
           .flatMap {
-            case Accepted => // Creation Successful
+            case Accepted(_) => // Creation Successful
               authentication.setAuthentication().invoke(postMessageUser.authUser)
                 .map { _ =>
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
@@ -173,7 +173,7 @@ class UserServiceImpl(
                           throw deletionException
                       }
                 }
-            case RejectedWithError(code, reason) =>
+            case Rejected(code, reason) =>
               throw UC4Exception(code, reason)
           }
       }
@@ -240,9 +240,9 @@ class UserServiceImpl(
 
                 ref.ask[Confirmation](replyTo => UpdateUser(user, replyTo))
                   .map {
-                    case Accepted => // Update successful
+                    case Accepted(_) => // Update successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case RejectedWithError(code, reason) => //Update failed
+                    case Rejected(code, reason) => //Update failed
                       throw UC4Exception(code, reason)
                   }
             }
@@ -257,9 +257,9 @@ class UserServiceImpl(
 
         ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
           .map {
-            case Accepted => // Update Successful
+            case Accepted(_) => // Update Successful
               (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-            case RejectedWithError(code, reason) =>
+            case Rejected(code, reason) =>
               throw UC4Exception(code, reason)
           }
     }
@@ -351,8 +351,8 @@ class UserServiceImpl(
     matriculationUpdate =>
       val ref = entityRef(matriculationUpdate.username)
       ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
-        case Accepted => Done
-        case RejectedWithError(error, reason) => throw UC4Exception(error, reason)
+        case Accepted(_)             => Done
+        case Rejected(error, reason) => throw UC4Exception(error, reason)
       }
   }
 

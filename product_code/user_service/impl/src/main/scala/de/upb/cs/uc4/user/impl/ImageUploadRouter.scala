@@ -38,7 +38,7 @@ class ImageUploadRouter(action: DefaultActionBuilder, parser: PlayBodyParsers, u
 
   private def handleException: PartialFunction[Throwable, Result] = {
     case uc4Exception: UC4Exception =>
-      new Results.Status(uc4Exception.errorCode.http)(uc4Exception.possibleErrorResponse)
+      new Results.Status(uc4Exception.errorCode)(uc4Exception.possibleErrorResponse)
     case _: Exception =>
       Results.InternalServerError(GenericError(ErrorType.InternalServer))
   }

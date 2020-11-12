@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
-import de.upb.cs.uc4.shared.client.configuration.RegexCollection
+import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
@@ -36,7 +36,8 @@ case class Lecturer(
   override def trim: Lecturer =
     super.trim.asInstanceOf[Lecturer].copy(freeText = freeText.trim, researchArea = researchArea.trim)
 
-  override def toPublic: Lecturer = super.toPublic.asInstanceOf[Lecturer]
+  override def toPublic: Lecturer =
+    Lecturer(this.username, this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "", this.freeText, this.researchArea)
 
   override def clean: Lecturer = super.clean.asInstanceOf[Lecturer]
 
@@ -45,13 +46,16 @@ case class Lecturer(
     val freeTextRegex = RegexCollection.Commons.longTextRegex
     val researchAreaRegex = RegexCollection.Lecturer.researchAreaRegex
 
+    val freeTextMessage = ErrorMessageCollection.Commons.longTextMessage
+    val researchAreaMessage = ErrorMessageCollection.Lecturer.researchAreaMessage
+
     super.validate.map { superErrors =>
       var errors = superErrors.toList
       if (!freeTextRegex.matches(freeText)) {
-        errors :+= SimpleError("freeText", "Free text must contain 0 to 10000 characters.")
+        errors :+= SimpleError("freeText", freeTextMessage)
       }
       if (!researchAreaRegex.matches(researchArea)) {
-        errors :+= SimpleError("researchArea", "Research area must contain 0 to 200 characters.")
+        errors :+= SimpleError("researchArea", researchAreaMessage)
       }
       errors
     }

@@ -7,7 +7,7 @@ import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationBehaviour, AuthenticationEntry }
 import de.upb.cs.uc4.authentication.impl.commands.{ DeleteAuthentication, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -36,7 +36,7 @@ class AuthenticationStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! SetAuthentication(authenticationUser1, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Option[AuthenticationEntry]]()
       ref ! GetAuthentication(probe2.ref)
@@ -48,7 +48,7 @@ class AuthenticationStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! DeleteAuthentication(probe1.ref)
-      probe1.expectMessageType[Rejected]
+      probe1.expectMessageType[Accepted]
     }
 
     "delete an existing user" in {
@@ -56,11 +56,11 @@ class AuthenticationStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! SetAuthentication(authenticationUser2, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! DeleteAuthentication(probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[AuthenticationEntry]]()
       ref ! GetAuthentication(probe3.ref)

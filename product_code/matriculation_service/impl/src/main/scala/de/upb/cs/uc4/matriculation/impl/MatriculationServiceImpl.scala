@@ -10,30 +10,33 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerCommand, SubmitProposal }
+import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitProposal }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands.{ GetMatriculationData, GetProposalForAddEntriesToMatriculationData, GetProposalForAddMatriculationData }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.{ SignedTransactionProposal, TransactionProposal }
-import de.upb.cs.uc4.shared.client.Utils
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.Student
+import play.api.Environment
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
-import scala.util.{ Failure, Success, Try }
 
 /** Implementation of the MatriculationService */
-class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: UserService, certificateService: CertificateService)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
+class MatriculationServiceImpl(
+    clusterSharding: ClusterSharding,
+    userService: UserService,
+    certificateService: CertificateService,
+    override val environment: Environment
+)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
   extends MatriculationService {
 
   /** Looks up the entity for the given ID */
-  private def entityRef: EntityRef[HyperledgerCommand] =
+  private def entityRef: EntityRef[HyperledgerBaseCommand] =
     clusterSharding.entityRefFor(MatriculationBehaviour.typeKey, MatriculationBehaviour.entityId)
 
   implicit val timeout: Timeout = Timeout(30.seconds)
@@ -48,12 +51,12 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
           throw UC4Exception.OwnerMismatch
         }
 
-        entityRef.ask[Confirmation](replyTo => SubmitProposal(message, replyTo)).map {
-          case Accepted =>
+        entityRef.askWithStatus[Confirmation](replyTo => SubmitProposal(message, replyTo)).map {
+          case Accepted(_) =>
             (ResponseHeader(202, MessageProtocol.empty, List()), Done)
-          case RejectedWithError(statusCode, reason) =>
+          case Rejected(statusCode, reason) =>
             throw UC4Exception(statusCode, reason)
-        }
+        }.recover(handleException("Submit proposal failed"))
       }
     }
 
@@ -84,39 +87,31 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
           .flatMap { jsonEnrollmentId =>
             val enrollmentId = jsonEnrollmentId.id
 
-            entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(enrollmentId, replyTo))
+            entityRef.askWithStatus[ImmatriculationData](replyTo => GetMatriculationData(enrollmentId, replyTo))
               .flatMap {
-                case Success(_) =>
-                  entityRef.ask[Try[Array[Byte]]](replyTo => GetProposalForAddEntriesToMatriculationData(
+                _ =>
+                  entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddEntriesToMatriculationData(
                     enrollmentId,
                     message.matriculation,
                     replyTo
                   )).map {
-                    case Success(array) =>
-                      (ResponseHeader(200, MessageProtocol.empty, List()), TransactionProposal(array))
+                    array => (ResponseHeader(200, MessageProtocol.empty, List()), TransactionProposal(array))
+                  }.recover(handleException("Creation of add entry proposal failed"))
 
-                    case Failure(error) => throw error
-                  }
+              }.recoverWith {
+                case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
+                  val data = ImmatriculationData(
+                    enrollmentId,
+                    message.matriculation
+                  )
+                  entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddMatriculationData(data, replyTo)).map {
+                    array => (ResponseHeader(200, MessageProtocol.empty, List()), TransactionProposal(array))
+                  }.recover(handleException("Creation of add matriculation data proposal failed"))
 
-                case Failure(exception) =>
-                  exception match {
-                    case uc4Exception: UC4Exception if uc4Exception.errorCode.http == 404 =>
-                      val data = ImmatriculationData(
-                        enrollmentId,
-                        message.matriculation
-                      )
-                      entityRef.ask[Try[Array[Byte]]](replyTo => GetProposalForAddMatriculationData(data, replyTo)).map {
-                        case Success(array) =>
-                          (ResponseHeader(200, MessageProtocol.empty, List()), TransactionProposal(array))
+                case uc4Exception: UC4Exception => throw uc4Exception
 
-                        case Failure(error) => throw error
-                      }
-
-                    case uc4Exception: UC4Exception => throw uc4Exception
-
-                    case ex: Throwable =>
-                      throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
-                  }
+                case ex: Throwable =>
+                  throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
               }
           }
       }
@@ -138,10 +133,9 @@ class MatriculationServiceImpl(clusterSharding: ClusterSharding, userService: Us
             certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
               .flatMap { jsonEnrollmentId =>
                 val enrollmentId = jsonEnrollmentId.id
-                entityRef.ask[Try[ImmatriculationData]](replyTo => GetMatriculationData(enrollmentId, replyTo)).map {
-                  case Success(data)      => createETagHeader(header, data)
-                  case Failure(exception) => throw exception
-                }
+                entityRef.askWithStatus[ImmatriculationData](replyTo => GetMatriculationData(enrollmentId, replyTo)).map {
+                  data => createETagHeader(header, data)
+                }.recover(handleException("get matriculation data failed"))
               }
           }
         }
