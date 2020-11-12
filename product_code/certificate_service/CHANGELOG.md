@@ -1,3 +1,9 @@
+# [WIP - v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.12.0...certificate-v0.12.1) (2020-XX-XX)
+## Feature
+ - Added configurable timeouts in application config
+## Refactor
+## Bugfix
+
 # [v0.12.0](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.11.2...certificate-v0.12.0) (2020-11-10)
 ## Feature
 ## Refactor
