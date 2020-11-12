@@ -1,7 +1,9 @@
 package de.upb.cs.uc4.user.model.post
 
 import de.upb.cs.uc4.authentication.model.AuthenticationUser
-import de.upb.cs.uc4.shared.client.exceptions.{ SimpleError, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.SimpleError
+import de.upb.cs.uc4.user.model.Role
+import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.user.User
 import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
@@ -37,11 +39,10 @@ trait PostMessageUser {
 object PostMessageUser {
   implicit val format: Format[PostMessageUser] = new Format[PostMessageUser] {
     override def reads(json: JsValue): JsResult[PostMessageUser] = {
-      json match {
-        case json if (json \ "student").isDefined => Json.fromJson[PostMessageStudent](json)
-        case json if (json \ "lecturer").isDefined => Json.fromJson[PostMessageLecturer](json)
-        case json if (json \ "admin").isDefined => Json.fromJson[PostMessageAdmin](json)
-        case _ => throw UC4Exception.DeserializationError
+      json("user")("role").as[Role] match {
+        case Role.Student  => Json.fromJson[PostMessageStudent](json)
+        case Role.Lecturer => Json.fromJson[PostMessageLecturer](json)
+        case Role.Admin    => Json.fromJson[PostMessageAdmin](json)
       }
     }
 
