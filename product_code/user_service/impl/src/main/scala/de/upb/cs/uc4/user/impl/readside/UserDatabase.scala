@@ -16,13 +16,11 @@ import slick.lifted.ProvenShape
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
-class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext) {
+class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext, timeout: Timeout) {
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[UserCommand] =
     clusterSharding.entityRefFor(UserState.typeKey, id)
-
-  implicit val timeout: Timeout = Timeout(5.seconds)
 
   /** Table definition of a user table */
   abstract class UserTable(tag: Tag, name: String) extends Table[String](tag, s"uc4${name}Table") {
