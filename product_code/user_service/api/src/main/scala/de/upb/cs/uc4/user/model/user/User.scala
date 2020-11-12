@@ -65,6 +65,13 @@ trait User {
         )
       }
 
+      if (!isActive) {
+        errors :+= SimpleError(
+          "isActive",
+          "The isActive flag in the User must be set to true."
+        )
+      }
+
       if (!Role.All.contains(role)) {
         errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
       }
