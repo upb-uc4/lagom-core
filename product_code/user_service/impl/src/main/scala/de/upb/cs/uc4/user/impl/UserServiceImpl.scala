@@ -28,8 +28,7 @@ import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{ OnUserCreate, OnUserDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.UserDatabase
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model._
-import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent, PostMessageUser }
+import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import de.upb.cs.uc4.user.model.user._
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
@@ -100,23 +99,16 @@ class UserServiceImpl(
     ServerServiceCall { (_, postMessageUserRaw) =>
       val postMessageUser = postMessageUserRaw.clean
 
-      val userVariableName = postMessageUser match {
-        case _: PostMessageStudent  => "student"
-        case _: PostMessageLecturer => "lecturer"
-        case _: PostMessageAdmin    => "admin"
-      }
-
-      val validationErrorsFuture = postMessageUser match {
-        case postMessageStudent: PostMessageStudent =>
+      val validationErrorsFuture = postMessageUser.user match {
+        case student: Student =>
           //For students we may encounter duplicate matriculationIDs
-          postMessageStudent.validate.flatMap { studentValidationErrorsImmutable =>
+          postMessageUser.validate.flatMap { studentValidationErrorsImmutable =>
 
             var studentValidationErrors = studentValidationErrorsImmutable
-            val student = postMessageStudent.user
             getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
               matDuplicate =>
                 if (matDuplicate) {
-                  studentValidationErrors :+= SimpleError("student.matriculationId", "MatriculationID already in use.")
+                  studentValidationErrors :+= SimpleError("user.matriculationId", "MatriculationID already in use.")
                 }
                 studentValidationErrors
             }
@@ -136,7 +128,7 @@ class UserServiceImpl(
       }
 
       // Check, if username errors exist, since entityRef might fail if username is incorrect
-      if (validationErrors.map(_.name).contains(userVariableName + ".username")) {
+      if (validationErrors.map(_.name).contains("user.username")) {
         throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
       }
 
@@ -144,7 +136,7 @@ class UserServiceImpl(
       ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap { optUser =>
         // If username is already in use, add that error to the validation list
         if (optUser.isDefined) {
-          validationErrors :+= SimpleError(userVariableName + ".username", "Username already in use.")
+          validationErrors :+= SimpleError("user.username", "Username already in use.")
         }
 
         if (validationErrors.nonEmpty) {

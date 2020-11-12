@@ -20,9 +20,8 @@ import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, Role, Usernames }
+import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, PostMessageUser, Role, Usernames }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
@@ -63,9 +62,9 @@ class UserServiceSpec extends AsyncWordSpec
     Future.sequence(users.map { user =>
       val newUsername = user.username
       val postMessage = user match {
-        case s: Student  => PostMessageStudent(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), s.copy(username = newUsername))
-        case l: Lecturer => PostMessageLecturer(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Lecturer), l.copy(username = newUsername))
-        case a: Admin    => PostMessageAdmin(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), a.copy(username = newUsername))
+        case s: Student  => PostMessageUser(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), s.copy(username = newUsername))
+        case l: Lecturer => PostMessageUser(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Lecturer), l.copy(username = newUsername))
+        case a: Admin    => PostMessageUser(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), a.copy(username = newUsername))
       }
       client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
     }).flatMap { createdUsers =>
@@ -173,7 +172,7 @@ class UserServiceSpec extends AsyncWordSpec
     "test topics, which" must {
       "publish a created user" in {
         val creationSource: Source[EncryptionContainer, _] = client.userCreationTopic().subscribe.atMostOnceSource
-        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(student0Auth, student0))
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student0Auth, student0))
 
         val source = creationSource
           .runWith(TestSink.probe[EncryptionContainer]).request(4)
@@ -221,7 +220,7 @@ class UserServiceSpec extends AsyncWordSpec
 
     //ADD TESTS
     "add a student" in {
-      client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(student0Auth, student0))
+      client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student0Auth, student0))
       eventually(timeout(Span(15, Seconds))) {
         client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
           answer should contain(student0)
@@ -232,7 +231,7 @@ class UserServiceSpec extends AsyncWordSpec
 
     "fail on adding a user with different username in authUser" in {
       client.addUser().handleRequestHeader(addAuthorizationHeader())
-        .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
+        .invoke(PostMessageUser(admin0Auth.copy(username = admin0.username + "changed"), admin0))
         .failed.map {
           answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
         }.flatMap(cleanupOnSuccess)
@@ -242,9 +241,9 @@ class UserServiceSpec extends AsyncWordSpec
     "fail on adding an already existing User" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
-          .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
+          .invoke(PostMessageUser(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
             answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
-              .invalidParams should contain(SimpleError("admin.username", "Username already in use."))
+              .invalidParams should contain(SimpleError("user.username", "Username already in use."))
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -253,9 +252,9 @@ class UserServiceSpec extends AsyncWordSpec
     "fail on adding a User with an empty username" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
-          .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
+          .invoke(PostMessageUser(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
             answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
-              .invalidParams.map(_.name) should contain("admin.username")
+              .invalidParams.map(_.name) should contain("user.username")
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -264,9 +263,9 @@ class UserServiceSpec extends AsyncWordSpec
     "fail on adding a Student with a duplicate matriculationId" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
-          .invoke(PostMessageStudent(student0Auth.copy(username = "student7"), student0.copy(username = "student7"))).failed.flatMap { answer =>
+          .invoke(PostMessageUser(student0Auth.copy(username = "student7"), student0.copy(username = "student7"))).failed.flatMap { answer =>
             answer.asInstanceOf[UC4Exception].possibleErrorResponse
-              .asInstanceOf[DetailedError].invalidParams.map(_.name) should contain theSameElementsAs Seq("student.matriculationId")
+              .asInstanceOf[DetailedError].invalidParams.map(_.name) should contain theSameElementsAs Seq("user.matriculationId")
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())

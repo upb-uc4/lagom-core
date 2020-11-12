@@ -8,8 +8,7 @@ import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model._
-import de.upb.cs.uc4.user.model.post.PostMessageUser
+import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 
 import scala.concurrent.Future

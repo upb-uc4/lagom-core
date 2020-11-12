@@ -108,6 +108,8 @@ trait User {
     }
   }
 
+  def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = this.validate
+
   /** Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
     * Returns a list of SimpleErrors[[SimpleError]]
     *
