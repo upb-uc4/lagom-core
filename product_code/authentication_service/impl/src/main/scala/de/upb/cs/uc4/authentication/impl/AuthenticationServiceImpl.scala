@@ -29,14 +29,12 @@ class AuthenticationServiceImpl(
     clusterSharding: ClusterSharding,
     config: Config,
     override val environment: Environment
-)(implicit ec: ExecutionContext) extends AuthenticationService {
+)(implicit ec: ExecutionContext, timeout: Timeout) extends AuthenticationService {
 
   private def entityRef(id: String): EntityRef[AuthenticationCommand] =
     clusterSharding.entityRefFor(AuthenticationState.typeKey, id)
 
-  implicit val timeout: Timeout = Timeout(5.seconds)
-
-  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 

@@ -37,7 +37,7 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
 
   private final val log: Logger = LoggerFactory.getLogger("Shared")
 
-  private implicit val timeout: Timeout = Timeout(5.seconds)
+  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.database").milliseconds)
 
   // Create ReadSide
   lazy val database: AuthenticationDatabase = wire[AuthenticationDatabase]

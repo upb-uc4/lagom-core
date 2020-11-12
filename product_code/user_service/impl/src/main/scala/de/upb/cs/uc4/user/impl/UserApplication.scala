@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.user.impl
 
 import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
@@ -15,6 +16,8 @@ import de.upb.cs.uc4.user.impl.actor.{ UserBehaviour, UserState }
 import de.upb.cs.uc4.user.impl.readside.{ UserDatabase, UserEventProcessor }
 import play.api.db.HikariCPComponents
 
+import scala.concurrent.duration._
+
 abstract class UserApplication(context: LagomApplicationContext)
   extends UC4Application(context)
   with SlickPersistenceComponents
@@ -22,6 +25,7 @@ abstract class UserApplication(context: LagomApplicationContext)
   with HikariCPComponents
   with KafkaEncryptionComponent {
 
+  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.database").milliseconds)
   // Create ReadSide
   lazy val database: UserDatabase = wire[UserDatabase]
   lazy val processor: UserEventProcessor = wire[UserEventProcessor]

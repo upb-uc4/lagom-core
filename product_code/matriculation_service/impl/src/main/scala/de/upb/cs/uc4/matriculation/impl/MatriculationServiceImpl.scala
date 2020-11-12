@@ -39,9 +39,9 @@ class MatriculationServiceImpl(
   private def entityRef: EntityRef[HyperledgerBaseCommand] =
     clusterSharding.entityRefFor(MatriculationBehaviour.typeKey, MatriculationBehaviour.entityId)
 
-  implicit val timeout: Timeout = Timeout(30.seconds)
+  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
-  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   /** Submits a proposal to matriculate a student */
   override def submitMatriculationProposal(username: String): ServiceCall[SignedTransactionProposal, Done] =

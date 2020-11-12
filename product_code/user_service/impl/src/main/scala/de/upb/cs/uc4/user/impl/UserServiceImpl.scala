@@ -43,7 +43,7 @@ class UserServiceImpl(
     clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry, database: UserDatabase,
     authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService,
     override val environment: Environment
-)(implicit ec: ExecutionContext, config: Config) extends UserService {
+)(implicit ec: ExecutionContext, timeout: Timeout, config: Config) extends UserService {
 
   private final val log: Logger = LoggerFactory.getLogger(classOf[UserServiceImpl])
 
@@ -59,9 +59,7 @@ class UserServiceImpl(
   private def entityRef(id: String): EntityRef[UserCommand] =
     clusterSharding.entityRefFor(UserState.typeKey, id)
 
-  implicit val timeout: Timeout = Timeout(5.seconds)
-
-  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   /** Get the specified user */
   override def getUser(username: String): ServerServiceCall[NotUsed, User] =
