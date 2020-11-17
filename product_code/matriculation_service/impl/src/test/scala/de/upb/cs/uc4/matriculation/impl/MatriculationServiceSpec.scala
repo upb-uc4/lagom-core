@@ -54,6 +54,72 @@ class MatriculationServiceSpec extends AsyncWordSpec
           override val adminPassword: String = ""
 
           override protected def createConnection: ConnectionMatriculationTrait = new ConnectionMatriculationTrait() {
+
+            override def addMatriculationData(jsonMatriculationData: String): String = {
+              val matriculationData = Json.parse(jsonMatriculationData).as[ImmatriculationData]
+              if (matriculationData.matriculationStatus.isEmpty) {
+                throw new TransactionExceptionTrait() {
+                  override val transactionName: String = "addEntriesToMatriculationData"
+                  override val payload: String =
+                    """{
+                      |  "type": "HLUnprocessableEntity",
+                      |  "title": "The following parameters do not conform to the specified format.",
+                      |  "invalidParams":[
+                      |     {
+                      |       "name":"matriculations",
+                      |       "reason":"Matriculation status must not be empty"
+                      |     }
+                      |  ]
+                      |}""".stripMargin
+                }
+              }
+              jsonStringList :+= jsonMatriculationData
+              ""
+            }
+
+            override def addEntriesToMatriculationData(enrollmentId: String, subjectMatriculationList: String): String = {
+              var data = Json.parse(jsonStringList.find(json => json.contains(enrollmentId)).get).as[ImmatriculationData]
+              val matriculationList = Json.parse(subjectMatriculationList).as[Seq[SubjectMatriculation]]
+
+              if (matriculationList.isEmpty) {
+                throw new TransactionExceptionTrait() {
+                  override val transactionName: String = "addEntriesToMatriculationData"
+                  override val payload: String =
+                    """{
+                      |  "type": "HLUnprocessableEntity",
+                      |  "title": "The following parameters do not conform to the specified format.",
+                      |  "invalidParams":[
+                      |     {
+                      |       "name":"matriculations",
+                      |       "reason":"Matriculation status must not be empty"
+                      |     }
+                      |  ]
+                      |}""".stripMargin
+                }
+              }
+
+              for (subjectMatriculation: SubjectMatriculation <- matriculationList) {
+                val optSubject = data.matriculationStatus.find(_.fieldOfStudy == subjectMatriculation.fieldOfStudy)
+
+                if (optSubject.isDefined) {
+                  data = data.copy(matriculationStatus = data.matriculationStatus.map { subject =>
+                    if (subject != optSubject.get) {
+                      subject
+                    }
+                    else {
+                      subject.copy(semesters = (subject.semesters :++ subjectMatriculation.semesters).distinct)
+                    }
+                  })
+                }
+                else {
+                  data = data.copy(matriculationStatus = data.matriculationStatus :+ SubjectMatriculation(subjectMatriculation.fieldOfStudy, subjectMatriculation.semesters))
+                }
+              }
+
+              jsonStringList = jsonStringList.filter(json => !json.contains(enrollmentId)) :+ Json.stringify(Json.toJson(data))
+              ""
+            }
+
             override def getMatriculationData(matId: String): String = {
               val mat = jsonStringList.find(json => json.contains(matId))
               if (mat.isDefined) {
@@ -144,8 +210,6 @@ class MatriculationServiceSpec extends AsyncWordSpec
               }
             }
 
-            override def addMatriculationData(jsonMatriculationData: String): String = ""
-            override def addEntriesToMatriculationData(enrollmentId: String, subjectMatriculationList: String): String = ""
             override def updateMatriculationData(jSonMatriculationData: String): String = ""
             override def getProposalUpdateMatriculationData(jSonMatriculationData: String): Array[Byte] = Array.emptyByteArray
             override def getProposalGetMatriculationData(enrollmentId: String): Array[Byte] = Array.emptyByteArray
@@ -257,5 +321,98 @@ class MatriculationServiceSpec extends AsyncWordSpec
           }
       }
     }
+
+    //DEPRECATED
+    "use deprecated method that" must {
+      "add matriculation data for a student" in {
+        certificate.setup(student0.username)
+        certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+          prepare(Seq(
+            ImmatriculationData(
+              jsonId.id,
+              Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
+            )
+          ))
+          client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
+            .invoke(PutMessageMatriculation(Seq(SubjectMatriculation("Computer Science", Seq("SS2020"))))).flatMap { _ =>
+              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+                answer =>
+                  answer.enrollmentId should ===(jsonId.id)
+                  answer.matriculationStatus should contain theSameElementsAs
+                    Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
+              }
+            }.andThen {
+              case _ => cleanup()
+            }
+
+        }
+      }
+
+      "not add empty matriculation data for a student" in {
+        certificate.setup(student0.username)
+        certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+          prepare(Seq(
+            ImmatriculationData(
+              jsonId.id,
+              Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
+            )
+          ))
+          client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
+            .invoke(PutMessageMatriculation(Seq())).failed.map { answer =>
+              answer.asInstanceOf[UC4Exception].errorCode should ===(422)
+            }.andThen {
+              case _ => cleanup()
+            }
+        }
+      }
+
+      "extend matriculation data of an already existing field of study" in {
+        certificate.setup(student0.username)
+        certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+          prepare(Seq(
+            ImmatriculationData(
+              jsonId.id,
+              Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
+            )
+          ))
+          client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
+            .invoke(createSingleMatriculation("Computer Science", "WS2020/21")).flatMap { _ =>
+              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+                answer =>
+                  answer.matriculationStatus should contain theSameElementsAs
+                    Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
+              }
+            }.andThen {
+              case _ => cleanup()
+            }
+        }
+      }
+
+      "extend matriculation data of a non-existing field of study" in {
+        certificate.setup(student0.username)
+        certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+          prepare(Seq(
+            ImmatriculationData(
+              jsonId.id,
+              Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
+            )
+          ))
+          client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
+            .invoke(createSingleMatriculation("Mathematics", "WS2021/22")).flatMap { _ =>
+              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+                answer =>
+                  answer.matriculationStatus should contain theSameElementsAs
+                    Seq(
+                      SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")),
+                      SubjectMatriculation("Mathematics", Seq("WS2021/22"))
+                    )
+              }
+            }.andThen {
+              case _ => cleanup()
+            }
+        }
+      }
+    }
+
   }
 }
