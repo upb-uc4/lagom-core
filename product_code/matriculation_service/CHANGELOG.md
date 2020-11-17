@@ -1,4 +1,4 @@
-# [WIP - v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.0...matriculation-v0.12.1) (2020-XX-XX)
+# [v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.0...matriculation-v0.12.1) (2020-11-17)
 ## Feature
  - Added configurable timeouts in application config
  - Added old endpoints for backwards compatibility
