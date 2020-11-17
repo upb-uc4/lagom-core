@@ -36,7 +36,7 @@ abstract class ExamregApplication(context: LagomApplicationContext)
 
   readSide.register(processor)
 
-  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.validation").seconds)
+  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").seconds)
 
   override def createActorFactory: ExamregHyperledgerBehaviour = wire[ExamregHyperledgerBehaviour]
 
