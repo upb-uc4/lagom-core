@@ -37,9 +37,9 @@ class CourseServiceImpl(
   private def entityRef(id: String): EntityRef[CourseCommand] =
     clusterSharding.entityRefFor(CourseState.typeKey, id)
 
-  implicit val timeout: Timeout = Timeout(15.seconds)
+  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.database").milliseconds)
 
-  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   /** @inheritdoc */
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = authenticated[NotUsed, Seq[Course]](AuthenticationRole.All: _*) {

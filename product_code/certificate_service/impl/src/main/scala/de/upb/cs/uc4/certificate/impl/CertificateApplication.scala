@@ -66,7 +66,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     case e: Throwable => throw e.toUC4Exception
   }
 
-  implicit val timeout: Timeout = Timeout(15.seconds)
+  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.database").milliseconds)
 
   lazy val userService: UserService = serviceClient.implement[UserService]
 

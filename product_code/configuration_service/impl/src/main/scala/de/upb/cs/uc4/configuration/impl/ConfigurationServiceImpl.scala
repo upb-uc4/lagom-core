@@ -21,7 +21,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 class ConfigurationServiceImpl(override val environment: Environment)(implicit ec: ExecutionContext, config: Config)
   extends ConfigurationService {
 
-  implicit val timeout: Timeout = Timeout(15.seconds)
+  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
   /** Get hyperledger versions */
   override def getHyperledgerVersions: ServiceCall[NotUsed, HyperledgerVersions] = ServiceCall { _ =>

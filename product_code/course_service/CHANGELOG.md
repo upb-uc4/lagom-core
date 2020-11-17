@@ -1,9 +1,9 @@
-# [v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.11.0...course-v0.11.1) (2020-11-06)
+# [WIP - v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.12.0...course-v0.12.1) (2020-XX-XX)
 ## Feature
+ - Added configurable timeouts in application config
  - Added "moduleIds" to Course object
  - Added query parameter for module Ids
  - Added dependency; CourseService dependant on ExamReg
-
 ## Refactor
 ## Bugfix
 
