@@ -1,3 +1,10 @@
+# [v0.12.2](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.12.1...course-v0.12.2) (2020-11-17)
+## Feature
+## Refactor
+## Bugfix
+ - Fixed query parameter in getAllCourses
+ - Fixed addCourse fetching all modules instead of only relevant ones
+ 
 # [v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.12.0...course-v0.12.1) (2020-11-17)
 ## Feature
  - Added configurable timeouts in application config

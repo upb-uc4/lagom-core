@@ -1,3 +1,11 @@
+# [v0.12.2](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.12.1...examreg-v0.12.2) (2020-11-17)
+## Feature
+## Refactor
+## Bugfix
+ - Fixed query parameters for endpoints
+    - /examreg/examination-regulations
+    - /examreg/examination-regulations/modules
+
 # [v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.12.1...examreg-v0.12.1) (2020-11-17)
 ## Feature
  - Created Examination Regulation Service with endpoints for
