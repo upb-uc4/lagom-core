@@ -17,15 +17,15 @@ class UserSpec extends AsyncWordSpecLike with Matchers {
   "A User" should {
 
     "discard private fields for admins" in {
-      adminValid.toPublic should ===(adminValid.copy(address = Address.empty, birthDate = ""))
+      adminValid.toPublic should ===(adminValid.copy(address = Address.empty, birthDate = "", enrollmentIdSecret = ""))
     }
 
     "discard private fields for lecturers" in {
-      lecturerValid.toPublic should ===(lecturerValid.copy(address = Address.empty, birthDate = ""))
+      lecturerValid.toPublic should ===(lecturerValid.copy(address = Address.empty, birthDate = "", enrollmentIdSecret = ""))
     }
 
     "discard private fields for students" in {
-      studentValid.toPublic should ===(studentValid.copy(address = Address.empty, birthDate = "", latestImmatriculation = "", matriculationId = ""))
+      studentValid.toPublic should ===(studentValid.copy(address = Address.empty, birthDate = "", latestImmatriculation = "", matriculationId = "", enrollmentIdSecret = ""))
     }
 
     "be validated" in {
