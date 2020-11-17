@@ -32,11 +32,14 @@ case class SubjectMatriculation(fieldOfStudy: String, semesters: Seq[String]) {
         "Field of study must be one of " + fos.reduce((a, b) => a + ", " + b) + "."
       )
     }
-
-    semesters.foreach {
-      semester =>
-        //Change string from "semester" to "semesters[index]"
-        errors :++= semester.validateSemester.map(simpleError => simpleError.copy(name = s"${simpleError.name}s[${semesters.indexOf(semester)}]"))
+    if (semesters.isEmpty){
+      errors :+= SimpleError("semesters","Semesters must not be empty.")
+    }else {
+      semesters.foreach {
+        semester =>
+          //Change string from "semester" to "semesters[index]"
+          errors :++= semester.validateSemester.map(simpleError => simpleError.copy(name = s"${simpleError.name}s[${semesters.indexOf(semester)}]"))
+      }
     }
 
     errors
