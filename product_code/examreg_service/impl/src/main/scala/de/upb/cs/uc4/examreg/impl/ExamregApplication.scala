@@ -53,23 +53,49 @@ abstract class ExamregApplication(context: LagomApplicationContext)
       entityContext => ExamregDatabaseBehaviour.create(entityContext)
     )
   )
-  val defaultExamReg: ExaminationRegulation = ExaminationRegulation(
-    "Computer Science v3",
-    active = true,
-    Seq(Module("M.1275.01158", "Math 1"))
+  val defaultExamRegs: Seq[ExaminationRegulation] = Seq(
+    ExaminationRegulation(
+      "Bachelor Computer Science v3",
+      active = true,
+      Seq(
+        Module("M.1275.01158", "Math 1"),
+        Module("M.1275.01159", "Math 2"),
+        Module("M.1275.78235", "Complexity Theory")
+      )
+    ),
+    ExaminationRegulation(
+      "Bachelor Computer Science v4",
+      active = true,
+      Seq(
+        Module("M.1278.15686", "Math"),
+        Module("M.1275.78235", "Complexity Theory"),
+        Module("M.1278.79512", "IT-Security")
+      )
+    ),
+    ExaminationRegulation(
+      "Bachelor Philosophy v1",
+      active = true,
+      Seq(
+        Module("M.1358.15686", "Introduction to Philosophy"),
+        Module("M.1358.15653", "Theoretical Philosophy"),
+        Module("M.1358.15418", "Applied Ethics")
+      )
+    )
   )
-  clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, ExamregHyperledgerBehaviour.entityId)
-    .askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(defaultExamReg, replyTo)).map {
-      case Accepted(_) => clusterSharding.entityRefFor(ExamregState.typeKey, defaultExamReg.name)
-        .ask[Confirmation](replyTo => CreateExamregDatabase(defaultExamReg, replyTo)).map {
-          case Accepted(_)                  => log.info("Default exam reg created successfully")
-          case Rejected(statusCode, reason) => log.error("Failed database operation of creating default exam reg", UC4Exception(statusCode, reason))
-        }
-      case Rejected(statusCode, reason) => log.error("Failed hyperledger operation of creating default exam reg", UC4Exception(statusCode, reason))
-    }.recover {
-      case ue: UC4Exception => log.error("Failed operation of creating default exam reg", ue)
-      case t: Throwable     => log.error("Error in Exam application", t)
-    }
+  defaultExamRegs.foreach { defaultExamReg =>
+    clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, ExamregHyperledgerBehaviour.entityId)
+      .askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(defaultExamReg, replyTo)).map {
+        case Accepted(_) => clusterSharding.entityRefFor(ExamregState.typeKey, defaultExamReg.name)
+          .ask[Confirmation](replyTo => CreateExamregDatabase(defaultExamReg, replyTo)).map {
+            case Accepted(_)                  => log.info(s"Default examreg ${defaultExamReg.name} created successfully")
+            case Rejected(statusCode, reason) => log.error(s"Failed database operation of creating default examreg ${defaultExamReg.name}", UC4Exception(statusCode, reason))
+          }
+        case Rejected(statusCode, reason) => log.error(s"Failed hyperledger operation of creating default examreg ${defaultExamReg.name}", UC4Exception(statusCode, reason))
+      }.recover {
+        case ue: UC4Exception => log.error(s"Failed operation of creating default examreg ${defaultExamReg.name}", ue)
+        case t: Throwable     => log.error("Error in Exam application", t)
+      }
+  }
 }
 
 object ExamregApplication {

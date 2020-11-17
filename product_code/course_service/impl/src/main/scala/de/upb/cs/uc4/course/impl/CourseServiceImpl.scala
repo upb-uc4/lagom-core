@@ -65,7 +65,7 @@ class CourseServiceImpl(
                 moduleIds match {
                   case None => true
                   case Some(listOfModuleIds) =>
-                    listOfModuleIds.split(',').exists(moduleId => course.moduleIds.contains(moduleId.trim))
+                    listOfModuleIds.toLowerCase.split(',').exists(moduleId => course.moduleIds.map(_.toLowerCase).contains(moduleId.trim))
                 }
             }
         }.map(courses => createETagHeader(header, courses))
@@ -91,7 +91,7 @@ class CourseServiceImpl(
           }
 
           if (courseProposal.moduleIds.nonEmpty) {
-            val moduleCheckFuture = examregService.getModules(None, Some(true)).invoke().map {
+            val moduleCheckFuture = examregService.getModules(Some(courseProposal.moduleIds.mkString(",")), Some(true)).invoke().map {
               modules =>
                 if (modules.isEmpty) {
                   for (index <- courseProposal.moduleIds.indices) {
