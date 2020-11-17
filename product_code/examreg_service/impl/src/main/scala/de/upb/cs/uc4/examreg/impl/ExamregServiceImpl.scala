@@ -27,8 +27,6 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
   private def entityRefHyperledger: EntityRef[HyperledgerBaseCommand] =
     clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, ExamregHyperledgerBehaviour.entityId)
 
-  // TODO All ExamReg Tests
-  // TODO Default ExamRegs
 
   /** @inheritdoc */
   override def getExaminationRegulations(regulations: Option[String], active: Option[Boolean]): ServiceCall[NotUsed, Seq[ExaminationRegulation]] =
