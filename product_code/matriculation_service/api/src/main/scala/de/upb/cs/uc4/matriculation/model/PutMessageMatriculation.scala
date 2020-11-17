@@ -17,9 +17,10 @@ case class PutMessageMatriculation(matriculation: Seq[SubjectMatriculation]) {
     * @return Filled Sequence of [[SimpleError]]
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
-    if (matriculation.isEmpty){
+    if (matriculation.isEmpty) {
       Future.successful(Seq(SimpleError("matriculation", "matriculation must not be empty.")))
-    }else{
+    }
+    else {
       Future.sequence {
         matriculation.map {
           subjectMatriculation =>

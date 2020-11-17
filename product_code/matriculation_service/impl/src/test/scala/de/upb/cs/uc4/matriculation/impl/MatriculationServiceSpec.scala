@@ -108,9 +108,6 @@ class MatriculationServiceSpec extends AsyncWordSpec
               ""
             }
 
-
-
-
             override def getMatriculationData(matId: String): String = {
               val mat = jsonStringList.find(json => json.contains(matId))
               if (mat.isDefined) {
@@ -326,15 +323,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
           ))
           client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
             .invoke(PutMessageMatriculation(Seq(SubjectMatriculation("Computer Science", Seq("SS2020"))))).flatMap { _ =>
-            client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-              answer =>
-                answer.enrollmentId should ===(jsonId.id)
-                answer.matriculationStatus should contain theSameElementsAs
-                  Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
+              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+                answer =>
+                  answer.enrollmentId should ===(jsonId.id)
+                  answer.matriculationStatus should contain theSameElementsAs
+                    Seq(SubjectMatriculation("Computer Science", Seq("SS2020")))
+              }
+            }.andThen {
+              case _ => cleanup()
             }
-          }.andThen {
-            case _ => cleanup()
-          }
 
         }
       }
@@ -350,10 +347,10 @@ class MatriculationServiceSpec extends AsyncWordSpec
           ))
           client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
             .invoke(PutMessageMatriculation(Seq())).failed.map { answer =>
-            answer.asInstanceOf[UC4Exception].errorCode should ===(422)
-          }.andThen {
-            case _ => cleanup()
-          }
+              answer.asInstanceOf[UC4Exception].errorCode should ===(422)
+            }.andThen {
+              case _ => cleanup()
+            }
         }
       }
 
@@ -368,14 +365,14 @@ class MatriculationServiceSpec extends AsyncWordSpec
           ))
           client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
             .invoke(createSingleMatriculation("Computer Science", "WS2020/21")).flatMap { _ =>
-            client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-              answer =>
-                answer.matriculationStatus should contain theSameElementsAs
-                  Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
+              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+                answer =>
+                  answer.matriculationStatus should contain theSameElementsAs
+                    Seq(SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")))
+              }
+            }.andThen {
+              case _ => cleanup()
             }
-          }.andThen {
-            case _ => cleanup()
-          }
         }
       }
 
@@ -390,21 +387,20 @@ class MatriculationServiceSpec extends AsyncWordSpec
           ))
           client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
             .invoke(createSingleMatriculation("Mathematics", "WS2021/22")).flatMap { _ =>
-            client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-              answer =>
-                answer.matriculationStatus should contain theSameElementsAs
-                  Seq(
-                    SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")),
-                    SubjectMatriculation("Mathematics", Seq("WS2021/22"))
-                  )
+              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+                answer =>
+                  answer.matriculationStatus should contain theSameElementsAs
+                    Seq(
+                      SubjectMatriculation("Computer Science", Seq("SS2020", "WS2020/21")),
+                      SubjectMatriculation("Mathematics", Seq("WS2021/22"))
+                    )
+              }
+            }.andThen {
+              case _ => cleanup()
             }
-          }.andThen {
-            case _ => cleanup()
-          }
         }
       }
     }
-
 
   }
 }
