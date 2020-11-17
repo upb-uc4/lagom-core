@@ -39,7 +39,7 @@ case class Lecturer(
     super.trim.asInstanceOf[Lecturer].copy(freeText = freeText.trim, researchArea = researchArea.trim)
 
   override def toPublic: Lecturer =
-    Lecturer(this.username, this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "", this.freeText, this.researchArea)
+    Lecturer(this.username, "", this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "", this.freeText, this.researchArea)
 
   override def clean: Lecturer = super.clean.asInstanceOf[Lecturer]
 
