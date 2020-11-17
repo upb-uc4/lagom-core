@@ -88,6 +88,8 @@ class UserServiceStub extends UserService with DefaultTestUsers {
 
   override def allowedDeleteGetPut: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
+  override def allowedDelete: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
   override def userCreationTopic(): Topic[EncryptionContainer] = null //EncryptionContainer[Usernames]
 
   override def userDeletionTopicMinimal(): Topic[EncryptionContainer] = null //EncryptionContainer[JsonUsername]

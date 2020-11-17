@@ -85,6 +85,9 @@ trait UserService extends UC4Service {
   /** Allows DELETE, GET, PUT */
   def allowedDeleteGetPut: ServiceCall[NotUsed, Done]
 
+  /** Allows DELETE */
+  def allowedDelete: ServiceCall[NotUsed, Done]
+
   /** Publishes every new user */
   def userCreationTopic(): Topic[EncryptionContainer]
 
@@ -107,6 +110,9 @@ trait UserService extends UC4Service {
         restCall(Method.PUT, pathPrefix + "/users/:username", updateUser _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDeleteGetPut _),
 
+        restCall(Method.DELETE, pathPrefix + "/users/:username/force", forceDeleteUser _),
+        restCall(Method.OPTIONS, pathPrefix + "/users/:username/force", allowedDelete _),
+
         restCall(Method.GET, pathPrefix + "/users/:username/role", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username/role", allowedGet _),
 
@@ -128,8 +134,7 @@ trait UserService extends UC4Service {
 
         //Not exposed
         restCall(Method.PUT, pathPrefix + "/matriculation", updateLatestMatriculation _),
-        restCall(Method.PUT, pathPrefix + "/image/:username", setImage _),
-        restCall(Method.DELETE, pathPrefix + "/users/:username/force", forceDeleteUser _)
+        restCall(Method.PUT, pathPrefix + "/image/:username", setImage _)
       )
       .addAcls(
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users\\E" + "(\\?([^\\/\\?]+))?"),
@@ -140,6 +145,9 @@ trait UserService extends UC4Service {
         ServiceAcl.forMethodAndPathRegex(Method.DELETE, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
         ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
+
+        ServiceAcl.forMethodAndPathRegex(Method.DELETE, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + "\\Q" + "force\\E"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + "\\Q" + "force\\E"),
 
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/role"""),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/role"""),

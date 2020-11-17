@@ -550,6 +550,9 @@ class UserServiceImpl(
   /** Allows DELETE, GET, PUT */
   override def allowedDeleteGetPut: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE, GET, PUT")
 
+  /** Allows DELETE */
+  override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
+
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 }
