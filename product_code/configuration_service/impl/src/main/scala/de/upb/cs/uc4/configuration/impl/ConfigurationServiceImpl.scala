@@ -12,14 +12,16 @@ import de.upb.cs.uc4.shared.client.Utils
 import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, CourseLanguage, CourseType, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.{ SimpleError, UC4Exception }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import play.api.Environment
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the CourseService */
-class ConfigurationServiceImpl(implicit ec: ExecutionContext, config: Config) extends ConfigurationService {
+class ConfigurationServiceImpl(override val environment: Environment)(implicit ec: ExecutionContext, config: Config)
+  extends ConfigurationService {
 
-  implicit val timeout: Timeout = Timeout(15.seconds)
+  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
   /** Get hyperledger versions */
   override def getHyperledgerVersions: ServiceCall[NotUsed, HyperledgerVersions] = ServiceCall { _ =>

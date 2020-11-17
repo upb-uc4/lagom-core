@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.course.model
 
-import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType, RegexCollection }
+import de.upb.cs.uc4.shared.client.configuration.{ CourseLanguage, CourseType, ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json._
 
@@ -47,6 +47,13 @@ case class Course(
     val ectsRegex = RegexCollection.Course.ectsRegex
     val maxParticipantsRegex = RegexCollection.Course.maxParticipantsRegex
 
+    val descriptionMessage = ErrorMessageCollection.Course.descriptionMessage
+    val startDateMessage = ErrorMessageCollection.Course.startDateMessage
+    val endDateMessage = ErrorMessageCollection.Course.endDateMessage
+    val ectsMessage = ErrorMessageCollection.Course.ectsMessage
+    val lecturerNameMessage = ErrorMessageCollection.Course.lecturerNameMessage
+    val maxParticipantsMessage = ErrorMessageCollection.Course.maxParticipantsMessage
+
     var errors = List[SimpleError]()
 
     courseName match {
@@ -58,19 +65,19 @@ case class Course(
       errors :+= SimpleError("courseType", "Course type must be one of " + CourseType.All.map(_.toString).reduce((a, b) => a + ", " + b) + ".")
     }
     if (!dateRegex.matches(startDate)) {
-      errors :+= SimpleError("startDate", "Start date must be of the following format \"yyyy-mm-dd\".")
+      errors :+= SimpleError("startDate", startDateMessage)
     }
     if (!dateRegex.matches(endDate)) {
-      errors :+= SimpleError("endDate", "End date must be of the following format \"yyyy-mm-dd\".")
+      errors :+= SimpleError("endDate", endDateMessage)
     }
     if (!ectsRegex.matches(ects.toString)) {
-      errors :+= SimpleError("ects", "ECTS must be a positive integer between 0 and 999.")
+      errors :+= SimpleError("ects", ectsMessage)
     }
     if (!nameRegex.matches(lecturerId)) {
-      errors :+= SimpleError("lecturerId", "LecturerID must not be empty.")
+      errors :+= SimpleError("lecturerId", lecturerNameMessage)
     }
     if (!maxParticipantsRegex.matches(maxParticipants.toString)) {
-      errors :+= SimpleError("maxParticipants", "Number of maximum participants must be a positive integer between 1 and 9999.")
+      errors :+= SimpleError("maxParticipants", maxParticipantsMessage)
     }
     if (currentParticipants < 0 || currentParticipants > maxParticipants) {
       errors :+= SimpleError("currentParticipants", "Number of current participants must be a positive integer between 0 and maximum number of participants.")
@@ -79,7 +86,7 @@ case class Course(
       errors :+= SimpleError("courseLanguage", "Course Language must be one of " + CourseLanguage.All.map(_.toString).reduce((a, b) => a + ", " + b) + ".")
     }
     if (!descriptionRegex.matches(courseDescription)) {
-      errors :+= SimpleError("courseDescription", "Description must contain 0 to 10000 characters.")
+      errors :+= SimpleError("courseDescription", descriptionMessage)
     }
     errors
   }

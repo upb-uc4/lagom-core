@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, RejectedWithError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.impl.actor.UserBehaviour
 import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.model.user._
@@ -45,7 +45,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(student0, "governmentIdStudent", probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Option[User]]()
       ref ! GetUser(probe2.ref)
@@ -57,12 +57,12 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(admin0, "governmentIdAdmin", probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! CreateUser(admin1, "governmentIdAdmin", probe2.ref)
       val message = probe2.receiveMessage()
-      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 500)
+      assert(message.isInstanceOf[Rejected] && message.asInstanceOf[Rejected].statusCode == 500)
     }
 
     //UPDATE
@@ -72,7 +72,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val probe1 = createTestProbe[Confirmation]()
       ref ! UpdateUser(lecturer0, probe1.ref)
       val message = probe1.receiveMessage()
-      assert(message.isInstanceOf[RejectedWithError] && message.asInstanceOf[RejectedWithError].statusCode == 500)
+      assert(message.isInstanceOf[Rejected] && message.asInstanceOf[Rejected].statusCode == 500)
     }
 
     "update an existing user" in {
@@ -80,11 +80,11 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(admin0, "governmentIdAdmin", probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! UpdateUser(admin1, probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)
@@ -96,11 +96,11 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(student0, "governmentIdStudent", probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("SS2020", probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)
@@ -112,15 +112,15 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(student0, "governmentIdStudent", probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("SS2020", probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("WS2020/21", probe3.ref)
-      probe3.expectMessage(Accepted)
+      probe3.expectMessageType[Accepted]
 
       val probe4 = createTestProbe[Option[User]]()
       ref ! GetUser(probe4.ref)
@@ -132,15 +132,15 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(student0, "governmentIdStudent", probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("SS2020", probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("SS2019", probe3.ref)
-      probe3.expectMessage(Accepted)
+      probe3.expectMessageType[Accepted]
 
       val probe4 = createTestProbe[Option[User]]()
       ref ! GetUser(probe4.ref)
@@ -153,7 +153,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! DeleteUser(probe1.ref)
-      probe1.expectMessageType[RejectedWithError]
+      probe1.expectMessageType[Rejected]
     }
 
     "delete an existing user" in {
@@ -161,11 +161,11 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(lecturer0, "governmentIdLecturer", probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! DeleteUser(probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)

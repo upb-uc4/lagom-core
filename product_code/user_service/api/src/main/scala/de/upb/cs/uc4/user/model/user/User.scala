@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.user.model.user
 
-import de.upb.cs.uc4.shared.client.configuration.RegexCollection
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.{ Address, Role }
@@ -8,6 +9,7 @@ import play.api.libs.json.{ Format, JsResult, JsValue, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 trait User {
   val username: String
   val enrollmentIdSecret: String
@@ -31,14 +33,14 @@ trait User {
       birthDate: String = this.birthDate
   ): User
 
+  def toPublic: User
+
   def trim: User = copyUser(
     username.trim, enrollmentIdSecret.trim, role, address.trim, firstName.trim, lastName.trim,
     email.trim, phoneNumber.trim, birthDate.trim
   )
 
   def clean: User = trim.copyUser(email = email.toLowerCase, phoneNumber = phoneNumber.replaceAll("\\s+", ""))
-
-  def toPublic: User = copyUser(address = Address.empty, birthDate = "", enrollmentIdSecret = "")
 
   /** Validates the object by checking predefined conditions like correct charsets, syntax, etc.
     * Returns a list of SimpleErrors[[SimpleError]]
@@ -53,13 +55,20 @@ trait User {
     val phoneNumberRegex = RegexCollection.User.phoneNumberRegex
     val dateRegex = RegexCollection.Commons.dateRegex
 
+    val usernameMessage = ErrorMessageCollection.User.usernameMessage
+    val firstNameMessage = ErrorMessageCollection.User.firstNameMessage
+    val lastNameMessage = ErrorMessageCollection.User.lastNameMessage
+    val mailMessage = ErrorMessageCollection.User.mailMessage
+    val phoneNumberMessage = ErrorMessageCollection.User.phoneNumberMessage
+    val dateMessage = ErrorMessageCollection.Commons.dateMessage
+
     address.validate.map { addressErrors =>
       var errors = List[SimpleError]()
 
       if (!usernameRegex.matches(username)) {
         errors :+= SimpleError(
           "username",
-          "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'."
+          usernameMessage
         )
       }
 
@@ -83,19 +92,19 @@ trait User {
       errors ++= addressErrors.map(error => SimpleError("address." + error.name, error.reason))
 
       if (!mailRegex.matches(email)) {
-        errors :+= SimpleError("email", "Email must be in email format example@xyz.com.")
+        errors :+= SimpleError("email", mailMessage)
       }
       if (!dateRegex.matches(birthDate)) {
-        errors :+= SimpleError("birthDate", "Birthdate must be of the following format \"yyyy-mm-dd\".")
+        errors :+= SimpleError("birthDate", dateMessage)
       }
       if (!phoneNumberRegex.matches(phoneNumber)) {
-        errors :+= SimpleError("phoneNumber", "Phone number must be of the following format \"+xxxxxxxxxxxx\".")
+        errors :+= SimpleError("phoneNumber", phoneNumberMessage)
       }
       if (!nameRegex.matches(firstName)) {
-        errors :+= SimpleError("firstName", "First name must contain between 1 and 100 characters.")
+        errors :+= SimpleError("firstName", firstNameMessage)
       }
       if (!nameRegex.matches(lastName)) {
-        errors :+= SimpleError("lastName", "Last name must contain between 1 and 100 characters.")
+        errors :+= SimpleError("lastName", lastNameMessage)
       }
       errors
     }

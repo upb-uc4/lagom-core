@@ -1,14 +1,11 @@
 package de.upb.cs.uc4.user.impl
 
-import java.util.Calendar
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import com.google.common.io.ByteStreams
-import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
@@ -19,13 +16,13 @@ import de.upb.cs.uc4.image.api.ImageProcessingService
 import de.upb.cs.uc4.shared.client.Hashing
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.post.{ PostMessageAdmin, PostMessageLecturer, PostMessageStudent }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, Role, Usernames }
-import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
@@ -37,10 +34,9 @@ import play.api.test.{ FakeHeaders, FakeRequest }
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-/** Tests for the CourseService
-  * All tests need to be started in the defined order
-  */
-class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
+/** Tests for the UserService */
+class UserServiceSpec extends AsyncWordSpec
+  with UC4SpecUtils with Matchers with BeforeAndAfterAll with Eventually with DefaultTestUsers {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -62,35 +58,6 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
   val deletionTopic: Source[EncryptionContainer, _] = client.userDeletionTopic().subscribe.atMostOnceSource
 
   override protected def afterAll(): Unit = server.stop()
-
-  def createLoginToken(username: String = "admin"): String = {
-
-    var role = AuthenticationRole.Admin
-
-    if (username.contains("student")) {
-      role = AuthenticationRole.Student
-    }
-    else if (username.contains("lecturer")) {
-      role = AuthenticationRole.Lecturer
-    }
-
-    val time = Calendar.getInstance()
-    time.add(Calendar.DATE, 1)
-
-    val token =
-      Jwts.builder()
-        .setSubject("login")
-        .setExpiration(time.getTime)
-        .claim("username", username)
-        .claim("authenticationRole", role.toString)
-        .signWith(SignatureAlgorithm.HS256, "changeme")
-        .compact()
-
-    s"login=$token"
-  }
-
-  def addAuthorizationHeader(username: String = "admin"): RequestHeader => RequestHeader =
-    header => header.withHeader("Cookie", createLoginToken(username))
 
   def prepare(users: Seq[User]): Future[Seq[User]] = {
     Future.sequence(users.map { user =>
@@ -269,7 +236,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
       client.addUser().handleRequestHeader(addAuthorizationHeader())
         .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), "governmentIdAdmin", admin0))
         .failed.map {
-          answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(422)
+          answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
         }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -405,7 +372,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     }
     "find a non-existing User" in {
       client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
-        answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
     }
 
@@ -482,7 +449,7 @@ class UserServiceSpec extends AsyncWordSpec with Matchers with BeforeAndAfterAll
     "delete a non-existing user" in {
       client.deleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
         answer =>
-          answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
     }
     "delete a user from the database" in {

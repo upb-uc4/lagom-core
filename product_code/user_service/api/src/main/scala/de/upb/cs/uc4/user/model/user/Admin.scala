@@ -31,7 +31,10 @@ case class Admin(
 
   override def trim: Admin = super.trim.asInstanceOf[Admin]
 
-  override def toPublic: Admin = super.toPublic.asInstanceOf[Admin]
+  override def toPublic: Admin =
+    Admin(this.username, this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "")
+
+  //override def toPublic: Admin = super.toPublic.asInstanceOf[Admin]
 
   override def clean: Admin = super.clean.asInstanceOf[Admin]
 }

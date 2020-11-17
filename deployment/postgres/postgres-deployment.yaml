@@ -27,7 +27,15 @@ spec:
           volumeMounts:
             - name: postgredb
               mountPath: /var/lib/postgresql/data
+            - name: config-volume
+              mountPath: /uc4
       volumes:
         - name: postgredb
           persistentVolumeClaim:
             claimName: postgres-pv-claim
+        - name: config-volume
+          configMap:
+            name: postgresql
+            items:
+              - key: "config"
+                path: "postgresql.conf"

@@ -25,40 +25,40 @@ case class UserState(optUser: Option[User]) {
 
       case CreateUser(user, governmentId, replyTo) =>
         if (optUser.isEmpty) {
-          Effect.persist(OnUserCreate(user, governmentId)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnUserCreate(user, governmentId)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
+          Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
       case UpdateUser(user, replyTo) =>
         if (optUser.isDefined) {
-          Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
+          Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
       case UpdateLatestMatriculation(semester, replyTo) =>
         //Check for existence and check for student
         if (optUser.isDefined && optUser.get.role == Role.Student) {
           if (semester.compareSemester(optUser.get.asInstanceOf[Student].latestImmatriculation) > 0) {
-            Effect.persist(OnLatestMatriculationUpdate(semester)).thenReply(replyTo) { _ => Accepted }
+            Effect.persist(OnLatestMatriculationUpdate(semester)).thenReply(replyTo) { _ => Accepted.default }
           }
           else {
-            Effect.reply(replyTo)(Accepted)
+            Effect.reply(replyTo)(Accepted.default)
           }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(500, GenericError(ErrorType.InternalServer)))
+          Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
       case DeleteUser(replyTo) =>
         if (optUser.isDefined) {
-          Effect.persist(OnUserDelete(optUser.get)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnUserDelete(optUser.get)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
-          Effect.reply(replyTo)(RejectedWithError(404, GenericError(ErrorType.KeyNotFound)))
+          Effect.reply(replyTo)(Rejected(404, GenericError(ErrorType.KeyNotFound)))
         }
 
       case _ =>

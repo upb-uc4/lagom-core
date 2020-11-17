@@ -1,5 +1,30 @@
-# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.0...matriculation-v0.11.1) (2020-XX-XX)
+# [WIP - v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.0...matriculation-v0.12.1) (2020-XX-XX)
 ## Feature
+ - Added configurable timeouts in application config
+## Refactor
+## Bugfix
+
+# [v0.12.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.3...matriculation-v0.12.0) (2020-11-10)
+## Feature
+## Refactor
+ - Bumped Version of Lagom to 1.6.4
+## Bugfix
+
+# [v0.11.3](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.2...matriculation-v0.11.3) (2020-11-06)
+## Feature
+## Refactor
+## Bugfix
+ - Added all messages to serialization registry
+
+# [v0.11.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.1...matriculation-v0.11.2) (2020-11-05)
+## Feature
+ - Implemented new hyperledger API
+## Refactor
+## Bugfix
+
+# [v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.0...matriculation-v0.11.1) (2020-11-05)
+## Feature
+ - Changed Matriculation to the new proposal system
  - Added support for ETags
 ## Refactor
 ## Bugfix

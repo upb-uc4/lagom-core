@@ -15,6 +15,19 @@ class UserSpec extends AsyncWordSpecLike with Matchers {
   val adminValid: Admin = Admin("admin0", "YWRtaW5hZG1pbg==", Role.Admin, addressValid, "firstName", "LastName", "example@mail.de", "+49123456789", "1992-12-11")
 
   "A User" should {
+
+    "discard private fields for admins" in {
+      adminValid.toPublic should ===(adminValid.copy(address = Address.empty, birthDate = ""))
+    }
+
+    "discard private fields for lecturers" in {
+      lecturerValid.toPublic should ===(lecturerValid.copy(address = Address.empty, birthDate = ""))
+    }
+
+    "discard private fields for students" in {
+      studentValid.toPublic should ===(studentValid.copy(address = Address.empty, birthDate = "", latestImmatriculation = "", matriculationId = ""))
+    }
+
     "be validated" in {
       adminValid.validate.map(_ shouldBe empty)
     }
