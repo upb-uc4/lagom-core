@@ -17,7 +17,7 @@ import play.api.Environment
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
-/** Implementation of the CourseService */
+/** Implementation of the ConfigurationService */
 class ConfigurationServiceImpl(override val environment: Environment)(implicit ec: ExecutionContext, config: Config)
   extends ConfigurationService {
 

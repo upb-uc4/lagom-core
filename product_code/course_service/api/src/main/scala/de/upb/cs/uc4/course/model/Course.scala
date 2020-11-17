@@ -8,6 +8,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 case class Course(
     courseId: String,
+    moduleIds: Seq[String],
     courseName: String,
     courseType: String,
     startDate: String,
@@ -22,6 +23,7 @@ case class Course(
   def trim: Course = {
     copy(
       courseId,
+      moduleIds,
       courseName.trim,
       courseType,
       startDate.trim,
