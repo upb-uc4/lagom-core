@@ -65,7 +65,7 @@ class CourseServiceImpl(
                 moduleIds match {
                   case None => true
                   case Some(listOfModuleIds) =>
-                    listOfModuleIds.toLowerCase.split(',').exists(moduleId => course.moduleIds.contains(moduleId.trim.toLowerCase))
+                    listOfModuleIds.toLowerCase.split(',').exists(moduleId => course.moduleIds.map(_.toLowerCase).contains(moduleId.trim))
                 }
             }
         }.map(courses => createETagHeader(header, courses))
