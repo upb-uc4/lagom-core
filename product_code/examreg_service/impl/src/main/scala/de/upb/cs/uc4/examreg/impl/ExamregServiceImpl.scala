@@ -39,7 +39,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
               seq
                 .filter(opt => opt.isDefined) //Filter every not existing examination regulation
                 .map(opt => opt.get)
-                .filter(examReg => regulations.isEmpty || regulations.get.split(",").contains(examReg.name))
+                .filter(examReg => regulations.isEmpty || regulations.get.toLowerCase.split(",").contains(examReg.name.toLowerCase))
                 .filter(examReg => active.isEmpty || active.get == examReg.active)
             }
         }
@@ -51,7 +51,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
       getExaminationRegulations(None, None).invoke().map {
         _.filter(active.isEmpty || _.active == active.get)
           .flatMap(x => x.modules).distinct
-          .filter(module => moduleIds.isEmpty || moduleIds.contains(module.id))
+          .filter(module => moduleIds.isEmpty || moduleIds.get.toLowerCase.split(",").contains(module.id.toLowerCase))
       }
   }
 

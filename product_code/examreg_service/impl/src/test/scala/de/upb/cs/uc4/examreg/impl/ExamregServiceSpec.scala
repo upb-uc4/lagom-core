@@ -90,22 +90,22 @@ class ExamregServiceSpec extends AsyncWordSpec
 
   override protected def afterAll(): Unit = server.stop()
 
-  val defaultExamReg: ExaminationRegulation = server.application.defaultExamReg
+  val defaultExamRegs: Seq[ExaminationRegulation] = server.application.defaultExamRegs
 
   "ExamregService" should {
     "Have a default examination regulation and get names of examination regulations" in {
       eventually(timeout(Span(15, Seconds))) {
         client.getExaminationRegulationsNames(None).invoke().map {
           examRegNames =>
-            examRegNames should contain(defaultExamReg.name)
+            examRegNames should contain allElementsOf defaultExamRegs.map(_.name)
         }
       }
     }
     "Fetch examination regulations" in {
       eventually(timeout(Span(15, Seconds))) {
-        client.getExaminationRegulations(Some(defaultExamReg.name), None).invoke().map {
+        client.getExaminationRegulations(Some(defaultExamRegs.head.name), None).invoke().map {
           examRegs =>
-            examRegs should contain(defaultExamReg)
+            examRegs should contain(defaultExamRegs.head)
         }
       }
     }
@@ -113,7 +113,26 @@ class ExamregServiceSpec extends AsyncWordSpec
       eventually(timeout(Span(15, Seconds))) {
         client.getModules(None, None).invoke().map {
           modules =>
-            modules should contain theSameElementsAs defaultExamReg.modules
+            modules should contain allElementsOf defaultExamRegs.flatMap(_.modules)
+        }
+      }
+    }
+
+    "have working query parameters which" must {
+      "Fetch modules of examination regulations given the moduleIds" in {
+        eventually(timeout(Span(15, Seconds))) {
+          client.getModules(Some(s"${defaultExamRegs.head.modules.head.id},${defaultExamRegs(1).modules.head.id}"), None).invoke().map {
+            modules =>
+              modules should contain theSameElementsAs Seq(defaultExamRegs.head.modules.head, defaultExamRegs(1).modules.head)
+          }
+        }
+      }
+      "Fetch examination regulations given the names" in {
+        eventually(timeout(Span(15, Seconds))) {
+          client.getExaminationRegulations(Some(s"${defaultExamRegs.head.name},${defaultExamRegs(1).name}"), None).invoke().map {
+            examRegs =>
+              examRegs should contain theSameElementsAs Seq(defaultExamRegs.head, defaultExamRegs(1))
+          }
         }
       }
     }
