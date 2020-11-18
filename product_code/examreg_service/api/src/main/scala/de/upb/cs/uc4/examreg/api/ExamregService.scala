@@ -47,8 +47,7 @@ trait ExamregService extends UC4Service {
     super.descriptor
       .addCalls(
         restCall(Method.GET, pathPrefix + "/examination-regulations?regulations&active", getExaminationRegulations _),
-        restCall(Method.POST, pathPrefix + "/examination-regulations", addExaminationRegulation _)
-        (CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/examination-regulations", addExaminationRegulation _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.jsValueFormatMessageSerializer),
 
         restCall(Method.GET, pathPrefix + "/examination-regulations/modules?moduleIds&active", getModules _),
         restCall(Method.GET, pathPrefix + "/examination-regulations/names?active", getExaminationRegulationsNames _),

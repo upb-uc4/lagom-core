@@ -19,7 +19,7 @@ case class ExaminationRegulation(name: String, active: Boolean, modules: Seq[Mod
     */
   def validate(implicit executionContext: ExecutionContext): Future[Seq[SimpleError]] = {
     val nameRegex = RegexCollection.Commons.nameRegex
-    var nameAndActiveErrors = List()
+    var nameAndActiveErrors = List[SimpleError]()
 
     if (!nameRegex.matches(name)) {
       nameAndActiveErrors :+= SimpleError("name", ErrorMessageCollection.ExaminationRegulation.nameMessage)

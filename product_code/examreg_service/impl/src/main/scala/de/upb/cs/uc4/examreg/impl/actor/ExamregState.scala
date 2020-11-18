@@ -45,7 +45,7 @@ case class ExamregState(optExaminationRegulation: Option[ExaminationRegulation])
   def applyEvent(evt: ExamregEvent): ExamregState =
     evt match {
       case OnExamregCreate(examreg) => copy(Some(examreg))
-      case OnExamregClose(examreg) => copy(Some(examreg.copy(active = false)))
+      case OnExamregClose(examreg)  => copy(Some(examreg.copy(active = false)))
       case _ =>
         println("Unknown Event")
         this

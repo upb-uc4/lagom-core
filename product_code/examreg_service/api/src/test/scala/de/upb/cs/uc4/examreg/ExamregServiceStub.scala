@@ -40,9 +40,21 @@ class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
       )
   }
 
-  /** Allows GET */
-  override def allowedMethodsGET: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+  /** Add an examination regulation */
+  override def addExaminationRegulation(): ServiceCall[ExaminationRegulation, ExaminationRegulation] = ServiceCall { examReg => Future.successful(examReg) }
+
+  /** Set an examination regulation to inactive */
+  override def closeExaminationRegulation(examregName: String): ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  /** Allows GET */
+  override def allowedMethodsGET: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  /** Allows GET and POST */
+  override def allowedMethodsGETPOST: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  /** Allows DELETE */
+  override def allowedMethodsDELETE: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 }

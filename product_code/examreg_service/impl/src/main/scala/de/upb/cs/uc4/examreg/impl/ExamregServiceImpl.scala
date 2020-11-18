@@ -75,32 +75,33 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
   }
 
   /** @inheritdoc */
-  override def addExaminationRegulation(): ServiceCall[ExaminationRegulation, ExaminationRegulation] = authenticated(AuthenticationRole.Admin)
+  override def addExaminationRegulation(): ServiceCall[ExaminationRegulation, ExaminationRegulation] = authenticated(AuthenticationRole.Admin) {
+    ServerServiceCall {
+      (_, rawExaminationRegulation) =>
+        val examinationRegulationProposal = rawExaminationRegulation.clean
 
-  ServerServiceCall[ExaminationRegulation, ExaminationRegulation] {
-    (_, rawExaminationRegulation) =>
-      val examinationRegulationProposal = rawExaminationRegulation.clean
+        val validationErrors = try {
+          Await.result(examinationRegulationProposal.validate, validationTimeout)
+        }
+        catch {
+          case _: TimeoutException => throw UC4Exception.ValidationTimeout
+          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        }
+        if (validationErrors.nonEmpty) {
+          throw UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+        }
 
-      val validationErrors = try {
-        Await.result(examinationRegulationProposal.validate, validationTimeout)
-      }
-      catch {
-        case _: TimeoutException => throw UC4Exception.ValidationTimeout
-        case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
-      }
-      if (validationErrors.nonEmpty) {
-        throw UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
-      }
-
-      val ref = entityRefHyperledger
-      ref.askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(examinationRegulationProposal, replyTo)).map {
-        case Accepted(_) =>
-          (ResponseHeader(
-            201,
-            MessageProtocol.empty,
-            List(("Location", s"$pathPrefix/examination-regulations?regulations=${examinationRegulationProposal.name}"))
-          ), examinationRegulationProposal)
-      }
+        val ref = entityRefHyperledger
+        ref.askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(examinationRegulationProposal, replyTo)).map {
+          case Accepted(_) =>
+            (ResponseHeader(
+              201,
+              MessageProtocol.empty,
+              List(("Location", s"$pathPrefix/examination-regulations?regulations=${examinationRegulationProposal.name}"))
+            ), examinationRegulationProposal)
+          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+        }
+    }
 
   }
 
@@ -111,13 +112,12 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
       case Accepted(_) =>
         val ref = entityRef(examregName)
         ref.ask[Confirmation](replyTo => CloseExamregDatabase(replyTo)).map {
-          case Accepted(_) => Done
+          case Accepted(_)                  => Done
           case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason) //Maybe fetch from Hyperledger here and store it again?
         }
       case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
     }
   }
-
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
