@@ -3,7 +3,6 @@ package de.upb.cs.uc4.examreg.impl
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
-import com.lightbend.lagom.scaladsl.api
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
@@ -11,11 +10,11 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.impl.actor.{ ExamregHyperledgerBehaviour, ExamregState }
-import de.upb.cs.uc4.examreg.impl.commands.{ CloseExamregDatabase, CloseExamregHyperledger, CreateExamregHyperledger, ExamregCommand, GetExamreg }
+import de.upb.cs.uc4.examreg.impl.commands._
 import de.upb.cs.uc4.examreg.impl.readside.ExamregDatabase
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
 import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Error, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Exception }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 
@@ -106,7 +105,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
                 List(("Location", s"$pathPrefix/examination-regulations?regulations=${examinationRegulationProposal.name}"))
               ), examinationRegulationProposal)
             case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
-          }
+          }.recover(handleException("Error while trying to add an examination regulation."))
         }
     }
 
@@ -128,7 +127,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
             case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
           }
         case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
-      }
+      }.recover(handleException("Error while trying to close an examination regulation."))
     }
   }
 
