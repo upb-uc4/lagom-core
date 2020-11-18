@@ -15,7 +15,7 @@ trait DefaultTestExamRegs {
     Module("M.1275.13337", "Math 3"),
   ))
 
-  val examReg2: ExaminationRegulation = ExaminationRegulation("Mathematics Bachelor v2", active = false, Seq(
+  val examReg2: ExaminationRegulation = ExaminationRegulation("Mathematics Bachelor v2", active = true, Seq(
     Module("M.1568.98158", "Math 69"),
   ))
 

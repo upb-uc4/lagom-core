@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.examreg.impl
 
-import java.nio.file.{ Path, Paths }
+import java.nio.file.Path
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -11,8 +11,7 @@ import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.impl.actor.ExamregHyperledgerBehaviour
 import de.upb.cs.uc4.examreg.model.ExaminationRegulation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
-import de.upb.cs.uc4.shared.client.JsonUtility.FromJsonUtil
-import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
+import de.upb.cs.uc4.shared.client.JsonUtility.{ FromJsonUtil, ToJsonUtil }
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import org.scalatest.BeforeAndAfterAll
@@ -95,7 +94,7 @@ class ExamregServiceSpec extends AsyncWordSpec
   val defaultExamRegs: Seq[ExaminationRegulation] = server.application.defaultExamRegs
 
   "ExamregService" should {
-    "Have a default examination regulation and get names of examination regulations" in {
+    "have a default examination regulation and get names of examination regulations" in {
       eventually(timeout(Span(15, Seconds))) {
         client.getExaminationRegulationsNames(None).invoke().map {
           examRegNames =>
@@ -103,7 +102,8 @@ class ExamregServiceSpec extends AsyncWordSpec
         }
       }
     }
-    "Fetch examination regulations" in {
+
+    "fetch examination regulations" in {
       eventually(timeout(Span(15, Seconds))) {
         client.getExaminationRegulations(Some(defaultExamRegs.head.name), None).invoke().map {
           examRegs =>
@@ -111,7 +111,8 @@ class ExamregServiceSpec extends AsyncWordSpec
         }
       }
     }
-    "Fetch modules of examination regulations" in {
+
+    "fetch modules of examination regulations" in {
       eventually(timeout(Span(15, Seconds))) {
         client.getModules(None, None).invoke().map {
           modules =>
@@ -121,7 +122,7 @@ class ExamregServiceSpec extends AsyncWordSpec
     }
 
     "have working query parameters which" must {
-      "Fetch modules of examination regulations given the moduleIds" in {
+      "fetch modules of examination regulations given the moduleIds" in {
         eventually(timeout(Span(15, Seconds))) {
           client.getModules(Some(s"${defaultExamRegs.head.modules.head.id},${defaultExamRegs(1).modules.head.id}"), None).invoke().map {
             modules =>
@@ -129,7 +130,8 @@ class ExamregServiceSpec extends AsyncWordSpec
           }
         }
       }
-      "Fetch examination regulations given the names" in {
+
+      "fetch examination regulations given the names" in {
         eventually(timeout(Span(15, Seconds))) {
           client.getExaminationRegulations(Some(s"${defaultExamRegs.head.name},${defaultExamRegs(1).name}"), None).invoke().map {
             examRegs =>
@@ -140,7 +142,7 @@ class ExamregServiceSpec extends AsyncWordSpec
     }
 
     //POST
-    "Add an examination regulation" in {
+    "add an examination regulation" in {
       client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg0).flatMap { _ =>
         eventually(timeout(Span(15, Seconds))) {
           client.getExaminationRegulations(None, None).invoke().map {
@@ -151,7 +153,7 @@ class ExamregServiceSpec extends AsyncWordSpec
       }
     }
 
-    "Not add an invalid examination regulation" in {
+    "not add an invalid examination regulation" in {
       client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg1.copy(modules = Seq()))
         .failed.map { exception =>
           exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
@@ -159,7 +161,7 @@ class ExamregServiceSpec extends AsyncWordSpec
     }
 
     //DELETE
-    "Close an examination regulation" in {
+    "close an examination regulation" in {
       client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg2).flatMap { _ =>
         client.closeExaminationRegulation(examReg2.name).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap {
           _ =>
@@ -173,8 +175,8 @@ class ExamregServiceSpec extends AsyncWordSpec
       }
     }
 
-    "Return an error when trying to close a non-existing examination regulation" in {
-      client.closeExaminationRegulation("does not exist").invoke().failed.map { exception =>
+    "return an error when trying to close a non-existing examination regulation" in {
+      client.closeExaminationRegulation("does not exist").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { exception =>
         exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
     }
