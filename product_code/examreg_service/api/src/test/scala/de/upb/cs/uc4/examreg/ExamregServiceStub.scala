@@ -4,12 +4,13 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 
 import scala.concurrent.Future
 
 class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
 
-  val examRegs = Seq(examReg0, examReg1)
+  var examRegs = List(examReg0, examReg1)
 
   /** Get all examination regulations, or the ones specified by the query parameter */
   override def getExaminationRegulations(regulations: Option[String], active: Option[Boolean]): ServiceCall[NotUsed, Seq[ExaminationRegulation]] = ServiceCall {
@@ -41,10 +42,28 @@ class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
   }
 
   /** Add an examination regulation */
-  override def addExaminationRegulation(): ServiceCall[ExaminationRegulation, ExaminationRegulation] = ServiceCall { examReg => Future.successful(examReg) }
+  override def addExaminationRegulation(): ServiceCall[ExaminationRegulation, ExaminationRegulation] = ServiceCall {
+    examReg =>
+      if (examRegs.map(_.name).contains(examReg.name)) {
+        Future.failed(throw UC4Exception.Duplicate)
+      }
+      else {
+        examRegs :+= examReg
+        Future.successful(examReg)
+      }
+  }
 
   /** Set an examination regulation to inactive */
-  override def closeExaminationRegulation(examregName: String): ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+  override def closeExaminationRegulation(examregName: String): ServiceCall[NotUsed, Done] = ServiceCall { _ =>
+    examRegs.find(_.name == examregName) match {
+      case Some(examinationRegulation) =>
+        examRegs = examRegs.filter(_.name != examregName)
+        examRegs :+= examinationRegulation.copy(active = false)
+        Future.successful(Done)
+      case None =>
+        Future.failed(UC4Exception.NotFound)
+    }
+  }
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }

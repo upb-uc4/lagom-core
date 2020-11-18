@@ -6,13 +6,14 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
+import de.upb.cs.uc4.examreg.DefaultTestExamRegs
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.impl.actor.ExamregHyperledgerBehaviour
 import de.upb.cs.uc4.examreg.model.ExaminationRegulation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
 import de.upb.cs.uc4.shared.client.JsonUtility.FromJsonUtil
 import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
-import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
@@ -21,7 +22,7 @@ import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
 class ExamregServiceSpec extends AsyncWordSpec
-  with UC4SpecUtils with Matchers with BeforeAndAfterAll with Eventually {
+  with UC4SpecUtils with DefaultTestExamRegs with Matchers with BeforeAndAfterAll with Eventually {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup
@@ -44,6 +45,7 @@ class ExamregServiceSpec extends AsyncWordSpec
           override protected def createConnection: ConnectionExaminationRegulationTrait = new ConnectionExaminationRegulationTrait() {
 
             var examRegList: Seq[ExaminationRegulation] = Seq[ExaminationRegulation]()
+
             override def getProposalAddExaminationRegulation(examinationRegulation: String): Array[Byte] = "getProposalAddExaminationRegulation".getBytes
 
             override def getProposalGetExaminationRegulations(namesList: String): Array[Byte] = "getProposalGetExaminationRegulations".getBytes
@@ -134,6 +136,46 @@ class ExamregServiceSpec extends AsyncWordSpec
               examRegs should contain theSameElementsAs Seq(defaultExamRegs.head, defaultExamRegs(1))
           }
         }
+      }
+    }
+
+    //POST
+    "Add an examination regulation" in {
+      client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg0).flatMap { _ =>
+        eventually(timeout(Span(15, Seconds))) {
+          client.getExaminationRegulations(None, None).invoke().map {
+            examRegs =>
+              examRegs should contain(examReg0)
+          }
+        }
+      }
+    }
+
+    "Not add an invalid examination regulation" in {
+      client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg1.copy(modules = Seq()))
+        .failed.map { exception =>
+          exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
+        }
+    }
+
+    //DELETE
+    "Close an examination regulation" in {
+      client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg2).flatMap { _ =>
+        client.closeExaminationRegulation(examReg2.name).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap {
+          _ =>
+            eventually(timeout(Span(15, Seconds))) {
+              client.getExaminationRegulations(Some(examReg2.name), None).invoke().map {
+                examRegs =>
+                  examRegs.head should ===(examReg2.copy(active = false))
+              }
+            }
+        }
+      }
+    }
+
+    "Return an error when trying to close a non-existing examination regulation" in {
+      client.closeExaminationRegulation("does not exist").invoke().failed.map { exception =>
+        exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
     }
   }

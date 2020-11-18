@@ -15,7 +15,7 @@ import de.upb.cs.uc4.examreg.impl.commands.{ CloseExamregDatabase, CloseExamregH
 import de.upb.cs.uc4.examreg.impl.readside.ExamregDatabase
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
 import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Error, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Error, UC4Exception }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 
@@ -80,26 +80,33 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
       (_, rawExaminationRegulation) =>
         val examinationRegulationProposal = rawExaminationRegulation.clean
 
-        val validationErrors = try {
+        var validationErrors = try {
           Await.result(examinationRegulationProposal.validate, validationTimeout)
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
           case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
-        if (validationErrors.nonEmpty) {
-          throw UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
-        }
 
-        val ref = entityRefHyperledger
-        ref.askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(examinationRegulationProposal, replyTo)).map {
-          case Accepted(_) =>
-            (ResponseHeader(
-              201,
-              MessageProtocol.empty,
-              List(("Location", s"$pathPrefix/examination-regulations?regulations=${examinationRegulationProposal.name}"))
-            ), examinationRegulationProposal)
-          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+        val ref = entityRef(examinationRegulationProposal.name)
+        ref.ask[Option[ExaminationRegulation]](replyTo => GetExamreg(replyTo)).flatMap { optExamreg =>
+          if (optExamreg.isDefined) {
+            validationErrors :+= SimpleError("name", "An examination regulation with this name does already exist.")
+          }
+          if (validationErrors.nonEmpty) {
+            throw UC4Exception(422, DetailedError(ErrorType.Validation, validationErrors))
+          }
+
+          val hlRef = entityRefHyperledger
+          hlRef.askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(examinationRegulationProposal, replyTo)).map {
+            case Accepted(_) =>
+              (ResponseHeader(
+                201,
+                MessageProtocol.empty,
+                List(("Location", s"$pathPrefix/examination-regulations?regulations=${examinationRegulationProposal.name}"))
+              ), examinationRegulationProposal)
+            case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+          }
         }
     }
 
@@ -107,15 +114,21 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
 
   /** @inheritdoc */
   override def closeExaminationRegulation(examregName: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) { _ =>
-    val ref = entityRefHyperledger
-    ref.askWithStatus[Confirmation](replyTo => CloseExamregHyperledger(examregName, replyTo)).flatMap {
-      case Accepted(_) =>
-        val ref = entityRef(examregName)
-        ref.ask[Confirmation](replyTo => CloseExamregDatabase(replyTo)).map {
-          case Accepted(_)                  => Done
-          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason) //Maybe fetch from Hyperledger here and store it again?
-        }
-      case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+    val ref = entityRef(examregName)
+    ref.ask[Option[ExaminationRegulation]](replyTo => GetExamreg(replyTo)).flatMap { optExamReg =>
+      if (optExamReg.isEmpty) {
+        throw UC4Exception.NotFound
+      }
+      val hlRef = entityRefHyperledger
+      hlRef.askWithStatus[Confirmation](replyTo => CloseExamregHyperledger(examregName, replyTo)).flatMap {
+        case Accepted(_) =>
+          val ref = entityRef(examregName)
+          ref.ask[Confirmation](replyTo => CloseExamregDatabase(replyTo)).map {
+            case Accepted(_)                  => Done
+            case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+          }
+        case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+      }
     }
   }
 
