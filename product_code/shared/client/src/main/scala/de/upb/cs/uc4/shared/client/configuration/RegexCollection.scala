@@ -40,6 +40,10 @@ object RegexCollection {
     val maxParticipantsRegex: Regex = """[1-9][0-9]{0,3}""".r
   }
 
+  object Module {
+    val idRegex: Regex = """[\s\S]{1,20}""".r
+  }
+
   object Commons {
     /** The date regex supports all dates in the format yyyy-mm-dd
       *

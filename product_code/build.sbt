@@ -18,14 +18,16 @@ lazy val lagom = (project in file("."))
     configuration_service_api, configuration_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service,
-    matriculation_service_api, matriculation_service, examreg_service_api, examreg_service)
+    matriculation_service_api, matriculation_service,
+    examreg_service_api, examreg_service)
   .dependsOn(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
     configuration_service_api, configuration_service,
     authentication_service_api, authentication_service,
     user_service_api, user_service,
-    matriculation_service_api, matriculation_service, examreg_service_api, examreg_service)
+    matriculation_service_api, matriculation_service,
+    examreg_service_api, examreg_service)
 
 // This project is not allowed to have lagom server dependencies
 lazy val shared_client = (project in file("shared/client"))
