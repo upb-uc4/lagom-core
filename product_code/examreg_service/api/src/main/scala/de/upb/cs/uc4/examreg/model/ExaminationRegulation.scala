@@ -38,7 +38,7 @@ case class ExaminationRegulation(name: String, active: Boolean, modules: Seq[Mod
                 _.map {
                   simpleError =>
                     //Name of error is of the form: modules[index].id or modules[index].name
-                    simpleError.copy(name = s"module[${modules.indexOf(module)}].${simpleError.name}")
+                    simpleError.copy(name = s"modules[${modules.indexOf(module)}].${simpleError.name}")
                 }
               }
           }

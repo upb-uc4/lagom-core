@@ -55,8 +55,10 @@ class ExamregServiceSpec extends AsyncWordSpec
               val examReg = examinationRegulation.fromJson[ExaminationRegulation]
               if (examRegList.map(_.name).contains(examReg.name)) {
                 throw UC4Exception.Duplicate
+              } else {
+                examRegList :+= examReg
+                examinationRegulation
               }
-              examinationRegulation
             }
 
             override def getExaminationRegulations(namesList: String): String = {
