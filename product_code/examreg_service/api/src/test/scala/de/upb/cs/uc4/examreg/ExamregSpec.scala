@@ -31,7 +31,7 @@ class ExamregSpec extends AsyncWordSpecLike with DefaultTestExamRegs with Matche
     "return a validation error if one of the modules is incorrect" in {
       val incorrectModules = examReg0.modules.map(_.copy(id = ""))
       examReg0.copy(modules = incorrectModules).validate
-        .map(_.map(_.name) should contain theSameElementsAs Seq("modules[0].id","modules[1].id"))
+        .map(_.map(_.name) should contain theSameElementsAs Seq("modules[0].id", "modules[1].id"))
     }
   }
 

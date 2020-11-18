@@ -84,7 +84,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
-          case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
 
         val ref = entityRef(examinationRegulationProposal.name)
@@ -131,7 +131,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
         case Accepted(_) =>
           val ref = entityRef(examregName)
           ref.ask[Confirmation](replyTo => CloseExamregDatabase(replyTo)).map {
-            case Accepted(_) => Done
+            case Accepted(_)                  => Done
             case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
           }
         case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
