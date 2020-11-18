@@ -14,6 +14,7 @@ import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulat
 import de.upb.cs.uc4.shared.client.JsonUtility.{ FromJsonUtil, ToJsonUtil }
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
+import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -76,6 +77,8 @@ class ExamregServiceSpec extends AsyncWordSpec
               examRegList.toJson
             }
 
+            override lazy val contract: ContractImpl = null
+            override lazy val gateway: GatewayImpl = null
             override val username: String = ""
             override val channel: String = ""
             override val chaincode: String = ""

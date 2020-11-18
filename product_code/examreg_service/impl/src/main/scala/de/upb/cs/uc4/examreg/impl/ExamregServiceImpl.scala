@@ -84,7 +84,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
-          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
 
         val ref = entityRef(examinationRegulationProposal.name)
@@ -97,13 +97,21 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
           }
 
           val hlRef = entityRefHyperledger
-          hlRef.askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(examinationRegulationProposal, replyTo)).map {
+          hlRef.askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(examinationRegulationProposal, replyTo)).flatMap {
             case Accepted(_) =>
-              (ResponseHeader(
-                201,
-                MessageProtocol.empty,
-                List(("Location", s"$pathPrefix/examination-regulations?regulations=${examinationRegulationProposal.name}"))
-              ), examinationRegulationProposal)
+              val ref = entityRef(examinationRegulationProposal.name)
+
+              ref.ask[Confirmation](replyTo => CreateExamregDatabase(examinationRegulationProposal, replyTo)).map {
+                case Accepted(_) =>
+                  (ResponseHeader(
+                    201,
+                    MessageProtocol.empty,
+                    List(("Location", s"$pathPrefix/examination-regulations?regulations=${examinationRegulationProposal.name}"))
+                  ), examinationRegulationProposal)
+
+                case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+              }
+
             case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
           }.recover(handleException("Error while trying to add an examination regulation."))
         }
@@ -123,7 +131,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
         case Accepted(_) =>
           val ref = entityRef(examregName)
           ref.ask[Confirmation](replyTo => CloseExamregDatabase(replyTo)).map {
-            case Accepted(_)                  => Done
+            case Accepted(_) => Done
             case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
           }
         case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
