@@ -12,14 +12,14 @@ import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.impl.actor.ExamregHyperledgerBehaviour
 import de.upb.cs.uc4.examreg.model.ExaminationRegulation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
-import de.upb.cs.uc4.shared.client.JsonUtility.{FromJsonUtil, ToJsonUtil}
-import de.upb.cs.uc4.shared.client.exceptions.{ErrorType, UC4Exception}
+import de.upb.cs.uc4.shared.client.JsonUtility.{ FromJsonUtil, ToJsonUtil }
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
-import org.hyperledger.fabric.gateway.impl.{ContractImpl, GatewayImpl}
+import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Seconds, Span}
+import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
@@ -151,16 +151,17 @@ class ExamregServiceSpec extends AsyncWordSpec
 
       "fetch only active examination regulations" in {
 
-        client.getExaminationRegulations(None, None).invoke().flatMap{
+        client.getExaminationRegulations(None, None).invoke().flatMap {
           examRegs =>
             val futureDone = if (examRegs.forall(_.active)) {
               client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg2.copy(name = "inactive0")).flatMap { _ =>
                 client.closeExaminationRegulation("inactive0").handleRequestHeader(addAuthorizationHeader()).invoke()
               }
-            } else {
+            }
+            else {
               Future.successful(Done)
             }
-            futureDone.flatMap{
+            futureDone.flatMap {
               _ =>
                 eventually(timeout(Span(15, Seconds))) {
                   client.getExaminationRegulations(None, Some(true)).invoke().map {
@@ -173,21 +174,22 @@ class ExamregServiceSpec extends AsyncWordSpec
       }
 
       "fetch only inactive examination regulations" in {
-        client.getExaminationRegulations(None, None).invoke().flatMap{
+        client.getExaminationRegulations(None, None).invoke().flatMap {
           examRegs =>
             val futureDone = if (examRegs.forall(_.active)) {
               client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg2.copy(name = "inactive1")).flatMap { _ =>
                 client.closeExaminationRegulation("inactive1").handleRequestHeader(addAuthorizationHeader()).invoke()
               }
-            } else {
+            }
+            else {
               Future.successful(Done)
             }
-            futureDone.flatMap{
+            futureDone.flatMap {
               _ =>
                 eventually(timeout(Span(15, Seconds))) {
                   client.getExaminationRegulations(None, Some(false)).invoke().map {
                     examRegs =>
-                      examRegs.map(_.name) should contain ("inactive1")
+                      examRegs.map(_.name) should contain("inactive1")
                   }
                 }
             }
