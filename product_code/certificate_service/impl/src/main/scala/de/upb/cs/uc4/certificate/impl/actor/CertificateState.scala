@@ -29,7 +29,7 @@ case class CertificateState(
       case GetCertificateUser(replyTo) =>
         Effect.reply(replyTo)(CertificateUser(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey))
       case SetCertificateAndKey(certificate, encryptedPrivateKey, replyTo) =>
-        Effect.persist(OnCertficateAndKeySet(certificate, encryptedPrivateKey)).thenReply(replyTo) { _ => Accepted }
+        Effect.persist(OnCertficateAndKeySet(certificate, encryptedPrivateKey)).thenReply(replyTo) { _ => Accepted.default }
       case SoftDeleteCertificateUser(username, role, replyTo) =>
         Effect.persist(OnCertificateUserSoftDelete(username, role)).thenReply(replyTo) { _ => Accepted.default }
       case ForceDeleteCertificateUser(username, role, replyTo) =>

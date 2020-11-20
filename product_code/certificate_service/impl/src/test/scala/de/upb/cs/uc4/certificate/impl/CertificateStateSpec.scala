@@ -106,39 +106,39 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
     "soft delete a non-lecturer CertificateUser" in {
       val probe1 = createTestProbe[Confirmation]()
       val probe2 = createTestProbe[Confirmation]()
-      val probe3 = createTestProbe[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])]()
+      val probe3 = createTestProbe[CertificateUser]()
 
       val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
 
       ref ! RegisterUser("enrollmentId", "enrollmentSecret", probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       ref ! SoftDeleteCertificateUser("SomeUsername", Role.Student, probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       ref ! GetCertificateUser(probe3.ref)
-      probe3.expectMessage((None, None, None, None))
+      probe3.expectMessage(CertificateUser(None, None, None, None))
     }
 
     "soft delete a lecturer CertificateUser" in {
       val probe1 = createTestProbe[Confirmation]()
       val probe2 = createTestProbe[Confirmation]()
       val probe3 = createTestProbe[Confirmation]()
-      val probe4 = createTestProbe[(Option[String], Option[String], Option[String], Option[EncryptedPrivateKey])]()
+      val probe4 = createTestProbe[CertificateUser]()
 
       val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-9")))
 
       ref ! RegisterUser("enrollmentId", "enrollmentSecret", probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       ref ! SetCertificateAndKey("certificate", EncryptedPrivateKey("Key", "IV", "Salt"), probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       ref ! SoftDeleteCertificateUser("SomeUsername", Role.Lecturer, probe3.ref)
-      probe3.expectMessage(Accepted)
+      probe3.expectMessageType[Accepted]
 
       ref ! GetCertificateUser(probe4.ref)
-      probe4.expectMessage((Some("enrollmentId"), Some("enrollmentSecret"), Some("certificate"), Some(EncryptedPrivateKey("", "", ""))))
+      probe4.expectMessage(CertificateUser(Some("enrollmentId"), Some("enrollmentSecret"), Some("certificate"), Some(EncryptedPrivateKey("", "", ""))))
     }
   }
 }

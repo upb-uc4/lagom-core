@@ -470,7 +470,7 @@ class UserServiceSpec extends AsyncWordSpec
     "return an error on soft deleting a non-existing user" in {
       client.softDeleteUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
         answer =>
-          answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer.asInstanceOf[UC4Exception].errorCode should ===(404)
       }
     }
     "soft delete a user from the database" in {

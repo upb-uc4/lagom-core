@@ -276,7 +276,7 @@ class UserServiceImpl(
 
             ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
               .map {
-                case Accepted => // Soft Deletion successful
+                case Accepted(_) => // Soft Deletion successful
                   (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                 case Rejected(code, reason) => //Update failed
                   throw UC4Exception(code, reason)
