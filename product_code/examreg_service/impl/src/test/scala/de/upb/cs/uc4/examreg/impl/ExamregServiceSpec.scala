@@ -236,7 +236,7 @@ class ExamregServiceSpec extends AsyncWordSpec
       client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(uniqueExamReg).flatMap { _ =>
         client.closeExaminationRegulation(uniqueExamReg.name).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap {
           _ =>
-            client.closeExaminationRegulation(uniqueExamReg.name).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{
+            client.closeExaminationRegulation(uniqueExamReg.name).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
               exception =>
                 exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.AlreadyDeleted)
             }
