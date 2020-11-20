@@ -473,6 +473,18 @@ class UserServiceSpec extends AsyncWordSpec
           answer.asInstanceOf[UC4Exception].errorCode should ===(404)
       }
     }
+    "return an error on soft deleting an already soft deleted user" in {
+      prepare(Seq(student0)).flatMap { createdUsers =>
+        client.softDeleteUser(createdUsers.head.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap {
+          _ =>
+            client.softDeleteUser(createdUsers.head.username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
+              exception =>
+                exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.AlreadyDeleted)
+            }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
     "soft delete a user from the database" in {
       prepare(Seq(student0)).flatMap { createdUser =>
         client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>

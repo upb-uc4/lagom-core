@@ -274,6 +274,10 @@ class UserServiceImpl(
               throw UC4Exception.NotFound
             }
 
+            if (!optUser.get.isActive) {
+              throw UC4Exception.AlreadyDeleted
+            }
+
             ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
               .map {
                 case Accepted(_) => // Soft Deletion successful
