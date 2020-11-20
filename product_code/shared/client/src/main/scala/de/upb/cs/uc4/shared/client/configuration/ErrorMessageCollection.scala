@@ -46,6 +46,15 @@ object ErrorMessageCollection {
     val cityNameMessage: String = "City name contains illegal characters."
   }
 
+  object Module {
+    val idMessage: String = "ID must contain between 1 and 20 characters."
+    val nameMessage: String = "Module name must contain between 1 and 100 characters."
+  }
+
+  object ExaminationRegulation {
+    val nameMessage: String = "Examination Regulation name must contain between 1 and 100 characters."
+  }
+
   object Commons {
     val dateMessage: String = "Birthdate must be of the following format \"yyyy-mm-dd\"."
     val longTextMessage: String = "Text must contain 0 to 10000 characters."

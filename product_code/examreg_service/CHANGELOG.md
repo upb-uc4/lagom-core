@@ -1,3 +1,11 @@
+# [WIP v0.12.3](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.12.2...examreg-v0.12.3) (2020-XX-XX)
+## Feature
+ - Added Examination Regulation endpoints for 
+    - adding an ExaminationRegulation
+    - closing (set as inactive) an ExaminationRegulation
+## Refactor
+## Bugfix
+
 # [v0.12.2](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.12.1...examreg-v0.12.2) (2020-11-17)
 ## Feature
 ## Refactor

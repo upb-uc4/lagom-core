@@ -4,7 +4,7 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import com.typesafe.config.Config
 import de.upb.cs.uc4.examreg.impl.ExamregApplication
-import de.upb.cs.uc4.examreg.impl.commands.CreateExamregHyperledger
+import de.upb.cs.uc4.examreg.impl.commands.{ CloseExamregHyperledger, CreateExamregHyperledger }
 import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.{ ConnectionExaminationRegulation, ConnectionMatriculation }
@@ -32,6 +32,10 @@ class ExamregHyperledgerBehaviour(val config: Config) extends HyperledgerDefault
 
     case CreateExamregHyperledger(examreg, replyTo) =>
       connection.addExaminationRegulation(examreg.toJson)
+      replyTo ! StatusReply.success(Accepted.default)
+
+    case CloseExamregHyperledger(name, replyTo) =>
+      connection.closeExaminationRegulation(name)
       replyTo ! StatusReply.success(Accepted.default)
 
   }

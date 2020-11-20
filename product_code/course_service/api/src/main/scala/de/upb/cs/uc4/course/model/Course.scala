@@ -37,9 +37,10 @@ case class Course(
     )
   }
 
-  /** Checks if the course attributes correspond to agreed syntax and semantics
+  /** Validates the object by checking predefined conditions like correct charsets, syntax, etc.
+    * Returns a list of SimpleErrors[[SimpleError]]
     *
-    * @return response-code which gives detailed description of syntax or semantics violation
+    * @return Filled Sequence of [[SimpleError]]
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 

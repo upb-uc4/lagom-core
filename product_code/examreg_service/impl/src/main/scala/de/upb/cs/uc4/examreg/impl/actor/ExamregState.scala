@@ -3,10 +3,11 @@ package de.upb.cs.uc4.examreg.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.examreg.impl.ExamregApplication
-import de.upb.cs.uc4.examreg.impl.commands.{ CreateExamregDatabase, CreateExamregHyperledger, ExamregCommand, GetExamreg }
-import de.upb.cs.uc4.examreg.impl.events.{ ExamregEvent, OnExamregCreate }
+import de.upb.cs.uc4.examreg.impl.commands.{ CloseExamregDatabase, CreateExamregDatabase, ExamregCommand, GetExamreg }
+import de.upb.cs.uc4.examreg.impl.events.{ ExamregEvent, OnExamregClose, OnExamregCreate }
 import de.upb.cs.uc4.examreg.model.ExaminationRegulation
-import de.upb.cs.uc4.shared.server.messages.Accepted
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import play.api.libs.json.{ Format, Json }
 
 /** The current state of a ExaminationRegulation */
@@ -24,6 +25,14 @@ case class ExamregState(optExaminationRegulation: Option[ExaminationRegulation])
       case CreateExamregDatabase(examreg, replyTo) =>
         Effect.persist(OnExamregCreate(examreg)).thenReply(replyTo) { _ => Accepted.default }
 
+      case CloseExamregDatabase(replyTo) =>
+        optExaminationRegulation match {
+          case Some(examinationRegulation) =>
+            Effect.persist(OnExamregClose(examinationRegulation)).thenReply(replyTo) { _ => Accepted.default }
+          case None =>
+            Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer, "Tried to close a non-existing exam regulation.")))
+        }
+
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -36,6 +45,7 @@ case class ExamregState(optExaminationRegulation: Option[ExaminationRegulation])
   def applyEvent(evt: ExamregEvent): ExamregState =
     evt match {
       case OnExamregCreate(examreg) => copy(Some(examreg))
+      case OnExamregClose(examreg)  => copy(Some(examreg.copy(active = false)))
       case _ =>
         println("Unknown Event")
         this
