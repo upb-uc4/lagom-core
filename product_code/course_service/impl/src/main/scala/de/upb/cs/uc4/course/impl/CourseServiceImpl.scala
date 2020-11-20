@@ -6,40 +6,43 @@ import akka.{ Done, NotUsed }
 import com.fasterxml.uuid.Generators
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
-import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.impl.actor.CourseState
 import de.upb.cs.uc4.course.impl.commands._
-import de.upb.cs.uc4.course.impl.readside.{ CourseDatabase, CourseEventProcessor }
+import de.upb.cs.uc4.course.impl.readside.CourseDatabase
 import de.upb.cs.uc4.course.model.Course
+import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
+import play.api.Environment
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the CourseService */
 class CourseServiceImpl(
-    clusterSharding: ClusterSharding, userService: UserService,
-    readSide: ReadSide, processor: CourseEventProcessor, database: CourseDatabase
+    clusterSharding: ClusterSharding,
+    userService: UserService,
+    examregService: ExamregService,
+    database: CourseDatabase,
+    override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config) extends CourseService {
-  readSide.register(processor)
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CourseCommand] =
     clusterSharding.entityRefFor(CourseState.typeKey, id)
 
-  implicit val timeout: Timeout = Timeout(15.seconds)
+  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.database").milliseconds)
 
-  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   /** @inheritdoc */
-  override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServerServiceCall[NotUsed, Seq[Course]] = authenticated[NotUsed, Seq[Course]](AuthenticationRole.All: _*) {
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = authenticated[NotUsed, Seq[Course]](AuthenticationRole.All: _*) {
     ServerServiceCall { (header, _) =>
       database.getAll
         .map(seq => seq
@@ -50,13 +53,22 @@ class CourseServiceImpl(
             .filter(opt => opt.isDefined) //Filter every not existing course
             .map(opt => opt.get) //Future[Seq[Course]]
           ))
-        .map(seq => seq
-          .filter { course =>
-            //If courseName query is set, we check that every whitespace seperated parameter is contained
-            courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
-          }
-          .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get))
-        .map(courses => createETagHeader(header, courses))
+        .map { seq =>
+          seq
+            .filter { course =>
+              //If courseName query is set, we check that every whitespace seperated parameter is contained
+              courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
+            }
+            .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
+            .filter {
+              course =>
+                moduleIds match {
+                  case None => true
+                  case Some(listOfModuleIds) =>
+                    listOfModuleIds.toLowerCase.split(',').exists(moduleId => course.moduleIds.map(_.toLowerCase).contains(moduleId.trim))
+                }
+            }
+        }.map(courses => createETagHeader(header, courses))
     }
   }
 
@@ -70,12 +82,38 @@ class CourseServiceImpl(
             throw UC4Exception.OwnerMismatch
           }
 
-          val validationErrors = try {
+          var validationErrors = try {
             Await.result(courseProposal.validate, validationTimeout)
           }
           catch {
             case _: TimeoutException => throw UC4Exception.ValidationTimeout
             case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          }
+
+          if (courseProposal.moduleIds.nonEmpty) {
+            val moduleCheckFuture = examregService.getModules(Some(courseProposal.moduleIds.mkString(",")), Some(true)).invoke().map {
+              modules =>
+                if (modules.isEmpty) {
+                  for (index <- courseProposal.moduleIds.indices) {
+                    validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                  }
+                }
+                else {
+                  val moduleIdList = modules.map(_.id)
+                  for (index <- courseProposal.moduleIds.indices) {
+                    if (!moduleIdList.contains(courseProposal.moduleIds(index)))
+                      validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                  }
+                }
+            }
+            try {
+              // TODO use another timeout variable, for internal server communication
+              Await.result(moduleCheckFuture, validationTimeout)
+            }
+            catch {
+              case _: TimeoutException => throw UC4Exception.ValidationTimeout
+              case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+            }
           }
 
           // If lecturerId is empty, the userService call cannot be found, therefore check and abort
@@ -86,7 +124,7 @@ class CourseServiceImpl(
           // Check if the lecturer does exist
           userService.getUser(courseProposal.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
             //If the lecturer does not exist, we throw a validation error containing that info
-            case ex: UC4Exception if ex.errorCode.http == 404 =>
+            case ex: UC4Exception if ex.errorCode == 404 =>
               throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist")))
           }.flatMap { _ =>
             if (validationErrors.nonEmpty) {
@@ -99,12 +137,13 @@ class CourseServiceImpl(
 
             ref.ask[Confirmation](replyTo => CreateCourse(courseToAdd, replyTo))
               .map {
-                case Accepted => // Creation Successful
+                case Accepted(_) => // Creation Successful
                   (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/courses/${courseToAdd.courseId}"))), courseToAdd)
                 case Rejected(code, reason) =>
                   throw UC4Exception(code, reason)
               }
           }
+
         }
     }
 
@@ -122,7 +161,7 @@ class CourseServiceImpl(
               else {
                 entityRef(id).ask[Confirmation](replyTo => DeleteCourse(id, replyTo))
                   .map {
-                    case Accepted => // OK
+                    case Accepted(_) => // OK
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case Rejected(code, reason) => // Not Found
                       throw UC4Exception(code, reason)
@@ -154,12 +193,38 @@ class CourseServiceImpl(
           throw UC4Exception.PathParameterMismatch
         }
 
-        val validationErrors = try {
+        var validationErrors = try {
           Await.result(updatedCourse.validate, validationTimeout)
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
           case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        }
+
+        if (updatedCourse.moduleIds.nonEmpty) {
+          val moduleCheckFuture = examregService.getModules(None, Some(true)).invoke().map {
+            modules =>
+              if (modules.isEmpty) {
+                for (index <- updatedCourse.moduleIds.indices) {
+                  validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                }
+              }
+              else {
+                val moduleIdList = modules.map(_.id)
+                for (index <- updatedCourse.moduleIds.indices) {
+                  if (!moduleIdList.contains(updatedCourse.moduleIds(index)))
+                    validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                }
+              }
+          }
+          try {
+            // TODO use another timeout variable, for internal server communication
+            Await.result(moduleCheckFuture, validationTimeout)
+          }
+          catch {
+            case _: TimeoutException => throw UC4Exception.ValidationTimeout
+            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          }
         }
 
         // If lecturerId is empty, the userService call cannot be found, therefore check and abort
@@ -169,7 +234,7 @@ class CourseServiceImpl(
 
         // Check if the lecturer does exist
         userService.getUser(updatedCourse.lecturerId).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-          case ex: UC4Exception if ex.errorCode.http == 404 =>
+          case ex: UC4Exception if ex.errorCode == 404 =>
             throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors :+ SimpleError("lecturerId", "Lecturer does not exist.")))
         }.flatMap { _ =>
           val ref = entityRef(id)
@@ -186,7 +251,7 @@ class CourseServiceImpl(
               else {
                 ref.ask[Confirmation](replyTo => UpdateCourse(updatedCourse, replyTo))
                   .map {
-                    case Accepted => // Update Successful
+                    case Accepted(_) => // Update Successful
                       (ResponseHeader(200, MessageProtocol.empty, List()), Done)
                     case Rejected(code, reason) =>
                       throw UC4Exception(code, reason)

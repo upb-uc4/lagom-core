@@ -25,7 +25,7 @@ case class UserState(optUser: Option[User]) {
 
       case CreateUser(user, replyTo) =>
         if (optUser.isEmpty) {
-          Effect.persist(OnUserCreate(user)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnUserCreate(user)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
@@ -33,7 +33,7 @@ case class UserState(optUser: Option[User]) {
 
       case UpdateUser(user, replyTo) =>
         if (optUser.isDefined) {
-          Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnUserUpdate(user)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
@@ -43,10 +43,10 @@ case class UserState(optUser: Option[User]) {
         //Check for existence and check for student
         if (optUser.isDefined && optUser.get.role == Role.Student) {
           if (semester.compareSemester(optUser.get.asInstanceOf[Student].latestImmatriculation) > 0) {
-            Effect.persist(OnLatestMatriculationUpdate(semester)).thenReply(replyTo) { _ => Accepted }
+            Effect.persist(OnLatestMatriculationUpdate(semester)).thenReply(replyTo) { _ => Accepted.default }
           }
           else {
-            Effect.reply(replyTo)(Accepted)
+            Effect.reply(replyTo)(Accepted.default)
           }
         }
         else {
@@ -55,14 +55,14 @@ case class UserState(optUser: Option[User]) {
 
       case ForceDeleteUser(replyTo) =>
         if (optUser.isDefined) {
-          Effect.persist(OnUserForceDelete(optUser.get)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnUserForceDelete(optUser.get)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(404, GenericError(ErrorType.KeyNotFound)))
         }
       case SoftDeleteUser(replyTo) =>
         if (optUser.isDefined) {
-          Effect.persist(OnUserSoftDelete(optUser.get)).thenReply(replyTo) { _ => Accepted }
+          Effect.persist(OnUserSoftDelete(optUser.get)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(404, GenericError(ErrorType.KeyNotFound)))

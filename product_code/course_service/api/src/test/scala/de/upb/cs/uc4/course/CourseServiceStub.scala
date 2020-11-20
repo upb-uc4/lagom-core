@@ -59,13 +59,26 @@ class CourseServiceStub extends CourseService with DefaultTestCourses {
   }
 
   /** Get all courses, with optional query parameters */
-  override def getAllCourses(courseName: Option[String], lecturerId: Option[String]): ServiceCall[NotUsed, Seq[Course]] = ServiceCall {
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = ServiceCall {
     _ =>
       Future.successful(
         courses.filter { course =>
           courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
         }.filter { course =>
           lecturerId.isEmpty || course.lecturerId == lecturerId.get
+        }.filter {
+          course =>
+            moduleIds match {
+              case None => true
+              case Some(listOfModuleIds) =>
+                listOfModuleIds.split(',').foreach {
+                  moduleId =>
+                    if (course.moduleIds.contains(moduleId)) {
+                      true
+                    }
+                }
+                false
+            }
         }
       )
   }

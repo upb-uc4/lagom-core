@@ -100,7 +100,7 @@ class CertificateServiceSpec extends AsyncWordSpec
     "return an error when fetching the enrollmentId of a non-existing user" in {
       val username = "student01"
       client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
-        answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+        answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
     }
 
@@ -123,7 +123,7 @@ class CertificateServiceSpec extends AsyncWordSpec
 
       client.getCertificate(username).handleRequestHeader(addAuthorizationHeader())
         .invoke().failed.map {
-          answer => answer.asInstanceOf[UC4Exception].errorCode.http should ===(404)
+          answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
         }
     }
 

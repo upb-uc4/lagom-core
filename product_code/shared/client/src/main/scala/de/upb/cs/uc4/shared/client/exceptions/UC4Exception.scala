@@ -1,12 +1,10 @@
 package de.upb.cs.uc4.shared.client.exceptions
 
-import com.lightbend.lagom.scaladsl.api.transport.TransportErrorCode
-
 abstract class UC4Exception(
-    val errorCode: TransportErrorCode,
+    val errorCode: Int,
     val possibleErrorResponse: UC4Error,
     val cause: Throwable
-) extends Exception(possibleErrorResponse.title, cause, true, true) {
+) extends Exception(possibleErrorResponse.title, cause, true, true) with UC4ExceptionSerializable {
 
   override def getMessage: String = super.getMessage + "\n" + possibleErrorResponse.toString
 }
@@ -28,6 +26,7 @@ object UC4Exception {
   val DeserializationError = new UC4NonCriticalException(400, GenericError(ErrorType.Deserialization))
   def KafkaDeserializationError(expected: String, actual: String) = new UC4NonCriticalException(400, GenericError(ErrorType.KafkaDeserialization, s"Expected class type '$expected' but received '$actual''"))
 
+  val AlreadyDeleted = new UC4NonCriticalException(400, GenericError(ErrorType.AlreadyDeleted))
   val MalformedRefreshToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedRefreshToken))
   val MalformedLoginToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedLoginToken))
   val MultipleAuthorizationError = new UC4NonCriticalException(400, GenericError(ErrorType.MultipleAuthorization))

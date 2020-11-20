@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.user.model.user
 
-import de.upb.cs.uc4.shared.client.configuration.RegexCollection
+import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
@@ -48,13 +48,16 @@ case class Lecturer(
     val freeTextRegex = RegexCollection.Commons.longTextRegex
     val researchAreaRegex = RegexCollection.Lecturer.researchAreaRegex
 
+    val freeTextMessage = ErrorMessageCollection.Commons.longTextMessage
+    val researchAreaMessage = ErrorMessageCollection.Lecturer.researchAreaMessage
+
     super.validate.map { superErrors =>
       var errors = superErrors.toList
       if (!freeTextRegex.matches(freeText)) {
-        errors :+= SimpleError("freeText", "Free text must contain 0 to 10000 characters.")
+        errors :+= SimpleError("freeText", freeTextMessage)
       }
       if (!researchAreaRegex.matches(researchArea)) {
-        errors :+= SimpleError("researchArea", "Research area must contain 0 to 200 characters.")
+        errors :+= SimpleError("researchArea", researchAreaMessage)
       }
       errors
     }

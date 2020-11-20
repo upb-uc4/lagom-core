@@ -45,7 +45,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(student0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Option[User]]()
       ref ! GetUser(probe2.ref)
@@ -57,7 +57,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(admin0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! CreateUser(admin1, probe2.ref)
@@ -80,11 +80,11 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(admin0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! UpdateUser(admin1, probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)
@@ -96,11 +96,11 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(student0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("SS2020", probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)
@@ -112,15 +112,15 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(student0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("SS2020", probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("WS2020/21", probe3.ref)
-      probe3.expectMessage(Accepted)
+      probe3.expectMessageType[Accepted]
 
       val probe4 = createTestProbe[Option[User]]()
       ref ! GetUser(probe4.ref)
@@ -132,15 +132,15 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(student0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("SS2020", probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Confirmation]()
       ref ! UpdateLatestMatriculation("SS2019", probe3.ref)
-      probe3.expectMessage(Accepted)
+      probe3.expectMessageType[Accepted]
 
       val probe4 = createTestProbe[Option[User]]()
       ref ! GetUser(probe4.ref)
@@ -161,11 +161,11 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(lecturer0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! ForceDeleteUser(probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)
@@ -185,11 +185,11 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! CreateUser(lecturer0, probe1.ref)
-      probe1.expectMessage(Accepted)
+      probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
       ref ! SoftDeleteUser(probe2.ref)
-      probe2.expectMessage(Accepted)
+      probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)

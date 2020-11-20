@@ -1,7 +1,14 @@
-# [WIP v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.11.0...authentication-v0.11.1) (2020-XX-XX)
+# [WIP - v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.12.0...authentication-v0.12.1) (2020-XX-XX)
+## Feature
+ - Added configurable timeouts in application config
+## Refactor
+## Bugfix
+
+# [v0.12.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.11.0...authentication-v0.12.0) (2020-11-10)
 ## Feature
  - Added support for ETags
 ## Refactor
+ - Bumped Version of Lagom to 1.6.4
 ## Bugfix
  - Added all messages to serialization registry
 

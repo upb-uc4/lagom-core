@@ -25,15 +25,15 @@ case class CertificateState(
   def applyCommand(cmd: CertificateCommand): ReplyEffect[CertificateEvent, CertificateState] =
     cmd match {
       case RegisterUser(enrollmentId, secret, replyTo) =>
-        Effect.persist(OnRegisterUser(enrollmentId, secret)).thenReply(replyTo) { _ => Accepted }
+        Effect.persist(OnRegisterUser(enrollmentId, secret)).thenReply(replyTo) { _ => Accepted.default }
       case GetCertificateUser(replyTo) =>
-        Effect.reply(replyTo)(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey)
+        Effect.reply(replyTo)(CertificateUser(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey))
       case SetCertificateAndKey(certificate, encryptedPrivateKey, replyTo) =>
         Effect.persist(OnCertficateAndKeySet(certificate, encryptedPrivateKey)).thenReply(replyTo) { _ => Accepted }
       case SoftDeleteCertificateUser(username, role, replyTo) =>
-        Effect.persist(OnCertificateUserSoftDelete(username, role)).thenReply(replyTo) { _ => Accepted }
+        Effect.persist(OnCertificateUserSoftDelete(username, role)).thenReply(replyTo) { _ => Accepted.default }
       case ForceDeleteCertificateUser(username, role, replyTo) =>
-        Effect.persist(OnCertificateUserForceDelete(username, role)).thenReply(replyTo) { _ => Accepted }
+        Effect.persist(OnCertificateUserForceDelete(username, role)).thenReply(replyTo) { _ => Accepted.default }
 
       case _ =>
         println("Unknown Command")

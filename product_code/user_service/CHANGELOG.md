@@ -1,3 +1,15 @@
+# [WIP - v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.12.0...user-v0.12.1) (2020-XX-XX)
+## Feature
+ - Added configurable timeouts in application config
+## Refactor
+## Bugfix
+
+# [v0.12.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.11.1...user-v0.12.0) (2020-11-10)
+## Feature
+## Refactor
+ - Bumped Version of Lagom to 1.6.4
+## Bugfix
+
 # [v0.11.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.11.0...user-v0.11.1) (2020-11-06)
 ## Feature
  - Added support for ETags

@@ -34,6 +34,14 @@ trait MatriculationService extends UC4Service {
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 
+  /** Immatriculates a student */
+  @deprecated
+  def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done]
+
+  /** Allows PUT */
+  @deprecated
+  def allowedPut: ServiceCall[NotUsed, Done]
+
   final override def descriptor: Descriptor = {
     import Service._
     super.descriptor
@@ -44,6 +52,10 @@ trait MatriculationService extends UC4Service {
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/submit", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/history/:username", allowedGet _),
+
+        //DEPRECATED
+        restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.OPTIONS, pathPrefix + "/:username", allowedPut _),
       )
   }
 }

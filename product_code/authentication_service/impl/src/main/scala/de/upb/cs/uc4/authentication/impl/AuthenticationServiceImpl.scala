@@ -8,13 +8,11 @@ import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport._
-import com.lightbend.lagom.scaladsl.persistence.ReadSide
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, AuthenticationState }
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
-import de.upb.cs.uc4.authentication.impl.readside.AuthenticationEventProcessor
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model._
 import de.upb.cs.uc4.shared.client.Hashing
@@ -22,28 +20,28 @@ import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import io.jsonwebtoken._
+import play.api.Environment
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
-class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEventProcessor,
-    clusterSharding: ClusterSharding, config: Config)(implicit ec: ExecutionContext) extends AuthenticationService {
-
-  readSide.register(processor)
+class AuthenticationServiceImpl(
+    clusterSharding: ClusterSharding,
+    config: Config,
+    override val environment: Environment
+)(implicit ec: ExecutionContext, timeout: Timeout) extends AuthenticationService {
 
   private def entityRef(id: String): EntityRef[AuthenticationCommand] =
     clusterSharding.entityRefFor(AuthenticationState.typeKey, id)
 
-  implicit val timeout: Timeout = Timeout(5.seconds)
-
-  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
   /** Sets the authentication data of a user */
   override def setAuthentication(): ServiceCall[AuthenticationUser, Done] = ServiceCall { user =>
     entityRef(Hashing.sha256(user.username)).ask[Confirmation](replyTo => SetAuthentication(user, replyTo)).map {
-      case Accepted => Done
+      case Accepted(_) => Done
       case Rejected(code, errorResponse) =>
         throw UC4Exception(code, errorResponse)
     }
@@ -83,7 +81,7 @@ class AuthenticationServiceImpl(readSide: ReadSide, processor: AuthenticationEve
 
           ref.ask[Confirmation](replyTo => SetAuthentication(authUser, replyTo))
             .map {
-              case Accepted => // Update Successful
+              case Accepted(_) => // Update Successful
                 (ResponseHeader(200, MessageProtocol.empty, List()), Done)
               case Rejected(code, errorResponse) =>
                 throw UC4Exception(code, errorResponse)
