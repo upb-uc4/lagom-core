@@ -126,6 +126,9 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
       if (optExamReg.isEmpty) {
         throw UC4Exception.NotFound
       }
+      if (!optExamReg.get.active) {
+        throw UC4Exception.AlreadyDeleted
+      }
       val hlRef = entityRefHyperledger
       hlRef.askWithStatus[Confirmation](replyTo => CloseExamregHyperledger(examregName, replyTo)).flatMap {
         case Accepted(_) =>
