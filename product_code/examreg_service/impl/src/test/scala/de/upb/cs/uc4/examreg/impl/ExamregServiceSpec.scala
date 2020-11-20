@@ -231,6 +231,19 @@ class ExamregServiceSpec extends AsyncWordSpec
       }
     }
 
+    "not close an already inactive examination regulation" in {
+      val uniqueExamReg = examReg2.copy(name = "inactiveDuplicate")
+      client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(uniqueExamReg).flatMap { _ =>
+        client.closeExaminationRegulation(uniqueExamReg.name).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap {
+          _ =>
+            client.closeExaminationRegulation(uniqueExamReg.name).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map{
+              exception =>
+                exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.AlreadyDeleted)
+            }
+        }
+      }
+    }
+
     "return an error when trying to close a non-existing examination regulation" in {
       client.closeExaminationRegulation("does not exist").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { exception =>
         exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
