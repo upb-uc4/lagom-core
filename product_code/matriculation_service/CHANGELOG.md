@@ -1,3 +1,10 @@
+# [v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.0...matriculation-v0.12.1) (2020-11-17)
+## Feature
+ - Added configurable timeouts in application config
+ - Added old endpoints for backwards compatibility
+## Refactor
+## Bugfix
+
 # [v0.12.0](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.11.3...matriculation-v0.12.0) (2020-11-10)
 ## Feature
 ## Refactor

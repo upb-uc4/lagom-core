@@ -1,3 +1,15 @@
+# [v0.13.0](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.12.1...configuration-v0.13.0) (2020-11-23)
+## Feature
+ - Added configurable timeouts in application config
+## Refactor
+## Bugfix
+
+# [v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.12.0...configuration-v0.12.1) (2020-11-11)
+## Feature
+ - Added error messages for every regex in ValidationConfiguration
+## Refactor
+## Bugfix
+
 # [v0.12.0](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.11.1...configuration-v0.12.0) (2020-11-10)
 ## Feature
 ## Refactor

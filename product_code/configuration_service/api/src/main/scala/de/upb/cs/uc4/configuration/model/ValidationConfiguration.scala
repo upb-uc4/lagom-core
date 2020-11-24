@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.configuration.model
 
 import de.upb.cs.uc4.configuration.model.ValidationConfiguration._
-import de.upb.cs.uc4.shared.client.configuration.RegexCollection
+import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
 import play.api.libs.json.{ Format, Json }
 
 case class ValidationConfiguration(
@@ -10,72 +10,98 @@ case class ValidationConfiguration(
     course: CourseRegex,
     user: UserRegex,
     lecturer: LecturerRegex,
-    address: AddressRegex
+    address: AddressRegex,
+    examinationRegulation: ExaminationRegulationRegex,
+    module: ModuleRegex
 )
 
+case class ValidationPair(regex: String, message: String)
+object ValidationPair {
+  implicit val format: Format[ValidationPair] = Json.format
+}
+
 object ValidationConfiguration {
-  case class AuthenticationUserRegex(username: String, password: String)
+  case class AuthenticationUserRegex(username: ValidationPair, password: ValidationPair)
   object AuthenticationUserRegex {
     implicit val format: Format[AuthenticationUserRegex] = Json.format
   }
 
-  case class PostMessageCSRRegex(certificateSigningRequest: String)
+  case class PostMessageCSRRegex(certificateSigningRequest: ValidationPair)
   object PostMessageCSRRegex {
     implicit val format: Format[PostMessageCSRRegex] = Json.format
   }
 
-  case class CourseRegex(courseName: String, startDate: String, endDate: String, ects: String, lecturerId: String, maxParticipants: String, courseDescription: String)
+  case class CourseRegex(courseName: ValidationPair, startDate: ValidationPair, endDate: ValidationPair, ects: ValidationPair, lecturerId: ValidationPair, maxParticipants: ValidationPair, courseDescription: ValidationPair)
   object CourseRegex {
     implicit val format: Format[CourseRegex] = Json.format
   }
 
-  case class UserRegex(username: String, firstName: String, lastName: String, email: String, phoneNumber: String, birthDate: String)
+  case class UserRegex(username: ValidationPair, firstName: ValidationPair, lastName: ValidationPair, email: ValidationPair, phoneNumber: ValidationPair, birthDate: ValidationPair)
   object UserRegex {
     implicit val format: Format[UserRegex] = Json.format
   }
 
-  case class LecturerRegex(freeText: String, researchArea: String)
+  case class LecturerRegex(freeText: ValidationPair, researchArea: ValidationPair)
   object LecturerRegex {
     implicit val format: Format[LecturerRegex] = Json.format
   }
 
-  case class AddressRegex(street: String, houseNumber: String, city: String)
+  case class AddressRegex(street: ValidationPair, houseNumber: ValidationPair, city: ValidationPair)
   object AddressRegex {
     implicit val format: Format[AddressRegex] = Json.format
+  }
+
+  case class ExaminationRegulationRegex(name: ValidationPair)
+  object ExaminationRegulationRegex {
+    implicit val format: Format[ExaminationRegulationRegex] = Json.format
+  }
+
+  case class ModuleRegex(id: ValidationPair, name: ValidationPair)
+  object ModuleRegex {
+    implicit val format: Format[ModuleRegex] = Json.format
   }
 
   def build: ValidationConfiguration = {
     ValidationConfiguration(
       AuthenticationUserRegex(
-        RegexCollection.AuthenticationUser.usernameRegex.regex,
-        RegexCollection.AuthenticationUser.passwordRegex.regex
+        ValidationPair(RegexCollection.AuthenticationUser.usernameRegex.regex, ErrorMessageCollection.AuthenticationUser.usernameMessage),
+        ValidationPair(RegexCollection.AuthenticationUser.passwordRegex.regex, ErrorMessageCollection.AuthenticationUser.passwordMessage)
       ),
-      PostMessageCSRRegex(RegexCollection.PostMessageCSR.csrRegex.regex),
+      PostMessageCSRRegex(
+        ValidationPair(RegexCollection.PostMessageCSR.csrRegex.regex, ErrorMessageCollection.PostMessageCSR.csrMessage)
+      ),
       CourseRegex(
-        RegexCollection.Commons.nameRegex.regex,
-        RegexCollection.Commons.dateRegex.regex,
-        RegexCollection.Commons.dateRegex.regex,
-        RegexCollection.Course.ectsRegex.regex,
-        RegexCollection.Commons.nameRegex.regex,
-        RegexCollection.Course.maxParticipantsRegex.regex,
-        RegexCollection.Commons.longTextRegex.regex
+        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.Course.courseNameMessage), //courseName
+        ValidationPair(RegexCollection.Commons.dateRegex.regex, ErrorMessageCollection.Course.startDateMessage),
+        ValidationPair(RegexCollection.Commons.dateRegex.regex, ErrorMessageCollection.Course.endDateMessage),
+        ValidationPair(RegexCollection.Course.ectsRegex.regex, ErrorMessageCollection.Course.ectsMessage),
+        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.Course.lecturerNameMessage), //lecturerId
+        ValidationPair(RegexCollection.Course.maxParticipantsRegex.regex, ErrorMessageCollection.Course.maxParticipantsMessage),
+        ValidationPair(RegexCollection.Commons.longTextRegex.regex, ErrorMessageCollection.Commons.longTextMessage)
       ),
       UserRegex(
-        RegexCollection.User.usernameRegex.regex,
-        RegexCollection.Commons.nameRegex.regex,
-        RegexCollection.Commons.nameRegex.regex,
-        RegexCollection.User.mailRegex.regex,
-        RegexCollection.User.phoneNumberRegex.regex,
-        RegexCollection.Commons.dateRegex.regex
+        ValidationPair(RegexCollection.User.usernameRegex.regex, ErrorMessageCollection.User.usernameMessage),
+        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.User.firstNameMessage),
+        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.User.lastNameMessage),
+        ValidationPair(RegexCollection.User.mailRegex.regex, ErrorMessageCollection.User.mailMessage),
+        ValidationPair(RegexCollection.User.phoneNumberRegex.regex, ErrorMessageCollection.User.phoneNumberMessage),
+        ValidationPair(RegexCollection.Commons.dateRegex.regex, ErrorMessageCollection.Commons.dateMessage)
       ),
       LecturerRegex(
-        RegexCollection.Commons.longTextRegex.regex,
-        RegexCollection.Lecturer.researchAreaRegex.regex
+        ValidationPair(RegexCollection.Commons.longTextRegex.regex, ErrorMessageCollection.Commons.longTextMessage),
+        ValidationPair(RegexCollection.Lecturer.researchAreaRegex.regex, ErrorMessageCollection.Lecturer.researchAreaMessage)
       ),
       AddressRegex(
-        RegexCollection.Address.nameRegex.regex,
-        RegexCollection.Address.houseNumberRegex.regex,
-        RegexCollection.Address.nameRegex.regex
+        ValidationPair(RegexCollection.Address.nameRegex.regex, ErrorMessageCollection.Address.streetNameMessage),
+        ValidationPair(RegexCollection.Address.houseNumberRegex.regex, ErrorMessageCollection.Address.houseNumberMessage),
+        ValidationPair(RegexCollection.Address.nameRegex.regex, ErrorMessageCollection.Address.cityNameMessage)
+      ),
+      ExaminationRegulationRegex(
+        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.ExaminationRegulation.nameMessage)
+      ),
+      ModuleRegex(
+        ValidationPair(RegexCollection.Module.idRegex.regex, ErrorMessageCollection.Module.idMessage),
+        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.Module.nameMessage)
       )
     )
 

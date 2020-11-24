@@ -28,16 +28,14 @@ class CertificateServiceImpl(
     clusterSharding: ClusterSharding,
     enrollmentManager: EnrollmentManagerTrait,
     override val environment: Environment
-)(implicit ec: ExecutionContext, val config: Config)
+)(implicit ec: ExecutionContext, timeout: Timeout, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CertificateCommand] =
     clusterSharding.entityRefFor(CertificateState.typeKey, id)
 
-  implicit val timeout: Timeout = Timeout(15.seconds)
-
-  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.validation.timeout").milliseconds
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   /** Forwards the certificate signing request from the given user */
   override def setCertificate(username: String): ServerServiceCall[PostMessageCSR, JsonCertificate] = identifiedAuthenticated(AuthenticationRole.All: _*) {

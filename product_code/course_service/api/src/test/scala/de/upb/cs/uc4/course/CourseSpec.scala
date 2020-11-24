@@ -7,7 +7,7 @@ import org.scalatest.wordspec.AsyncWordSpecLike
 class CourseSpec extends AsyncWordSpecLike with Matchers {
 
   val genericString: String = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut l"
-  val courseValid: Course = Course("550e8400-e29b-11d4-a716-446655440000", "Name", "Lecture", "2020-04-01", "2020-09-30", 7, "aLecturer", 50, 0, "English", "This is Analysis")
+  val courseValid: Course = Course("550e8400-e29b-11d4-a716-446655440000", Seq(), "Name", "Lecture", "2020-04-01", "2020-09-30", 7, "aLecturer", 50, 0, "English", "This is Analysis")
 
   "A Course" should {
     "be validated" in {
