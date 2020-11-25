@@ -17,18 +17,24 @@ case class PutMessageMatriculation(matriculation: Seq[SubjectMatriculation]) {
     * @return Filled Sequence of [[SimpleError]]
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
-    Future.sequence {
-      matriculation.map {
-        subjectMatriculation =>
-          subjectMatriculation.validate.map {
-            _.map {
-              simpleError =>
-                //Name of error is of the form: matriculation[index].semesters[index]
-                simpleError.copy(name = s"matriculation[${matriculation.indexOf(subjectMatriculation)}].${simpleError.name}")
+    if (matriculation.isEmpty) {
+      Future.successful(Seq(SimpleError("matriculation", "matriculation must not be empty.")))
+    }
+    else {
+      Future.sequence {
+        matriculation.map {
+          subjectMatriculation =>
+            subjectMatriculation.validate.map {
+              _.map {
+                simpleError =>
+                  //Name of error is of the form: matriculation[index].semesters[index]
+                  simpleError.copy(name = s"matriculation[${matriculation.indexOf(subjectMatriculation)}].${simpleError.name}")
+              }
             }
-          }
-      }
-    }.map(_.flatten)
+        }
+      }.map(_.flatten)
+    }
+
   }
 }
 

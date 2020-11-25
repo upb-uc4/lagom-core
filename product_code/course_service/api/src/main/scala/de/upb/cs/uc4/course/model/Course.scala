@@ -8,6 +8,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 case class Course(
     courseId: String,
+    moduleIds: Seq[String],
     courseName: String,
     courseType: String,
     startDate: String,
@@ -22,6 +23,7 @@ case class Course(
   def trim: Course = {
     copy(
       courseId,
+      moduleIds,
       courseName.trim,
       courseType,
       startDate.trim,
@@ -35,9 +37,10 @@ case class Course(
     )
   }
 
-  /** Checks if the course attributes correspond to agreed syntax and semantics
+  /** Validates the object by checking predefined conditions like correct charsets, syntax, etc.
+    * Returns a list of SimpleErrors[[SimpleError]]
     *
-    * @return response-code which gives detailed description of syntax or semantics violation
+    * @return Filled Sequence of [[SimpleError]]
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 

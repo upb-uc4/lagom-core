@@ -1,4 +1,4 @@
-# [WIP - v0.12.2](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.12.1...configuration-v0.12.2) (2020-XX-XX)
+# [v0.13.0](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.12.1...configuration-v0.13.0) (2020-11-23)
 ## Feature
  - Added configurable timeouts in application config
 ## Refactor

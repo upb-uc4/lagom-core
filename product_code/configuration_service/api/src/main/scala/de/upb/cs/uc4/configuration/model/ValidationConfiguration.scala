@@ -10,7 +10,9 @@ case class ValidationConfiguration(
     course: CourseRegex,
     user: UserRegex,
     lecturer: LecturerRegex,
-    address: AddressRegex
+    address: AddressRegex,
+    examinationRegulation: ExaminationRegulationRegex,
+    module: ModuleRegex
 )
 
 case class ValidationPair(regex: String, message: String)
@@ -49,6 +51,16 @@ object ValidationConfiguration {
     implicit val format: Format[AddressRegex] = Json.format
   }
 
+  case class ExaminationRegulationRegex(name: ValidationPair)
+  object ExaminationRegulationRegex {
+    implicit val format: Format[ExaminationRegulationRegex] = Json.format
+  }
+
+  case class ModuleRegex(id: ValidationPair, name: ValidationPair)
+  object ModuleRegex {
+    implicit val format: Format[ModuleRegex] = Json.format
+  }
+
   def build: ValidationConfiguration = {
     ValidationConfiguration(
       AuthenticationUserRegex(
@@ -83,6 +95,13 @@ object ValidationConfiguration {
         ValidationPair(RegexCollection.Address.nameRegex.regex, ErrorMessageCollection.Address.streetNameMessage),
         ValidationPair(RegexCollection.Address.houseNumberRegex.regex, ErrorMessageCollection.Address.houseNumberMessage),
         ValidationPair(RegexCollection.Address.nameRegex.regex, ErrorMessageCollection.Address.cityNameMessage)
+      ),
+      ExaminationRegulationRegex(
+        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.ExaminationRegulation.nameMessage)
+      ),
+      ModuleRegex(
+        ValidationPair(RegexCollection.Module.idRegex.regex, ErrorMessageCollection.Module.idMessage),
+        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.Module.nameMessage)
       )
     )
 
