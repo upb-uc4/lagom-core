@@ -6,6 +6,7 @@ import play.api.libs.json.{ Format, Json }
 
 case class Admin(
     username: String,
+    enrollmentIdSecret: String,
     role: Role,
     address: Address,
     firstName: String,
@@ -17,6 +18,7 @@ case class Admin(
 
   def copyUser(
       username: String = this.username,
+      enrollmentIdSecret: String = this.enrollmentIdSecret,
       role: Role = this.role,
       address: Address = this.address,
       firstName: String = this.firstName,
@@ -25,14 +27,12 @@ case class Admin(
       phoneNumber: String = this.phoneNumber,
       birthDate: String = this.birthDate
   ): Admin =
-    copy(username, role, address, firstName, lastName, email, phoneNumber, birthDate)
+    copy(username, enrollmentIdSecret, role, address, firstName, lastName, email, phoneNumber, birthDate)
 
   override def trim: Admin = super.trim.asInstanceOf[Admin]
 
   override def toPublic: Admin =
-    Admin(this.username, this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "")
-
-  //override def toPublic: Admin = super.toPublic.asInstanceOf[Admin]
+    Admin(this.username, "", this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "")
 
   override def clean: Admin = super.clean.asInstanceOf[Admin]
 }

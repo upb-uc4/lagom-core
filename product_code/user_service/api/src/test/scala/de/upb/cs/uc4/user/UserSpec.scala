@@ -10,22 +10,22 @@ class UserSpec extends AsyncWordSpecLike with Matchers {
   val genericString: String = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut l"
   val addressValid: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
 
-  val studentValid: Student = Student("student0", Role.Student, addressValid, "VollDer", "Hammer", "example@mail.de", "+49123456789", "1990-12-11", "SS2020", "7421769")
-  val lecturerValid: Lecturer = Lecturer("lecturer0", Role.Lecturer, addressValid, "EchtDer", "Hammer", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
-  val adminValid: Admin = Admin("admin0", Role.Admin, addressValid, "firstName", "LastName", "example@mail.de", "+49123456789", "1992-12-11")
+  val studentValid: Student = Student("student0", "c3R1ZGVudHN0dWRlbnQ=", Role.Student, addressValid, "VollDer", "Hammer", "example@mail.de", "+49123456789", "1990-12-11", "SS2020", "7421769")
+  val lecturerValid: Lecturer = Lecturer("lecturer0", "bGVjdHVyZXJsZWN0dXJlcg==", Role.Lecturer, addressValid, "EchtDer", "Hammer", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+  val adminValid: Admin = Admin("admin0", "YWRtaW5hZG1pbg==", Role.Admin, addressValid, "firstName", "LastName", "example@mail.de", "+49123456789", "1992-12-11")
 
   "A User" should {
 
     "discard private fields for admins" in {
-      adminValid.toPublic should ===(adminValid.copy(address = Address.empty, birthDate = ""))
+      adminValid.toPublic should ===(adminValid.copy(address = Address.empty, birthDate = "", enrollmentIdSecret = ""))
     }
 
     "discard private fields for lecturers" in {
-      lecturerValid.toPublic should ===(lecturerValid.copy(address = Address.empty, birthDate = ""))
+      lecturerValid.toPublic should ===(lecturerValid.copy(address = Address.empty, birthDate = "", enrollmentIdSecret = ""))
     }
 
     "discard private fields for students" in {
-      studentValid.toPublic should ===(studentValid.copy(address = Address.empty, birthDate = "", latestImmatriculation = "", matriculationId = ""))
+      studentValid.toPublic should ===(studentValid.copy(address = Address.empty, birthDate = "", latestImmatriculation = "", matriculationId = "", enrollmentIdSecret = ""))
     }
 
     "be validated" in {

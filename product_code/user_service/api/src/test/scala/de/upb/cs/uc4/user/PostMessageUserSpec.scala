@@ -13,6 +13,11 @@ class PostMessageUserSpec extends AsyncWordSpecLike with Matchers with DefaultTe
       postMessageUserValid.validate.map(_ shouldBe empty)
     }
 
+    "return a validation error for having no governmentId" in {
+      postMessageUserValid.copy(governmentId = "", user = student0.copy(enrollmentIdSecret = "")).validate
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("governmentId"))
+    }
+
     "return a validation error for having different usernames" in {
       postMessageUserValid.copy(authUser = student0Auth.copy(username = "anotherUsername")).validate
         .map(_.map(error => error.name) should contain theSameElementsAs Seq("authUser.username", "user.username"))
@@ -21,6 +26,11 @@ class PostMessageUserSpec extends AsyncWordSpecLike with Matchers with DefaultTe
     "return a validation error for having a non-empty String in latestImmatriculation" in {
       postMessageUserValid.copy(user = student0.copy(latestImmatriculation = "SS2020")).validate
         .map(_.map(error => error.name) should contain theSameElementsAs Seq("user.latestImmatriculation"))
+    }
+
+    "return a validation error for having an enrollmentIdSecret in user" in {
+      postMessageUserValid.copy(user = student0.copy(enrollmentIdSecret = "something")).validate
+        .map(_.map(error => error.name) should contain theSameElementsAs Seq("user.enrollmentIdSecret"))
     }
   }
 }

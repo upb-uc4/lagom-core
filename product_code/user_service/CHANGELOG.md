@@ -1,7 +1,16 @@
-# [WIP - v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.0...user-v0.13.1) (2020-XX-XX)
+# [WIP - v0.13.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.1...user-v0.13.2) (2020-XX-XX)
 ## Feature
 ## Refactor
  - Changed PostMessageUser to use proper inheritance
+## Bugfix
+
+
+# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.0...user-v0.13.1) (2020-11-25)
+## Feature
+ - Added governmentId to PostMessageUser
+ - Added enrollmentIdSecret to user object
+ - Changed default users accordingly, default Users govId is "governmentIdStudent", enrollmentIdSecret is base64 encoding of "studentstudent", "lecturerlecturer" or "adminadmin"
+## Refactor
 ## Bugfix
 
 # [v0.13.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.12.0...user-v0.13.0) (2020-11-23)
