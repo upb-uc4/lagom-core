@@ -26,6 +26,7 @@ object UC4Exception {
   val DeserializationError = new UC4NonCriticalException(400, GenericError(ErrorType.Deserialization))
   def KafkaDeserializationError(expected: String, actual: String) = new UC4NonCriticalException(400, GenericError(ErrorType.KafkaDeserialization, s"Expected class type '$expected' but received '$actual''"))
 
+  val AlreadyDeleted = new UC4NonCriticalException(400, GenericError(ErrorType.AlreadyDeleted))
   val MalformedRefreshToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedRefreshToken))
   val MalformedLoginToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedLoginToken))
   val MultipleAuthorizationError = new UC4NonCriticalException(400, GenericError(ErrorType.MultipleAuthorization))

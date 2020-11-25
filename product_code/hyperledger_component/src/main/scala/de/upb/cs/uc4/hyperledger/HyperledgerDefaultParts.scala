@@ -10,12 +10,12 @@ trait HyperledgerDefaultParts {
   implicit def config: Config
 
   protected val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
-  protected val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile.yaml")
-  protected val tlsCert: Path = retrievePath("uc4.hyperledger.tlsCert", "")
+  protected val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
+  protected val tlsCert: Path = retrieveExternalPath("uc4.hyperledger.tlsCert", "/tmp/hyperledger/org1/msp/cacerts/org1-ca-cert.pem")
 
-  protected val channel: String = retrieveString("uc4.hyperledger.channel")
-  protected val chaincode: String = retrieveString("uc4.hyperledger.chaincode")
-  protected val caURL: String = retrieveString("uc4.hyperledger.caURL")
+  protected val channel: String = retrieveString("uc4.hyperledger.channel", "mychannel")
+  protected val chaincode: String = retrieveString("uc4.hyperledger.chaincode", "uc4-cc")
+  protected val caURL: String = retrieveString("uc4.hyperledger.caURL", s"https://${sys.env.getOrElse("UC4_KIND_NODE_IP", "localhost")}:30907")
 
   /** Retrieves the path from the key out of the configuration.
     *
@@ -29,6 +29,15 @@ trait HyperledgerDefaultParts {
     }
     else {
       Paths.get(getClass.getResource(fallback).toURI)
+    }
+  }
+
+  protected def retrieveExternalPath(key: String, fallback: String): Path = {
+    if (config.hasPath(key)) {
+      Paths.get(config.getString(key))
+    }
+    else {
+      Paths.get(fallback)
     }
   }
 

@@ -5,7 +5,7 @@ import play.api.libs.json.{ Format, Json }
 object ErrorType extends Enumeration {
   type ErrorType = Value
   val NotModified, //304
-  Deserialization, KafkaDeserialization, JsonValidation, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
+  Deserialization, KafkaDeserialization, JsonValidation, AlreadyDeleted, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
   MissingHeader, QueryParameter, //In an DetailedError
   BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
   NotEnoughPrivileges, OwnerMismatch, //403
@@ -37,6 +37,7 @@ object ErrorType extends Enumeration {
       //400
       case Deserialization => "Syntax of the provided json object was incorrect"
       case JsonValidation => "The provided json object did not validate" //In a DetailedError
+      case AlreadyDeleted => "The resource was already deleted"
       case MalformedRefreshToken => "The long term token is malformed"
       case MalformedLoginToken => "The login token is malformed"
       case UnexpectedEntity => "Expected another entity" //In an InformativeError
