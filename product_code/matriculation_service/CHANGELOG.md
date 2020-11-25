@@ -1,3 +1,11 @@
+# [WIP-v0.12.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.1...matriculation-v0.12.2) (2020-XX-XX)
+## Feature
+ - Added check in "getProposal" call on endpoint "/matriculation/:username/proposal",
+ that confirms that the matriculation message contains fieldOfStudies that correspond to
+ active examination regulations, as provided by the ExamregService
+## Refactor
+## Bugfix
+
 # [v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.0...matriculation-v0.12.1) (2020-11-17)
 ## Feature
  - Added configurable timeouts in application config
