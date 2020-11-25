@@ -1,8 +1,13 @@
+# [WIP - v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.0...user-v0.13.1) (2020-XX-XX)
+## Feature
+## Refactor
+ - Changed PostMessageUser to use proper inheritance
+## Bugfix
+
 # [v0.13.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.12.0...user-v0.13.0) (2020-11-23)
 ## Feature
  - Added configurable timeouts in application config
 ## Refactor
- - Changed PostMessageUser to use proper inheritance
 ## Bugfix
 
 # [v0.12.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.11.1...user-v0.12.0) (2020-11-10)
