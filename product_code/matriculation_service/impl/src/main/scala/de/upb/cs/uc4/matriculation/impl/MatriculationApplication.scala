@@ -4,6 +4,7 @@ import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.certificate.api.CertificateService
+import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.hyperledger.HyperledgerComponent
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
@@ -18,6 +19,7 @@ abstract class MatriculationApplication(context: LagomApplicationContext)
 
   // Bind UserService
   lazy val userService: UserService = serviceClient.implement[UserService]
+  lazy val examregService: ExamregService = serviceClient.implement[ExamregService]
 
   //Bind CertificateService
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]

@@ -95,14 +95,14 @@ class CourseServiceImpl(
               modules =>
                 if (modules.isEmpty) {
                   for (index <- courseProposal.moduleIds.indices) {
-                    validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                    validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist.")
                   }
                 }
                 else {
                   val moduleIdList = modules.map(_.id)
                   for (index <- courseProposal.moduleIds.indices) {
                     if (!moduleIdList.contains(courseProposal.moduleIds(index)))
-                      validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist")
+                      validationErrors :+= SimpleError(s"moduleIds[$index]", "Module does not exist.")
                   }
                 }
             }
