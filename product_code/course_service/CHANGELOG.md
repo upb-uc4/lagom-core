@@ -1,4 +1,4 @@
-# [WIP - v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.13.0...course-v0.13.1) (2020-XX-XX)
+# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.12.2...course-v0.13.1) (2020-11-25)
 ## Feature
 ## Refactor
  - Rebuilt to be compatible with new user-service API

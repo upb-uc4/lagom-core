@@ -1,4 +1,4 @@
-# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.0...matriculation-v0.12.1) (2020-11-17)
+# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.1...matriculation-v0.13.1) (2020-11-25)
 ## Feature
 ## Refactor
  - Rebuilt to be compatible with new user-service API
