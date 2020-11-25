@@ -10,6 +10,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 case class Student(
     username: String,
+    enrollmentIdSecret: String,
     role: Role,
     address: Address,
     firstName: String,
@@ -23,6 +24,7 @@ case class Student(
 
   def copyUser(
       username: String = this.username,
+      enrollmentIdSecret: String = this.enrollmentIdSecret,
       role: Role = this.role,
       address: Address = this.address,
       firstName: String = this.firstName,
@@ -31,7 +33,7 @@ case class Student(
       phoneNumber: String = this.phoneNumber,
       birthDate: String = this.birthDate
   ): Student =
-    copy(username, role, address, firstName, lastName, email, phoneNumber, birthDate)
+    copy(username, enrollmentIdSecret, role, address, firstName, lastName, email, phoneNumber, birthDate)
 
   override def trim: Student =
     super.trim.asInstanceOf[Student].copy(
@@ -40,7 +42,7 @@ case class Student(
     )
 
   override def toPublic: Student =
-    Student(this.username, this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "", "", "")
+    Student(this.username, "", this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "", "", "")
 
   override def clean: Student = super.clean.asInstanceOf[Student]
 

@@ -7,11 +7,14 @@ import play.api.libs.json.{ Format, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-case class PostMessageStudent(authUser: AuthenticationUser, student: Student) extends PostMessageUser {
+case class PostMessageStudent(authUser: AuthenticationUser, governmentId: String, student: Student) extends PostMessageUser {
+
+  override val userString: String = "student"
 
   def copyPostMessageUser(
-      authUser: AuthenticationUser = this.authUser
-  ): PostMessageStudent = copy(authUser, student)
+      authUser: AuthenticationUser = this.authUser,
+      governmentId: String = this.governmentId
+  ): PostMessageStudent = copy(authUser, governmentId, student)
 
   override def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
     student.validate.flatMap { studentErrors =>

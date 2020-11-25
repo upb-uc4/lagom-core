@@ -7,11 +7,14 @@ import play.api.libs.json.{ Format, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-case class PostMessageAdmin(authUser: AuthenticationUser, admin: Admin) extends PostMessageUser {
+case class PostMessageAdmin(authUser: AuthenticationUser, governmentId: String, admin: Admin) extends PostMessageUser {
+
+  override val userString: String = "admin"
 
   def copyPostMessageUser(
-      authUser: AuthenticationUser = this.authUser
-  ): PostMessageAdmin = copy(authUser, admin)
+      authUser: AuthenticationUser = this.authUser,
+      governmentId: String = this.governmentId
+  ): PostMessageAdmin = copy(authUser, governmentId, admin)
 
   override def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
     admin.validate.flatMap { adminErrors =>

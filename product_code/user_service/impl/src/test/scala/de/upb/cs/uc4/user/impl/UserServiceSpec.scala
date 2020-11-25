@@ -63,9 +63,9 @@ class UserServiceSpec extends AsyncWordSpec
     Future.sequence(users.map { user =>
       val newUsername = user.username
       val postMessage = user match {
-        case s: Student  => PostMessageStudent(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), s.copy(username = newUsername))
-        case l: Lecturer => PostMessageLecturer(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Lecturer), l.copy(username = newUsername))
-        case a: Admin    => PostMessageAdmin(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), a.copy(username = newUsername))
+        case s: Student  => PostMessageStudent(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Student), "governmentIdStudent", s.copy(username = newUsername))
+        case l: Lecturer => PostMessageLecturer(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Lecturer), "governmentIdLecturer", l.copy(username = newUsername))
+        case a: Admin    => PostMessageAdmin(AuthenticationUser(newUsername, newUsername, AuthenticationRole.Admin), "governmentIdAdmin", a.copy(username = newUsername))
       }
       client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(postMessage)
     }).flatMap { createdUsers =>
@@ -157,12 +157,12 @@ class UserServiceSpec extends AsyncWordSpec
     server.application.database.getAll(role)
   }
 
-  private def createUsernames(username: String): Usernames = Usernames(username, Hashing.sha256(username))
+  private def createUsernames(username: String, governmentId: String, enrollmentIdSecret: String): Usernames = Usernames(username, Hashing.sha256(s"$governmentId$enrollmentIdSecret"))
 
   //Additional variables needed for some tests
-  val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012")
+  val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012", enrollmentIdSecret = "newEnrollmentIdSecret")
   val student0UpdatedProtected: Student = student0UpdatedUneditable.copy(firstName = "Dieter", lastName = "Dietrich", birthDate = "1996-12-11", matriculationId = "1333337")
-  val uneditableErrorSize: Int = 1
+  val uneditableErrorSize: Int = 2
   val protectedErrorSize: Int = 4 + uneditableErrorSize
 
   val lecturer0Updated: Lecturer = lecturer0.copy(email = "noreply@scam.ng", address = address1, freeText = "Morgen kommt der große Gauss.", researchArea = "Physics")
@@ -173,27 +173,29 @@ class UserServiceSpec extends AsyncWordSpec
     "test topics, which" must {
       "publish a created user" in {
         val creationSource: Source[EncryptionContainer, _] = client.userCreationTopic().subscribe.atMostOnceSource
-        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(student0Auth, student0))
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(student0Auth, "governmentIdStudent0", student0)).map {
+          student0Created =>
+            val source = creationSource
+              .runWith(TestSink.probe[EncryptionContainer]).request(4)
 
-        val source = creationSource
-          .runWith(TestSink.probe[EncryptionContainer]).request(4)
+            val containerSeq = Seq(
+              source.expectNext(FiniteDuration(15, SECONDS)),
+              source.expectNext(FiniteDuration(15, SECONDS)),
+              source.expectNext(FiniteDuration(15, SECONDS)),
+              source.expectNext(FiniteDuration(15, SECONDS))
+            )
 
-        val containerSeq = Seq(
-          source.expectNext(FiniteDuration(15, SECONDS)),
-          source.expectNext(FiniteDuration(15, SECONDS)),
-          source.expectNext(FiniteDuration(15, SECONDS)),
-          source.expectNext(FiniteDuration(15, SECONDS))
-        )
+            containerSeq.map {
+              container =>
+                server.application.kafkaEncryptionUtility.decrypt[Usernames](container)
+            } should contain theSameElementsAs Seq(
+              createUsernames("student", "governmentIdStudent", "c3R1ZGVudHN0dWRlbnQ="),
+              createUsernames("lecturer", "governmentIdLecturer", "bGVjdHVyZXJsZWN0dXJlcg=="),
+              createUsernames("admin", "governmentIdAdmin", "YWRtaW5hZG1pbg=="),
+              createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret)
+            )
+        }
 
-        containerSeq.map {
-          container =>
-            server.application.kafkaEncryptionUtility.decrypt[Usernames](container)
-        } should contain theSameElementsAs Seq(
-          createUsernames("student"),
-          createUsernames("lecturer"),
-          createUsernames("admin"),
-          createUsernames(student0.username)
-        )
       }
 
       "publish a deleted user" in {
@@ -221,10 +223,10 @@ class UserServiceSpec extends AsyncWordSpec
 
     //ADD TESTS
     "add a student" in {
-      client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(student0Auth, student0))
+      client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageStudent(student0Auth, "governmentIdStudent", student0))
       eventually(timeout(Span(15, Seconds))) {
         client.getAllStudents(None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
-          answer should contain(student0)
+          answer.map(_.copy(enrollmentIdSecret = "")) should contain(student0)
         }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -232,7 +234,7 @@ class UserServiceSpec extends AsyncWordSpec
 
     "fail on adding a user with different username in authUser" in {
       client.addUser().handleRequestHeader(addAuthorizationHeader())
-        .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), admin0))
+        .invoke(PostMessageAdmin(admin0Auth.copy(username = admin0.username + "changed"), "governmentIdAdmin", admin0))
         .failed.map {
           answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
         }.flatMap(cleanupOnSuccess)
@@ -242,7 +244,7 @@ class UserServiceSpec extends AsyncWordSpec
     "fail on adding an already existing User" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
-          .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
+          .invoke(PostMessageAdmin(admin0Auth, "governmentIdAdmin", admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
             answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
               .invalidParams should contain(SimpleError("admin.username", "Username already in use."))
           }
@@ -253,7 +255,7 @@ class UserServiceSpec extends AsyncWordSpec
     "fail on adding a User with an empty username" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
-          .invoke(PostMessageAdmin(admin0Auth, admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
+          .invoke(PostMessageAdmin(admin0Auth, "governmentIdAdmin", admin0.copy(firstName = "Dieter"))).failed.flatMap { answer =>
             answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
               .invalidParams.map(_.name) should contain("admin.username")
           }
@@ -264,7 +266,7 @@ class UserServiceSpec extends AsyncWordSpec
     "fail on adding a Student with a duplicate matriculationId" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.addUser().handleRequestHeader(addAuthorizationHeader())
-          .invoke(PostMessageStudent(student0Auth.copy(username = "student7"), student0.copy(username = "student7"))).failed.flatMap { answer =>
+          .invoke(PostMessageStudent(student0Auth.copy(username = "student7"), "governmentIdAdmin", student0.copy(username = "student7"))).failed.flatMap { answer =>
             answer.asInstanceOf[UC4Exception].possibleErrorResponse
               .asInstanceOf[DetailedError].invalidParams.map(_.name) should contain theSameElementsAs Seq("student.matriculationId")
           }
@@ -276,7 +278,7 @@ class UserServiceSpec extends AsyncWordSpec
     "fetch the information of a User as an Admin" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
-          answer should ===(student0)
+          answer.copyUser(enrollmentIdSecret = "") should ===(student0)
         }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -285,7 +287,7 @@ class UserServiceSpec extends AsyncWordSpec
     "fetch the information of a User as the User (non-Admin) himself" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().flatMap { answer =>
-          answer should ===(student0)
+          answer.copyUser(enrollmentIdSecret = "") should ===(student0)
         }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -327,7 +329,7 @@ class UserServiceSpec extends AsyncWordSpec
     "fetch the information of all specified Students, as an Admin" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.getAllStudents(Some(student0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
-          answer should contain theSameElementsAs Seq(student0)
+          answer.map(_.copy(enrollmentIdSecret = "")) should contain theSameElementsAs Seq(student0)
         }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -335,7 +337,7 @@ class UserServiceSpec extends AsyncWordSpec
     "fetch the information of all specified Lecturers, as an Admin" in {
       prepare(Seq(lecturer0)).flatMap { _ =>
         client.getAllLecturers(Some(lecturer0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
-          answer should contain theSameElementsAs Seq(lecturer0)
+          answer.map(_.copy(enrollmentIdSecret = "")) should contain theSameElementsAs Seq(lecturer0)
         }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -343,7 +345,7 @@ class UserServiceSpec extends AsyncWordSpec
     "fetch the information of all specified Admins, as an Admin" in {
       prepare(Seq(admin0)).flatMap { _ =>
         client.getAllAdmins(Some(admin0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
-          answer should contain theSameElementsAs Seq(admin0)
+          answer.map(_.copy(enrollmentIdSecret = "")) should contain theSameElementsAs Seq(admin0)
         }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -359,7 +361,11 @@ class UserServiceSpec extends AsyncWordSpec
     "fetch the information of all specified Users, as an Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
         client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
-          answer should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
+          answer.copy(
+            answer.students.map(_.copy(enrollmentIdSecret = "")),
+            answer.lecturers.map(_.copy(enrollmentIdSecret = "")),
+            answer.admins.map(_.copy(enrollmentIdSecret = ""))
+          ) should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
         }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -389,25 +395,30 @@ class UserServiceSpec extends AsyncWordSpec
     }
 
     "update a user as an admin" in {
-      prepare(Seq(admin0)).flatMap { _ =>
+      prepare(Seq(admin0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == admin0.username).get.enrollmentIdSecret
+        val admin0FetchedAndUpdated = admin0.copy(firstName = "KLAUS", enrollmentIdSecret = enrollmentIdSecretFetched)
         client.updateUser(admin0.username).handleRequestHeader(addAuthorizationHeader())
-          .invoke(admin0.copy(firstName = "KLAUS")).flatMap { _ =>
-            client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
-          }.flatMap { answer =>
-            answer.firstName shouldBe "KLAUS"
+          .invoke(admin0FetchedAndUpdated).flatMap { _ =>
+            client.getUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
+              answer.firstName shouldBe "KLAUS"
+            }
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
 
     "update a user as the user himself" in {
-      prepare(Seq(lecturer0)).flatMap { _ =>
+      prepare(Seq(lecturer0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
         client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
-          .invoke(lecturer0Updated).flatMap { _ =>
-            client.getUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+          .invoke(lecturer0FetchedAndUpdated).flatMap { _ =>
+            client.getUser(lecturer0FetchedAndUpdated.username).handleRequestHeader(addAuthorizationHeader()).invoke()
           }.flatMap { answer =>
-            answer should ===(lecturer0Updated)
+            answer should ===(lecturer0FetchedAndUpdated)
           }
+
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
