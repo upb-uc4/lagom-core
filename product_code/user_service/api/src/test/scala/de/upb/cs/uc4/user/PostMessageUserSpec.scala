@@ -6,7 +6,7 @@ import org.scalatest.wordspec.AsyncWordSpecLike
 
 class PostMessageUserSpec extends AsyncWordSpecLike with Matchers with DefaultTestUsers {
 
-  private val postMessageUserValid = PostMessageUser(student0Auth, student0)
+  private val postMessageUserValid = PostMessageUser(student0Auth, "governmentId", student0)
 
   "A PostMessageUser" should {
     "be validated" in {

@@ -7,7 +7,7 @@ import play.api.libs.json.{ Format, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-case class PostMessageUser(authUser: AuthenticationUser, user: User) {
+case class PostMessageUser(authUser: AuthenticationUser, governmentId: String, user: User) {
 
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
     authUser.validate.map {
@@ -24,6 +24,10 @@ case class PostMessageUser(authUser: AuthenticationUser, user: User) {
             SimpleError("user." + simpleError.name, simpleError.reason)
         }
 
+        if (governmentId.isEmpty) {
+          errors :+= SimpleError("governmentId", "GovernmentId must not be empty.")
+        }
+
         //Filter username errors if authUsername and username are not equal + return error that usernames are not equal
         if (authUser.username != user.username) {
           errors = errors.filter(simpleError => !simpleError.name.contains("username"))
@@ -36,11 +40,11 @@ case class PostMessageUser(authUser: AuthenticationUser, user: User) {
   }
 
   def trim: PostMessageUser = {
-    copy(authUser.trim, user.trim)
+    copy(authUser.trim, governmentId.trim, user.trim)
   }
 
   def clean: PostMessageUser = {
-    copy(authUser.clean, user.clean)
+    trim.copy(authUser = authUser.clean, user = user.clean)
   }
 }
 

@@ -143,9 +143,8 @@ class UserServiceImpl(
         }
 
         //Set enrollmentIdSecret in User object
-        val postMessageFinalized = postMessageUser.copyWithUser(
-          postMessageUser.getUser.copyUser(enrollmentIdSecret = createEnrollmentIdSecret())
-        )
+        val postMessageFinalized = postMessageUser.copy(user =
+          postMessageUser.user.copyUser(enrollmentIdSecret = createEnrollmentIdSecret()))
 
         ref.ask[Confirmation](replyTo => CreateUser(postMessageFinalized.user, postMessageFinalized.governmentId, replyTo))
           .flatMap {
