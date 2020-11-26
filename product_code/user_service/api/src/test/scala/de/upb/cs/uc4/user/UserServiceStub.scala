@@ -8,8 +8,7 @@ import com.lightbend.lagom.scaladsl.api.broker.Topic
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model._
-import de.upb.cs.uc4.user.model.post.PostMessageUser
+import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 
 import scala.concurrent.Future
@@ -102,8 +101,8 @@ class UserServiceStub extends UserService with DefaultTestUsers {
     val rnd = new Random
     val bytes = new Array[Byte](enrollmentIdSecretByteLength)
     rnd.nextBytes(bytes)
-    users ++= Seq(pmu.getUser.copyUser(enrollmentIdSecret = BaseEncoding.base64().encode(bytes)))
-    Future.successful(pmu.getUser)
+    users ++= Seq(pmu.user.copyUser(enrollmentIdSecret = BaseEncoding.base64().encode(bytes)))
+    Future.successful(pmu.user)
   }
 
   override def getImage(username: String): ServiceCall[NotUsed, ByteString] = ServiceCall { _ => Future.successful(null) }

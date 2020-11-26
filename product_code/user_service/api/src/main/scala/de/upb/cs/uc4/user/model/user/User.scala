@@ -110,6 +110,22 @@ trait User {
     }
   }
 
+  /** Validates the object by checking predefined conditions like correct charsets, syntax, ... that must only apply on object creation.
+    * Returns a list of SimpleErrors[[SimpleError]]
+    *
+    * @return Filled Sequence of [[SimpleError]]
+    */
+  def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
+    this.validate.map { validationErrors =>
+      var errors = validationErrors
+
+      if (enrollmentIdSecret.nonEmpty) {
+        errors :+= SimpleError("enrollmentIdSecret", "EnrollmentIdSecret must be empty.")
+      }
+      errors
+    }
+  }
+
   /** Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
     * Returns a list of SimpleErrors[[SimpleError]]
     *

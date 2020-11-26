@@ -72,6 +72,18 @@ case class Student(
     }
   }
 
+  override def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
+    super.validateOnCreation.map { superErrors =>
+      var errors = superErrors.toList
+      //A student cannot be created with latestImmatriculation already set
+      if (latestImmatriculation != "") {
+        errors = errors.filter(simpleError => !simpleError.name.contains("latestImmatriculation"))
+        errors :+= SimpleError("latestImmatriculation", "Latest Immatriculation must not be set upon creation.")
+      }
+      errors
+    }
+  }
+
   /** Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
     * Returns a list of [[SimpleError]]
     *
