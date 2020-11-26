@@ -4,7 +4,7 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.certificate.impl.CertificateApplication
 import de.upb.cs.uc4.certificate.impl.commands._
-import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet, OnCertificateUserForceDelete, OnCertificateUserSoftDelete, OnRegisterUser }
+import de.upb.cs.uc4.certificate.impl.events._
 import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
 import de.upb.cs.uc4.shared.server.messages.Accepted
 import de.upb.cs.uc4.user.model.Role
