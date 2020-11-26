@@ -132,7 +132,7 @@ case class Student(
 
   /** @inheritdoc */
   override def softDelete: Student = {
-    super.softDelete.copyUser(firstName = "", lastName = "").asInstanceOf[Student]
+    Student(this.username, "", isActive = false, this.role, Address.empty, "", "", "", "", "", "", "")
   }
 }
 

@@ -184,9 +184,7 @@ trait User {
     *
     * @return A new user, with (most) personal info deleted
     */
-  def softDelete: User = {
-    copyUser(isActive = false, address = Address.empty, email = "", phoneNumber = "", birthDate = "")
-  }
+  def softDelete: User
 }
 
 object User {

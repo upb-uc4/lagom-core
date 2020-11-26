@@ -67,7 +67,7 @@ case class Lecturer(
 
   /** @inheritdoc */
   override def softDelete: Lecturer = {
-    super.softDelete.asInstanceOf[Lecturer]
+    Lecturer(this.username, "", isActive = false, this.role, Address.empty, this.firstName, this.lastName, "", "", "", "", "")
   }
 }
 

@@ -1,3 +1,9 @@
+# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.13.0...authentication-v0.13.1) (2020-11-26)
+## Feature
+## Refactor
+ - Rebuilt to be compatible with new user-service API
+## Bugfix
+
 # [v0.13.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.12.0...authentication-v0.13.0) (2020-11-23)
 ## Feature
  - Added configurable timeouts in application config

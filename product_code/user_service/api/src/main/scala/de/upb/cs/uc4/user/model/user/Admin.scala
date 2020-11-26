@@ -40,7 +40,7 @@ case class Admin(
 
   /** @inheritdoc */
   override def softDelete: Admin = {
-    super.softDelete.copyUser(firstName = "", lastName = "").asInstanceOf[Admin]
+    Admin(this.username, "", isActive = false, this.role, Address.empty, "", "", "", "", "")
   }
 }
 
