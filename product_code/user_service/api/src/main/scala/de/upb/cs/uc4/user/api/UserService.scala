@@ -31,7 +31,7 @@ trait UserService extends UC4Service {
   def getUser(username: String): ServiceCall[NotUsed, User]
 
   /** Get all users from the database */
-  def getAllUsers(usernames: Option[String], only_active: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse]
+  def getAllUsers(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse]
 
   /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
   def addUser(): ServiceCall[PostMessageUser, User]
