@@ -123,7 +123,7 @@ class UserSpec extends AsyncWordSpecLike with Matchers {
         .map(_.map(error => error.name) should contain theSameElementsAs Seq("latestImmatriculation"))
     }
     "return a validation error for having latest immatriculation set on creation" in {
-      studentValid.copy(latestImmatriculation = "SS2020").validateOnCreation
+      studentValid.copy(enrollmentIdSecret = "", latestImmatriculation = "SS2020").validateOnCreation
         .map(_.map(error => error.name) should contain theSameElementsAs Seq("latestImmatriculation"))
     }
 
