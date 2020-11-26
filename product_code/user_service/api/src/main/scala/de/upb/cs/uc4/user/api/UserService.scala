@@ -55,7 +55,7 @@ trait UserService extends UC4Service {
 
   // ADMIN
   /** Get all admins from the database */
-  def getAllAdmins(usernames: Option[String], only_active: Option[Boolean]): ServiceCall[NotUsed, Seq[Admin]]
+  def getAllAdmins(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Admin]]
 
   // ROLE
   def getRole(username: String): ServiceCall[NotUsed, JsonRole]
