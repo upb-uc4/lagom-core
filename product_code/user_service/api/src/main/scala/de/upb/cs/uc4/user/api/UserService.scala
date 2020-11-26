@@ -51,7 +51,7 @@ trait UserService extends UC4Service {
 
   // LECTURER
   /** Get all lecturers from the database */
-  def getAllLecturers(usernames: Option[String], only_active: Option[Boolean]): ServiceCall[NotUsed, Seq[Lecturer]]
+  def getAllLecturers(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Lecturer]]
 
   // ADMIN
   /** Get all admins from the database */
