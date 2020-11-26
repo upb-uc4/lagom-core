@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateUser }
-import de.upb.cs.uc4.certificate.impl.commands.{ ForceDeleteCertificateUser, GetCertificateUser, RegisterUser, SetCertificateAndKey, SoftDeleteCertificateUser }
+import de.upb.cs.uc4.certificate.impl.commands._
 import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
 import de.upb.cs.uc4.user.model.Role

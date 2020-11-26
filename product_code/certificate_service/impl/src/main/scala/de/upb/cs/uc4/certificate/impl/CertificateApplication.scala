@@ -9,7 +9,6 @@ import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
-import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateState }
 import de.upb.cs.uc4.certificate.impl.commands.{ ForceDeleteCertificateUser, RegisterUser, SoftDeleteCertificateUser }
