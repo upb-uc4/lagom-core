@@ -89,8 +89,8 @@ class CourseServiceSpec extends AsyncWordSpec
   /** Tests only working if the whole instance is started */
   "CourseService" should {
 
-    "get all courses with no courses" in {
-      client.getAllCourses(None, None, None).handleRequestHeader(addAuthorizationHeader())
+    "get all courses without authorization" in {
+      client.getAllCourses(None, None, None)
         .invoke().map { answer =>
           answer shouldBe empty
         }.flatMap(cleanupOnSuccess)
