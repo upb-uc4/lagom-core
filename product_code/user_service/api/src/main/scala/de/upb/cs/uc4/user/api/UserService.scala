@@ -10,9 +10,8 @@ import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, Servi
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
-import de.upb.cs.uc4.user.model.post.PostMessageUser
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
-import de.upb.cs.uc4.user.model.{ GetAllUsersResponse, JsonRole, MatriculationUpdate }
+import de.upb.cs.uc4.user.model._
 
 /** The UserService interface.
   *
@@ -25,6 +24,8 @@ trait UserService extends UC4Service {
   /** The name of the service */
   override val name = "user"
   override val autoAcl: Boolean = false
+
+  val enrollmentIdSecretByteLength: Int = 15
 
   // USER
   /** Get a specific user with the username */

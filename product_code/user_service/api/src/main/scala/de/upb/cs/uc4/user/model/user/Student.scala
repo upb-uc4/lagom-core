@@ -10,6 +10,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 case class Student(
     username: String,
+    enrollmentIdSecret: String,
     isActive: Boolean,
     role: Role,
     address: Address,
@@ -24,6 +25,7 @@ case class Student(
 
   def copyUser(
       username: String = this.username,
+      enrollmentIdSecret: String = this.enrollmentIdSecret,
       isActive: Boolean = this.isActive,
       role: Role = this.role,
       address: Address = this.address,
@@ -33,7 +35,7 @@ case class Student(
       phoneNumber: String = this.phoneNumber,
       birthDate: String = this.birthDate
   ): Student =
-    copy(username, isActive, role, address, firstName, lastName, email, phoneNumber, birthDate)
+    copy(username, enrollmentIdSecret, isActive, role, address, firstName, lastName, email, phoneNumber, birthDate)
 
   override def trim: Student =
     super.trim.asInstanceOf[Student].copy(
@@ -42,7 +44,7 @@ case class Student(
     )
 
   override def toPublic: Student =
-    Student(this.username, this.isActive, this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "", "", "")
+    Student(this.username, "",this.isActive, this.role, Address.empty, this.firstName, this.lastName, this.email, this.phoneNumber, "", "", "")
 
   override def clean: Student = super.clean.asInstanceOf[Student]
 
@@ -67,6 +69,18 @@ case class Student(
             errors :+= SimpleError("matriculationId", "Matriculation ID must be a string of length 7.")
           }
         }
+      }
+      errors
+    }
+  }
+
+  override def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
+    super.validateOnCreation.map { superErrors =>
+      var errors = superErrors.toList
+      //A student cannot be created with latestImmatriculation already set
+      if (latestImmatriculation != "") {
+        errors = errors.filter(simpleError => !simpleError.name.contains("latestImmatriculation"))
+        errors :+= SimpleError("latestImmatriculation", "Latest Immatriculation must not be set upon creation.")
       }
       errors
     }

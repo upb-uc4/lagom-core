@@ -12,6 +12,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 trait User {
   val username: String
+  val enrollmentIdSecret: String
   val isActive: Boolean
   val role: Role
   val address: Address
@@ -23,6 +24,7 @@ trait User {
 
   def copyUser(
       username: String = this.username,
+      enrollmentIdSecret: String = this.enrollmentIdSecret,
       isActive: Boolean = this.isActive,
       role: Role = this.role,
       address: Address = this.address,
@@ -36,7 +38,7 @@ trait User {
   def toPublic: User
 
   def trim: User = copyUser(
-    username.trim, isActive, role, address.trim, firstName.trim, lastName.trim,
+    username.trim, enrollmentIdSecret.trim, isActive, role, address.trim, firstName.trim, lastName.trim,
     email.trim, phoneNumber.trim, birthDate.trim
   )
 
@@ -117,6 +119,22 @@ trait User {
     }
   }
 
+  /** Validates the object by checking predefined conditions like correct charsets, syntax, ... that must only apply on object creation.
+    * Returns a list of SimpleErrors[[SimpleError]]
+    *
+    * @return Filled Sequence of [[SimpleError]]
+    */
+  def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
+    this.validate.map { validationErrors =>
+      var errors = validationErrors
+
+      if (enrollmentIdSecret.nonEmpty) {
+        errors :+= SimpleError("enrollmentIdSecret", "EnrollmentIdSecret must be empty.")
+      }
+      errors
+    }
+  }
+
   /** Compares the object against the user parameter to find out if fields, which should only be changed by users with elevated privileges, are different.
     * Returns a list of SimpleErrors[[SimpleError]]
     *
@@ -152,6 +170,10 @@ trait User {
     }
     if (isActive != user.isActive) {
       errors :+= SimpleError("isActive", "IsActive must not be changed.")
+    }
+
+    if (enrollmentIdSecret != user.enrollmentIdSecret) {
+      errors :+= SimpleError("enrollmentIdSecret", "enrollmentIdSecret must not be changed.")
     }
 
     errors
