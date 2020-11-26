@@ -1,4 +1,4 @@
-# [v0.13.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.1...user-v0.13.2) (2020-11-25)
+# [v0.13.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.1...user-v0.13.2) (2020-11-26)
 ## Feature
 ## Refactor
  - Changed PostMessageUser to use proper inheritance
