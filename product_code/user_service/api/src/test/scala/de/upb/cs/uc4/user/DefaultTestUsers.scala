@@ -20,7 +20,7 @@ trait DefaultTestUsers {
 
   val lecturer0: Lecturer = Lecturer("lecturer0", "", isActive = true, Role.Lecturer, address0, "firstName", "LastName", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
   val lecturer1: Lecturer = Lecturer("lecturer1", "", isActive = true, Role.Lecturer, address1, "Aname", "Bname", "exampleD@mail.de", "+49123486688", "1995-02-13", "Heute kommt nicht der kleine Gauss dran.", "Philosophy")
-  val lecturer2: Lecturer = Lecturer("lecturer2", "",isActive = true, Role.Lecturer, address2, "Volder", "Hahmer", "example2@mail.de", "+49156879773", "2001-10-01", "Heute kommt der große Gauss dran.", "Physics")
+  val lecturer2: Lecturer = Lecturer("lecturer2", "", isActive = true, Role.Lecturer, address2, "Volder", "Hahmer", "example2@mail.de", "+49156879773", "2001-10-01", "Heute kommt der große Gauss dran.", "Physics")
   val lecturer0Auth: AuthenticationUser = AuthenticationUser(lecturer0.username, lecturer0.username, AuthenticationRole.Lecturer)
   val lecturer1Auth: AuthenticationUser = AuthenticationUser(lecturer1.username, lecturer1.username, AuthenticationRole.Lecturer)
   val lecturer2Auth: AuthenticationUser = AuthenticationUser(lecturer2.username, lecturer2.username, AuthenticationRole.Lecturer)

@@ -184,7 +184,7 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-9")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! CreateUser(lecturer0, probe1.ref)
+      ref ! CreateUser(lecturer0, "GovID", probe1.ref)
       probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
