@@ -161,7 +161,7 @@ class UserServiceSpec extends AsyncWordSpec
   //Additional variables needed for some tests
   val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012", enrollmentIdSecret = "newEnrollmentIdSecret", isActive = false)
   val student0UpdatedProtected: Student = student0UpdatedUneditable.copy(firstName = "Dieter", lastName = "Dietrich", birthDate = "1996-12-11", matriculationId = "1333337")
-  val uneditableErrorSize: Int = 2
+  val uneditableErrorSize: Int = 3
   val protectedErrorSize: Int = 4 + uneditableErrorSize
 
   val lecturer0Updated: Lecturer = lecturer0.copy(email = "noreply@scam.ng", address = address1, freeText = "Morgen kommt der große Gauss.", researchArea = "Physics")
