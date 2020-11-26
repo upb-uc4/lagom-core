@@ -67,53 +67,54 @@ trait User {
     address.validate.map { addressErrors =>
       var errors = List[SimpleError]()
 
-      if (!usernameRegex.matches(username)) {
-        errors :+= SimpleError(
-          "username",
-          usernameMessage
-        )
-      }
-
       if (!isActive) {
         errors :+= SimpleError(
           "isActive",
-          "The isActive flag in the User must be set to true."
+          "Creating or manipulating an inactive User is not allowed."
         )
       }
-
-      if (!Role.All.contains(role)) {
-        errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
-      }
       else {
-        this match {
-          case _: Student => if (role != Role.Student) {
-            errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
-          }
-          case _: Lecturer => if (role != Role.Lecturer) {
-            errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
-          }
-          case _: Admin => if (role != Role.Admin) {
-            errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+        if (!usernameRegex.matches(username)) {
+          errors :+= SimpleError(
+            "username",
+            usernameMessage
+          )
+        }
+
+        if (!Role.All.contains(role)) {
+          errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
+        }
+        else {
+          this match {
+            case _: Student => if (role != Role.Student) {
+              errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+            }
+            case _: Lecturer => if (role != Role.Lecturer) {
+              errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+            }
+            case _: Admin => if (role != Role.Admin) {
+              errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+            }
           }
         }
-      }
 
-      errors ++= addressErrors.map(error => SimpleError("address." + error.name, error.reason))
+        errors ++= addressErrors.map(error => SimpleError("address." + error.name, error.reason))
 
-      if (!mailRegex.matches(email)) {
-        errors :+= SimpleError("email", mailMessage)
-      }
-      if (!dateRegex.matches(birthDate)) {
-        errors :+= SimpleError("birthDate", dateMessage)
-      }
-      if (!phoneNumberRegex.matches(phoneNumber)) {
-        errors :+= SimpleError("phoneNumber", phoneNumberMessage)
-      }
-      if (!nameRegex.matches(firstName)) {
-        errors :+= SimpleError("firstName", firstNameMessage)
-      }
-      if (!nameRegex.matches(lastName)) {
-        errors :+= SimpleError("lastName", lastNameMessage)
+        if (!mailRegex.matches(email)) {
+          errors :+= SimpleError("email", mailMessage)
+        }
+        if (!dateRegex.matches(birthDate)) {
+          errors :+= SimpleError("birthDate", dateMessage)
+        }
+        if (!phoneNumberRegex.matches(phoneNumber)) {
+          errors :+= SimpleError("phoneNumber", phoneNumberMessage)
+        }
+        if (!nameRegex.matches(firstName)) {
+          errors :+= SimpleError("firstName", firstNameMessage)
+        }
+        if (!nameRegex.matches(lastName)) {
+          errors :+= SimpleError("lastName", lastNameMessage)
+        }
       }
       errors
     }
