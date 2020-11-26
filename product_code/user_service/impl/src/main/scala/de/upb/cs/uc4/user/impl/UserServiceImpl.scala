@@ -25,11 +25,11 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.commands._
-import de.upb.cs.uc4.user.impl.events.{ OnUserCreate, OnUserDelete, UserEvent }
+import de.upb.cs.uc4.user.impl.events.{ OnUserCreate, OnUserForceDelete, OnUserSoftDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.UserDatabase
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import de.upb.cs.uc4.user.model.user._
+import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
@@ -82,13 +82,13 @@ class UserServiceImpl(
     }
 
   /** Get all users from the database */
-  override def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse] =
+  override def getAllUsers(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse] =
     authenticated[NotUsed, GetAllUsersResponse](AuthenticationRole.All: _*) {
       ServerServiceCall { (header, notUsed) =>
         for {
-          students <- getAllStudents(usernames).invokeWithHeaders(header, notUsed)
-          lecturers <- getAllLecturers(usernames).invokeWithHeaders(header, notUsed)
-          admins <- getAllAdmins(usernames).invokeWithHeaders(header, notUsed)
+          students <- getAllStudents(usernames, isActive).invokeWithHeaders(header, notUsed)
+          lecturers <- getAllLecturers(usernames, isActive).invokeWithHeaders(header, notUsed)
+          admins <- getAllAdmins(usernames, isActive).invokeWithHeaders(header, notUsed)
         } yield createETagHeader(header, GetAllUsersResponse(students._2, lecturers._2, admins._2))
       }
     }
@@ -158,7 +158,7 @@ class UserServiceImpl(
                 // In case the password cant be saved
                 .recoverWith {
                   case authenticationException: UC4Exception =>
-                    ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+                    ref.ask[Confirmation](replyTo => ForceDeleteUser(replyTo))
                       .map[(ResponseHeader, User)] { _ =>
                         throw authenticationException
                       }
@@ -244,13 +244,13 @@ class UserServiceImpl(
         }
     }
 
-  /** Delete a users from the database */
-  override def deleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
+  /** Completely deletes a users from the database */
+  override def forceDeleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
     ServerServiceCall {
       (_, _) =>
         val ref = entityRef(username)
 
-        ref.ask[Confirmation](replyTo => DeleteUser(replyTo))
+        ref.ask[Confirmation](replyTo => ForceDeleteUser(replyTo))
           .map {
             case Accepted(_) => // Update Successful
               (ResponseHeader(200, MessageProtocol.empty, List()), Done)
@@ -260,8 +260,34 @@ class UserServiceImpl(
     }
   }
 
+  /** Flags a user as deleted and deletes personal info from now on unrequired */
+  override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
+    ServerServiceCall {
+      (_, _) =>
+        val ref = entityRef(username)
+        ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
+          optUser =>
+            if (optUser.isEmpty) {
+              throw UC4Exception.NotFound
+            }
+
+            if (!optUser.get.isActive) {
+              throw UC4Exception.AlreadyDeleted
+            }
+
+            ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
+              .map {
+                case Accepted(_) => // Soft Deletion successful
+                  (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                case Rejected(code, reason) => //Update failed
+                  throw UC4Exception(code, reason)
+              }
+        }
+    }
+  }
+
   /** Get all students from the database */
-  override def getAllStudents(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Student]] =
+  override def getAllStudents(usernames: Option[String], isActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Student]] =
     identifiedAuthenticated[NotUsed, Seq[Student]](AuthenticationRole.All: _*) { (_, role) =>
       ServerServiceCall { (header, _) =>
         (usernames match {
@@ -274,13 +300,13 @@ class UserServiceImpl(
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
             getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
         }).map { students =>
-          createETagHeader(header, students)
+          createETagHeader(header, students.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
       }
     }
 
   /** Get all lecturers from the database */
-  def getAllLecturers(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Lecturer]] =
+  override def getAllLecturers(usernames: Option[String], isActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Lecturer]] =
     identifiedAuthenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.All: _*) { (_, role) =>
       ServerServiceCall { (header, _) =>
         (usernames match {
@@ -293,13 +319,13 @@ class UserServiceImpl(
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
             getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
         }).map { lecturers =>
-          createETagHeader(header, lecturers)
+          createETagHeader(header, lecturers.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
       }
     }
 
   /** Get all admins from the database */
-  override def getAllAdmins(usernames: Option[String]): ServerServiceCall[NotUsed, Seq[Admin]] =
+  override def getAllAdmins(usernames: Option[String], isActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Admin]] =
     identifiedAuthenticated[NotUsed, Seq[Admin]](AuthenticationRole.All: _*) { (_, role) =>
       ServerServiceCall { (header, _) =>
         (usernames match {
@@ -312,7 +338,7 @@ class UserServiceImpl(
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
             getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
         }).map { admins =>
-          createETagHeader(header, admins)
+          createETagHeader(header, admins.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
       }
     }
@@ -370,14 +396,39 @@ class UserServiceImpl(
   }
 
   /** Publishes every deletion of a user */
-  override def userDeletionTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
+  override def userDeletionTopicMinimal(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
     fromOffset =>
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)
         .mapConcat {
-          //Filter only OnUserDelete events
-          case EventStreamElement(_, OnUserDelete(user), offset) => try {
+          //Filter OnUserDelete events
+          case EventStreamElement(_, OnUserForceDelete(user), offset) => try {
             immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
+          }
+          case EventStreamElement(_, OnUserSoftDelete(user), offset) => try {
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
+          }
+          catch {
+            case throwable: Throwable =>
+              log.error("UserService cannot send invalid topic message {}", throwable.toString)
+              Nil
+          }
+          case _ => Nil
+        }
+  }
+
+  /** Publishes every deletion of a user */
+  override def userDeletionTopicPrecise(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset {
+    fromOffset =>
+      persistentEntityRegistry
+        .eventStream(UserEvent.Tag, fromOffset)
+        .mapConcat {
+          //Filter OnUserDelete events
+          case EventStreamElement(_, OnUserForceDelete(user), offset) => try {
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username, user.role, forceDelete = true)), offset))
+          }
+          case EventStreamElement(_, OnUserSoftDelete(user), offset) => try {
+            immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username, user.role, forceDelete = false)), offset))
           }
           catch {
             case throwable: Throwable =>
@@ -504,6 +555,9 @@ class UserServiceImpl(
 
   /** Allows DELETE, GET, PUT */
   override def allowedDeleteGetPut: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE, GET, PUT")
+
+  /** Allows DELETE */
+  override def allowedDelete: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")

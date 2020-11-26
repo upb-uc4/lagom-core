@@ -13,6 +13,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 trait User {
   val username: String
   val enrollmentIdSecret: String
+  val isActive: Boolean
   val role: Role
   val address: Address
   val firstName: String
@@ -24,6 +25,7 @@ trait User {
   def copyUser(
       username: String = this.username,
       enrollmentIdSecret: String = this.enrollmentIdSecret,
+      isActive: Boolean = this.isActive,
       role: Role = this.role,
       address: Address = this.address,
       firstName: String = this.firstName,
@@ -36,7 +38,7 @@ trait User {
   def toPublic: User
 
   def trim: User = copyUser(
-    username.trim, enrollmentIdSecret.trim, role, address.trim, firstName.trim, lastName.trim,
+    username.trim, enrollmentIdSecret.trim, isActive, role, address.trim, firstName.trim, lastName.trim,
     email.trim, phoneNumber.trim, birthDate.trim
   )
 
@@ -65,46 +67,54 @@ trait User {
     address.validate.map { addressErrors =>
       var errors = List[SimpleError]()
 
-      if (!usernameRegex.matches(username)) {
+      if (!isActive) {
         errors :+= SimpleError(
-          "username",
-          usernameMessage
+          "isActive",
+          "Creating or manipulating an inactive User is not allowed."
         )
       }
-
-      if (!Role.All.contains(role)) {
-        errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
-      }
       else {
-        this match {
-          case _: Student => if (role != Role.Student) {
-            errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
-          }
-          case _: Lecturer => if (role != Role.Lecturer) {
-            errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
-          }
-          case _: Admin => if (role != Role.Admin) {
-            errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+        if (!usernameRegex.matches(username)) {
+          errors :+= SimpleError(
+            "username",
+            usernameMessage
+          )
+        }
+
+        if (!Role.All.contains(role)) {
+          errors :+= SimpleError("role", "Role must be one of " + Role.All + ".")
+        }
+        else {
+          this match {
+            case _: Student => if (role != Role.Student) {
+              errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+            }
+            case _: Lecturer => if (role != Role.Lecturer) {
+              errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+            }
+            case _: Admin => if (role != Role.Admin) {
+              errors :+= SimpleError("role", "Role must be one of " + Role.All + ", and conform to the type of object.")
+            }
           }
         }
-      }
 
-      errors ++= addressErrors.map(error => SimpleError("address." + error.name, error.reason))
+        errors ++= addressErrors.map(error => SimpleError("address." + error.name, error.reason))
 
-      if (!mailRegex.matches(email)) {
-        errors :+= SimpleError("email", mailMessage)
-      }
-      if (!dateRegex.matches(birthDate)) {
-        errors :+= SimpleError("birthDate", dateMessage)
-      }
-      if (!phoneNumberRegex.matches(phoneNumber)) {
-        errors :+= SimpleError("phoneNumber", phoneNumberMessage)
-      }
-      if (!nameRegex.matches(firstName)) {
-        errors :+= SimpleError("firstName", firstNameMessage)
-      }
-      if (!nameRegex.matches(lastName)) {
-        errors :+= SimpleError("lastName", lastNameMessage)
+        if (!mailRegex.matches(email)) {
+          errors :+= SimpleError("email", mailMessage)
+        }
+        if (!dateRegex.matches(birthDate)) {
+          errors :+= SimpleError("birthDate", dateMessage)
+        }
+        if (!phoneNumberRegex.matches(phoneNumber)) {
+          errors :+= SimpleError("phoneNumber", phoneNumberMessage)
+        }
+        if (!nameRegex.matches(firstName)) {
+          errors :+= SimpleError("firstName", firstNameMessage)
+        }
+        if (!nameRegex.matches(lastName)) {
+          errors :+= SimpleError("lastName", lastNameMessage)
+        }
       }
       errors
     }
@@ -159,6 +169,9 @@ trait User {
     if (role != user.role) {
       errors :+= SimpleError("role", "Role must not be changed.")
     }
+    if (isActive != user.isActive) {
+      errors :+= SimpleError("isActive", "IsActive must not be changed.")
+    }
 
     if (enrollmentIdSecret != user.enrollmentIdSecret) {
       errors :+= SimpleError("enrollmentIdSecret", "enrollmentIdSecret must not be changed.")
@@ -166,6 +179,12 @@ trait User {
 
     errors
   }
+
+  /** Creates a copy of this user, with most personal info deleted
+    *
+    * @return A new user, with (most) personal info deleted
+    */
+  def softDelete: User
 }
 
 object User {

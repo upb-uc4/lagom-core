@@ -53,9 +53,16 @@ case class UserState(optUser: Option[User]) {
           Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
-      case DeleteUser(replyTo) =>
+      case ForceDeleteUser(replyTo) =>
         if (optUser.isDefined) {
-          Effect.persist(OnUserDelete(optUser.get)).thenReply(replyTo) { _ => Accepted.default }
+          Effect.persist(OnUserForceDelete(optUser.get)).thenReply(replyTo) { _ => Accepted.default }
+        }
+        else {
+          Effect.reply(replyTo)(Rejected(404, GenericError(ErrorType.KeyNotFound)))
+        }
+      case SoftDeleteUser(replyTo) =>
+        if (optUser.isDefined) {
+          Effect.persist(OnUserSoftDelete(optUser.get)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(404, GenericError(ErrorType.KeyNotFound)))
@@ -80,8 +87,10 @@ case class UserState(optUser: Option[User]) {
         copy(optUser.map {
           case student: Student => student.copy(latestImmatriculation = semester)
         })
-      case OnUserDelete(_) =>
+      case OnUserForceDelete(_) =>
         copy(None)
+      case OnUserSoftDelete(user) =>
+        copy(Some(user.softDelete))
       case _ =>
         println("Unknown Event")
         this

@@ -22,12 +22,12 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
   //Test users
   val address: Address = Address("ExampleStreet", "42a", "13337", "ExampleCity", "Germany")
 
-  val student0: Student = Student("student0", "c3R1ZGVudHN0dWRlbnQ=", Role.Student, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1990-12-11", "", "7421769")
-  val lecturer0: Lecturer = Lecturer("lecturer0", "bGVjdHVyZXJsZWN0dXJlcg==", Role.Lecturer, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
-  val admin0: Admin = Admin("admin0", "YWRtaW5hZG1pbg==", Role.Admin, address, "firstName", "LastName", "example1@mail.de", "+49123456789", "1992-12-11")
-  val admin1: Admin = Admin("admin0", "YWRtaW5hZG1pbg==", Role.Admin, address, "firstNameDifferent", "LastNameDifferent", "example2@mail.de", "+49123456789", "1992-12-11")
+  val student0: Student = Student("student0", "c3R1ZGVudHN0dWRlbnQ=", isActive = true, Role.Student, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1990-12-11", "", "7421769")
+  val lecturer0: Lecturer = Lecturer("lecturer0", "bGVjdHVyZXJsZWN0dXJlcg==", isActive = true, Role.Lecturer, address, "firstName", "LastName", "example@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+  val admin0: Admin = Admin("admin0", "YWRtaW5hZG1pbg==", isActive = true, Role.Admin, address, "firstName", "LastName", "example1@mail.de", "+49123456789", "1992-12-11")
+  val admin1: Admin = Admin("admin0", "YWRtaW5hZG1pbg==", isActive = true, Role.Admin, address, "firstNameDifferent", "LastNameDifferent", "example2@mail.de", "+49123456789", "1992-12-11")
 
-  val emptyLecturer: Lecturer = Lecturer("lecturer0", "", Role.Lecturer, address, "", "", "", "", "", "", "") //name for update test
+  val emptyLecturer: Lecturer = Lecturer("lecturer0", "", isActive = true, Role.Lecturer, address, "", "", "", "", "", "", "") //name for update test
 
   "UserState" should {
 
@@ -148,15 +148,15 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     //DELETE
-    "not delete a non-existing user" in {
+    "not force delete a non-existing user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-6")))
 
       val probe1 = createTestProbe[Confirmation]()
-      ref ! DeleteUser(probe1.ref)
+      ref ! ForceDeleteUser(probe1.ref)
       probe1.expectMessageType[Rejected]
     }
 
-    "delete an existing user" in {
+    "force delete an existing user" in {
       val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
 
       val probe1 = createTestProbe[Confirmation]()
@@ -164,12 +164,36 @@ class UserStateSpec extends ScalaTestWithActorTestKit(s"""
       probe1.expectMessageType[Accepted]
 
       val probe2 = createTestProbe[Confirmation]()
-      ref ! DeleteUser(probe2.ref)
+      ref ! ForceDeleteUser(probe2.ref)
       probe2.expectMessageType[Accepted]
 
       val probe3 = createTestProbe[Option[User]]()
       ref ! GetUser(probe3.ref)
       probe3.expectMessage(None)
+    }
+
+    "not soft delete a non-existing user" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! SoftDeleteUser(probe1.ref)
+      probe1.expectMessageType[Rejected]
+    }
+
+    "soft delete an existing user" in {
+      val ref = spawn(UserBehaviour.create(PersistenceId("fake-type-hint", "fake-id-9")))
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! CreateUser(lecturer0, "GovID", probe1.ref)
+      probe1.expectMessageType[Accepted]
+
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! SoftDeleteUser(probe2.ref)
+      probe2.expectMessageType[Accepted]
+
+      val probe3 = createTestProbe[Option[User]]()
+      ref ! GetUser(probe3.ref)
+      probe3.expectMessage(Some(lecturer0.softDelete))
     }
   }
 }

@@ -13,7 +13,6 @@ import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
 class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext, timeout: Timeout) {
@@ -65,9 +64,9 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
       students.schema.createIfNotExists.andFinally(DBIO.successful {
         //Add default users
         val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
-        val student: User = Student("student", "c3R1ZGVudHN0dWRlbnQ=", Role.Student, address, "Stu", "Dent", "student@mail.de", "+49123456789", "1990-12-11", "", "7421769")
-        val lecturer: User = Lecturer("lecturer", "bGVjdHVyZXJsZWN0dXJlcg==", Role.Lecturer, address, "Lect", "Urer", "lecturer@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
-        val admin: User = Admin("admin", "YWRtaW5hZG1pbg==", Role.Admin, address, "Ad", "Min", "admin@mail.de", "+49123456789", "1992-12-10")
+        val student: User = Student("student", "c3R1ZGVudHN0dWRlbnQ=", isActive = true, Role.Student, address, "Stu", "Dent", "student@mail.de", "+49123456789", "1990-12-11", "", "7421769")
+        val lecturer: User = Lecturer("lecturer", "bGVjdHVyZXJsZWN0dXJlcg==", isActive = true, Role.Lecturer, address, "Lect", "Urer", "lecturer@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
+        val admin: User = Admin("admin", "YWRtaW5hZG1pbg==", isActive = true, Role.Admin, address, "Ad", "Min", "admin@mail.de", "+49123456789", "1992-12-10")
 
         addDefaultUser(student, "governmentIdStudent")
         addDefaultUser(lecturer, "governmentIdLecturer")

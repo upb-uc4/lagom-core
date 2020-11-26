@@ -9,10 +9,9 @@ import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
-import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateState }
-import de.upb.cs.uc4.certificate.impl.commands.{ DeleteCertificateUser, RegisterUser }
+import de.upb.cs.uc4.certificate.impl.commands.{ ForceDeleteCertificateUser, RegisterUser, SoftDeleteCertificateUser }
 import de.upb.cs.uc4.certificate.impl.readside.CertificateEventProcessor
 import de.upb.cs.uc4.hyperledger.HyperledgerAdminParts
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
@@ -23,7 +22,7 @@ import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.Usernames
+import de.upb.cs.uc4.user.model.{ JsonUserData, Usernames }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
@@ -86,14 +85,21 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     )
 
   userService
-    .userDeletionTopic()
+    .userDeletionTopicPrecise()
     .subscribe
     .atLeastOnce(
       Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
         try {
-          val jsonUsername = kafkaEncryptionUtility.decrypt[JsonUsername](container)
-          clusterSharding.entityRefFor(CertificateState.typeKey, jsonUsername.username)
-            .ask[Confirmation](replyTo => DeleteCertificateUser(jsonUsername.username, replyTo)).map(_ => Done)
+          val jsonUserData = kafkaEncryptionUtility.decrypt[JsonUserData](container)
+          if (jsonUserData.forceDelete) {
+            clusterSharding.entityRefFor(CertificateState.typeKey, jsonUserData.username)
+              .ask[Confirmation](replyTo => ForceDeleteCertificateUser(jsonUserData.username, jsonUserData.role, replyTo)).map(_ => Done)
+          }
+          else {
+            clusterSharding.entityRefFor(CertificateState.typeKey, jsonUserData.username)
+              .ask[Confirmation](replyTo => SoftDeleteCertificateUser(jsonUserData.username, jsonUserData.role, replyTo)).map(_ => Done)
+          }
+
         }
         catch {
           case throwable: Throwable =>

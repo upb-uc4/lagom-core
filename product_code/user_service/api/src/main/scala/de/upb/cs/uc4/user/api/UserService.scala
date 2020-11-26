@@ -9,8 +9,8 @@ import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, Servi
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
-import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 import de.upb.cs.uc4.user.model._
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 
 /** The UserService interface.
   *
@@ -31,7 +31,7 @@ trait UserService extends UC4Service {
   def getUser(username: String): ServiceCall[NotUsed, User]
 
   /** Get all users from the database */
-  def getAllUsers(usernames: Option[String]): ServiceCall[NotUsed, GetAllUsersResponse]
+  def getAllUsers(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse]
 
   /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
   def addUser(): ServiceCall[PostMessageUser, User]
@@ -39,20 +39,23 @@ trait UserService extends UC4Service {
   /** Update an existing user */
   def updateUser(username: String): ServiceCall[User, Done]
 
-  /** Delete a user from the database */
-  def deleteUser(username: String): ServiceCall[NotUsed, Done]
+  /** Completely deletes a users from the database */
+  def forceDeleteUser(username: String): ServiceCall[NotUsed, Done]
+
+  /** Flags a user as deleted and deletes (not required) personal info */
+  def softDeleteUser(username: String): ServiceCall[NotUsed, Done]
 
   // STUDENT
   /** Get all students from the database */
-  def getAllStudents(usernames: Option[String]): ServiceCall[NotUsed, Seq[Student]]
+  def getAllStudents(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Student]]
 
   // LECTURER
   /** Get all lecturers from the database */
-  def getAllLecturers(usernames: Option[String]): ServiceCall[NotUsed, Seq[Lecturer]]
+  def getAllLecturers(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Lecturer]]
 
   // ADMIN
   /** Get all admins from the database */
-  def getAllAdmins(usernames: Option[String]): ServiceCall[NotUsed, Seq[Admin]]
+  def getAllAdmins(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Admin]]
 
   // ROLE
   def getRole(username: String): ServiceCall[NotUsed, JsonRole]
@@ -82,35 +85,44 @@ trait UserService extends UC4Service {
   /** Allows DELETE, GET, PUT */
   def allowedDeleteGetPut: ServiceCall[NotUsed, Done]
 
+  /** Allows DELETE */
+  def allowedDelete: ServiceCall[NotUsed, Done]
+
   /** Publishes every new user */
   def userCreationTopic(): Topic[EncryptionContainer]
 
-  /** Publishes every deletion of a user */
-  def userDeletionTopic(): Topic[EncryptionContainer]
+  /** Publishes every deletion of a user, sending the username*/
+  def userDeletionTopicMinimal(): Topic[EncryptionContainer]
+
+  /** Publishes every deletion of a user, sending the username and role */
+  def userDeletionTopicPrecise(): Topic[EncryptionContainer]
 
   final override def descriptor: Descriptor = {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/users?usernames", getAllUsers _),
+        restCall(Method.GET, pathPrefix + "/users?usernames&is_active", getAllUsers _),
         restCall(Method.POST, pathPrefix + "/users", addUser _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/users", allowedGetPost _),
 
         restCall(Method.GET, pathPrefix + "/users/:username", getUser _),
-        restCall(Method.DELETE, pathPrefix + "/users/:username", deleteUser _),
+        restCall(Method.DELETE, pathPrefix + "/users/:username", softDeleteUser _),
         restCall(Method.PUT, pathPrefix + "/users/:username", updateUser _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username", allowedDeleteGetPut _),
+
+        restCall(Method.DELETE, pathPrefix + "/users/:username/force", forceDeleteUser _),
+        restCall(Method.OPTIONS, pathPrefix + "/users/:username/force", allowedDelete _),
 
         restCall(Method.GET, pathPrefix + "/users/:username/role", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username/role", allowedGet _),
 
-        restCall(Method.GET, pathPrefix + "/students?usernames", getAllStudents _),
+        restCall(Method.GET, pathPrefix + "/students?usernames&is_active", getAllStudents _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGet _),
 
-        restCall(Method.GET, pathPrefix + "/lecturers?usernames", getAllLecturers _),
+        restCall(Method.GET, pathPrefix + "/lecturers?usernames&is_active", getAllLecturers _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGet _),
 
-        restCall(Method.GET, pathPrefix + "/admins?usernames", getAllAdmins _),
+        restCall(Method.GET, pathPrefix + "/admins?usernames&is_active", getAllAdmins _),
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGet _),
 
         restCall(Method.GET, pathPrefix + "/users/:username/image", getImage _)(MessageSerializer.NotUsedMessageSerializer, MessageSerializer.NoopMessageSerializer),
@@ -134,6 +146,9 @@ trait UserService extends UC4Service {
         ServiceAcl.forMethodAndPathRegex(Method.PUT, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)"),
 
+        ServiceAcl.forMethodAndPathRegex(Method.DELETE, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + "\\Q" + "force\\E"),
+        ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + "\\Q" + "force\\E"),
+
         ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/role"""),
         ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/users/\\E" + "([^/]+)" + """\/role"""),
 
@@ -155,12 +170,14 @@ trait UserService extends UC4Service {
       )
       .addTopics(
         topic(UserService.ADD_TOPIC_NAME, userCreationTopic _),
-        topic(UserService.DELETE_TOPIC_NAME, userDeletionTopic _)
+        topic(UserService.DELETE_TOPIC_MINIMAL_NAME, userDeletionTopicMinimal _),
+        topic(UserService.DELETE_TOPIC_PRECISE_NAME, userDeletionTopicPrecise _)
       )
   }
 }
 
 object UserService {
   val ADD_TOPIC_NAME = "add"
-  val DELETE_TOPIC_NAME = "delete"
+  val DELETE_TOPIC_MINIMAL_NAME = "deleteUserMinimal"
+  val DELETE_TOPIC_PRECISE_NAME = "deleteUserPrecise"
 }

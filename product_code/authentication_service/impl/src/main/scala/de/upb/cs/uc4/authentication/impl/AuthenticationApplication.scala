@@ -61,7 +61,7 @@ abstract class AuthenticationApplication(context: LagomApplicationContext)
   lazy val userService: UserService = serviceClient.implement[UserService]
 
   userService
-    .userDeletionTopic()
+    .userDeletionTopicMinimal()
     .subscribe
     .atLeastOnce(
       Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
