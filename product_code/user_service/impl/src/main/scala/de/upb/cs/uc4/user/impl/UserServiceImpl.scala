@@ -28,8 +28,8 @@ import de.upb.cs.uc4.user.impl.commands._
 import de.upb.cs.uc4.user.impl.events.{ OnUserCreate, OnUserForceDelete, OnUserSoftDelete, UserEvent }
 import de.upb.cs.uc4.user.impl.readside.UserDatabase
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import de.upb.cs.uc4.user.model.user._
+import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 

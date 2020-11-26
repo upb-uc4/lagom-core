@@ -2,7 +2,6 @@ package de.upb.cs.uc4.user.api
 
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
-import com.lightbend.lagom.scaladsl.api.Service.topic
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
@@ -10,8 +9,8 @@ import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, Servi
 import de.upb.cs.uc4.shared.client.UC4Service
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
-import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 import de.upb.cs.uc4.user.model._
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 
 /** The UserService interface.
   *

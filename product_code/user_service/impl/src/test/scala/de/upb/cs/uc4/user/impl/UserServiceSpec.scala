@@ -20,8 +20,8 @@ import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 import de.upb.cs.uc4.user.model._
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }

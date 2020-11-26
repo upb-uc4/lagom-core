@@ -8,8 +8,8 @@ import com.lightbend.lagom.scaladsl.api.broker.Topic
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
+import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 
 import scala.concurrent.Future
 import scala.util.Random
