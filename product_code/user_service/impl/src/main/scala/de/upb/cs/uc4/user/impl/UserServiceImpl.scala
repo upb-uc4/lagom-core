@@ -82,13 +82,13 @@ class UserServiceImpl(
     }
 
   /** Get all users from the database */
-  override def getAllUsers(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse] =
+  override def getAllUsers(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse] =
     authenticated[NotUsed, GetAllUsersResponse](AuthenticationRole.All: _*) {
       ServerServiceCall { (header, notUsed) =>
         for {
-          students <- getAllStudents(usernames, onlyActive).invokeWithHeaders(header, notUsed)
-          lecturers <- getAllLecturers(usernames, onlyActive).invokeWithHeaders(header, notUsed)
-          admins <- getAllAdmins(usernames, onlyActive).invokeWithHeaders(header, notUsed)
+          students <- getAllStudents(usernames, isActive).invokeWithHeaders(header, notUsed)
+          lecturers <- getAllLecturers(usernames, isActive).invokeWithHeaders(header, notUsed)
+          admins <- getAllAdmins(usernames, isActive).invokeWithHeaders(header, notUsed)
         } yield createETagHeader(header, GetAllUsersResponse(students._2, lecturers._2, admins._2))
       }
     }
@@ -287,7 +287,7 @@ class UserServiceImpl(
   }
 
   /** Get all students from the database */
-  override def getAllStudents(usernames: Option[String], onlyActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Student]] =
+  override def getAllStudents(usernames: Option[String], isActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Student]] =
     identifiedAuthenticated[NotUsed, Seq[Student]](AuthenticationRole.All: _*) { (_, role) =>
       ServerServiceCall { (header, _) =>
         (usernames match {
@@ -300,13 +300,13 @@ class UserServiceImpl(
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
             getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
         }).map { students =>
-          createETagHeader(header, students.filter(onlyActive.isEmpty || _.isActive == onlyActive.get))
+          createETagHeader(header, students.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
       }
     }
 
   /** Get all lecturers from the database */
-  override def getAllLecturers(usernames: Option[String], onlyActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Lecturer]] =
+  override def getAllLecturers(usernames: Option[String], isActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Lecturer]] =
     identifiedAuthenticated[NotUsed, Seq[Lecturer]](AuthenticationRole.All: _*) { (_, role) =>
       ServerServiceCall { (header, _) =>
         (usernames match {
@@ -319,13 +319,13 @@ class UserServiceImpl(
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
             getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
         }).map { lecturers =>
-          createETagHeader(header, lecturers.filter(onlyActive.isEmpty || _.isActive == onlyActive.get))
+          createETagHeader(header, lecturers.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
       }
     }
 
   /** Get all admins from the database */
-  override def getAllAdmins(usernames: Option[String], onlyActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Admin]] =
+  override def getAllAdmins(usernames: Option[String], isActive: Option[Boolean]): ServerServiceCall[NotUsed, Seq[Admin]] =
     identifiedAuthenticated[NotUsed, Seq[Admin]](AuthenticationRole.All: _*) { (_, role) =>
       ServerServiceCall { (header, _) =>
         (usernames match {
@@ -338,7 +338,7 @@ class UserServiceImpl(
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
             getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
         }).map { admins =>
-          createETagHeader(header, admins.filter(onlyActive.isEmpty || _.isActive == onlyActive.get))
+          createETagHeader(header, admins.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
       }
     }

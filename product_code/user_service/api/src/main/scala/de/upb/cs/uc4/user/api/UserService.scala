@@ -31,7 +31,7 @@ trait UserService extends UC4Service {
   def getUser(username: String): ServiceCall[NotUsed, User]
 
   /** Get all users from the database */
-  def getAllUsers(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse]
+  def getAllUsers(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, GetAllUsersResponse]
 
   /** Adds the contents of the postMessageUser, authUser to authentication users and user to users */
   def addUser(): ServiceCall[PostMessageUser, User]
@@ -47,15 +47,15 @@ trait UserService extends UC4Service {
 
   // STUDENT
   /** Get all students from the database */
-  def getAllStudents(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Student]]
+  def getAllStudents(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Student]]
 
   // LECTURER
   /** Get all lecturers from the database */
-  def getAllLecturers(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Lecturer]]
+  def getAllLecturers(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Lecturer]]
 
   // ADMIN
   /** Get all admins from the database */
-  def getAllAdmins(usernames: Option[String], onlyActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Admin]]
+  def getAllAdmins(usernames: Option[String], isActive: Option[Boolean]): ServiceCall[NotUsed, Seq[Admin]]
 
   // ROLE
   def getRole(username: String): ServiceCall[NotUsed, JsonRole]
@@ -101,7 +101,7 @@ trait UserService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/users?usernames&only_active", getAllUsers _),
+        restCall(Method.GET, pathPrefix + "/users?usernames&is_active", getAllUsers _),
         restCall(Method.POST, pathPrefix + "/users", addUser _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/users", allowedGetPost _),
 
@@ -116,13 +116,13 @@ trait UserService extends UC4Service {
         restCall(Method.GET, pathPrefix + "/users/:username/role", getRole _),
         restCall(Method.OPTIONS, pathPrefix + "/users/:username/role", allowedGet _),
 
-        restCall(Method.GET, pathPrefix + "/students?usernames&only_active", getAllStudents _),
+        restCall(Method.GET, pathPrefix + "/students?usernames&is_active", getAllStudents _),
         restCall(Method.OPTIONS, pathPrefix + "/students", allowedGet _),
 
-        restCall(Method.GET, pathPrefix + "/lecturers?usernames&only_active", getAllLecturers _),
+        restCall(Method.GET, pathPrefix + "/lecturers?usernames&is_active", getAllLecturers _),
         restCall(Method.OPTIONS, pathPrefix + "/lecturers", allowedGet _),
 
-        restCall(Method.GET, pathPrefix + "/admins?usernames&only_active", getAllAdmins _),
+        restCall(Method.GET, pathPrefix + "/admins?usernames&is_active", getAllAdmins _),
         restCall(Method.OPTIONS, pathPrefix + "/admins", allowedGet _),
 
         restCall(Method.GET, pathPrefix + "/users/:username/image", getImage _)(MessageSerializer.NotUsedMessageSerializer, MessageSerializer.NoopMessageSerializer),
