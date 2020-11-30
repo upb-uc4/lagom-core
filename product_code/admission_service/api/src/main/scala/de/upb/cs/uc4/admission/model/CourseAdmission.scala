@@ -21,8 +21,8 @@ case class CourseAdmission(
     val nonEmptyRegex = RegexCollection.Commons.nonEmptyCharRegex
     val nonEmptyMessage = ErrorMessageCollection.Commons.nonEmptyCharRegex
 
-    if (!nonEmptyRegex.matches(enrollmentId)) {
-      errors :+= SimpleError("enrollmentId", nonEmptyMessage)
+    if (enrollmentId.nonEmpty) {
+      errors :+= SimpleError("enrollmentId", "EnrollmentId must be empty.")
     }
     if (!nonEmptyRegex.matches(courseId)) {
       errors :+= SimpleError("courseId", nonEmptyMessage)

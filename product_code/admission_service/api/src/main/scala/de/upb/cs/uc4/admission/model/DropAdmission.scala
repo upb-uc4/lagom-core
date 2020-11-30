@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.admission.model
 
+import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import play.api.libs.json.{ Format, Json }
 
@@ -11,9 +12,11 @@ case class DropAdmission(admissionId: String) {
 
   def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
     var errors = List[SimpleError]()
+    val nonEmptyRegex = RegexCollection.Commons.nonEmptyCharRegex
+    val nonEmptyMessage = ErrorMessageCollection.Commons.nonEmptyCharRegex
 
-    if (admissionId.nonEmpty) {
-      errors :+= SimpleError("admissionId", "AdmissionId must be empty.")
+    if (!nonEmptyRegex.matches(admissionId)) {
+      errors :+= SimpleError("admissionId", nonEmptyMessage)
     }
 
     errors

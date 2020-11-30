@@ -13,7 +13,8 @@ case class ValidationConfiguration(
     address: AddressRegex,
     examinationRegulation: ExaminationRegulationRegex,
     module: ModuleRegex,
-    courseAdmission: CourseAdmissionRegex
+    courseAdmission: CourseAdmissionRegex,
+    dropAdmission: DropAdmissionRegex
 )
 
 case class ValidationPair(regex: String, message: String)
@@ -61,9 +62,13 @@ object ValidationConfiguration {
   object ModuleRegex {
     implicit val format: Format[ModuleRegex] = Json.format
   }
-  case class CourseAdmissionRegex(enrollmentId: ValidationPair, courseId: ValidationPair, moduleId: ValidationPair)
+  case class CourseAdmissionRegex(courseId: ValidationPair, moduleId: ValidationPair)
   object CourseAdmissionRegex {
     implicit val format: Format[CourseAdmissionRegex] = Json.format
+  }
+  case class DropAdmissionRegex(admissionId: ValidationPair)
+  object DropAdmissionRegex {
+    implicit val format: Format[DropAdmissionRegex] = Json.format
   }
 
   def build: ValidationConfiguration = {
@@ -110,7 +115,9 @@ object ValidationConfiguration {
       ),
       CourseAdmissionRegex(
         ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex),
-        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex),
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex)
+      ),
+      DropAdmissionRegex(
         ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex)
       )
     )

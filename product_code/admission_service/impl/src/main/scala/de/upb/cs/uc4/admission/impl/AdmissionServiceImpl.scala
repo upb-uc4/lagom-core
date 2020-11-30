@@ -99,13 +99,10 @@ class AdmissionServiceImpl(
             case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
           }
 
-          //TODO : Proper timestamp
-          val courseAdmissionFinalized = courseAdmissionTrimmed.copy(timestamp = LocalDateTime.now.format(DateTimeFormatter.ofPattern("YYYYMMdd_HHmmss")))
-
           certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonId =>
-            if (courseAdmissionFinalized.enrollmentId != jsonId.id) {
-              throw UC4Exception.OwnerMismatch
-            }
+
+            //TODO : Proper timestamp
+            val courseAdmissionFinalized = courseAdmissionTrimmed.copy(enrollmentId = jsonId.id, timestamp = LocalDateTime.now.format(DateTimeFormatter.ofPattern("YYYYMMdd_HHmmss")))
 
             courseService.findCourseByCourseId(courseAdmissionFinalized.courseId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
               course =>
@@ -116,7 +113,8 @@ class AdmissionServiceImpl(
 
                 matriculationService.getMatriculationData(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
                   data =>
-                    examregService.getExaminationRegulations(Some(data.matriculationStatus.map(_.fieldOfStudy).mkString(",")), Some(true))
+                    //TODO Time logic, only in CURRENTLY active examregs
+                    examregService.getExaminationRegulations(Some(data.matriculationStatus.map(_.fieldOfStudy).mkString(",")), None)
                       .handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
                         regulations =>
                           if (!regulations.flatMap(_.modules).map(_.id).contains(courseAdmissionFinalized.moduleId) && !validationList.map(_.name).contains("moduleId")) {
