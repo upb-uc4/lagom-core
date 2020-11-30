@@ -3,10 +3,11 @@ package de.upb.cs.uc4.certificate.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.certificate.impl.CertificateApplication
-import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, DeleteCertificateUser, GetCertificateUser, RegisterUser, SetCertificateAndKey }
-import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet, OnCertificateUserDelete, OnRegisterUser }
+import de.upb.cs.uc4.certificate.impl.commands._
+import de.upb.cs.uc4.certificate.impl.events._
 import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
 import de.upb.cs.uc4.shared.server.messages.Accepted
+import de.upb.cs.uc4.user.model.Role
 import play.api.libs.json.{ Format, Json }
 
 /** The current state of a User */
@@ -29,8 +30,11 @@ case class CertificateState(
         Effect.reply(replyTo)(CertificateUser(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey))
       case SetCertificateAndKey(certificate, encryptedPrivateKey, replyTo) =>
         Effect.persist(OnCertficateAndKeySet(certificate, encryptedPrivateKey)).thenReply(replyTo) { _ => Accepted.default }
-      case DeleteCertificateUser(username, replyTo) =>
-        Effect.persist(OnCertificateUserDelete(username)).thenReply(replyTo) { _ => Accepted.default }
+      case SoftDeleteCertificateUser(username, role, replyTo) =>
+        Effect.persist(OnCertificateUserSoftDelete(username, role)).thenReply(replyTo) { _ => Accepted.default }
+      case ForceDeleteCertificateUser(username, role, replyTo) =>
+        Effect.persist(OnCertificateUserForceDelete(username, role)).thenReply(replyTo) { _ => Accepted.default }
+
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -46,7 +50,14 @@ case class CertificateState(
         copy(enrollmentId = Some(id), enrollmentSecret = Some(secret))
       case OnCertficateAndKeySet(cert, key) =>
         copy(certificate = Some(cert), encryptedPrivateKey = Some(key))
-      case OnCertificateUserDelete(_) =>
+      case OnCertificateUserSoftDelete(_, role) =>
+        if (role == Role.Lecturer) {
+          copy(encryptedPrivateKey = Some(EncryptedPrivateKey("", "", "")))
+        }
+        else {
+          CertificateState.initial
+        }
+      case OnCertificateUserForceDelete(_, _) =>
         CertificateState.initial
       case _ =>
         println("Unknown Event")
