@@ -174,7 +174,7 @@ class CourseServiceImpl(
     }
 
   /** @inheritdoc */
-  override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) {
+  override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = {
     ServerServiceCall { (header, _) =>
       entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
         case Some(course) => createETagHeader(header, course)
