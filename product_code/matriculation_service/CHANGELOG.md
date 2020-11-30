@@ -1,9 +1,14 @@
-# [WIP-v0.12.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.1...matriculation-v0.12.2) (2020-XX-XX)
+# [WIP-v0.13.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.13.1...matriculation-v0.13.2) (2020-XX-XX)
 ## Feature
  - Added check in "getProposal" call on endpoint "/matriculation/:username/proposal",
  that confirms that the matriculation message contains fieldOfStudies that correspond to
  active examination regulations, as provided by the ExamregService
 ## Refactor
+
+# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.1...matriculation-v0.13.1) (2020-11-25)
+## Feature
+## Refactor
+ - Rebuilt to be compatible with new user-service API
 ## Bugfix
 
 # [v0.12.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.12.0...matriculation-v0.12.1) (2020-11-17)

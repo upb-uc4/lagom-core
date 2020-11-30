@@ -23,9 +23,9 @@ case class UserState(optUser: Option[User]) {
     cmd match {
       case GetUser(replyTo) => Effect.reply(replyTo)(optUser)
 
-      case CreateUser(user, replyTo) =>
+      case CreateUser(user, governmentId, replyTo) =>
         if (optUser.isEmpty) {
-          Effect.persist(OnUserCreate(user)).thenReply(replyTo) { _ => Accepted.default }
+          Effect.persist(OnUserCreate(user, governmentId)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
@@ -53,9 +53,16 @@ case class UserState(optUser: Option[User]) {
           Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer)))
         }
 
-      case DeleteUser(replyTo) =>
+      case ForceDeleteUser(replyTo) =>
         if (optUser.isDefined) {
-          Effect.persist(OnUserDelete(optUser.get)).thenReply(replyTo) { _ => Accepted.default }
+          Effect.persist(OnUserForceDelete(optUser.get)).thenReply(replyTo) { _ => Accepted.default }
+        }
+        else {
+          Effect.reply(replyTo)(Rejected(404, GenericError(ErrorType.KeyNotFound)))
+        }
+      case SoftDeleteUser(replyTo) =>
+        if (optUser.isDefined) {
+          Effect.persist(OnUserSoftDelete(optUser.get)).thenReply(replyTo) { _ => Accepted.default }
         }
         else {
           Effect.reply(replyTo)(Rejected(404, GenericError(ErrorType.KeyNotFound)))
@@ -72,7 +79,7 @@ case class UserState(optUser: Option[User]) {
     */
   def applyEvent(evt: UserEvent): UserState =
     evt match {
-      case OnUserCreate(user) =>
+      case OnUserCreate(user, _) =>
         copy(Some(user))
       case OnUserUpdate(user) =>
         copy(Some(user))
@@ -80,8 +87,10 @@ case class UserState(optUser: Option[User]) {
         copy(optUser.map {
           case student: Student => student.copy(latestImmatriculation = semester)
         })
-      case OnUserDelete(_) =>
+      case OnUserForceDelete(_) =>
         copy(None)
+      case OnUserSoftDelete(user) =>
+        copy(Some(user.softDelete))
       case _ =>
         println("Unknown Event")
         this
