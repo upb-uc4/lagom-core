@@ -44,7 +44,7 @@ case class Course(
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
 
-    val nameRegex = RegexCollection.Commons.nameRegex
+    val nameRegex = RegexCollection.Commons.nonEmpty100CharRegex
     val descriptionRegex = RegexCollection.Commons.longTextRegex
     val dateRegex = RegexCollection.Commons.dateRegex
     val ectsRegex = RegexCollection.Course.ectsRegex
