@@ -5,9 +5,10 @@ import java.util.UUID
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateUser }
-import de.upb.cs.uc4.certificate.impl.commands.{ DeleteCertificateUser, GetCertificateUser, RegisterUser, SetCertificateAndKey }
+import de.upb.cs.uc4.certificate.impl.commands._
 import de.upb.cs.uc4.certificate.model.EncryptedPrivateKey
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
+import de.upb.cs.uc4.user.model.Role
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -85,7 +86,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     //DELETE
-    "delete a CertificateUser" in {
+    "force delete a CertificateUser" in {
       val probe1 = createTestProbe[Confirmation]()
       val probe2 = createTestProbe[Confirmation]()
       val probe3 = createTestProbe[CertificateUser]()
@@ -95,11 +96,49 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
       ref ! RegisterUser("enrollmentId", "enrollmentSecret", probe1.ref)
       probe1.expectMessageType[Accepted]
 
-      ref ! DeleteCertificateUser("enrollmentId", probe2.ref)
+      ref ! ForceDeleteCertificateUser("SomeUsername", Role.Lecturer, probe2.ref)
       probe2.expectMessageType[Accepted]
 
       ref ! GetCertificateUser(probe3.ref)
       probe3.expectMessage(CertificateUser(None, None, None, None))
+    }
+
+    "soft delete a non-lecturer CertificateUser" in {
+      val probe1 = createTestProbe[Confirmation]()
+      val probe2 = createTestProbe[Confirmation]()
+      val probe3 = createTestProbe[CertificateUser]()
+
+      val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
+
+      ref ! RegisterUser("enrollmentId", "enrollmentSecret", probe1.ref)
+      probe1.expectMessageType[Accepted]
+
+      ref ! SoftDeleteCertificateUser("SomeUsername", Role.Student, probe2.ref)
+      probe2.expectMessageType[Accepted]
+
+      ref ! GetCertificateUser(probe3.ref)
+      probe3.expectMessage(CertificateUser(None, None, None, None))
+    }
+
+    "soft delete a lecturer CertificateUser" in {
+      val probe1 = createTestProbe[Confirmation]()
+      val probe2 = createTestProbe[Confirmation]()
+      val probe3 = createTestProbe[Confirmation]()
+      val probe4 = createTestProbe[CertificateUser]()
+
+      val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-9")))
+
+      ref ! RegisterUser("enrollmentId", "enrollmentSecret", probe1.ref)
+      probe1.expectMessageType[Accepted]
+
+      ref ! SetCertificateAndKey("certificate", EncryptedPrivateKey("Key", "IV", "Salt"), probe2.ref)
+      probe2.expectMessageType[Accepted]
+
+      ref ! SoftDeleteCertificateUser("SomeUsername", Role.Lecturer, probe3.ref)
+      probe3.expectMessageType[Accepted]
+
+      ref ! GetCertificateUser(probe4.ref)
+      probe4.expectMessage(CertificateUser(Some("enrollmentId"), Some("enrollmentSecret"), Some("certificate"), Some(EncryptedPrivateKey("", "", ""))))
     }
   }
 }
