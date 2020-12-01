@@ -17,6 +17,8 @@ trait HyperledgerDefaultParts {
   protected val chaincode: String = retrieveString("uc4.hyperledger.chaincode", "uc4-cc")
   protected val caURL: String = retrieveString("uc4.hyperledger.caURL", s"https://${sys.env.getOrElse("UC4_KIND_NODE_IP", "localhost")}:30907")
 
+  protected val hlApiVersion: String = BuildInfo.version
+
   /** Retrieves the path from the key out of the configuration.
     *
     * @param key in the configuration
