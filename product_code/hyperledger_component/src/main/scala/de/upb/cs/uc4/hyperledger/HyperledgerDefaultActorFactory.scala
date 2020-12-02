@@ -50,6 +50,9 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
                     case SubmitProposal(proposal, signature, replyTo) =>
                       connection.submitSignedProposal(proposal, signature)
                       replyTo ! StatusReply.success(Accepted.default)
+                    case GetChaincodeVersion(replyTo) =>
+                      val version = connection.getChaincodeVersion
+                      replyTo ! StatusReply.success(Accepted(version))
                     case command: HyperledgerCommand[_] => applyCommand(connection, command)
                   }
                 }

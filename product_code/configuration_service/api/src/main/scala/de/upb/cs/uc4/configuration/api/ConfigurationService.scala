@@ -4,7 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.configuration.model.{ Configuration, JsonSemester, ValidationConfiguration }
-import de.upb.cs.uc4.shared.client.{ JsonVersionNumber, UC4Service }
+import de.upb.cs.uc4.shared.client.{ JsonServiceVersion, UC4Service }
 
 object ConfigurationService {
   val TOPIC_NAME = "Configuration"
@@ -21,7 +21,7 @@ trait ConfigurationService extends UC4Service {
   override val name = "configuration"
 
   /** Get hyperledger network version */
-  def getHyperledgerNetworkVersion: ServiceCall[NotUsed, JsonVersionNumber]
+  def getHyperledgerNetworkVersion: ServiceCall[NotUsed, JsonServiceVersion]
 
   /** Get configuration */
   def getConfiguration: ServiceCall[NotUsed, Configuration]

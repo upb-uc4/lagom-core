@@ -24,6 +24,8 @@ object SubmitProposal {
     new SubmitProposal(proposal.unsignedProposalAsByteArray, proposal.signatureAsByteArray, replyTo)
 }
 
+final case class GetChaincodeVersion(replyTo: ActorRef[StatusReply[Confirmation]]) extends HyperledgerInternCommand[Confirmation]
+
 trait HyperledgerCommand[PayloadType] extends HyperledgerInternCommand[PayloadType]
 
 trait HyperledgerReadCommand[PayloadType] extends HyperledgerCommand[PayloadType]

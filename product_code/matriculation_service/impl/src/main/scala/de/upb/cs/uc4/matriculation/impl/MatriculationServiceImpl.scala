@@ -10,13 +10,14 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
+import de.upb.cs.uc4.hyperledger.HyperledgerUtils
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitProposal }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
-import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData, GetProposalForAddEntriesToMatriculationData, GetProposalForAddMatriculationData }
+import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
-import de.upb.cs.uc4.shared.client.{ SignedTransactionProposal, TransactionProposal, Utils }
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedTransactionProposal, TransactionProposal, Utils }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
@@ -226,4 +227,8 @@ class MatriculationServiceImpl(
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
+
+  override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = ServiceCall { _ =>
+    HyperledgerUtils.VersionUtil.createHyperledgerVersionResponse(entityRef)
+  }
 }

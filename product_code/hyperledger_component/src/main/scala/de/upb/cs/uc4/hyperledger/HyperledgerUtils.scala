@@ -1,8 +1,17 @@
 package de.upb.cs.uc4.hyperledger
 
+import akka.cluster.sharding.typed.scaladsl.EntityRef
+import akka.util.Timeout
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
+import de.upb.cs.uc4.hyperledger.commands.{ GetChaincodeVersion, HyperledgerBaseCommand }
 import de.upb.cs.uc4.hyperledger.exceptions.traits.{ HyperledgerExceptionTrait, NetworkExceptionTrait, TransactionExceptionTrait }
+import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import play.api.libs.json.{ Format, JsResultException, Json }
+
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration._
 
 object HyperledgerUtils {
 
@@ -77,6 +86,20 @@ object HyperledgerUtils {
 
     implicit class FromJsonUtil(val json: String) {
       def fromJson[Type](implicit format: Format[Type]): Type = Json.parse(json).as[Type]
+    }
+  }
+
+  object VersionUtil {
+    def createHyperledgerVersionResponse(ref: EntityRef[HyperledgerBaseCommand])(implicit timeout: Timeout, ec: ExecutionContext): Future[JsonHyperledgerVersion] = {
+      ref.askWithStatus[Confirmation](replyTo => GetChaincodeVersion(replyTo)).map {
+        case Accepted(summary) =>
+          JsonHyperledgerVersion(BuildInfo.version, summary)
+        case Rejected(statusCode, reason) =>
+          throw UC4Exception(statusCode, reason)
+      }.recover {
+        case ue: UC4Exception => throw ue
+        case ex: Throwable    => throw UC4Exception.InternalServerError("Error while fetching version", "unknown exception", ex)
+      }
     }
   }
 }
