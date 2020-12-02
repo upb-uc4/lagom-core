@@ -42,7 +42,7 @@ class CourseServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   /** @inheritdoc */
-  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = authenticated[NotUsed, Seq[Course]](AuthenticationRole.All: _*) {
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = {
     ServerServiceCall { (header, _) =>
       database.getAll
         .map(seq => seq
@@ -174,7 +174,7 @@ class CourseServiceImpl(
     }
 
   /** @inheritdoc */
-  override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = authenticated(AuthenticationRole.All: _*) {
+  override def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course] = {
     ServerServiceCall { (header, _) =>
       entityRef(id).ask[Option[Course]](replyTo => commands.GetCourse(replyTo)).map {
         case Some(course) => createETagHeader(header, course)
