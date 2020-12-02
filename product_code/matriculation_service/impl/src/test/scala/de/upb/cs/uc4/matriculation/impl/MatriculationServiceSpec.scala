@@ -13,7 +13,7 @@ import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
-import de.upb.cs.uc4.shared.client.SignedTransactionProposal
+import de.upb.cs.uc4.shared.client.SignedProposal
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
@@ -281,7 +281,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
           .invoke(createSingleMatriculation("Computer Science", "WS2020/21")).flatMap {
             proposal =>
               client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
-                .invoke(SignedTransactionProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
+                .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
                   client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
                     answer =>
                       answer.matriculationStatus should contain theSameElementsAs
@@ -306,7 +306,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(createSingleMatriculation("Mathematics", "WS2021/22")).flatMap { proposal =>
             client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
-              .invoke(SignedTransactionProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
+              .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
                 client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
                   answer =>
                     answer.matriculationStatus should contain theSameElementsAs
