@@ -4,7 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
-import de.upb.cs.uc4.shared.client.{ UC4HyperledgerService, UC4Service }
+import de.upb.cs.uc4.shared.client.UC4HyperledgerService
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
 /** The CertificateService interface.
