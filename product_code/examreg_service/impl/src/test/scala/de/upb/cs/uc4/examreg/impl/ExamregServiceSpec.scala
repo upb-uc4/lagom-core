@@ -12,6 +12,7 @@ import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.impl.actor.ExamregHyperledgerBehaviour
 import de.upb.cs.uc4.examreg.model.ExaminationRegulation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
+import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.JsonUtility.{ FromJsonUtil, ToJsonUtil }
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
@@ -103,6 +104,13 @@ class ExamregServiceSpec extends AsyncWordSpec
   val defaultExamRegs: Seq[ExaminationRegulation] = server.application.defaultExamRegs
 
   "ExamregService" should {
+
+    "fetch the hyperledger versions" in {
+      client.getHlfVersions.invoke().map { answer =>
+        answer shouldBe a [JsonHyperledgerVersion]
+      }
+    }
+
     "have a default examination regulation and get names of examination regulations" in {
       eventually(timeout(Span(15, Seconds))) {
         client.getExaminationRegulationsNames(None).invoke().map {

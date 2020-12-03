@@ -4,6 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
+import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 
 import scala.collection.mutable
@@ -71,4 +72,7 @@ class CertificateServiceStub extends CertificateService {
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
+  override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] =  { _ => Future.successful(JsonHyperledgerVersion("","")) }
 }
