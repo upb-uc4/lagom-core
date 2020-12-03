@@ -6,6 +6,7 @@ import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 
 trait UC4HyperledgerService extends UC4Service {
 
+  /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion]
 
   override def descriptor: Descriptor = {

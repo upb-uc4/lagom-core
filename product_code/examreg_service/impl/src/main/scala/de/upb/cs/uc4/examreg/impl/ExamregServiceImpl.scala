@@ -13,7 +13,9 @@ import de.upb.cs.uc4.examreg.impl.actor.{ ExamregHyperledgerBehaviour, ExamregSt
 import de.upb.cs.uc4.examreg.impl.commands._
 import de.upb.cs.uc4.examreg.impl.readside.ExamregDatabase
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
+import de.upb.cs.uc4.hyperledger.HyperledgerUtils
 import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Exception }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
@@ -152,4 +154,9 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
 
   /** @inheritdoc */
   override def allowedMethodsDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("DELETE")
+
+  /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
+  override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = ServiceCall { _ =>
+    HyperledgerUtils.VersionUtil.createHyperledgerVersionResponse(entityRefHyperledger)
+  }
 }

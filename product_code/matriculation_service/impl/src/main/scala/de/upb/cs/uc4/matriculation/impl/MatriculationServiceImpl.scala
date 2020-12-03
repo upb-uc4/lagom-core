@@ -228,6 +228,7 @@ class MatriculationServiceImpl(
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
+  /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = ServiceCall { _ =>
     HyperledgerUtils.VersionUtil.createHyperledgerVersionResponse(entityRef)
   }
