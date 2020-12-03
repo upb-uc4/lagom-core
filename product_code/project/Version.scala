@@ -4,7 +4,7 @@ object Version {
   private val versions: Map[String, String] = Map(
     "authentication_service" -> "v0.13.1",
     "certificate_service" -> "v0.13.1",
-    "configuration_service" -> "v0.13.0",
+    "configuration_service" -> "v0.13.1",
     "course_service" -> "v0.13.1",
     "examreg_service" -> "v0.12.3",
     "hyperledger_api" -> "0.11.5",
