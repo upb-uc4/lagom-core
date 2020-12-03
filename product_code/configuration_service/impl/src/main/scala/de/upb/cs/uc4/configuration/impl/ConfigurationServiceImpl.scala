@@ -10,7 +10,7 @@ import de.upb.cs.uc4.configuration.api.ConfigurationService
 import de.upb.cs.uc4.configuration.model.{ Configuration, JsonSemester, ValidationConfiguration }
 import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, CourseLanguage, CourseType, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions.{ SimpleError, UC4Exception }
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerNetworkVersion, JsonServiceVersion, Utils }
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerNetworkVersion, Utils }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import play.api.Environment
 

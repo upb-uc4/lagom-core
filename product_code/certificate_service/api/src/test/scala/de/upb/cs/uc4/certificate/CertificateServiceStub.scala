@@ -74,5 +74,5 @@ class CertificateServiceStub extends CertificateService {
   override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
-  override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] =  { _ => Future.successful(JsonHyperledgerVersion("","")) }
+  override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = { _ => Future.successful(JsonHyperledgerVersion("", "")) }
 }

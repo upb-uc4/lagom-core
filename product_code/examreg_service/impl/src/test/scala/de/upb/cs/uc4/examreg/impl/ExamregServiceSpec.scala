@@ -107,7 +107,7 @@ class ExamregServiceSpec extends AsyncWordSpec
 
     "fetch the hyperledger versions" in {
       client.getHlfVersions.invoke().map { answer =>
-        answer shouldBe a [JsonHyperledgerVersion]
+        answer shouldBe a[JsonHyperledgerVersion]
       }
     }
 
