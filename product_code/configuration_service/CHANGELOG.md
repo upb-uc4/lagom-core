@@ -1,4 +1,4 @@
-# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.13.0...configuration-v0.13.1) (2020-XX-XX)
+# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.13.0...configuration-v0.13.1) (2020-12-04)
 ## Feature
 ## Refactor
  - Remove now obsolete fields of study from configuration object

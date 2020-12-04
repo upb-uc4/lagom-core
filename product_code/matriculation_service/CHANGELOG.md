@@ -1,4 +1,4 @@
-# [v0.13.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.13.1...matriculation-v0.13.2) (2020-XX-XX)
+# [v0.13.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.13.1...matriculation-v0.13.2) (2020-12-04)
 ## Feature
  - Added check in "getProposal" call on endpoint "/matriculation/:username/proposal",
  that confirms that the matriculation message contains fieldOfStudies that correspond to
