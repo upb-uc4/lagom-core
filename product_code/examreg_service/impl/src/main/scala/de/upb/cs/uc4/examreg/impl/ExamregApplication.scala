@@ -19,6 +19,7 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 abstract class ExamregApplication(context: LagomApplicationContext)
@@ -82,9 +83,16 @@ abstract class ExamregApplication(context: LagomApplicationContext)
       )
     )
   )
+
+  var futures: Seq[(ExaminationRegulation, Future[Confirmation])] = Seq()
   defaultExamRegs.foreach { defaultExamReg =>
-    clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, ExamregHyperledgerBehaviour.entityId)
-      .askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(defaultExamReg, replyTo)).map {
+    futures :+= (defaultExamReg, clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, ExamregHyperledgerBehaviour.entityId)
+      .askWithStatus[Confirmation](replyTo => CreateExamregHyperledger(defaultExamReg, replyTo)))
+  }
+  futures.foreach {
+    examRegResponseTupel =>
+      val (defaultExamReg, responseFuture) = examRegResponseTupel
+      responseFuture.map {
         case Accepted(_) => clusterSharding.entityRefFor(ExamregState.typeKey, defaultExamReg.name)
           .ask[Confirmation](replyTo => CreateExamregDatabase(defaultExamReg, replyTo)).map {
             case Accepted(_)                  => log.info(s"Default examreg ${defaultExamReg.name} created successfully")
