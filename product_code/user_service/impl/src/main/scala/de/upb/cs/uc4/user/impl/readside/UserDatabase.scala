@@ -68,7 +68,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
 
       getAll(admin.role).map { result =>
         if (result.isEmpty) {
-          entityRef(admin.username).ask[Confirmation](replyTo => CreateUser(admin, "adminGovernmentId", replyTo))
+          entityRef(admin.username).ask[Confirmation](replyTo => CreateUser(admin, "governmentIdAdmin", replyTo))
         }
       }
     })
