@@ -1,4 +1,4 @@
-# [WIP - v0.13.2](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.13.1...course-v0.13.2) (2020-XX-XX)
+# [v0.14.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.13.1...course-v0.14.0) (2020-12-08)
 ## Feature
 ## Refactor
  - Made course list accessible without authorization
