@@ -175,7 +175,7 @@ class UserServiceSpec extends AsyncWordSpec
         client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student0Auth, "governmentIdStudent0", student0)).map {
           student0Created =>
             val source = creationSource
-              .runWith(TestSink.probe[EncryptionContainer]).request(1)
+              .runWith(TestSink.probe[EncryptionContainer]).request(2)
 
             val containerSeq = Seq(
               source.expectNext(FiniteDuration(15, SECONDS)),
