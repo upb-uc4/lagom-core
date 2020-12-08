@@ -113,7 +113,7 @@ class UserServiceSpec extends AsyncWordSpec
           usernamesLecturer <- server.application.database.getAll(Role.Lecturer)
           usernamesAdmin <- server.application.database.getAll(Role.Admin)
         } yield {
-          usernamesStudent ++ usernamesLecturer ++ usernamesAdmin should contain theSameElementsAs Seq("student", "lecturer", "admin")
+          usernamesStudent ++ usernamesLecturer ++ usernamesAdmin should contain theSameElementsAs Seq("admin")
         }
       }
     }
