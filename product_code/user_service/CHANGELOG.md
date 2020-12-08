@@ -1,11 +1,7 @@
-# [v0.13.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.2...user-v0.13.3) (2020-11-26)
+# [WIP - v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.3...user-v0.14.1) (2020-XX-XX)
 ## Feature
-- Replaced DELETE call with soft delete with different bahaviour; Upon soft deletion; the AuthUser is fully deleted and the CertUser is fully deleted (if a non-lecturer is soft-deleted). If a lecturer is deleted CertUser retains enrollmentId and certificate
-- Added endpoint for the "old" deletion, with a DELETE on /users/{username}/force
-- Added "isActive" flag to User object, which is "true" on creation, and "false" after soft-deletion
-- Added Query parameter "only_active" to all "getAll" calls
-- Split deletion topic into two, one for auth and one for cert service, since dependencies do not allow to send the role in a topic to auth service
 ## Refactor
+- Moved default data to the deployment
 ## Bugfix
 
 # [v0.13.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.1...user-v0.13.2) (2020-11-26)
