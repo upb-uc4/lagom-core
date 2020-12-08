@@ -1,19 +1,19 @@
 package de.upb.cs.uc4.user.impl.readside
 
 import akka.Done
-import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.impl.actor.UserState
-import de.upb.cs.uc4.user.impl.commands.{ CreateUser, UserCommand }
+import de.upb.cs.uc4.user.impl.commands.{CreateUser, UserCommand}
 import de.upb.cs.uc4.user.model.Role.Role
 import de.upb.cs.uc4.user.model.user._
-import de.upb.cs.uc4.user.model.{ Address, Role }
+import de.upb.cs.uc4.user.model.{Address, Role}
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext, timeout: Timeout) {
 
@@ -58,20 +58,20 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
 
   /** Creates all needed tables for the different roles */
   def createTable(): DBIOAction[Unit, NoStream, Effect.Schema] = {
-    images.schema.createIfNotExists
-    students.schema.createIfNotExists
-    lecturers.schema.createIfNotExists
-    admins.schema.createIfNotExists.andFinally(DBIO.successful {
-      //Add default users
-      val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
-      val admin: User = Admin("admin", "YWRtaW5hZG1pbg==", isActive = true, Role.Admin, address, "Ad", "Min", "admin@mail.de", "+49123456789", "1992-12-10")
+    images.schema.createIfNotExists >>
+      students.schema.createIfNotExists >>
+      lecturers.schema.createIfNotExists >>
+      admins.schema.createIfNotExists.andFinally(DBIO.successful {
+        //Add default users
+        val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
+        val admin: User = Admin("admin", "YWRtaW5hZG1pbg==", isActive = true, Role.Admin, address, "Ad", "Min", "admin@mail.de", "+49123456789", "1992-12-10")
 
-      getAll(admin.role).map { result =>
-        if (result.isEmpty) {
-          entityRef(admin.username).ask[Confirmation](replyTo => CreateUser(admin, "governmentIdAdmin", replyTo))
+        getAll(admin.role).map { result =>
+          if (result.isEmpty) {
+            entityRef(admin.username).ask[Confirmation](replyTo => CreateUser(admin, "governmentIdAdmin", replyTo))
+          }
         }
-      }
-    })
+      })
   }
 
   /** Returns a Sequence of all users with
@@ -91,7 +91,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
     findByUsernameQuery(user.username, table)
       .flatMap {
         case None => table += user.username
-        case _    => DBIO.successful(Done)
+        case _ => DBIO.successful(Done)
       }
       .map(_ => Done)
       .transactionally
@@ -144,9 +144,9 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
     */
   private def getTable(role: Role): TableQuery[_ <: UserTable] =
     role match {
-      case Role.Admin    => admins
+      case Role.Admin => admins
       case Role.Lecturer => lecturers
-      case Role.Student  => students
+      case Role.Student => students
     }
 
   /** Returns the query to get all users
