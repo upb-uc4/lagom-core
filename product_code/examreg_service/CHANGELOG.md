@@ -1,3 +1,9 @@
+# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.12.3...examreg-v0.13.1) (2020-12-04)
+## Feature
+## Refactor
+ - Changed default examination regulation creation to be in parallel
+## Bugfix
+
 # [v0.12.3](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.12.2...examreg-v0.12.3) (2020-11-20)
 ## Feature
  - Added Examination Regulation endpoints for 

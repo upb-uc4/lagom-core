@@ -1,3 +1,9 @@
+# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.13.0...certificate-v0.13.1) (2020-11-26)
+## Feature
+ - Upon soft deletion of a user the CertUser is fully deleted if a non-lecturer is soft-deleted. If a lecturer is deleted, the CertUser retains enrollmentId and certificate.
+## Refactor
+## Bugfix
+
 # [v0.13.0](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.12.0...certificate-v0.13.0) (2020-11-23)
 ## Feature
  - Added configurable timeouts in application config

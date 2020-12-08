@@ -34,7 +34,6 @@ class ConfigurationServiceImpl(override val environment: Environment)(implicit e
       createETagHeader(
         header,
         Configuration(
-          ConfigurationCollection.fieldOfStudies,
           ConfigurationCollection.countries,
           CourseLanguage.All.map(_.toString),
           CourseType.All.map(_.toString)
