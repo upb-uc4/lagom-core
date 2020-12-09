@@ -5,11 +5,11 @@ object Version {
     "admission_service" -> "v0.13.1",
     "authentication_service" -> "v0.13.1",
     "certificate_service" -> "v0.13.1",
-    "configuration_service" -> "v0.13.0",
+    "configuration_service" -> "v0.13.1",
     "course_service" -> "v0.13.1",
-    "examreg_service" -> "v0.12.3",
-    "hyperledger_api" -> "0.11.5",
-    "matriculation_service" -> "v0.13.1",
+    "examreg_service" -> "v0.13.1",
+    "hyperledger_api" -> "014.1",
+    "matriculation_service" -> "v0.13.2",
     "user_service" -> "v0.13.3"
   )
 

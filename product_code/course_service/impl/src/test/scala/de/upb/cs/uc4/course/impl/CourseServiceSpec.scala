@@ -89,8 +89,8 @@ class CourseServiceSpec extends AsyncWordSpec
   /** Tests only working if the whole instance is started */
   "CourseService" should {
 
-    "get all courses with no courses" in {
-      client.getAllCourses(None, None, None).handleRequestHeader(addAuthorizationHeader())
+    "get all courses without authorization" in {
+      client.getAllCourses(None, None, None)
         .invoke().map { answer =>
           answer shouldBe empty
         }.flatMap(cleanupOnSuccess)
@@ -138,7 +138,7 @@ class CourseServiceSpec extends AsyncWordSpec
     }
 
     "fail in finding a non-existing course" in {
-      client.findCourseByCourseId("42").handleRequestHeader(addAuthorizationHeader())
+      client.findCourseByCourseId("42")
         .invoke().failed.map { answer =>
           answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
         }
@@ -146,7 +146,7 @@ class CourseServiceSpec extends AsyncWordSpec
 
     "find an existing course" in {
       prepare(Seq(course1)).flatMap { createdCourses =>
-        client.findCourseByCourseId(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
+        client.findCourseByCourseId(createdCourses.head.courseId)
           .invoke().map { answer =>
             answer should ===(createdCourses.head)
           }
@@ -288,7 +288,7 @@ class CourseServiceSpec extends AsyncWordSpec
         client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
           .invoke(course4).flatMap { _ =>
             eventually(timeout(Span(30, Seconds))) {
-              client.findCourseByCourseId(course4.courseId).handleRequestHeader(addAuthorizationHeader())
+              client.findCourseByCourseId(course4.courseId)
                 .invoke().map { answer =>
                   answer should ===(course4)
                 }

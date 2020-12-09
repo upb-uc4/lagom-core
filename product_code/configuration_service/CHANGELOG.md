@@ -1,7 +1,13 @@
-# [WIP - v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.13.0...configuration-v0.13.1) (2020-XX-XX)
+# [WIP - v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.13.1...configuration-v0.14.1) (2020-XX-XX)
 ## Feature
- - Added validation information of CourseAdmission object to ValidationConfiguration
+- Added validation information of CourseAdmission object to ValidationConfiguration
 ## Refactor
+## Bugfix
+
+# [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.13.0...configuration-v0.13.1) (2020-12-04)
+## Feature
+## Refactor
+ - Remove now obsolete fields of study from configuration object
 ## Bugfix
 
 # [v0.13.0](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.12.1...configuration-v0.13.0) (2020-11-23)
