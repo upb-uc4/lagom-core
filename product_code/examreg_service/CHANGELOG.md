@@ -1,5 +1,6 @@
 # [WIP - v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.13.1...examreg-v0.14.1) (2020-XX-XX)
 ## Feature
+- Added Version endpoint
 ## Refactor
 - Moved default data to the deployment 
 ## Bugfix
