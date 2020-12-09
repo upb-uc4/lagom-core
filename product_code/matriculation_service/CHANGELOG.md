@@ -1,7 +1,8 @@
 # [WIP - v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.13.2...matriculation-v0.14.1) (2020-XX-XX)
 ## Feature
- - Added Version endpoint
+ - Added Version endpoint for Hyperledger
 ## Refactor
+- Renamed "versionNumber" into "serviceVersion"
 ## Bugfix
 
 # [v0.13.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.13.1...matriculation-v0.13.2) (2020-12-04)

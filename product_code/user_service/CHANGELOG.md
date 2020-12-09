@@ -2,6 +2,7 @@
 ## Feature
 ## Refactor
 - Moved default data to the deployment
+- Renamed "versionNumber" into "serviceVersion"
 ## Bugfix
 
 # [v0.13.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.2...user-v0.13.3) (2020-11-26)

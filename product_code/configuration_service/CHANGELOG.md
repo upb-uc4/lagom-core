@@ -1,3 +1,9 @@
+# [WIP - v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.13.1...configuration-v0.14.1) (2020-XX-XX)
+## Feature
+## Refactor
+- Renamed "versionNumber" into "serviceVersion"
+## Bugfix
+
 # [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.13.0...configuration-v0.13.1) (2020-12-04)
 ## Feature
 ## Refactor
