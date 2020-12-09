@@ -1,7 +1,6 @@
 package de.upb.cs.uc4.examreg.impl
 
 import java.nio.file.Path
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -10,7 +9,7 @@ import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.examreg.DefaultTestExamRegs
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.impl.actor.ExamregHyperledgerBehaviour
-import de.upb.cs.uc4.examreg.model.ExaminationRegulation
+import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
 import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.JsonUtility.{ FromJsonUtil, ToJsonUtil }
@@ -23,7 +22,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future }
 
 class ExamregServiceSpec extends AsyncWordSpec
   with UC4SpecUtils with DefaultTestExamRegs with Matchers with BeforeAndAfterAll with Eventually {
@@ -48,7 +48,7 @@ class ExamregServiceSpec extends AsyncWordSpec
 
           override protected def createConnection: ConnectionExaminationRegulationTrait = new ConnectionExaminationRegulationTrait() {
 
-            var examRegList: Seq[ExaminationRegulation] = Seq[ExaminationRegulation]()
+            var examRegList: Seq[ExaminationRegulation] = Seq()
 
             override def getProposalAddExaminationRegulation(examinationRegulation: String): Array[Byte] = "getProposalAddExaminationRegulation".getBytes
 
@@ -101,7 +101,35 @@ class ExamregServiceSpec extends AsyncWordSpec
 
   override protected def afterAll(): Unit = server.stop()
 
-  val defaultExamRegs: Seq[ExaminationRegulation] = server.application.defaultExamRegs
+  val defaultExamRegs: Seq[ExaminationRegulation] = Seq(
+    ExaminationRegulation(
+      "Bachelor Computer Science v3",
+      active = true,
+      Seq(
+        Module("M.1275.01158", "Math 1"),
+        Module("M.1275.01159", "Math 2"),
+        Module("M.1275.78235", "Complexity Theory")
+      )
+    ),
+    ExaminationRegulation(
+      "Bachelor Computer Science v4",
+      active = true,
+      Seq(
+        Module("M.1278.15686", "Math"),
+        Module("M.1275.78235", "Complexity Theory"),
+        Module("M.1278.79512", "IT-Security")
+      )
+    ),
+    ExaminationRegulation(
+      "Bachelor Philosophy v1",
+      active = true,
+      Seq(
+        Module("M.1358.15686", "Introduction to Philosophy"),
+        Module("M.1358.15653", "Theoretical Philosophy"),
+        Module("M.1358.15418", "Applied Ethics")
+      )
+    )
+  )
 
   "ExamregService" should {
 
@@ -112,6 +140,7 @@ class ExamregServiceSpec extends AsyncWordSpec
     }
 
     "have a default examination regulation and get names of examination regulations" in {
+      Future.sequence(defaultExamRegs.map(reg => client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(reg)))
       eventually(timeout(Span(15, Seconds))) {
         client.getExaminationRegulationsNames(None).invoke().map {
           examRegNames =>

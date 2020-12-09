@@ -113,7 +113,7 @@ class UserServiceSpec extends AsyncWordSpec
           usernamesLecturer <- server.application.database.getAll(Role.Lecturer)
           usernamesAdmin <- server.application.database.getAll(Role.Admin)
         } yield {
-          usernamesStudent ++ usernamesLecturer ++ usernamesAdmin should contain theSameElementsAs Seq("student", "lecturer", "admin")
+          usernamesStudent ++ usernamesLecturer ++ usernamesAdmin should contain theSameElementsAs Seq("admin")
         }
       }
     }
@@ -175,11 +175,9 @@ class UserServiceSpec extends AsyncWordSpec
         client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student0Auth, "governmentIdStudent0", student0)).map {
           student0Created =>
             val source = creationSource
-              .runWith(TestSink.probe[EncryptionContainer]).request(4)
+              .runWith(TestSink.probe[EncryptionContainer]).request(2)
 
             val containerSeq = Seq(
-              source.expectNext(FiniteDuration(15, SECONDS)),
-              source.expectNext(FiniteDuration(15, SECONDS)),
               source.expectNext(FiniteDuration(15, SECONDS)),
               source.expectNext(FiniteDuration(15, SECONDS))
             )
@@ -188,8 +186,6 @@ class UserServiceSpec extends AsyncWordSpec
               container =>
                 server.application.kafkaEncryptionUtility.decrypt[Usernames](container)
             } should contain theSameElementsAs Seq(
-              createUsernames("student", "governmentIdStudent", "c3R1ZGVudHN0dWRlbnQ="),
-              createUsernames("lecturer", "governmentIdLecturer", "bGVjdHVyZXJsZWN0dXJlcg=="),
               createUsernames("admin", "governmentIdAdmin", "YWRtaW5hZG1pbg=="),
               createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret)
             )
@@ -226,8 +222,8 @@ class UserServiceSpec extends AsyncWordSpec
         client.getAllUsers(None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map { answer =>
 
           answer.admins should have size 1
-          answer.lecturers should have size 1
-          answer.students should have size 1
+          answer.lecturers should have size 0
+          answer.students should have size 0
         }
       }
     }

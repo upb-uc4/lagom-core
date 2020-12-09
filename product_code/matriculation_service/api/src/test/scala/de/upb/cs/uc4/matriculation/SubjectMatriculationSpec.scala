@@ -13,12 +13,6 @@ class SubjectMatriculationSpec extends AsyncWordSpecLike with Matchers {
       subjectMatriculationValid.validate.map(_ shouldBe empty)
     }
 
-    //FIELD OF STUDY
-    "return a validation error for undefined fieldOfStudy" in {
-      subjectMatriculationValid.copy(fieldOfStudy = "ThisDoesNot Exist").validate
-        .map(_.map(error => error.name) should contain theSameElementsAs Seq("fieldOfStudy"))
-    }
-
     //SEMESTER
     "return a validation error for incorrect semester" in {
       subjectMatriculationValid.copy(semesters = Seq("SS2019", "FS2020")).validate

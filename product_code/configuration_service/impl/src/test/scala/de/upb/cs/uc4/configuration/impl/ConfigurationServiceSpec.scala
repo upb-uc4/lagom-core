@@ -29,7 +29,6 @@ class ConfigurationServiceSpec extends AsyncWordSpec with Matchers {
 
     "get the configuration" in {
       val configuration = Configuration(
-        ConfigurationCollection.fieldOfStudies,
         ConfigurationCollection.countries,
         CourseLanguage.All.map(_.toString),
         CourseType.All.map(_.toString)
