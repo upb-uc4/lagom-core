@@ -10,12 +10,13 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
+import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
-import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData, GetProposalForAddEntriesToMatriculationData, GetProposalForAddMatriculationData }
+import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.{ SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction, Utils }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
@@ -31,6 +32,7 @@ import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
 class MatriculationServiceImpl(
     clusterSharding: ClusterSharding,
     userService: UserService,
+    examregService: ExamregService,
     certificateService: CertificateService,
     override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
@@ -78,57 +80,75 @@ class MatriculationServiceImpl(
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
     identifiedAuthenticated[PutMessageMatriculation, UnsignedProposal](AuthenticationRole.Student) { (authUser, _) =>
-      ServerServiceCall { (header, rawMessage) =>
+      ServerServiceCall { (header, rawMatriculationProposal) =>
 
         if (authUser != username.trim) {
           throw UC4Exception.OwnerMismatch
         }
 
-        val message = rawMessage.trim
+        val matriculationProposal = rawMatriculationProposal.trim
 
-        val validationList = try {
-          Await.result(message.validate, validationTimeout)
+        var validationList = try {
+          Await.result(matriculationProposal.validate, validationTimeout)
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
           case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
 
-        if (validationList.nonEmpty) {
-          throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
-        }
-
-        certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-          .flatMap { jsonEnrollmentId =>
-            val enrollmentId = jsonEnrollmentId.id
-
-            entityRef.askWithStatus[ImmatriculationData](replyTo => GetMatriculationData(enrollmentId, replyTo))
-              .flatMap {
-                _ =>
-                  entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddEntriesToMatriculationData(
-                    enrollmentId,
-                    message.matriculation,
-                    replyTo
-                  )).map {
-                    array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
-                  }.recover(handleException("Creation of add entry proposal failed"))
-
-              }.recoverWith {
-                case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
-                  val data = ImmatriculationData(
-                    enrollmentId,
-                    message.matriculation
-                  )
-                  entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddMatriculationData(data, replyTo)).map {
-                    array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
-                  }.recover(handleException("Creation of add matriculation data proposal failed"))
-
-                case uc4Exception: UC4Exception => throw uc4Exception
-
-                case ex: Throwable =>
-                  throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
+        examregService.getExaminationRegulations(Some(matriculationProposal.matriculation.map(_.fieldOfStudy).mkString(",")), Some(true)).invoke().flatMap {
+          examRegs =>
+            // Check for all subjects matriculations that the field of study is a valid examreg
+            if (examRegs.isEmpty) {
+              for (index <- matriculationProposal.matriculation.indices) {
+                validationList :+= SimpleError(s"matriculation[$index]", "Field of Study is not an active examination regulation.")
               }
-          }
+            }
+            else {
+              val examregList = examRegs.map(_.name)
+              for (index <- matriculationProposal.matriculation.indices) {
+                if (!examregList.contains(matriculationProposal.matriculation(index).fieldOfStudy)) {
+                  validationList :+= SimpleError(s"matriculation[$index]", "Field of Study is not an active examination regulation.")
+                }
+              }
+            }
+
+            if (validationList.nonEmpty) {
+              throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
+            }
+
+            certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+              .flatMap { jsonEnrollmentId =>
+                val enrollmentId = jsonEnrollmentId.id
+
+                entityRef.askWithStatus[ImmatriculationData](replyTo => GetMatriculationData(enrollmentId, replyTo))
+                  .flatMap {
+                    _ =>
+                      entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddEntriesToMatriculationData(
+                        enrollmentId,
+                        matriculationProposal.matriculation,
+                        replyTo
+                      )).map {
+                        array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
+                      }.recover(handleException("Creation of add entry proposal failed"))
+
+                  }.recoverWith {
+                    case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
+                      val data = ImmatriculationData(
+                        enrollmentId,
+                        matriculationProposal.matriculation
+                      )
+                      entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddMatriculationData(data, replyTo)).map {
+                        array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
+                      }.recover(handleException("Creation of add matriculation data proposal failed"))
+
+                    case uc4Exception: UC4Exception => throw uc4Exception
+
+                    case ex: Throwable =>
+                      throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
+                  }
+              }
+        }
       }
     }
 
