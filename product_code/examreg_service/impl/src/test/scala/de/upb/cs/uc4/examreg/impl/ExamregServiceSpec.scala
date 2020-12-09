@@ -82,6 +82,8 @@ class ExamregServiceSpec extends AsyncWordSpec
               examRegList.toJson
             }
 
+            override def getChaincodeVersion: String = "testVersion"
+
             override lazy val contract: ContractImpl = null
             override lazy val gateway: GatewayImpl = null
             override val username: String = ""
