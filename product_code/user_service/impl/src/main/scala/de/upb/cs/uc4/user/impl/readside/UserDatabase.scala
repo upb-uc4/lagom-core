@@ -58,29 +58,21 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
 
   /** Creates all needed tables for the different roles */
   def createTable(): DBIOAction[Unit, NoStream, Effect.Schema] = {
-    images.schema.createIfNotExists >> //AND THEN
-      admins.schema.createIfNotExists >> //AND THEN
-      lecturers.schema.createIfNotExists >> //AND THEN
-      students.schema.createIfNotExists.andFinally(DBIO.successful {
+    images.schema.createIfNotExists >>
+      students.schema.createIfNotExists >>
+      lecturers.schema.createIfNotExists >>
+      admins.schema.createIfNotExists.andFinally(DBIO.successful {
         //Add default users
         val address: Address = Address("Gänseweg", "42a", "13337", "Entenhausen", "Germany")
-        val student: User = Student("student", "c3R1ZGVudHN0dWRlbnQ=", isActive = true, Role.Student, address, "Stu", "Dent", "student@mail.de", "+49123456789", "1990-12-11", "", "7421769")
-        val lecturer: User = Lecturer("lecturer", "bGVjdHVyZXJsZWN0dXJlcg==", isActive = true, Role.Lecturer, address, "Lect", "Urer", "lecturer@mail.de", "+49123456789", "1991-12-11", "Heute kommt der kleine Gauss dran.", "Mathematics")
         val admin: User = Admin("admin", "YWRtaW5hZG1pbg==", isActive = true, Role.Admin, address, "Ad", "Min", "admin@mail.de", "+49123456789", "1992-12-10")
 
-        addDefaultUser(student, "governmentIdStudent")
-        addDefaultUser(lecturer, "governmentIdLecturer")
-        addDefaultUser(admin, "governmentIdAdmin")
+        getAll(admin.role).map { result =>
+          if (result.isEmpty) {
+            entityRef(admin.username).ask[Confirmation](replyTo => CreateUser(admin, "governmentIdAdmin", replyTo))
+          }
+        }
       })
   }
-
-  /** helper method to add a user during table creation. */
-  private def addDefaultUser(user: User, governmentId: String) =
-    getAll(user.role).map { result =>
-      if (result.isEmpty) {
-        entityRef(user.username).ask[Confirmation](replyTo => CreateUser(user, governmentId, replyTo))
-      }
-    }
 
   /** Returns a Sequence of all users with
     * the specific role
@@ -134,7 +126,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
   /** Creates or updates the image of a user
     *
     * @param username of the owner of the image
-    * @param image as byte array
+    * @param image    as byte array
     */
   def setImage(username: String, image: Array[Byte], thumbnail: Array[Byte]): Future[Done] =
     database.run(setImageQuery(username, image, thumbnail))
@@ -200,7 +192,7 @@ class UserDatabase(database: Database, clusterSharding: ClusterSharding)(implici
   /** Returns the query to create or update the image of a user
     *
     * @param username of the owner of the image
-    * @param image as byte array
+    * @param image    as byte array
     */
   private def setImageQuery(username: String, image: Array[Byte], thumbnail: Array[Byte]): DBIO[Done] =
     images
