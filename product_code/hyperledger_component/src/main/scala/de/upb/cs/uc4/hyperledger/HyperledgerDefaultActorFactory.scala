@@ -48,11 +48,10 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
                 try {
                   cmd match {
                     case SubmitProposal(proposal, signature, replyTo) =>
-                      //TODO: Retrieve unsigned transaction here and reply with it
-                      connection.submitSignedProposal(proposal, signature)
-                      replyTo ! StatusReply.success("CHANGEME".getBytes)
+                      val unsignedTransaction = connection.getUnsignedTransaction(proposal, signature)
+                      replyTo ! StatusReply.success(unsignedTransaction)
                     case SubmitTransaction(transaction, signature, replyTo) =>
-                      //TODO: Submit transaction
+                      connection.submitSignedTransaction(transaction, signature)
                       replyTo ! StatusReply.success(Accepted.default)
                     case command: HyperledgerCommand[_] => applyCommand(connection, command)
                   }

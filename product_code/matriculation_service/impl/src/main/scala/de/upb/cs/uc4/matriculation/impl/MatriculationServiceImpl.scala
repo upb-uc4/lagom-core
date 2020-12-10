@@ -17,7 +17,7 @@ import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client.exceptions._
-import de.upb.cs.uc4.shared.client.{ SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction, Utils }
+import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
@@ -121,31 +121,37 @@ class MatriculationServiceImpl(
               .flatMap { jsonEnrollmentId =>
                 val enrollmentId = jsonEnrollmentId.id
 
-                entityRef.askWithStatus[ImmatriculationData](replyTo => GetMatriculationData(enrollmentId, replyTo))
-                  .flatMap {
-                    _ =>
-                      entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddEntriesToMatriculationData(
-                        enrollmentId,
-                        matriculationProposal.matriculation,
-                        replyTo
-                      )).map {
-                        array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
-                      }.recover(handleException("Creation of add entry proposal failed"))
+                certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+                  .flatMap { certificateJson =>
+                    val certificate = certificateJson.certificate
 
-                  }.recoverWith {
-                    case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
-                      val data = ImmatriculationData(
-                        enrollmentId,
-                        matriculationProposal.matriculation
-                      )
-                      entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddMatriculationData(data, replyTo)).map {
-                        array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
-                      }.recover(handleException("Creation of add matriculation data proposal failed"))
+                    entityRef.askWithStatus[ImmatriculationData](replyTo => GetMatriculationData(enrollmentId, replyTo))
+                      .flatMap {
+                        _ =>
+                          entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddEntriesToMatriculationData(
+                            certificate,
+                            enrollmentId,
+                            matriculationProposal.matriculation,
+                            replyTo
+                          )).map {
+                            array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
+                          }.recover(handleException("Creation of add entry proposal failed"))
 
-                    case uc4Exception: UC4Exception => throw uc4Exception
+                      }.recoverWith {
+                        case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
+                          val data = ImmatriculationData(
+                            enrollmentId,
+                            matriculationProposal.matriculation
+                          )
+                          entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddMatriculationData(certificate, data, replyTo)).map {
+                            array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
+                          }.recover(handleException("Creation of add matriculation data proposal failed"))
 
-                    case ex: Throwable =>
-                      throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
+                        case uc4Exception: UC4Exception => throw uc4Exception
+
+                        case ex: Throwable =>
+                          throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
+                      }
                   }
               }
         }
