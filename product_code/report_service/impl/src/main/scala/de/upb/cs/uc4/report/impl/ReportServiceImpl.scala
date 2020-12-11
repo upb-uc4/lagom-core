@@ -15,13 +15,15 @@ import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.report.api.ReportService
 import de.upb.cs.uc4.report.impl.actor.{ Report, ReportState }
-import de.upb.cs.uc4.report.impl.commands.{ GetReport, ReportCommand }
+import de.upb.cs.uc4.report.impl.commands.{ GetReport, ReportCommand, SetReport }
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import play.api.Environment
 import play.api.libs.json.Json
 
+import java.util.Calendar
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 
@@ -56,30 +58,33 @@ class ReportServiceImpl(
         val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
         val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
         val encryptedPrivateKeyFuture = certificateService.getPrivateKey(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-        var matriculationFuture : Future[ImmatriculationData] = Future.successful(null)
-        var coursesFuture: Future[Seq[Course]] = Future.successful(Nil)
+        var matriculationFuture : Future[Option[ImmatriculationData]] = Future.successful(None)
+        var coursesFuture: Future[Option[Seq[Course]]] = Future.successful(None)
 
         role match {
           case AuthenticationRole.Admin =>
           case AuthenticationRole.Student =>
-            matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+            matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_))
           case AuthenticationRole.Lecturer =>
-            coursesFuture = courseService.getAllCourses(lecturerId = Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+            coursesFuture = courseService.getAllCourses(None, Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_))
         }
 
         for {
           user <- userFuture
-          certificate <- certificateFuture
-          enrollmentId <- enrollmentIdFuture
+          jsonCertificate <- certificateFuture
+          jsonEnrollmentId <- enrollmentIdFuture
           encryptedPrivateKey <- encryptedPrivateKeyFuture
           immatriculationData <- matriculationFuture
           courses <- coursesFuture
         } yield {
-          val array = Json.toBytes(Json.toJson(user))
-
+          val report = Report(user, jsonCertificate.certificate, jsonEnrollmentId.id, encryptedPrivateKey, immatriculationData, courses, Calendar.getInstance().getTime.toString)
+          entityRef(username).ask[Confirmation](replyTo => SetReport(report, replyTo)).map {
+            case Accepted(_) =>
+            case Rejected(statusCode, reason) => //TODO throw
+          }
         }
 
-        Future.successful(ResponseHeader(200, MessageProtocol.empty, List()), Done)
+        Future.successful(ResponseHeader(202, MessageProtocol.empty, List()), Done)
       }
   }
 
@@ -93,8 +98,8 @@ class ReportServiceImpl(
         }
 
         entityRef(authUser).ask[Option[Report]](replyTo => GetReport(replyTo)).map {
-          case Some(Report(array, timestamp)) =>
-            createETagHeader(header, array, headers=List(("Last-Modified", timestamp)))
+          case Some(report) =>
+            createETagHeader(header, Json.toBytes(Json.toJson(report)))
           case None =>
             throw UC4Exception.PreconditionRequired
         }
