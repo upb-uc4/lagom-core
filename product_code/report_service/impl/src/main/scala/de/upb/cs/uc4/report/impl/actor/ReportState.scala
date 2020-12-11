@@ -10,7 +10,7 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import play.api.libs.json.{ Format, Json }
 
 /** The current state of a Report */
-case class ReportState(optReport: Option[Array[Byte]]) {
+case class ReportState(optReport: Option[Report]) {
 
   /** Functions as a CommandHandler
     *

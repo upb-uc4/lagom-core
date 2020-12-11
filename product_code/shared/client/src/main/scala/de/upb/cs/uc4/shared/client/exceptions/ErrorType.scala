@@ -16,6 +16,7 @@ object ErrorType extends Enumeration {
   Teapot, //418
   PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, //422
   Validation, UneditableFields, //422 In a DetailedError
+  PreconditionRequired, //428
   InternalServer, UndeserializableException, //500
   NotImplemented, //501
   HLInternal, //In an InformativeError

@@ -12,8 +12,8 @@ import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.report.api.ReportService
-import de.upb.cs.uc4.report.impl.actor.ReportState
-import de.upb.cs.uc4.report.impl.commands.ReportCommand
+import de.upb.cs.uc4.report.impl.actor.{ Report, ReportState }
+import de.upb.cs.uc4.report.impl.commands.{ GetReport, ReportCommand }
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
@@ -46,7 +46,23 @@ class ReportServiceImpl(
   override def prepareUserData(username: String): ServiceCall[NotUsed, Done] = ???
 
   /** Get all data for the specified user */
-  override def getUserData(username: String): ServiceCall[NotUsed, Array[Byte]] = ???
+  override def getUserData(username: String): ServiceCall[NotUsed, Array[Byte]] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+    (authUser, _) =>
+      ServerServiceCall { (header, _) => {
+
+        if (authUser != username.trim) {
+          throw UC4Exception.OwnerMismatch
+        }
+
+        entityRef(authUser).ask[Option[Report]](replyTo => GetReport(replyTo)).map {
+          case Some(Report(array, timestamp)) =>
+            createETagHeader(header, array, headers=List(("Last-Modified", timestamp)))
+          case None =>
+            throw UC4Exception.PreconditionRequired
+        }
+      }
+    }
+  }
 
   /** Allows GET */
   override def allowedMethodsGET: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
