@@ -1,3 +1,9 @@
+# [WIP - v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.13.1...examreg-v0.14.1) (2020-XX-XX)
+## Feature
+## Refactor
+- Moved default data to the deployment 
+## Bugfix
+
 # [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.12.3...examreg-v0.13.1) (2020-12-04)
 ## Feature
 ## Refactor

@@ -13,6 +13,8 @@ sealed trait HyperledgerBaseCommand extends HyperledgerCommandSerializable
 
 final case class Shutdown() extends HyperledgerBaseCommand
 
+final case class Activation() extends HyperledgerBaseCommand
+
 sealed trait HyperledgerInternCommand[PayloadType] extends HyperledgerBaseCommand {
   val replyTo: ActorRef[StatusReply[PayloadType]]
 }

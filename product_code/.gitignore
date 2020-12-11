@@ -16,6 +16,7 @@ logs
 ## intelliJ
 .idea
 *.iml
+.bsp/
 
 .metals
 .bloop

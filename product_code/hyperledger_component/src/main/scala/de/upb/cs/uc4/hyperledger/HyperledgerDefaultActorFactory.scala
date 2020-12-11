@@ -37,6 +37,10 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
         case (_, internCommand) =>
           internCommand match {
 
+            case Activation() =>
+              log.info(s"Initialised connection with chaincode version ${connection.getChaincodeVersion}.")
+              Behaviors.same
+
             case Shutdown() =>
               if (connection != null) {
                 connection.close()
@@ -57,11 +61,12 @@ trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends Hype
                   case ex: Exception =>
                     cmd.replyTo ! StatusReply.error(ex.toUC4Exception)
                 }
+                Behaviors.same
               }
               else {
                 cmd.replyTo ! StatusReply.error(UC4Exception.InternalServerError("Enrollment Error", "No connection to the chain"))
+                Behaviors.stopped
               }
-              Behaviors.same
           }
       }
 
