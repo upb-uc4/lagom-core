@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.report.api
 
+import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
@@ -15,12 +16,11 @@ trait ReportService extends UC4Service {
   override val pathPrefix = "/report-management"
   override val name = "report"
 
-
   /** Request collection of all data for the given user */
   def prepareUserData(username: String): ServiceCall[NotUsed, Done]
 
   /** Get all data for the specified user */
-  def getUserData(username: String): ServiceCall[NotUsed, Array[Byte]]
+  def getUserData(username: String): ServiceCall[NotUsed, ByteString]
 
   /** Allows GET */
   def allowedMethodsGET: ServiceCall[NotUsed, Done]

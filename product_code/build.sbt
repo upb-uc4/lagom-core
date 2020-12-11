@@ -163,7 +163,8 @@ lazy val report_service = (project in file("report_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= Dependencies.implDefaultDependencies,
-    libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
+    libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies,
+    libraryDependencies += Dependencies.zip
   )
   .settings(Settings.implSettings("report_service"))
   .dependsOn(report_service_api % withTests,

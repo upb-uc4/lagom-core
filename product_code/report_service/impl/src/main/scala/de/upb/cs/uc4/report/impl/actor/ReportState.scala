@@ -3,10 +3,9 @@ package de.upb.cs.uc4.report.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.report.impl.ReportApplication
-import de.upb.cs.uc4.report.impl.commands.{ GetReport, ReportCommand }
-import de.upb.cs.uc4.report.impl.events.ReportEvent
-import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError }
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
+import de.upb.cs.uc4.report.impl.commands.{ GetReport, ReportCommand, SetReport }
+import de.upb.cs.uc4.report.impl.events.{ OnSetReport, ReportEvent }
+import de.upb.cs.uc4.shared.server.messages.Accepted
 import play.api.libs.json.{ Format, Json }
 
 /** The current state of a Report */
@@ -18,7 +17,8 @@ case class ReportState(optReport: Option[Report]) {
     */
   def applyCommand(cmd: ReportCommand): ReplyEffect[ReportEvent, ReportState] =
     cmd match {
-      case GetReport(replyTo) => Effect.reply(replyTo)(optReport)
+      case GetReport(replyTo)         => Effect.reply(replyTo)(optReport)
+      case SetReport(report, replyTo) => Effect.persist(OnSetReport(report)).thenReply(replyTo) { _ => Accepted.default }
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -30,6 +30,8 @@ case class ReportState(optReport: Option[Report]) {
     */
   def applyEvent(evt: ReportEvent): ReportState =
     evt match {
+      case OnSetReport(report) =>
+        copy(Some(report))
       case _ =>
         println("Unknown Event")
         this
