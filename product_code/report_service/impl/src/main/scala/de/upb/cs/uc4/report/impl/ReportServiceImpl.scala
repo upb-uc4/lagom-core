@@ -42,11 +42,16 @@ class ReportServiceImpl(
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
+  /** Request collection of all data for the given user */
+  override def prepareUserData(username: String): ServiceCall[NotUsed, Done] = ???
+
   /** Get all data for the specified user */
-  override def getUserData(username: String): ServiceCall[NotUsed, Done] = ???
+  override def getUserData(username: String): ServiceCall[NotUsed, Array[Byte]] = ???
 
   /** Allows GET */
   override def allowedMethodsGET: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
+
+
 }

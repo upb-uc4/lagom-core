@@ -15,8 +15,12 @@ trait ReportService extends UC4Service {
   override val pathPrefix = "/report-management"
   override val name = "report"
 
+
+  /** Request collection of all data for the given user */
+  def prepareUserData(username: String): ServiceCall[NotUsed, Done]
+
   /** Get all data for the specified user */
-  def getUserData(username: String): ServiceCall[NotUsed, Done]
+  def getUserData(username: String): ServiceCall[NotUsed, Array[Byte]]
 
   /** Allows GET */
   def allowedMethodsGET: ServiceCall[NotUsed, Done]
@@ -25,8 +29,10 @@ trait ReportService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/reports/:username", getUserData _),
-        restCall(Method.OPTIONS, pathPrefix + "/reports/:username", allowedMethodsGET _)
+        restCall(Method.GET, pathPrefix + "/reports/:username/prepare", prepareUserData _),
+        restCall(Method.GET, pathPrefix + "/reports/:username/result", getUserData _),
+        restCall(Method.OPTIONS, pathPrefix + "/reports/:username/prepare", allowedMethodsGET _),
+        restCall(Method.OPTIONS, pathPrefix + "/reports/:username/result", allowedMethodsGET _)
       )
   }
 }
