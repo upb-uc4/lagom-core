@@ -19,7 +19,8 @@ lazy val lagom = (project in file("."))
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service,
-    examreg_service_api, examreg_service)
+    examreg_service_api, examreg_service,
+    report_service_api, report_service)
   .dependsOn(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
@@ -27,7 +28,8 @@ lazy val lagom = (project in file("."))
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service,
-    examreg_service_api, examreg_service)
+    examreg_service_api, examreg_service,
+    report_service_api, report_service)
 
 // This project is not allowed to have lagom server dependencies
 lazy val shared_client = (project in file("shared/client"))
@@ -152,3 +154,18 @@ lazy val examreg_service = (project in file("examreg_service/impl"))
   )
   .settings(Settings.implSettings("examreg_service"))
   .dependsOn(examreg_service_api % withTests, shared_client % withTests, shared_server % withTests, hyperledger_component)
+
+lazy val report_service_api =  (project in file("report_service/api"))
+  .settings(Settings.apiSettings("report_service_api"))
+  .dependsOn(shared_client)
+
+lazy val report_service = (project in file("report_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= Dependencies.implDefaultDependencies,
+    libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
+  )
+  .settings(Settings.implSettings("report_service"))
+  .dependsOn(report_service_api % withTests,
+    user_service_api % withTests, certificate_service_api % withTests, matriculation_service_api % withTests, course_service_api % withTests,
+    shared_client % withTests, shared_server % withTests)

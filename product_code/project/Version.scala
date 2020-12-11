@@ -9,7 +9,8 @@ object Version {
     "examreg_service" -> "v0.13.1",
     "hyperledger_api" -> "014.1",
     "matriculation_service" -> "v0.13.2",
-    "user_service" -> "v0.13.3"
+    "user_service" -> "v0.13.3",
+    "report_service" -> "v0.14.1"
   )
 
   /** Returns the version of a project
