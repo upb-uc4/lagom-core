@@ -261,29 +261,37 @@ class UserServiceImpl(
   }
 
   /** Flags a user as deleted and deletes personal info from now on unrequired */
-  override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
-    ServerServiceCall {
-      (_, _) =>
-        val ref = entityRef(username)
-        ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
-          optUser =>
-            if (optUser.isEmpty) {
-              throw UC4Exception.NotFound
+  override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = identifiedAuthenticated(AuthenticationRole.Student, AuthenticationRole.Admin) {
+    (authUsername, role) =>
+      {
+        ServerServiceCall {
+          (_, _) =>
+
+            if (role != AuthenticationRole.Admin && authUsername != username) {
+              throw UC4Exception.OwnerMismatch
             }
 
-            if (!optUser.get.isActive) {
-              throw UC4Exception.AlreadyDeleted
-            }
+            val ref = entityRef(username)
+            ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
+              optUser =>
+                if (optUser.isEmpty) {
+                  throw UC4Exception.NotFound
+                }
 
-            ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
-              .map {
-                case Accepted(_) => // Soft Deletion successful
-                  (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                case Rejected(code, reason) => //Update failed
-                  throw UC4Exception(code, reason)
-              }
+                if (!optUser.get.isActive) {
+                  throw UC4Exception.AlreadyDeleted
+                }
+
+                ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
+                  .map {
+                    case Accepted(_) => // Soft Deletion successful
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    case Rejected(code, reason) => //Update failed
+                      throw UC4Exception(code, reason)
+                  }
+            }
         }
-    }
+      }
   }
 
   /** Get all students from the database */
