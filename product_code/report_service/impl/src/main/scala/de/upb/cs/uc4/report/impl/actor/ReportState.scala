@@ -3,14 +3,14 @@ package de.upb.cs.uc4.report.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.report.impl.ReportApplication
-import de.upb.cs.uc4.report.impl.commands.ReportCommand
+import de.upb.cs.uc4.report.impl.commands.{ GetReport, ReportCommand }
 import de.upb.cs.uc4.report.impl.events.ReportEvent
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError }
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import play.api.libs.json.{ Format, Json }
 
 /** The current state of a Report */
-case class ReportState(changeMe: String) {
+case class ReportState(optReport: Option[Report]) {
 
   /** Functions as a CommandHandler
     *
@@ -18,6 +18,7 @@ case class ReportState(changeMe: String) {
     */
   def applyCommand(cmd: ReportCommand): ReplyEffect[ReportEvent, ReportState] =
     cmd match {
+      case GetReport(replyTo) => Effect.reply(replyTo)(optReport)
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -39,7 +40,7 @@ object ReportState {
 
   /** The initial state. This is used if there is no snapshotted state to be found.
     */
-  def initial: ReportState = ReportState("")
+  def initial: ReportState = ReportState(None)
 
   /** The [[akka.persistence.typed.scaladsl.EventSourcedBehavior]] instances (aka Aggregates) run on sharded actors inside the Akka Cluster.
     * When sharding actors and distributing them across the cluster, each aggregate is
