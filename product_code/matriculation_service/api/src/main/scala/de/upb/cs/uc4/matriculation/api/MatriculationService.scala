@@ -5,15 +5,15 @@ import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
-import de.upb.cs.uc4.shared.client.{ SignedTransactionProposal, TransactionProposal, UC4Service }
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
+import de.upb.cs.uc4.shared.client.{ SignedTransactionProposal, TransactionProposal, UC4HyperledgerService }
 
 /** The MatriculationService interface.
   *
   * This describes everything that Lagom needs to know about how to serve and
   * consume the MatriculationService.
   */
-trait MatriculationService extends UC4Service {
+trait MatriculationService extends UC4HyperledgerService {
   /** Prefix for the path for the endpoints, a name/identifier for the service*/
   override val pathPrefix: String = "/matriculation-management"
   /** The name of the service */

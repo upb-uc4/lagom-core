@@ -3,7 +3,6 @@ package de.upb.cs.uc4.matriculation.impl
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.util.Base64
-
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
@@ -14,7 +13,7 @@ import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
-import de.upb.cs.uc4.shared.client.SignedTransactionProposal
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedTransactionProposal }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
@@ -212,6 +211,8 @@ class MatriculationServiceSpec extends AsyncWordSpec
               }
             }
 
+            override def getChaincodeVersion: String = "testVersion"
+
             override def updateMatriculationData(jSonMatriculationData: String): String = ""
             override def getProposalUpdateMatriculationData(jSonMatriculationData: String): Array[Byte] = Array.emptyByteArray
             override def getProposalGetMatriculationData(enrollmentId: String): Array[Byte] = Array.emptyByteArray
@@ -245,6 +246,12 @@ class MatriculationServiceSpec extends AsyncWordSpec
   private def asString(unsignedProposal: String) = new String(Base64.getDecoder.decode(unsignedProposal), StandardCharsets.UTF_8)
 
   "MatriculationService service" should {
+
+    "fetch the hyperledger versions" in {
+      client.getHlfVersions.invoke().map { answer =>
+        answer shouldBe a[JsonHyperledgerVersion]
+      }
+    }
 
     "add matriculation data for a student" in {
       val message = createSingleMatriculation(examReg0.name, "SS2020")

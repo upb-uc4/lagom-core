@@ -1,3 +1,9 @@
+# [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.13.1...authentication-v0.14.1) (2020-12-14)
+## Feature
+## Refactor
+- Renamed "versionNumber" into "serviceVersion"
+## Bugfix
+
 # [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.13.0...authentication-v0.13.1) (2020-11-26)
 ## Feature
 ## Refactor
