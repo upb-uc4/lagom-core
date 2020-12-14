@@ -11,6 +11,7 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.examreg.api.ExamregService
+import de.upb.cs.uc4.hyperledger.HyperledgerUtils
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
@@ -266,4 +267,9 @@ class MatriculationServiceImpl(
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
+
+  /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
+  override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = ServiceCall { _ =>
+    HyperledgerUtils.VersionUtil.createHyperledgerVersionResponse(entityRef)
+  }
 }

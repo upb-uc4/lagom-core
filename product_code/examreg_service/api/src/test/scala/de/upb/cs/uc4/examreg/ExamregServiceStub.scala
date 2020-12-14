@@ -4,6 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
+import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 
 import scala.concurrent.Future
@@ -76,4 +77,7 @@ class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
 
   /** Allows DELETE */
   override def allowedMethodsDELETE: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
+
+  /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
+  override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = { _ => Future.successful(JsonHyperledgerVersion("", "")) }
 }

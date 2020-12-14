@@ -13,6 +13,8 @@ sealed trait HyperledgerBaseCommand extends HyperledgerCommandSerializable
 
 final case class Shutdown() extends HyperledgerBaseCommand
 
+final case class Activation() extends HyperledgerBaseCommand
+
 sealed trait HyperledgerInternCommand[PayloadType] extends HyperledgerBaseCommand {
   val replyTo: ActorRef[StatusReply[PayloadType]]
 }
@@ -30,6 +32,8 @@ object SubmitTransaction {
   def apply(transaction: SignedTransaction, replyTo: ActorRef[StatusReply[Confirmation]]) =
     new SubmitTransaction(transaction.unsignedTransactionAsByteArray, transaction.signatureAsByteArray, replyTo)
 }
+
+final case class GetChaincodeVersion(replyTo: ActorRef[StatusReply[Confirmation]]) extends HyperledgerInternCommand[Confirmation]
 
 trait HyperledgerCommand[PayloadType] extends HyperledgerInternCommand[PayloadType]
 
