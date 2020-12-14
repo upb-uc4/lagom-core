@@ -28,7 +28,7 @@ class CertificateServiceStub extends CertificateService {
   /** Deletes all certificate users and adds the given users */
   def setup(usernames: String*): Unit = {
     reset()
-    addAll(usernames :_*)
+    addAll(usernames: _*)
   }
 
   /** Fetch CertficateUser data for the given username. Without futures, for your convenience. */

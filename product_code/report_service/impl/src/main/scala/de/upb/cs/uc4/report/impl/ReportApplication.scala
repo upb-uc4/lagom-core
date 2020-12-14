@@ -67,8 +67,8 @@ abstract class ReportApplication(context: LagomApplicationContext)
       Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
         try {
           val jsonUsername = kafkaEncryptionUtility.decrypt[JsonUsername](container)
-            clusterSharding.entityRefFor(ReportState.typeKey, jsonUsername.username)
-              .ask[Confirmation](replyTo => DeleteReport(replyTo)).map(_ => Done)
+          clusterSharding.entityRefFor(ReportState.typeKey, jsonUsername.username)
+            .ask[Confirmation](replyTo => DeleteReport(replyTo)).map(_ => Done)
         }
         catch {
           case throwable: Throwable =>

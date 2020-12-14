@@ -17,12 +17,12 @@ case class ReportState(optReport: Option[Report]) {
     */
   def applyCommand(cmd: ReportCommand): ReplyEffect[ReportEvent, ReportState] =
     cmd match {
-      case GetReport(replyTo) => Effect.reply(replyTo)(optReport)
+      case GetReport(replyTo)         => Effect.reply(replyTo)(optReport)
       case SetReport(report, replyTo) => Effect.persist(OnSetReport(report)).thenReply(replyTo) { _ => Accepted.default }
       case DeleteReport(replyTo) =>
         optReport match {
           case Some(report) => Effect.persist(OnDeleteReport(report)).thenReply(replyTo) { _ => Accepted.default }
-          case None => Effect.reply(replyTo)(Accepted("Report does not exist or was already deleted."))
+          case None         => Effect.reply(replyTo)(Accepted("Report does not exist or was already deleted."))
         }
       case _ =>
         println("Unknown Command")

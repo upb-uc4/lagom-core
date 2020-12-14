@@ -44,7 +44,7 @@ class MatriculationServiceStub extends MatriculationService {
   override def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData] = { _ =>
     matriculationData.get(username) match {
       case Some(data) => Future.successful(data)
-      case None => Future.failed(UC4Exception.NotFound)
+      case None       => Future.failed(UC4Exception.NotFound)
     }
   }
 

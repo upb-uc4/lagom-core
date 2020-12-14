@@ -16,7 +16,8 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"
-    """) with AnyWordSpecLike with Matchers with DefaultTestUsers {
+    """
+) with AnyWordSpecLike with Matchers with DefaultTestUsers {
 
   "ReportState" should {
 
