@@ -22,18 +22,15 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import net.lingala.zip4j.ZipFile
-import net.lingala.zip4j.model.ZipParameters
-import net.lingala.zip4j.util.Zip4jUtil
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 import play.api.libs.json.Json
 
-import java.io.{ ByteArrayInputStream, File, FileInputStream, FileOutputStream, FileWriter }
-import java.nio.file.{ Files, Path, Paths }
-import java.util.stream.Collectors
-import java.util.{ Calendar, function }
-import scala.concurrent.{ ExecutionContext, Future }
+import java.io.{ FileInputStream, FileWriter }
+import java.nio.file.{ Files, Paths }
+import java.util.Calendar
 import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.reflect.io.Directory
 import scala.util.Using
 
@@ -69,7 +66,7 @@ class ReportServiceImpl(
         val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
         val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
           .map(cert => Some(cert.certificate)).recover { case _ => None }
-        val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover { case _ => JsonEnrollmentId("mock") }
+        val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
         val encryptedPrivateKeyFuture = certificateService.getPrivateKey(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
           .map(Some(_)).recover { case _ => None }
         var matriculationFuture: Future[Option[ImmatriculationData]] = Future.successful(None)
@@ -127,7 +124,7 @@ class ReportServiceImpl(
                 folderPath.toFile.mkdirs()
               }
 
-              val reportTxt = Json.stringify(Json.toJson(report))
+              val reportTxt = Json.prettyPrint(Json.toJson(report))
               var array: Array[Byte] = null
 
               Using(new FileWriter(reportPath.toFile)) { writer =>
@@ -136,9 +133,7 @@ class ReportServiceImpl(
 
               zipFile.addFile(reportPath.toFile)
 
-              Using(new FileInputStream(zipFile.getFile)) { fileStream =>
-                array = fileStream.readAllBytes()
-              }
+              array = Files.readAllBytes(zipFile.getFile.toPath)
 
               val directory = new Directory(folderPath.toFile)
               directory.deleteRecursively()
