@@ -56,9 +56,9 @@ class ReportServiceSpec extends AsyncWordSpec
 
   override protected def afterAll(): Unit = server.stop()
 
-  override protected def beforeEach(): Unit = {
-    user.resetToDefaults()
-    course.resetToDefaults()
+  override protected def beforeAll(): Unit = {
+    user.resetToDefaults() //student/lecturer/admin 0-2
+    course.resetToDefaults() //Courses for lecturer0 and 1
     certificate.setup(student0.username, lecturer0.username)
     matriculation.addImmatriculationData(
       student0.username,
