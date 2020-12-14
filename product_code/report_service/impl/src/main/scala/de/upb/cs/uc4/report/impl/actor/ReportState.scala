@@ -3,8 +3,8 @@ package de.upb.cs.uc4.report.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.report.impl.ReportApplication
-import de.upb.cs.uc4.report.impl.commands.{ GetReport, ReportCommand, SetReport }
-import de.upb.cs.uc4.report.impl.events.{ OnSetReport, ReportEvent }
+import de.upb.cs.uc4.report.impl.commands.{ DeleteReport, GetReport, ReportCommand, SetReport }
+import de.upb.cs.uc4.report.impl.events.{ OnDeleteReport, OnSetReport, ReportEvent }
 import de.upb.cs.uc4.shared.server.messages.Accepted
 import play.api.libs.json.{ Format, Json }
 
@@ -17,8 +17,13 @@ case class ReportState(optReport: Option[Report]) {
     */
   def applyCommand(cmd: ReportCommand): ReplyEffect[ReportEvent, ReportState] =
     cmd match {
-      case GetReport(replyTo)         => Effect.reply(replyTo)(optReport)
+      case GetReport(replyTo) => Effect.reply(replyTo)(optReport)
       case SetReport(report, replyTo) => Effect.persist(OnSetReport(report)).thenReply(replyTo) { _ => Accepted.default }
+      case DeleteReport(replyTo) =>
+        optReport match {
+          case Some(report) => Effect.persist(OnDeleteReport(report)).thenReply(replyTo) { _ => Accepted.default }
+          case None => Effect.reply(replyTo)(Accepted("Report does not exist or was already deleted."))
+        }
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -32,6 +37,8 @@ case class ReportState(optReport: Option[Report]) {
     evt match {
       case OnSetReport(report) =>
         copy(Some(report))
+      case OnDeleteReport(_) =>
+        copy(None)
       case _ =>
         println("Unknown Event")
         this

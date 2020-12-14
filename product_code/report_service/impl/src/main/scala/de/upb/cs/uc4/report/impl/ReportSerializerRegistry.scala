@@ -2,7 +2,7 @@ package de.upb.cs.uc4.report.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.report.impl.actor.{ Report, ReportState }
-import de.upb.cs.uc4.report.impl.events.OnSetReport
+import de.upb.cs.uc4.report.impl.events.{ OnDeleteReport, OnSetReport }
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq
@@ -21,6 +21,7 @@ object ReportSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[ReportState],
     //Events
     JsonSerializer[OnSetReport],
+    JsonSerializer[OnDeleteReport],
     //Data
     JsonSerializer[Report]
   )

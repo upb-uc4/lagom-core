@@ -42,15 +42,13 @@ class ReportServiceImpl(
     matriculationService: MatriculationService,
     certificateService: CertificateService,
     override val environment: Environment
-)(implicit ec: ExecutionContext, config: Config) extends ReportService {
+)(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ReportService {
 
   protected final val log: Logger = LoggerFactory.getLogger(getClass)
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[ReportCommand] =
     clusterSharding.entityRefFor(ReportState.typeKey, id)
-
-  implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.database").milliseconds)
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
