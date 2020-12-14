@@ -73,6 +73,8 @@ object ErrorType extends Enumeration {
       case UneditableFields => "Attempted to change uneditable fields" //In a DetailedError
       case RefreshTokenSignatureInvalid => "The long term token has a wrong signature"
       case LoginTokenSignatureInvalid => "The login term token has a wrong signature"
+      //428
+      case PreconditionRequired => "A required precondition for this call is not fulfilled"
       //500
       case InternalServer => "An internal server error has occurred"
       case UndeserializableException => "Internal error while deserializing Exception"

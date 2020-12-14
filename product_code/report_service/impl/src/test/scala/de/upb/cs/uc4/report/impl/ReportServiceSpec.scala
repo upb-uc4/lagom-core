@@ -2,6 +2,7 @@ package de.upb.cs.uc4.report.impl
 
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.util.{ ByteString, Timeout }
+import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.certificate.CertificateServiceStub
@@ -36,15 +37,15 @@ class ReportServiceSpec extends AsyncWordSpec
     ServiceTest.defaultSetup.withJdbc()
   ) { ctx =>
       new ReportApplication(ctx) with LocalServiceLocator {
-        override lazy val userService: UserServiceStub = new UserServiceStub
-        override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
-        override lazy val courseService: CourseServiceStub = new CourseServiceStub
-        override lazy val matriculationService: MatriculationServiceStub = new MatriculationServiceStub
-
         lazy val stubFactory = new ProducerStubFactory(actorSystem, materializer)
         lazy val internDeletionStub: ProducerStub[EncryptionContainer] =
           stubFactory.producer[EncryptionContainer](UserService.DELETE_TOPIC_MINIMAL_NAME)
         deletionStub = internDeletionStub
+
+        override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
+        override lazy val courseService: CourseServiceStub = new CourseServiceStub
+        override lazy val matriculationService: MatriculationServiceStub = new MatriculationServiceStub
+        override lazy val userService: UserServiceStub = new UserServiceStubWithTopic(internDeletionStub)
       }
     }
 
@@ -59,7 +60,7 @@ class ReportServiceSpec extends AsyncWordSpec
   override protected def beforeAll(): Unit = {
     user.resetToDefaults() //student/lecturer/admin 0-2
     course.resetToDefaults() //Courses for lecturer0 and 1
-    certificate.setup(student0.username, lecturer0.username)
+    certificate.setup(student0.username, lecturer0.username, admin0.username)
     matriculation.addImmatriculationData(
       student0.username,
       matriculation.createSingleImmatriculationData(certificate.get(student0.username).enrollmentId, "Bachelor Computer Science v3", "SS2020")
@@ -153,5 +154,11 @@ class ReportServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure(username))
     }
   }
+}
+
+class UserServiceStubWithTopic(deletionStub: ProducerStub[EncryptionContainer]) extends UserServiceStub {
+
+  override def userDeletionTopicMinimal(): Topic[EncryptionContainer] = deletionStub.topic
+
 }
 
