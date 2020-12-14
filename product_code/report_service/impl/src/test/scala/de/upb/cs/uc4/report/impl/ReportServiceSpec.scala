@@ -5,6 +5,7 @@ import akka.util.{ ByteString, Timeout }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
+import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.course.CourseServiceStub
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
@@ -153,6 +154,23 @@ class ReportServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess(_, username))
         .recoverWith(cleanupOnFailure(username))
     }
+
+    //DELETE
+    "delete the report of a user" in {
+      val username = student0.username
+
+      prepare(username).flatMap { _ =>
+        val container = server.application.kafkaEncryptionUtility.encrypt(JsonUsername(username))
+        deletionStub.send(container)
+        eventually(timeout(Span(15, Seconds))) {
+          client.getUserData(username).handleRequestHeader(addAuthorizationHeader(username)).invoke().failed.map { exception =>
+            exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.PreconditionRequired)
+          }
+        }
+      }.flatMap(cleanupOnSuccess(_, username))
+        .recoverWith(cleanupOnFailure(username))
+    }
+
   }
 }
 
