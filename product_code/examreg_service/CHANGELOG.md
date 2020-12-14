@@ -1,4 +1,4 @@
-# [WIP - v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.13.1...examreg-v0.14.1) (2020-XX-XX)
+# [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.13.1...examreg-v0.14.1) (2020-12-14)
 ## Feature
 - Added Version endpoint for Hyperledger
 ## Refactor

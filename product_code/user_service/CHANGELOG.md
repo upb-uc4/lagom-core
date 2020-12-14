@@ -1,4 +1,4 @@
-# [WIP - v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.3...user-v0.14.1) (2020-XX-XX)
+# [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.3...user-v0.14.1) (2020-12-14)
 ## Feature
 ## Refactor
 - Moved default data to the deployment
