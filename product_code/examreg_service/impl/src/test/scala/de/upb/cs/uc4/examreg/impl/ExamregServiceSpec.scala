@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.examreg.impl
 
 import java.nio.file.Path
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -22,8 +23,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Future
 
 class ExamregServiceSpec extends AsyncWordSpec
   with UC4SpecUtils with DefaultTestExamRegs with Matchers with BeforeAndAfterAll with Eventually {
@@ -50,11 +50,11 @@ class ExamregServiceSpec extends AsyncWordSpec
 
             var examRegList: Seq[ExaminationRegulation] = Seq()
 
-            override def getProposalAddExaminationRegulation(examinationRegulation: String): Array[Byte] = "getProposalAddExaminationRegulation".getBytes
+            override def getProposalAddExaminationRegulation(certificate: String, affiliation: String = AFFILITATION, examinationRegulation: String): (String, Array[Byte]) = ("", "getProposalAddExaminationRegulation".getBytes)
 
-            override def getProposalGetExaminationRegulations(namesList: String): Array[Byte] = "getProposalGetExaminationRegulations".getBytes
+            override def getProposalGetExaminationRegulations(certificate: String, affiliation: String = AFFILITATION, namesList: String): (String, Array[Byte]) = ("", "getProposalGetExaminationRegulations".getBytes)
 
-            override def getProposalCloseExaminationRegulation(name: String): Array[Byte] = "getProposalCloseExaminationRegulation".getBytes
+            override def getProposalCloseExaminationRegulation(certificate: String, affiliation: String = AFFILITATION, name: String): (String, Array[Byte]) = ("", "getProposalCloseExaminationRegulation".getBytes)
 
             override def addExaminationRegulation(examinationRegulation: String): String = {
               val examReg = examinationRegulation.fromJson[ExaminationRegulation]

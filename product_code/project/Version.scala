@@ -7,8 +7,8 @@ object Version {
     "configuration_service" -> "v0.14.1",
     "course_service" -> "v0.14.1",
     "examreg_service" -> "v0.14.1",
-    "hyperledger_api" -> "014.1",
-    "matriculation_service" -> "v0.14.1",
+    "hyperledger_api" -> "0.14.4",
+    "matriculation_service" -> "v0.14.2",
     "user_service" -> "v0.14.1"
   )
 
