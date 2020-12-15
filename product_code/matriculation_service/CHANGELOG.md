@@ -1,4 +1,4 @@
-# [WIP - v0.14.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.14.1...matriculation-v0.14.2) (2020-XX-XX)
+# [v0.14.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.14.1...matriculation-v0.14.2) (2020-12-15)
 ## Feature
  - Changed endpoints to newly defined api
  - Added endpoint to submit signedTransction
