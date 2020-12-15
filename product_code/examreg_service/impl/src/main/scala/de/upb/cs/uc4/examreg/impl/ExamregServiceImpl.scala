@@ -19,6 +19,7 @@ import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Exception }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
@@ -27,6 +28,8 @@ import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregDatabase)(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ExamregService {
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
+
+  protected final val log: Logger = LoggerFactory.getLogger(classOf[ExamregServiceImpl])
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[ExamregCommand] =
@@ -115,7 +118,12 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
               }
 
             case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
-          }.recover(handleException("Error while trying to add an examination regulation."))
+          }.recover {
+            case exception: UC4Exception if exception.possibleErrorResponse.`type` == ErrorType.HLConflict =>
+              ExamregApplication.refreshCache(clusterSharding, log).apply()
+              throw UC4Exception.Duplicate
+            case exception: Exception => handleException("Error while trying to add an examination regulation.")(exception)
+          }
         }
     }
 
