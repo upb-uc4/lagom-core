@@ -59,7 +59,8 @@ class UserServiceImpl(
   private def entityRef(id: String): EntityRef[UserCommand] =
     clusterSharding.entityRefFor(UserState.typeKey, id)
 
-  lazy val validationForDatabase: FiniteDuration = config.getInt("uc4.timeouts.database").milliseconds
+  lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
+  lazy val internalQueryTimeout: FiniteDuration = config.getInt("uc4.timeouts.database").milliseconds
 
   /** Get the specified user */
   override def getUser(username: String): ServerServiceCall[NotUsed, User] =
@@ -119,7 +120,7 @@ class UserServiceImpl(
       }
 
       var validationErrors = try {
-        Await.result(validationErrorsFuture, validationForDatabase)
+        Await.result(validationErrorsFuture, internalQueryTimeout)
       }
       catch {
         case _: TimeoutException => throw UC4Exception.ValidationTimeout
@@ -194,7 +195,7 @@ class UserServiceImpl(
 
             //validate new user and check, if username errors exist, since entityRef might fail if username is incorrect
             var validationErrors = try {
-              Await.result(user.validate, validationForDatabase)
+              Await.result(user.validate, validationTimeout)
             }
             catch {
               case _: TimeoutException => throw UC4Exception.ValidationTimeout
