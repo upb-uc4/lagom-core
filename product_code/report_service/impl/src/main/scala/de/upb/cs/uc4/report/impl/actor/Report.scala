@@ -12,8 +12,7 @@ case class Report(
     enrollmentId: String,
     encryptedPrivateKey: Option[EncryptedPrivateKey],
     immatriculationData: Option[ImmatriculationData],
-    courses: Option[Seq[Course]],
-    timestamp: String
+    courses: Option[Seq[Course]]
 )
 
 object Report {

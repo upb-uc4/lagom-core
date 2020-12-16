@@ -1,15 +1,15 @@
 package de.upb.cs.uc4.report.impl
 
+import java.util.UUID
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import de.upb.cs.uc4.report.impl.actor.{ Report, ReportBehaviour }
-import de.upb.cs.uc4.report.impl.commands.{ DeleteReport, GetReport, SetReport }
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
+import de.upb.cs.uc4.report.impl.actor.{ Report, ReportBehaviour, ReportStateEnum, ReportWrapper }
+import de.upb.cs.uc4.report.impl.commands.{ DeleteReport, GetReport, PrepareReport, SetReport }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.DefaultTestUsers
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-
-import java.util.UUID
 
 case class ReportStateSpec() extends ScalaTestWithActorTestKit(
   s"""
@@ -21,56 +21,148 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
   "ReportState" should {
 
-    "get empty report" in {
-      val probe = createTestProbe[Option[Report]]()
+    "get not prepared report" in {
+      val probe = createTestProbe[ReportWrapper]()
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-1")))
       ref ! GetReport(probe.ref)
-      probe.expectMessage(None)
+      probe.expectMessage(ReportWrapper(None, None, ReportStateEnum.None))
+    }
+
+    "prepare a report" in {
+      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-2")))
+
+      val timestamp = "2020-12-14"
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! PrepareReport(timestamp, probe1.ref)
+      probe1.expectMessageType[Accepted]
+
+      val probe2 = createTestProbe[ReportWrapper]()
+      ref ! GetReport(probe2.ref)
+      probe2.expectMessage(ReportWrapper(None, Some(timestamp), ReportStateEnum.Preparing))
     }
 
     "set a report" in {
-      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-2")))
+      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-3")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, "2020-12-14")
+      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None)
+      val timestamp = "2020-12-14"
 
+      // Prepare report
       val probe1 = createTestProbe[Confirmation]()
-      ref ! SetReport(testReport, probe1.ref)
+      ref ! PrepareReport(timestamp, probe1.ref)
       probe1.expectMessageType[Accepted]
 
-      val probe2 = createTestProbe[Option[Report]]()
-      ref ! GetReport(probe2.ref)
-      probe2.expectMessage(Some(testReport))
+      // Set report (preparing => ready)
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! SetReport(testReport, probe2.ref)
+      probe2.expectMessageType[Accepted]
+
+      // Fetch ready report
+      val probe3 = createTestProbe[ReportWrapper]()
+      ref ! GetReport(probe3.ref)
+      probe3.expectMessage(ReportWrapper(Some(testReport), Some(timestamp), ReportStateEnum.Ready))
     }
 
     "delete a report" in {
-      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-3")))
+      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, "2020-12-14")
+      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None)
+      val timestamp = "2020-12-14"
 
+      // Prepare
       val probe1 = createTestProbe[Confirmation]()
-      ref ! SetReport(testReport, probe1.ref)
+      ref ! PrepareReport(timestamp, probe1.ref)
       probe1.expectMessageType[Accepted]
 
-      val probe2 = createTestProbe[Option[Report]]()
-      ref ! GetReport(probe2.ref)
-      probe2.expectMessage(Some(testReport))
+      // Set report (preparing => ready)
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! SetReport(testReport, probe2.ref)
+      probe2.expectMessageType[Accepted]
 
-      val probe3 = createTestProbe[Confirmation]()
-      ref ! DeleteReport(probe3.ref)
-      probe3.expectMessageType[Accepted]
+      // Fetch ready report
+      val probe3 = createTestProbe[ReportWrapper]()
+      ref ! GetReport(probe3.ref)
+      probe3.expectMessage(ReportWrapper(Some(testReport), Some(timestamp), ReportStateEnum.Ready))
 
-      val probe4 = createTestProbe[Option[Report]]
-      ref ! GetReport(probe4.ref)
-      probe4.expectMessage(None)
+      // Delete Report
+      val probe4 = createTestProbe[Confirmation]()
+      ref ! DeleteReport(probe4.ref)
+      probe4.expectMessageType[Accepted]
+
+      val probe5 = createTestProbe[ReportWrapper]()
+      ref ! GetReport(probe5.ref)
+      probe5.expectMessage(ReportWrapper(None, None, ReportStateEnum.None))
     }
 
     "not fail on trying to delete a non-existing report" in {
-      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4")))
+      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-5")))
 
       val probe1 = createTestProbe[Confirmation]()
       ref ! DeleteReport(probe1.ref)
       probe1.expectMessageType[Accepted]
     }
 
+    "not prepare a report twice" in {
+      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-6")))
+
+      val timestamp = "2020-12-14"
+
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! PrepareReport(timestamp, probe1.ref)
+      probe1.expectMessageType[Accepted]
+
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! PrepareReport(timestamp, probe2.ref)
+      probe2.expectMessageType[Rejected]
+
+      val probe3 = createTestProbe[ReportWrapper]()
+      ref ! GetReport(probe3.ref)
+      probe3.expectMessage(ReportWrapper(None, Some(timestamp), ReportStateEnum.Preparing))
+    }
+
+    "not prepare a report that is in ready state" in {
+      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
+
+      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None)
+      val timestamp = "2020-12-14"
+
+      // Prepare report
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! PrepareReport(timestamp, probe1.ref)
+      probe1.expectMessageType[Accepted]
+
+      // Set report (preparing => ready)
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! SetReport(testReport, probe2.ref)
+      probe2.expectMessageType[Accepted]
+
+      // Prepare report again
+      val probe3 = createTestProbe[Confirmation]()
+      ref ! PrepareReport(timestamp, probe3.ref)
+      probe3.expectMessageType[Rejected]
+    }
+
+    "not delete a report in preparing" in {
+      val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
+
+      val timestamp = "2020-12-14"
+
+      // Prepare
+      val probe1 = createTestProbe[Confirmation]()
+      ref ! PrepareReport(timestamp, probe1.ref)
+      probe1.expectMessageType[Accepted]
+
+      // Delete Report
+      val probe2 = createTestProbe[Confirmation]()
+      ref ! DeleteReport(probe2.ref)
+      probe2.expectMessageType[Accepted]
+
+      // Fetch preparing report
+      val probe3 = createTestProbe[ReportWrapper]()
+      ref ! GetReport(probe3.ref)
+      probe3.expectMessage(ReportWrapper(None, Some(timestamp), ReportStateEnum.Preparing))
+
+    }
   }
 }

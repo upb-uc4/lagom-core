@@ -22,7 +22,6 @@ import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
-import de.upb.cs.uc4.user.model.JsonUserData
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
