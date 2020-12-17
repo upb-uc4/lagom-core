@@ -22,8 +22,8 @@ trait UC4Service extends Service {
   private lazy val versionNumber = getClass.getPackage.getImplementationVersion
 
   /** Returns the current Version of this service */
-  def getVersionNumber: ServiceCall[NotUsed, JsonVersionNumber] = ServiceCall { _ =>
-    Future.successful(JsonVersionNumber(versionNumber))
+  def getVersionNumber: ServiceCall[NotUsed, JsonServiceVersion] = ServiceCall { _ =>
+    Future.successful(JsonServiceVersion(versionNumber))
   }
 
   /** This Methods needs to allow a GET-Method */

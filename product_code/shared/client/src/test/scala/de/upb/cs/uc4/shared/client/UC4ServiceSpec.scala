@@ -30,7 +30,7 @@ class UC4ServiceSpec extends AnyWordSpecLike with Matchers {
   "UC4Service" should {
 
     "return NotModified response on matching ETags" in {
-      val version = JsonVersionNumber("test")
+      val version = JsonServiceVersion("test")
       val header = RequestHeader.Default.addHeader("If-None-Match", sha256(version.toJson))
 
       val exception = the[UC4Exception] thrownBy UC4ServiceTest.publicCheckETag(header, version)
@@ -38,15 +38,15 @@ class UC4ServiceSpec extends AnyWordSpecLike with Matchers {
     }
 
     "return a new ETag on non-matching ETags" in {
-      val version1 = JsonVersionNumber("test1")
-      val version2 = JsonVersionNumber("test2")
+      val version1 = JsonServiceVersion("test1")
+      val version2 = JsonServiceVersion("test2")
       val header = RequestHeader.Default.addHeader("If-None-Match", sha256(version1.toJson))
 
       UC4ServiceTest.publicCheckETag(header, version2) should ===(sha256(version2.toJson))
     }
 
     "return NotModified response on matching ETags during header creation" in {
-      val version = JsonVersionNumber("test")
+      val version = JsonServiceVersion("test")
       val header = RequestHeader.Default.addHeader("If-None-Match", sha256(version.toJson))
 
       val exception = the[UC4Exception] thrownBy UC4ServiceTest.publicCreateETagHeader(header, version)
@@ -54,8 +54,8 @@ class UC4ServiceSpec extends AnyWordSpecLike with Matchers {
     }
 
     "create a response header on non-matching ETags" in {
-      val version1 = JsonVersionNumber("test1")
-      val version2 = JsonVersionNumber("test2")
+      val version1 = JsonServiceVersion("test1")
+      val version2 = JsonServiceVersion("test2")
       val header = RequestHeader.Default.addHeader("If-None-Match", sha256(version1.toJson))
 
       UC4ServiceTest.publicCreateETagHeader(header, version2)._1.getHeader("ETag").get should ===(sha256(version2.toJson))

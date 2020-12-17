@@ -60,6 +60,7 @@ class UserServiceImpl(
     clusterSharding.entityRefFor(UserState.typeKey, id)
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
+  lazy val internalQueryTimeout: FiniteDuration = config.getInt("uc4.timeouts.database").milliseconds
 
   /** Get the specified user */
   override def getUser(username: String): ServerServiceCall[NotUsed, User] =
@@ -98,28 +99,32 @@ class UserServiceImpl(
     ServerServiceCall { (_, postMessageUserRaw) =>
       val postMessageUser = postMessageUserRaw.clean
 
+      var PostMessageUserErrors = try {
+        Await.result(postMessageUser.validate, validationTimeout)
+      }
+      catch {
+        case _: TimeoutException => throw UC4Exception.ValidationTimeout
+        case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+      }
+
       val validationErrorsFuture = postMessageUser.user match {
         case student: Student =>
           //For students we may encounter duplicate matriculationIDs
-          postMessageUser.validate.flatMap { studentValidationErrorsImmutable =>
-
-            var studentValidationErrors = studentValidationErrorsImmutable
-            getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
-              matDuplicate =>
-                if (matDuplicate) {
-                  studentValidationErrors :+= SimpleError("user.matriculationId", "MatriculationID already in use.")
-                }
-                studentValidationErrors
-            }
+          getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
+            matDuplicate =>
+              if (matDuplicate) {
+                PostMessageUserErrors :+= SimpleError("user.matriculationId", "MatriculationID already in use.")
+              }
+              PostMessageUserErrors
           }
 
         case _ =>
           //For other users we cannot encounter duplicate matriculationIDs
-          postMessageUser.validate
+          Future.successful(PostMessageUserErrors)
       }
 
       var validationErrors = try {
-        Await.result(validationErrorsFuture, validationTimeout)
+        Await.result(validationErrorsFuture, internalQueryTimeout)
       }
       catch {
         case _: TimeoutException => throw UC4Exception.ValidationTimeout
@@ -249,7 +254,6 @@ class UserServiceImpl(
     ServerServiceCall {
       (_, _) =>
         val ref = entityRef(username)
-
         ref.ask[Confirmation](replyTo => ForceDeleteUser(replyTo))
           .map {
             case Accepted(_) => // Update Successful

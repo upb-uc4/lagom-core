@@ -1,8 +1,15 @@
 package de.upb.cs.uc4.hyperledger
 
+import akka.cluster.sharding.typed.scaladsl.EntityRef
+import akka.util.Timeout
+import de.upb.cs.uc4.hyperledger.commands.{ GetChaincodeVersion, HyperledgerBaseCommand }
 import de.upb.cs.uc4.hyperledger.exceptions.traits.{ HyperledgerExceptionTrait, NetworkExceptionTrait, TransactionExceptionTrait }
+import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import play.api.libs.json.{ Format, JsResultException, Json }
+
+import scala.concurrent.{ ExecutionContext, Future }
 
 object HyperledgerUtils {
 
@@ -79,6 +86,36 @@ object HyperledgerUtils {
 
     implicit class FromJsonUtil(val json: String) {
       def fromJson[Type](implicit format: Format[Type]): Type = Json.parse(json).as[Type]
+    }
+  }
+
+  object VersionUtil {
+    /** Create a response for a Hyperledger Version call
+      *
+      * @param ref The reference to the Akka actor that should be asked for the version (Must be a Hyperledger Akka actor)
+      * @param timeout for the actor
+      * @param ec the execution context
+      * @return Hyperledger versions as a JSON object
+      */
+    def createHyperledgerVersionResponse(ref: EntityRef[HyperledgerBaseCommand])(implicit timeout: Timeout, ec: ExecutionContext): Future[JsonHyperledgerVersion] = {
+      ref.askWithStatus[Confirmation](replyTo => GetChaincodeVersion(replyTo)).map {
+        case Accepted(summary) =>
+          JsonHyperledgerVersion(BuildInfo.version, summary)
+        case Rejected(statusCode, reason) =>
+          throw UC4Exception(statusCode, reason)
+      }.recover {
+        case ue: UC4Exception => throw ue
+        case ex: Throwable    => throw UC4Exception.InternalServerError("Error while fetching version", "unknown exception", ex)
+      }
+    }
+
+    /** Create a Hyperledger version response with only the API version filled in
+      *
+      * @param ec the execution context
+      * @return Hyperledger versions as a JSON object. Chaincode version defaults to: "Service does not use chaincode."
+      */
+    def createHyperledgerAPIVersionResponse(chaincodeVersionMessage: String = "Service does not use chaincode")(implicit ec: ExecutionContext): Future[JsonHyperledgerVersion] = {
+      Future.successful(JsonHyperledgerVersion(BuildInfo.version, chaincodeVersionMessage))
     }
   }
 }

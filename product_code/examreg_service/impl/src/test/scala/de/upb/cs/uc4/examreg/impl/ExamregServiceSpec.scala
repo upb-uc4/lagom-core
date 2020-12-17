@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.examreg.impl
 
 import java.nio.file.Path
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -11,6 +12,7 @@ import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.impl.actor.ExamregHyperledgerBehaviour
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
+import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.JsonUtility.{ FromJsonUtil, ToJsonUtil }
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
@@ -21,8 +23,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Future
 
 class ExamregServiceSpec extends AsyncWordSpec
   with UC4SpecUtils with DefaultTestExamRegs with Matchers with BeforeAndAfterAll with Eventually {
@@ -49,11 +50,11 @@ class ExamregServiceSpec extends AsyncWordSpec
 
             var examRegList: Seq[ExaminationRegulation] = Seq()
 
-            override def getProposalAddExaminationRegulation(examinationRegulation: String): Array[Byte] = "getProposalAddExaminationRegulation".getBytes
+            override def getProposalAddExaminationRegulation(certificate: String, affiliation: String = AFFILITATION, examinationRegulation: String): (String, Array[Byte]) = ("", "getProposalAddExaminationRegulation".getBytes)
 
-            override def getProposalGetExaminationRegulations(namesList: String): Array[Byte] = "getProposalGetExaminationRegulations".getBytes
+            override def getProposalGetExaminationRegulations(certificate: String, affiliation: String = AFFILITATION, namesList: String): (String, Array[Byte]) = ("", "getProposalGetExaminationRegulations".getBytes)
 
-            override def getProposalCloseExaminationRegulation(name: String): Array[Byte] = "getProposalCloseExaminationRegulation".getBytes
+            override def getProposalCloseExaminationRegulation(certificate: String, affiliation: String = AFFILITATION, name: String): (String, Array[Byte]) = ("", "getProposalCloseExaminationRegulation".getBytes)
 
             override def addExaminationRegulation(examinationRegulation: String): String = {
               val examReg = examinationRegulation.fromJson[ExaminationRegulation]
@@ -80,6 +81,8 @@ class ExamregServiceSpec extends AsyncWordSpec
               }
               examRegList.toJson
             }
+
+            override def getChaincodeVersion: String = "testVersion"
 
             override lazy val contract: ContractImpl = null
             override lazy val gateway: GatewayImpl = null
@@ -131,6 +134,13 @@ class ExamregServiceSpec extends AsyncWordSpec
   )
 
   "ExamregService" should {
+
+    "fetch the hyperledger versions" in {
+      client.getHlfVersions.invoke().map { answer =>
+        answer shouldBe a[JsonHyperledgerVersion]
+      }
+    }
+
     "have a default examination regulation and get names of examination regulations" in {
       Future.sequence(defaultExamRegs.map(reg => client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(reg)))
       eventually(timeout(Span(15, Seconds))) {
