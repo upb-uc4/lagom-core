@@ -120,7 +120,7 @@ class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregData
             case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
           }.recover {
             case exception: UC4Exception if exception.possibleErrorResponse.`type` == ErrorType.HLConflict =>
-              ExamregApplication.refreshCache(clusterSharding, log).apply()
+              ExamregApplication.refreshCache(clusterSharding, log).run()
               throw UC4Exception.Duplicate
             case exception: Exception => handleException("Error while trying to add an examination regulation.")(exception)
           }

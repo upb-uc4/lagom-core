@@ -20,15 +20,15 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 abstract class ExamregApplication(context: LagomApplicationContext)
   extends UC4Application(context)
-    with SlickPersistenceComponents
-    with JdbcPersistenceComponents
-    with HikariCPComponents
-    with HyperledgerComponent {
+  with SlickPersistenceComponents
+  with JdbcPersistenceComponents
+  with HikariCPComponents
+  with HyperledgerComponent {
 
   protected final val log: Logger = LoggerFactory.getLogger(classOf[ExamregApplication])
 
@@ -67,15 +67,15 @@ object ExamregApplication {
   val hlOffset: String = "UniversityCredits4HLExamreg"
 
   /** Helper method to refresh the examination regulation cache */
-  def refreshCache(clusterSharding: ClusterSharding, log: Logger)(implicit timeout: Timeout, ec: ExecutionContext): () => Future[Seq[Future[Unit]]] = { () =>
+  def refreshCache(clusterSharding: ClusterSharding, log: Logger)(implicit timeout: Timeout, ec: ExecutionContext): Runnable = () => {
     clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, "Cache")
       .askWithStatus[Seq[ExaminationRegulation]](replyTo => GetAllExamregsHyperledger(replyTo)).map {
-      _.map { examinationRegulation =>
-        clusterSharding.entityRefFor(ExamregState.typeKey, examinationRegulation.name).ask(replyTo => CreateExamregDatabase(examinationRegulation, replyTo)).map {
-          case Accepted(_) => log.debug("Refreshed Cache of {} ", examinationRegulation.name)
-          case Rejected(statusCode, reason) => log.error("Encountered Error during caching.", UC4Exception(statusCode, reason))
+        _.map { examinationRegulation =>
+          clusterSharding.entityRefFor(ExamregState.typeKey, examinationRegulation.name).ask(replyTo => CreateExamregDatabase(examinationRegulation, replyTo)).map {
+            case Accepted(_)                  => log.debug("Refreshed Cache of {} ", examinationRegulation.name)
+            case Rejected(statusCode, reason) => log.error("Encountered Error during caching.", UC4Exception(statusCode, reason))
+          }
         }
       }
-    }
   }
 }
