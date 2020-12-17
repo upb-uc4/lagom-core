@@ -50,11 +50,11 @@ class ExamregServiceSpec extends AsyncWordSpec
 
             var examRegList: Seq[ExaminationRegulation] = Seq()
 
-            override def getProposalAddExaminationRegulation(certificate: String, affiliation: String = AFFILITATION, examinationRegulation: String): (String, Array[Byte]) = ("", "getProposalAddExaminationRegulation".getBytes)
+            override def getProposalAddExaminationRegulation(certificate: String, affiliation: String = AFFILIATION, examinationRegulation: String): (String, Array[Byte]) = ("", "getProposalAddExaminationRegulation".getBytes)
 
-            override def getProposalGetExaminationRegulations(certificate: String, affiliation: String = AFFILITATION, namesList: String): (String, Array[Byte]) = ("", "getProposalGetExaminationRegulations".getBytes)
+            override def getProposalGetExaminationRegulations(certificate: String, affiliation: String = AFFILIATION, namesList: String): (String, Array[Byte]) = ("", "getProposalGetExaminationRegulations".getBytes)
 
-            override def getProposalCloseExaminationRegulation(certificate: String, affiliation: String = AFFILITATION, name: String): (String, Array[Byte]) = ("", "getProposalCloseExaminationRegulation".getBytes)
+            override def getProposalCloseExaminationRegulation(certificate: String, affiliation: String = AFFILIATION, name: String): (String, Array[Byte]) = ("", "getProposalCloseExaminationRegulation".getBytes)
 
             override def addExaminationRegulation(examinationRegulation: String): String = {
               val examReg = examinationRegulation.fromJson[ExaminationRegulation]

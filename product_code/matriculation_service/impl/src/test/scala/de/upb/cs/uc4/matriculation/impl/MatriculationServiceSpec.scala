@@ -138,10 +138,10 @@ class MatriculationServiceSpec extends AsyncWordSpec
               }
             }
 
-            override def getProposalAddMatriculationData(certificate: String, AFFILITATION: String = AFFILITATION, jSonMatriculationData: String): (String, Array[Byte]) =
+            override def getProposalAddMatriculationData(certificate: String, AFFILITATION: String = AFFILIATION, jSonMatriculationData: String): (String, Array[Byte]) =
               ("", jSonMatriculationData.getBytes())
 
-            override def getProposalAddEntriesToMatriculationData(certificate: String, AFFILITATION: String = AFFILITATION, enrollmentId: String, subjectMatriculationList: String): (String, Array[Byte]) =
+            override def getProposalAddEntriesToMatriculationData(certificate: String, AFFILITATION: String = AFFILIATION, enrollmentId: String, subjectMatriculationList: String): (String, Array[Byte]) =
               ("", (enrollmentId + "#" + subjectMatriculationList).getBytes())
 
             override def getUnsignedTransaction(proposalBytes: Array[Byte], signature: Array[Byte]): Array[Byte] = {
