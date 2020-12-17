@@ -54,7 +54,7 @@ class ReportServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   /** Request collection of all data for the given user */
-  def prepareUserData(username: String, role: AuthenticationRole, header: RequestHeader): Future[Done] = Future {
+  def prepareUserData(username: String, role: AuthenticationRole, header: RequestHeader, timestamp: String): Future[Done] = Future {
 
     val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
     val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
@@ -82,7 +82,7 @@ class ReportServiceImpl(
       courses <- coursesFuture
     } yield {
       val report = Report(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey, immatriculationData, courses)
-      entityRef(username).ask[Confirmation](replyTo => SetReport(report, replyTo)).map {
+      entityRef(username).ask[Confirmation](replyTo => SetReport(report, timestamp, replyTo)).map {
         case Accepted(_) =>
         case Rejected(statusCode, reason) =>
           log.error(s"Report of $username can't be persisted.", UC4Exception(statusCode, reason))
@@ -140,7 +140,7 @@ class ReportServiceImpl(
               val timestamp = Calendar.getInstance().getTime.toString
               ref.ask[Confirmation](replyTo => PrepareReport(timestamp, replyTo)).map {
                 case Accepted(_) =>
-                  prepareUserData(username, authRole, header)
+                  prepareUserData(username, authRole, header, timestamp)
                   (
                     ResponseHeader(202, MessageProtocol.empty, List())
                     .addHeader("X-UC4-Timestamp", timestamp),

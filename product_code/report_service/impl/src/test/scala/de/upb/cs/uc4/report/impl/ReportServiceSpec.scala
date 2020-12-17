@@ -140,7 +140,6 @@ class ReportServiceSpec extends AsyncWordSpec
         exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
       }
     }
-
   }
 }
 

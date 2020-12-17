@@ -20,10 +20,10 @@ case class ReportState(reportWrapper: ReportWrapper) {
   def applyCommand(cmd: ReportCommand): ReplyEffect[ReportEvent, ReportState] =
     cmd match {
       case GetReport(replyTo) => Effect.reply(replyTo)(reportWrapper)
-      case SetReport(report, replyTo) =>
+      case SetReport(report, timestamp, replyTo) =>
         reportWrapper.state match {
           case ReportStateEnum.Ready     => Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer, "Trying to set an already existing report.")))
-          case ReportStateEnum.Preparing => Effect.persist(OnSetReport(report)).thenReply(replyTo) { _ => Accepted.default }
+          case ReportStateEnum.Preparing => Effect.persist(OnSetReport(report, timestamp)).thenReply(replyTo) { _ => Accepted.default }
           case ReportStateEnum.None      => Effect.reply(replyTo)(Accepted("Report already exists."))
         }
       case DeleteReport(replyTo) =>
@@ -49,8 +49,10 @@ case class ReportState(reportWrapper: ReportWrapper) {
     */
   def applyEvent(evt: ReportEvent): ReportState =
     evt match {
-      case OnSetReport(report) =>
+      case OnSetReport(report, timestamp) if timestamp == reportWrapper.timestamp.getOrElse("") =>
         copy(ReportWrapper(Some(report), reportWrapper.timestamp, ReportStateEnum.Ready))
+      case OnSetReport(_, _) =>
+        this
       case OnDeleteReport(_) =>
         initial
       case OnPrepareReport(timestamp) =>
