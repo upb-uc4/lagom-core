@@ -99,24 +99,28 @@ class UserServiceImpl(
     ServerServiceCall { (_, postMessageUserRaw) =>
       val postMessageUser = postMessageUserRaw.clean
 
+      var PostMessageUserErrors = try {
+        Await.result(postMessageUser.validate, validationTimeout)
+      }
+      catch {
+        case _: TimeoutException => throw UC4Exception.ValidationTimeout
+        case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+      }
+
       val validationErrorsFuture = postMessageUser.user match {
         case student: Student =>
           //For students we may encounter duplicate matriculationIDs
-          postMessageUser.validate.flatMap { studentValidationErrorsImmutable =>
-
-            var studentValidationErrors = studentValidationErrorsImmutable
-            getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
-              matDuplicate =>
-                if (matDuplicate) {
-                  studentValidationErrors :+= SimpleError("user.matriculationId", "MatriculationID already in use.")
-                }
-                studentValidationErrors
-            }
+          getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
+            matDuplicate =>
+              if (matDuplicate) {
+                PostMessageUserErrors :+= SimpleError("user.matriculationId", "MatriculationID already in use.")
+              }
+              PostMessageUserErrors
           }
 
         case _ =>
           //For other users we cannot encounter duplicate matriculationIDs
-          postMessageUser.validate
+          Future.successful(PostMessageUserErrors)
       }
 
       var validationErrors = try {
