@@ -6,6 +6,7 @@ import de.upb.cs.uc4.hyperledger.commands.HyperledgerProposalCommand
 import de.upb.cs.uc4.matriculation.model.SubjectMatriculation
 
 case class GetProposalForAddEntriesToMatriculationData(
+    certificate: String,
     enrollmentId: String,
     matriculation: Seq[SubjectMatriculation],
     replyTo: ActorRef[StatusReply[Array[Byte]]]

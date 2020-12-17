@@ -40,6 +40,7 @@ class CourseServiceImpl(
   implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.database").milliseconds)
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
+  lazy val internalQueryTimeout: FiniteDuration = config.getInt("uc4.timeouts.database").milliseconds
 
   /** @inheritdoc */
   override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = {
@@ -107,8 +108,7 @@ class CourseServiceImpl(
                 }
             }
             try {
-              // TODO use another timeout variable, for internal server communication
-              Await.result(moduleCheckFuture, validationTimeout)
+              Await.result(moduleCheckFuture, internalQueryTimeout)
             }
             catch {
               case _: TimeoutException => throw UC4Exception.ValidationTimeout
@@ -218,8 +218,7 @@ class CourseServiceImpl(
               }
           }
           try {
-            // TODO use another timeout variable, for internal server communication
-            Await.result(moduleCheckFuture, validationTimeout)
+            Await.result(moduleCheckFuture, internalQueryTimeout)
           }
           catch {
             case _: TimeoutException => throw UC4Exception.ValidationTimeout
