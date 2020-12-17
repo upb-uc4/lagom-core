@@ -37,7 +37,6 @@ class MatriculationServiceStub extends MatriculationService {
   override def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction] =
     proposal => Future.successful(UnsignedTransaction("t:".getBytes() ++ proposal.unsignedProposalAsByteArray))
 
-
   /** Submits a transaction to matriculate a student */
   override def submitMatriculationTransaction(username: String): ServiceCall[SignedTransaction, Done] = {
     _ => Future.successful(Done)
@@ -46,7 +45,6 @@ class MatriculationServiceStub extends MatriculationService {
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
     putMessageMatriculation => Future.successful(UnsignedProposal(putMessageMatriculation.toJson.getBytes))
-
 
   /** Returns the ImmatriculationData of a student with the given username */
   override def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData] = { _ =>
