@@ -5,7 +5,7 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedTransactionProposal, TransactionProposal }
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -32,12 +32,19 @@ class MatriculationServiceStub extends MatriculationService {
     matriculationData.clear()
   }
 
+  /** Submits a transaction to matriculate a student */
+  override def submitMatriculationTransaction(username: String): ServiceCall[SignedTransaction, Done] = {
+    _ => Future.successful(Done)
+  }
+
   /** Submits a proposal to matriculate a student */
-  override def submitMatriculationProposal(username: String): ServiceCall[SignedTransactionProposal, Done] = { _ => Future.successful(Done) }
+  override def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction] = { _ =>
+    Future.successful(UnsignedTransaction(""))
+  }
 
   /** Get proposal to matriculate a student */
-  override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, TransactionProposal] = { _ =>
-    Future.successful(TransactionProposal(""))
+  override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] = { _ =>
+    Future.successful(UnsignedProposal(""))
   }
 
   /** Returns the ImmatriculationData of a student with the given username */
