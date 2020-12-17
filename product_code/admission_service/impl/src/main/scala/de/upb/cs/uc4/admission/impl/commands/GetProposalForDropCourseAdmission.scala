@@ -5,5 +5,5 @@ import akka.pattern.StatusReply
 import de.upb.cs.uc4.admission.model.DropAdmission
 import de.upb.cs.uc4.hyperledger.commands.HyperledgerProposalCommand
 
-case class GetProposalForDropCourseAdmission(dropAdmission: DropAdmission, replyTo: ActorRef[StatusReply[Array[Byte]]]) extends HyperledgerProposalCommand
+case class GetProposalForDropCourseAdmission(certificate: String, dropAdmission: DropAdmission, replyTo: ActorRef[StatusReply[Array[Byte]]]) extends HyperledgerProposalCommand
 

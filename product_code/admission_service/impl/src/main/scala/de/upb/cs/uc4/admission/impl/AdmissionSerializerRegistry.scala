@@ -2,7 +2,6 @@ package de.upb.cs.uc4.admission.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
-import de.upb.cs.uc4.shared.client.TransactionProposal
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq
@@ -19,7 +18,6 @@ object AdmissionSerializerRegistry extends SharedSerializerRegistry {
   override def customSerializers: Seq[JsonSerializer[_]] = Seq( // state and events can use play-json, but commands should use jackson because of ActorRef[T] (see application.conf)
     //Data
     JsonSerializer[CourseAdmission],
-    JsonSerializer[DropAdmission],
-    JsonSerializer[TransactionProposal]
+    JsonSerializer[DropAdmission]
   )
 }
