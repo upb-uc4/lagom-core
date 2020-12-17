@@ -29,12 +29,12 @@ class AdmissionBehaviour(val config: Config) extends HyperledgerDefaultActorFact
     case GetCourseAdmissions(username, courseId, moduleId, replyTo) =>
       replyTo ! StatusReply.success(connection.getAdmissions(username.getOrElse(""), courseId.getOrElse(""), moduleId.getOrElse("")).fromJson[Seq[CourseAdmission]])
     case GetProposalForAddCourseAdmission(certificate, courseAdmission, replyTo) =>
-      connection.getProposalAddAdmission(certificate, admission=courseAdmission.toJson) match {
+      connection.getProposalAddAdmission(certificate, admission = courseAdmission.toJson) match {
         case (_, proposal) =>
           replyTo ! StatusReply.success(proposal)
       }
     case GetProposalForDropCourseAdmission(certificate, dropAdmission, replyTo) =>
-      connection.getProposalDropAdmission(certificate, admissionId=dropAdmission.admissionId) match {
+      connection.getProposalDropAdmission(certificate, admissionId = dropAdmission.admissionId) match {
         case (_, proposal) =>
           replyTo ! StatusReply.success(proposal)
       }
