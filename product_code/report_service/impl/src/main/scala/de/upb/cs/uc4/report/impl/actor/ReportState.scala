@@ -19,12 +19,17 @@ case class ReportState(reportWrapper: ReportWrapper) {
     */
   def applyCommand(cmd: ReportCommand): ReplyEffect[ReportEvent, ReportState] =
     cmd match {
-      case GetReport(replyTo)         => Effect.reply(replyTo)(reportWrapper)
-      case SetReport(report, replyTo) => Effect.persist(OnSetReport(report)).thenReply(replyTo) { _ => Accepted.default }
+      case GetReport(replyTo) => Effect.reply(replyTo)(reportWrapper)
+      case SetReport(report, replyTo) =>
+        reportWrapper.state match {
+          case ReportStateEnum.Ready     => Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer, "Trying to set an already existing report.")))
+          case ReportStateEnum.Preparing => Effect.persist(OnSetReport(report)).thenReply(replyTo) { _ => Accepted.default }
+          case ReportStateEnum.None      => Effect.reply(replyTo)(Accepted("Report already exists."))
+        }
       case DeleteReport(replyTo) =>
         reportWrapper.state match {
           case ReportStateEnum.Ready     => Effect.persist(OnDeleteReport(reportWrapper)).thenReply(replyTo) { _ => Accepted.default }
-          case ReportStateEnum.Preparing => Effect.reply(replyTo)(Accepted("Report preparation still in progress."))
+          case ReportStateEnum.Preparing => Effect.persist(OnDeleteReport(reportWrapper)).thenReply(replyTo) { _ => Accepted.default }
           case ReportStateEnum.None      => Effect.reply(replyTo)(Accepted("Report does not exist or was already deleted."))
         }
       case PrepareReport(timestamp, replyTo) =>
