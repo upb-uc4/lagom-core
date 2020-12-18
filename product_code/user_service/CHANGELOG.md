@@ -1,3 +1,9 @@
+# [WIP - v0.14.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.14.1...user-v0.14.2) (2020-XX-XX)
+## Feature
+## Refactor
+- Enabled users to request the deletion of their accounts
+## Bugfix
+
 # [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.3...user-v0.14.1) (2020-12-14)
 ## Feature
 ## Refactor
