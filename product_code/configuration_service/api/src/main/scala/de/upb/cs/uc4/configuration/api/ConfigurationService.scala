@@ -45,12 +45,12 @@ trait ConfigurationService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/version/hyperledger", getHyperledgerNetworkVersion _),
+        restCall(Method.GET, pathPrefix + "/version/hyperledger-network", getHyperledgerNetworkVersion _),
         restCall(Method.GET, pathPrefix + "/configuration", getConfiguration _),
         restCall(Method.PUT, pathPrefix + "/configuration", setConfiguration _),
         restCall(Method.GET, pathPrefix + "/validation", getValidation _),
         restCall(Method.GET, pathPrefix + "/semester?date", getSemester _),
-        restCall(Method.OPTIONS, pathPrefix + "/version/hyperledger", allowedMethodsGET _),
+        restCall(Method.OPTIONS, pathPrefix + "/version/hyperledger-network", allowedMethodsGET _),
         restCall(Method.OPTIONS, pathPrefix + "/configuration", allowedMethodsGETPUT _),
         restCall(Method.OPTIONS, pathPrefix + "/validation", allowedMethodsGET _),
         restCall(Method.OPTIONS, pathPrefix + "/semester", allowedMethodsGET _)

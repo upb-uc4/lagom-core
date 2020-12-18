@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.examreg.impl
 
-import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, Entity }
 import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
@@ -8,12 +8,19 @@ import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.examreg.api.ExamregService
+import de.upb.cs.uc4.examreg.impl.ExamregApplication.refreshCache
 import de.upb.cs.uc4.examreg.impl.actor.{ ExamregDatabaseBehaviour, ExamregHyperledgerBehaviour, ExamregState }
+import de.upb.cs.uc4.examreg.impl.commands.{ CreateExamregDatabase, GetAllExamregsHyperledger }
 import de.upb.cs.uc4.examreg.impl.readside.{ ExamregDatabase, ExamregEventProcessor }
+import de.upb.cs.uc4.examreg.model.ExaminationRegulation
 import de.upb.cs.uc4.hyperledger.HyperledgerComponent
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.UC4Application
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 abstract class ExamregApplication(context: LagomApplicationContext)
@@ -22,6 +29,8 @@ abstract class ExamregApplication(context: LagomApplicationContext)
   with JdbcPersistenceComponents
   with HikariCPComponents
   with HyperledgerComponent {
+
+  protected final val log: Logger = LoggerFactory.getLogger(classOf[ExamregApplication])
 
   // Create ReadSide
   lazy val database: ExamregDatabase = wire[ExamregDatabase]
@@ -46,10 +55,27 @@ abstract class ExamregApplication(context: LagomApplicationContext)
       entityContext => ExamregDatabaseBehaviour.create(entityContext)
     )
   )
+
+  // Schedules the cache refreshing
+  val delay: FiniteDuration = config.getInt("uc4.delay.cache").minutes
+  actorSystem.scheduler.scheduleAtFixedRate(Duration.Zero, delay)(refreshCache(clusterSharding, log))
 }
 
 object ExamregApplication {
   /** Functions as offset for the database */
   val offset: String = "UniversityCredits4Examreg"
   val hlOffset: String = "UniversityCredits4HLExamreg"
+
+  /** Helper method to refresh the examination regulation cache */
+  def refreshCache(clusterSharding: ClusterSharding, log: Logger)(implicit timeout: Timeout, ec: ExecutionContext): Runnable = () => {
+    clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, "Cache")
+      .askWithStatus[Seq[ExaminationRegulation]](replyTo => GetAllExamregsHyperledger(replyTo)).map {
+        _.map { examinationRegulation =>
+          clusterSharding.entityRefFor(ExamregState.typeKey, examinationRegulation.name).ask(replyTo => CreateExamregDatabase(examinationRegulation, replyTo)).map {
+            case Accepted(_)                  => log.debug("Refreshed Cache of {} ", examinationRegulation.name)
+            case Rejected(statusCode, reason) => log.error("Encountered Error during caching.", UC4Exception(statusCode, reason))
+          }
+        }
+      }
+  }
 }
