@@ -3,7 +3,7 @@ package de.upb.cs.uc4.report.api
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
+import com.lightbend.lagom.scaladsl.api.{ CircuitBreaker, Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.shared.client.UC4Service
 
 /** The ReportService interface.
@@ -32,7 +32,7 @@ trait ReportService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/reports/:username/archive", getUserReport _),
+        restCall(Method.GET, pathPrefix + "/reports/:username/archive", getUserReport _).withCircuitBreaker(CircuitBreaker.identifiedBy("HLTimeouts")),
         restCall(Method.DELETE, pathPrefix + "/reports/:username/archive", deleteUserReport _),
         restCall(Method.OPTIONS, pathPrefix + "/reports/:username/archive", allowedMethodsGETDELETE _)
       )
