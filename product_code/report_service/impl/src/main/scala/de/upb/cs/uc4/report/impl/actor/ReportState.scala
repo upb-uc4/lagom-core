@@ -25,7 +25,6 @@ case class ReportState(reportWrapper: ReportWrapper) {
     cmd match {
       case GetReport(replyTo) => Effect.reply(replyTo)(reportWrapper)
       case SetReport(report, timestamp, replyTo) =>
-        log.error(s"Set report on ${reportWrapper.toJson} with report ${report.toJson} and $timestamp")
         reportWrapper.state match {
           case ReportStateEnum.Ready     => Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer, "Trying to set an already existing report.")))
           case ReportStateEnum.Preparing => Effect.persist(OnSetReport(report, timestamp)).thenReply(replyTo) { _ => Accepted.default }
@@ -57,7 +56,6 @@ case class ReportState(reportWrapper: ReportWrapper) {
       case OnSetReport(report, timestamp) if timestamp == reportWrapper.timestamp.getOrElse("") =>
         copy(ReportWrapper(Some(report), reportWrapper.timestamp, ReportStateEnum.Ready))
       case OnSetReport(report, timestamp) =>
-        log.error(s"Tried to set report ${report.toJson} with $timestamp , but expected ${reportWrapper.timestamp.getOrElse("")}")
         this
       case OnDeleteReport(_) =>
         initial
