@@ -76,7 +76,7 @@ class ReportServiceImpl(
       case AuthenticationRole.Admin =>
       case AuthenticationRole.Student =>
         matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
-          case ue: UC4Exception if ue.errorCode == 404 =>
+          case ue: UC4Exception if ue.possibleErrorResponse.`type` == ErrorType.HLNotFound || ue.possibleErrorResponse.`type` == ErrorType.KeyNotFound =>
             None
           case exception: Exception =>
             log.error(s"Prepare of $username at $timestamp ; matriculationFuture failed", exception)
