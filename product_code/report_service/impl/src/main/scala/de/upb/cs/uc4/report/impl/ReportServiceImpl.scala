@@ -56,22 +56,43 @@ class ReportServiceImpl(
   /** Request collection of all data for the given user */
   def prepareUserData(username: String, role: AuthenticationRole, header: RequestHeader, timestamp: String): Future[Done] = Future {
 
-    val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+    log.error(s"Prepare of $username at $timestamp ; started")
+    val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover{
+      case exception: Exception =>
+        log.error(s"Prepare of $username at $timestamp ; userFuture failed")
+        throw exception
+    }
     val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
       .map(cert => Some(cert.certificate)).recover { case _ => None }
-    val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+    val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover{
+      case exception: Exception =>
+        log.error(s"Prepare of $username at $timestamp ; enrollmentIdFuture failed")
+        throw exception
+    }
     val encryptedPrivateKeyFuture = certificateService.getPrivateKey(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
       .map(Some(_)).recover { case _ => None }
     var matriculationFuture: Future[Option[ImmatriculationData]] = Future.successful(None)
     var coursesFuture: Future[Option[Seq[Course]]] = Future.successful(None)
 
+    log.error(s"Prepare of $username at $timestamp ; Preliminary Futures done")
+
     role match {
       case AuthenticationRole.Admin =>
       case AuthenticationRole.Student =>
-        matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_))
+        matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover{
+          case exception: Exception =>
+            log.error(s"Prepare of $username at $timestamp ; matriculationFuture failed")
+            throw exception
+        }
       case AuthenticationRole.Lecturer =>
-        coursesFuture = courseService.getAllCourses(None, Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_))
+        coursesFuture = courseService.getAllCourses(None, Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover{
+          case exception: Exception =>
+            log.error(s"Prepare of $username at $timestamp ; coursesFuture failed")
+            throw exception
+        }
     }
+
+    log.error(s"Prepare of $username at $timestamp ; Specific calls done")
 
     for {
       user <- userFuture
@@ -81,15 +102,22 @@ class ReportServiceImpl(
       immatriculationData <- matriculationFuture
       courses <- coursesFuture
     } yield {
+      log.error(s"Prepare of $username at $timestamp ; Creating report")
       val report = Report(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey, immatriculationData, courses)
+      log.error(s"Prepare of $username at $timestamp ; Communicating with Actor")
       entityRef(username).ask[Confirmation](replyTo => SetReport(report, timestamp, replyTo)).map {
-        case Accepted(_) =>
+        case Accepted(message) =>
+          log.error(s"Prepare of $username at $timestamp ; Actor replied with Accepted: $message")
         case Rejected(statusCode, reason) =>
           log.error(s"Report of $username can't be persisted.", UC4Exception(statusCode, reason))
+      }.recover{
+        case _: Exception => log.error(s"Prepare of $username at $timestamp ; Actor communication failed")
       }
     }.recover {
       case exception: Exception => log.error(s"Report of $username can't be created.", exception)
     }
+
+    log.error(s"Prepare of $username at $timestamp ; End of Prepare")
 
     Done
   }
@@ -98,31 +126,32 @@ class ReportServiceImpl(
   def convertReadyReportToZip(username: String): Future[ByteString] =
     entityRef(username).ask[ReportWrapper](replyTo => GetReport(replyTo)).map {
       reportWrapper =>
+        log.error(s"Convert Report of $username to zip ; Start")
         val report = reportWrapper
         val zipPath = Paths.get(System.getProperty("java.io.tmpdir"), s"report_$username", "report.zip")
         val zipFile = new ZipFile(zipPath.toFile)
-
+        log.error(s"Convert Report of $username to zip ; Checkpoint 1")
         val folderPath = Paths.get(System.getProperty("java.io.tmpdir"), s"report_$username")
         val reportPath = Paths.get(folderPath.toString, "userdata.json")
 
         if (!folderPath.toFile.exists()) {
           folderPath.toFile.mkdirs()
         }
-
+        log.error(s"Convert Report of $username to zip ; Checkpoint 2")
         val reportTxt = Json.prettyPrint(Json.toJson(report))
         var array: Array[Byte] = null
-
+        log.error(s"Convert Report of $username to zip ; Checkpoint 3")
         Using(new FileWriter(reportPath.toFile)) { writer =>
           writer.write(reportTxt)
         }
-
+        log.error(s"Convert Report of $username to zip ; Checkpoint 4")
         zipFile.addFile(reportPath.toFile)
 
         array = Files.readAllBytes(zipFile.getFile.toPath)
-
+        log.error(s"Convert Report of $username to zip ; Checkpoint 5")
         val directory = new Directory(folderPath.toFile)
         directory.deleteRecursively()
-
+        log.error(s"Convert Report of $username to zip ; Checkpoint 6")
         ByteString(array)
     }
 
@@ -138,6 +167,8 @@ class ReportServiceImpl(
           reportWrapper.state match {
             case ReportStateEnum.None =>
               val timestamp = Calendar.getInstance().getTime.toString
+              log.error(s"Report State None, therefore prepare report of $username with $timestamp")
+
               ref.ask[Confirmation](replyTo => PrepareReport(timestamp, replyTo)).map {
                 case Accepted(_) =>
                   prepareUserData(username, authRole, header, timestamp)
@@ -150,20 +181,26 @@ class ReportServiceImpl(
                 case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
               }
             case ReportStateEnum.Preparing =>
+              log.error(s"Report State Preparing, therefore do nothing and return 202")
               Future.successful(
                 ResponseHeader(202, MessageProtocol.empty, List())
                   .addHeader("X-UC4-Timestamp", reportWrapper.timestamp.get),
                 ByteString.empty
               )
             case ReportStateEnum.Ready =>
+              log.error(s"Report State Ready, therefore create zip and return")
               convertReadyReportToZip(username).map {
                 zippedBytes =>
+                  log.error(s"Zip is created for $username ; return")
                   (
                     ResponseHeader(200, MessageProtocol(contentType = Some("application/zip")), List())
                     .addHeader("X-UC4-Timestamp", reportWrapper.timestamp.get)
                     .addHeader("Cache-Control", "no-cache, no-store, must-revalidate"),
                     zippedBytes
                   )
+              }.recover{
+                case exception: Exception => log.error(s"Report of $username can't be zipped.", exception)
+                  throw exception
               }
           }
         }

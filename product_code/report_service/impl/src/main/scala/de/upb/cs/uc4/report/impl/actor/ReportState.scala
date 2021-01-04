@@ -1,17 +1,21 @@
 package de.upb.cs.uc4.report.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
+import akka.persistence.typed.scaladsl.{Effect, ReplyEffect}
 import de.upb.cs.uc4.report.impl.ReportApplication
 import de.upb.cs.uc4.report.impl.actor.ReportState.initial
 import de.upb.cs.uc4.report.impl.commands._
-import de.upb.cs.uc4.report.impl.events.{ OnDeleteReport, OnPrepareReport, OnSetReport, ReportEvent }
-import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError }
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
-import play.api.libs.json.{ Format, Json }
+import de.upb.cs.uc4.report.impl.events.{OnDeleteReport, OnPrepareReport, OnSetReport, ReportEvent}
+import de.upb.cs.uc4.shared.client.exceptions.{ErrorType, GenericError}
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Rejected}
+import org.slf4j.{Logger, LoggerFactory}
+import play.api.libs.json.{Format, Json}
+import de.upb.cs.uc4.shared.client.JsonUtility._
 
 /** The current state of a Report */
 case class ReportState(reportWrapper: ReportWrapper) {
+
+  protected final val log: Logger = LoggerFactory.getLogger(getClass)
 
   /** Functions as a CommandHandler
     *
@@ -21,6 +25,7 @@ case class ReportState(reportWrapper: ReportWrapper) {
     cmd match {
       case GetReport(replyTo) => Effect.reply(replyTo)(reportWrapper)
       case SetReport(report, timestamp, replyTo) =>
+        log.error(s"Set report on ${reportWrapper.toJson} with report ${report.toJson} and $timestamp")
         reportWrapper.state match {
           case ReportStateEnum.Ready     => Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer, "Trying to set an already existing report.")))
           case ReportStateEnum.Preparing => Effect.persist(OnSetReport(report, timestamp)).thenReply(replyTo) { _ => Accepted.default }
@@ -51,7 +56,8 @@ case class ReportState(reportWrapper: ReportWrapper) {
     evt match {
       case OnSetReport(report, timestamp) if timestamp == reportWrapper.timestamp.getOrElse("") =>
         copy(ReportWrapper(Some(report), reportWrapper.timestamp, ReportStateEnum.Ready))
-      case OnSetReport(_, _) =>
+      case OnSetReport(report, timestamp) =>
+        log.error(s"Tried to set report ${report.toJson} with $timestamp , but expected ${reportWrapper.timestamp.getOrElse("")}")
         this
       case OnDeleteReport(_) =>
         initial
