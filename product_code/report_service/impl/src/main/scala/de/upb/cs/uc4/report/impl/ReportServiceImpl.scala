@@ -184,9 +184,9 @@ class ReportServiceImpl(
                     zippedBytes
                   )
               }.recover {
-                case exception: Exception =>
-                  log.error(s"Report of $username can't be zipped.", exception)
-                  throw exception
+                case ex: Exception =>
+                  log.error(s"Report of $username can't be zipped.", ex)
+                  throw UC4Exception.InternalServerError("Unknown Internal Error when trying to zip report", ex.getMessage, ex)
               }
           }
         }
