@@ -1,4 +1,4 @@
-# [WIP - v0.14.3](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.14.2...configuration-v0.14.3) (2020-XX-XX)
+# [v0.15.0](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.14.2...configuration-v0.15.0) (2020-12-20)
 ## Feature
 ## Refactor
 ## Bugfix

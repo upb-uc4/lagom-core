@@ -1,4 +1,4 @@
-# [WIP - v0.14.2](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.14.1...examreg-v0.14.2) (2020-12-XX)
+# [v0.15.0](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.14.1...examreg-v0.15.0) (2020-12-20)
 ## Feature
 - Added caching for Examination Regulations through periodically fetching from hyperledger
 ## Refactor
