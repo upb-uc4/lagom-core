@@ -57,14 +57,14 @@ class ReportServiceImpl(
 
     val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
       case exception: Exception =>
-        log.error(s"Prepare of $username at $timestamp ; userFuture failed")
+        log.error(s"Prepare of $username at $timestamp ; userFuture failed", exception)
         throw exception
     }
     val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
       .map(cert => Some(cert.certificate)).recover { case _ => None }
     val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
       case exception: Exception =>
-        log.error(s"Prepare of $username at $timestamp ; enrollmentIdFuture failed")
+        log.error(s"Prepare of $username at $timestamp ; enrollmentIdFuture failed", exception)
         throw exception
     }
     val encryptedPrivateKeyFuture = certificateService.getPrivateKey(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
@@ -79,13 +79,13 @@ class ReportServiceImpl(
           case ue: UC4Exception if ue.errorCode == 404 =>
             None
           case exception: Exception =>
-            log.error(s"Prepare of $username at $timestamp ; matriculationFuture failed")
+            log.error(s"Prepare of $username at $timestamp ; matriculationFuture failed", exception)
             throw exception
         }
       case AuthenticationRole.Lecturer =>
         coursesFuture = courseService.getAllCourses(None, Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
           case exception: Exception =>
-            log.error(s"Prepare of $username at $timestamp ; coursesFuture failed")
+            log.error(s"Prepare of $username at $timestamp ; coursesFuture failed", exception)
             throw exception
         }
     }
@@ -104,7 +104,7 @@ class ReportServiceImpl(
         case Rejected(statusCode, reason) =>
           log.error(s"Report of $username can't be persisted.", UC4Exception(statusCode, reason))
       }.recover {
-        case _: Exception => log.error(s"Prepare of $username at $timestamp ; Actor communication failed")
+        case exception: Exception => log.error(s"Prepare of $username at $timestamp ; Actor communication failed", exception)
       }
     }.recover {
       case exception: Exception => log.error(s"Report of $username can't be created.", exception)
