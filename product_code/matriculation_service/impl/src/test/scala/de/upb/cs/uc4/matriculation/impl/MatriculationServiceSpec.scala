@@ -1,9 +1,5 @@
 package de.upb.cs.uc4.matriculation.impl
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.Path
-import java.util.Base64
-
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
@@ -14,7 +10,7 @@ import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
-import de.upb.cs.uc4.shared.client.SignedTransactionProposal
+import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
@@ -24,6 +20,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import play.api.libs.json.Json
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.Path
+import java.util.Base64
 import scala.language.reflectiveCalls
 
 /** Tests for the MatriculationService */
@@ -139,15 +138,19 @@ class MatriculationServiceSpec extends AsyncWordSpec
               }
             }
 
-            override def getProposalAddMatriculationData(jSonMatriculationData: String): Array[Byte] =
-              jSonMatriculationData.getBytes
+            override def getProposalAddMatriculationData(certificate: String, AFFILITATION: String = AFFILIATION, jSonMatriculationData: String): (String, Array[Byte]) =
+              ("", jSonMatriculationData.getBytes())
 
-            override def getProposalAddEntriesToMatriculationData(enrollmentId: String, subjectMatriculationList: String): Array[Byte] =
-              (enrollmentId + "#" + subjectMatriculationList).getBytes()
+            override def getProposalAddEntriesToMatriculationData(certificate: String, AFFILITATION: String = AFFILIATION, enrollmentId: String, subjectMatriculationList: String): (String, Array[Byte]) =
+              ("", (enrollmentId + "#" + subjectMatriculationList).getBytes())
 
-            override def submitSignedProposal(proposalBytes: Array[Byte], signature: Array[Byte]): String = {
-              new String(proposalBytes, StandardCharsets.UTF_8) match {
-                case s"$enrollmentId#$subjectMatriculationList" =>
+            override def getUnsignedTransaction(proposalBytes: Array[Byte], signature: Array[Byte]): Array[Byte] = {
+              "t:".getBytes() ++ proposalBytes
+            }
+
+            override def submitSignedTransaction(transactionBytes: Array[Byte], signature: Array[Byte]): (String, String) = {
+              new String(transactionBytes, StandardCharsets.UTF_8) match {
+                case s"t:$enrollmentId#$subjectMatriculationList" =>
                   var data = Json.parse(jsonStringList.find(json => json.contains(enrollmentId)).get).as[ImmatriculationData]
                   val matriculationList = Json.parse(subjectMatriculationList).as[Seq[SubjectMatriculation]]
 
@@ -187,13 +190,13 @@ class MatriculationServiceSpec extends AsyncWordSpec
                   }
 
                   jsonStringList = jsonStringList.filter(json => !json.contains(enrollmentId)) :+ Json.stringify(Json.toJson(data))
-                  ""
+                  ("", "")
 
                 case s"$jsonMatriculationData" =>
                   val matriculationData = Json.parse(jsonMatriculationData).as[ImmatriculationData]
                   if (matriculationData.matriculationStatus.isEmpty) {
                     throw new TransactionExceptionTrait() {
-                      override val transactionName: String = "addEntriesToMatriculationData"
+                      override val transactionName: String = "submitSignedTransaction"
                       override val payload: String =
                         """{
                           |  "type": "HLUnprocessableEntity",
@@ -208,13 +211,30 @@ class MatriculationServiceSpec extends AsyncWordSpec
                     }
                   }
                   jsonStringList :+= jsonMatriculationData
-                  ""
+                  ("", "")
+                case _ =>
+                  throw new TransactionExceptionTrait() {
+                    override val transactionName: String = "addEntriesToMatriculationData"
+                    override val payload: String =
+                      """{
+                        |  "type": "HLUnprocessableEntity",
+                        |  "title": "The following parameters do not conform to the specified format.",
+                        |  "invalidParams":[
+                        |     {
+                        |       "name":"TransactionNotKnown",
+                        |       "reason":"Received an unknown transaction!"
+                        |     }
+                        |  ]
+                        |}""".stripMargin
+                  }
               }
             }
 
+            override def getChaincodeVersion: String = "testVersion"
+
             override def updateMatriculationData(jSonMatriculationData: String): String = ""
-            override def getProposalUpdateMatriculationData(jSonMatriculationData: String): Array[Byte] = Array.emptyByteArray
-            override def getProposalGetMatriculationData(enrollmentId: String): Array[Byte] = Array.emptyByteArray
+            override def getProposalUpdateMatriculationData(certificate: String, affiliation: String, jSonMatriculationData: String): (String, Array[Byte]) = ("", Array.emptyByteArray)
+            override def getProposalGetMatriculationData(certificate: String, affiliation: String, enrollmentId: String): (String, Array[Byte]) = ("", Array.emptyByteArray)
             override val contractName: String = ""
             override lazy val contract: ContractImpl = null
             override lazy val gateway: GatewayImpl = null
@@ -246,7 +266,13 @@ class MatriculationServiceSpec extends AsyncWordSpec
 
   "MatriculationService service" should {
 
-    "add matriculation data for a student" in {
+    "fetch the hyperledger versions" in {
+      client.getHlfVersions.invoke().map { answer =>
+        answer shouldBe a[JsonHyperledgerVersion]
+      }
+    }
+
+    "get a proposal for adding matriculation data for a student" in {
       val message = createSingleMatriculation(examReg0.name, "SS2020")
       certificate.setup(student0.username)
       certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
@@ -255,6 +281,24 @@ class MatriculationServiceSpec extends AsyncWordSpec
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(message).map { proposal =>
             asString(proposal.unsignedProposal) should ===(data.toJson)
+          }.andThen {
+            case _ => cleanup()
+          }
+      }
+    }
+
+    "get a transaction for adding matriculation data for a student, given a proposal" in {
+      val message = createSingleMatriculation(examReg0.name, "SS2020")
+      certificate.setup(student0.username)
+      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+        val data = ImmatriculationData(jsonId.id, message.matriculation)
+
+        client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+          .invoke(message).flatMap { proposal =>
+            client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+              .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
+                asString(transaction.unsignedTransaction) should ===("t:" + data.toJson)
+              }
           }.andThen {
             case _ => cleanup()
           }
@@ -292,13 +336,19 @@ class MatriculationServiceSpec extends AsyncWordSpec
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(createSingleMatriculation(examReg0.name, "WS2020/21")).flatMap {
             proposal =>
+
               client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
-                .invoke(SignedTransactionProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
-                  client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
-                    answer =>
-                      answer.matriculationStatus should contain theSameElementsAs
-                        Seq(SubjectMatriculation(examReg0.name, Seq("SS2020", "WS2020/21")))
-                  }
+                .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
+
+                  client.submitMatriculationTransaction(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+                    .invoke(SignedTransaction(transaction.unsignedTransaction, "c2lnbmVk")).flatMap { _ =>
+
+                      client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
+                        answer =>
+                          answer.matriculationStatus should contain theSameElementsAs
+                            Seq(SubjectMatriculation(examReg0.name, Seq("SS2020", "WS2020/21")))
+                      }
+                    }
                 }
           }.andThen {
             case _ => cleanup()
@@ -306,7 +356,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "extend matriculation data of a non-existing field of study" in {
+    "extend matriculation data with a new field of study" in {
       certificate.setup(student0.username)
       certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
         prepare(Seq(
@@ -317,16 +367,22 @@ class MatriculationServiceSpec extends AsyncWordSpec
         ))
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(createSingleMatriculation(examReg1.name, "WS2021/22")).flatMap { proposal =>
+
             client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
-              .invoke(SignedTransactionProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { _ =>
-                client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
-                  answer =>
-                    answer.matriculationStatus should contain theSameElementsAs
-                      Seq(
-                        SubjectMatriculation(examReg0.name, Seq("SS2020", "WS2020/21")),
-                        SubjectMatriculation(examReg1.name, Seq("WS2021/22"))
-                      )
-                }
+              .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
+
+                client.submitMatriculationTransaction(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+                  .invoke(SignedTransaction(transaction.unsignedTransaction, "c2lnbmVk")).flatMap { _ =>
+
+                    client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
+                      answer =>
+                        answer.matriculationStatus should contain theSameElementsAs
+                          Seq(
+                            SubjectMatriculation(examReg0.name, Seq("SS2020", "WS2020/21")),
+                            SubjectMatriculation(examReg1.name, Seq("WS2021/22"))
+                          )
+                    }
+                  }
               }
           }.andThen {
             case _ => cleanup()

@@ -1,3 +1,17 @@
+# [v0.15.0](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.14.1...examreg-v0.15.0) (2020-12-20)
+## Feature
+- Added caching for Examination Regulations through periodically fetching from hyperledger
+## Refactor
+## Bugfix
+
+# [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.13.1...examreg-v0.14.1) (2020-12-14)
+## Feature
+- Added Version endpoint for Hyperledger
+## Refactor
+- Moved default data to the deployment 
+- Renamed "versionNumber" into "serviceVersion"
+## Bugfix
+
 # [v0.13.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.12.3...examreg-v0.13.1) (2020-12-04)
 ## Feature
 ## Refactor

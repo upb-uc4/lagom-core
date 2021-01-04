@@ -8,11 +8,9 @@ import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerC
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionMatriculation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
-import de.upb.cs.uc4.matriculation.impl.commands.{ AddEntriesToMatriculationData, AddMatriculationData, GetMatriculationData, GetProposalForAddEntriesToMatriculationData, GetProposalForAddMatriculationData }
+import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.shared.server.messages.Accepted
-
-import scala.util.Success
 
 class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionMatriculationTrait] {
 
@@ -37,11 +35,11 @@ class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActor
       connection.addMatriculationData(data.toJson)
       replyTo ! StatusReply.success(Accepted.default)
 
-    case GetProposalForAddEntriesToMatriculationData(enrollmentId, matriculation, replyTo) =>
-      replyTo ! StatusReply.success(connection.getProposalAddEntriesToMatriculationData(enrollmentId, matriculation.toJson))
+    case GetProposalForAddEntriesToMatriculationData(certificate, enrollmentId, matriculation, replyTo) =>
+      replyTo ! StatusReply.success(connection.getProposalAddEntriesToMatriculationData(certificate, enrollmentId = enrollmentId, subjectMatriculationList = matriculation.toJson)._2)
 
-    case GetProposalForAddMatriculationData(data, replyTo) =>
-      replyTo ! StatusReply.success(connection.getProposalAddMatriculationData(data.toJson))
+    case GetProposalForAddMatriculationData(certificate, data, replyTo) =>
+      replyTo ! StatusReply.success(connection.getProposalAddMatriculationData(certificate, jSonMatriculationData = data.toJson)._2)
 
     case GetMatriculationData(matriculationId, replyTo) =>
       replyTo ! StatusReply.success(connection.getMatriculationData(matriculationId).fromJson[ImmatriculationData])

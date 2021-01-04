@@ -5,7 +5,7 @@ import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
-import de.upb.cs.uc4.shared.client.UC4Service
+import de.upb.cs.uc4.shared.client.UC4HyperledgerService
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
 /** The ExamregService interface.
@@ -13,7 +13,7 @@ import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
   * This describes everything that Lagom needs to know about how to serve and
   * consume the ExamregService.
   */
-trait ExamregService extends UC4Service {
+trait ExamregService extends UC4HyperledgerService {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
   override val pathPrefix = "/examreg-management"
   override val name = "examreg"

@@ -4,6 +4,7 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.configuration.api.ConfigurationService
 import de.upb.cs.uc4.configuration.model.{ Configuration, ValidationConfiguration }
+import de.upb.cs.uc4.shared.client.JsonHyperledgerNetworkVersion
 import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, CourseLanguage, CourseType }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -20,6 +21,12 @@ class ConfigurationServiceSpec extends AsyncWordSpec with Matchers {
   val client: ConfigurationService = server.serviceClient.implement[ConfigurationService]
 
   "ConfigurationService" should {
+    "fetch hl-network version" in {
+      client.getHyperledgerNetworkVersion.invoke().map {
+        answer => answer should ===(JsonHyperledgerNetworkVersion("unavailable"))
+      }
+    }
+
     "get the semester derived from a date" in {
       client.getSemester(Some("2020-10-14")).invoke().map {
         answer =>

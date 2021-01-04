@@ -1,3 +1,10 @@
+# [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.3...user-v0.14.1) (2020-12-14)
+## Feature
+## Refactor
+- Moved default data to the deployment
+- Renamed "versionNumber" into "serviceVersion"
+## Bugfix
+
 # [v0.13.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.2...user-v0.13.3) (2020-11-26)
 ## Feature
 - Replaced DELETE call with soft delete with different bahaviour; Upon soft deletion; the AuthUser is fully deleted and the CertUser is fully deleted (if a non-lecturer is soft-deleted). If a lecturer is deleted CertUser retains enrollmentId and certificate
