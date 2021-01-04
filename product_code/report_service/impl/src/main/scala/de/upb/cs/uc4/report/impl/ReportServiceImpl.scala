@@ -57,14 +57,14 @@ class ReportServiceImpl(
   def prepareUserData(username: String, role: AuthenticationRole, header: RequestHeader, timestamp: String): Future[Done] = Future {
 
     log.error(s"Prepare of $username at $timestamp ; started")
-    val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover{
+    val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
       case exception: Exception =>
         log.error(s"Prepare of $username at $timestamp ; userFuture failed")
         throw exception
     }
     val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
       .map(cert => Some(cert.certificate)).recover { case _ => None }
-    val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover{
+    val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
       case exception: Exception =>
         log.error(s"Prepare of $username at $timestamp ; enrollmentIdFuture failed")
         throw exception
@@ -79,13 +79,13 @@ class ReportServiceImpl(
     role match {
       case AuthenticationRole.Admin =>
       case AuthenticationRole.Student =>
-        matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover{
+        matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
           case exception: Exception =>
             log.error(s"Prepare of $username at $timestamp ; matriculationFuture failed")
             throw exception
         }
       case AuthenticationRole.Lecturer =>
-        coursesFuture = courseService.getAllCourses(None, Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover{
+        coursesFuture = courseService.getAllCourses(None, Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
           case exception: Exception =>
             log.error(s"Prepare of $username at $timestamp ; coursesFuture failed")
             throw exception
@@ -110,7 +110,7 @@ class ReportServiceImpl(
           log.error(s"Prepare of $username at $timestamp ; Actor replied with Accepted: $message")
         case Rejected(statusCode, reason) =>
           log.error(s"Report of $username can't be persisted.", UC4Exception(statusCode, reason))
-      }.recover{
+      }.recover {
         case _: Exception => log.error(s"Prepare of $username at $timestamp ; Actor communication failed")
       }
     }.recover {
@@ -198,8 +198,9 @@ class ReportServiceImpl(
                     .addHeader("Cache-Control", "no-cache, no-store, must-revalidate"),
                     zippedBytes
                   )
-              }.recover{
-                case exception: Exception => log.error(s"Report of $username can't be zipped.", exception)
+              }.recover {
+                case exception: Exception =>
+                  log.error(s"Report of $username can't be zipped.", exception)
                   throw exception
               }
           }
