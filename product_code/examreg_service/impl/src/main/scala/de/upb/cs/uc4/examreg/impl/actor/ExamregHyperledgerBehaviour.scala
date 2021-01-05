@@ -5,7 +5,7 @@ import akka.pattern.StatusReply
 import com.typesafe.config.Config
 import de.upb.cs.uc4.examreg.impl.ExamregApplication
 import de.upb.cs.uc4.examreg.impl.commands.{ CloseExamregHyperledger, CreateExamregHyperledger, GetAllExamregsHyperledger }
-import de.upb.cs.uc4.examreg.model.ExaminationRegulation
+import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, ExaminationRegulationsWrapper }
 import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.{ ConnectionExaminationRegulation, ConnectionMatriculation }
@@ -32,7 +32,9 @@ class ExamregHyperledgerBehaviour(val config: Config) extends HyperledgerDefault
   override protected def applyCommand(connection: ConnectionExaminationRegulationTrait, command: HyperledgerCommand[_]): Unit = command match {
 
     case GetAllExamregsHyperledger(replyTo) =>
-      replyTo ! StatusReply.success(connection.getExaminationRegulations("").fromJson[Seq[ExaminationRegulation]])
+      replyTo ! StatusReply.success(ExaminationRegulationsWrapper(
+        connection.getExaminationRegulations("").fromJson[Seq[ExaminationRegulation]]
+      ))
 
     case CreateExamregHyperledger(examreg, replyTo) =>
       connection.addExaminationRegulation(examreg.toJson)
