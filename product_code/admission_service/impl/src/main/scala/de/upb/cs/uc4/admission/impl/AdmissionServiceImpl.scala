@@ -76,7 +76,8 @@ class AdmissionServiceImpl(
 
         val enrollmentFuture = if (username.isDefined) {
           certificateService.getEnrollmentId(username.get).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
-        } else {
+        }
+        else {
           Future.successful(None)
         }
 
