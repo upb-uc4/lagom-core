@@ -1,6 +1,7 @@
 package de.upb.cs.uc4.admission.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
+import de.upb.cs.uc4.admission.impl.actor.AdmissionsWrapper
 import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
 import de.upb.cs.uc4.shared.client.{ SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
@@ -23,6 +24,7 @@ object AdmissionSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[UnsignedProposal],
     JsonSerializer[UnsignedTransaction],
     JsonSerializer[SignedProposal],
-    JsonSerializer[SignedTransaction]
+    JsonSerializer[SignedTransaction],
+    JsonSerializer[AdmissionsWrapper]
   )
 }
