@@ -27,7 +27,9 @@ class AdmissionBehaviour(val config: Config) extends HyperledgerDefaultActorFact
     */
   override protected def applyCommand(connection: ConnectionAdmissionTrait, command: HyperledgerCommand[_]): Unit = command match {
     case GetCourseAdmissions(username, courseId, moduleId, replyTo) =>
-      replyTo ! StatusReply.success(connection.getAdmissions(username.getOrElse(""), courseId.getOrElse(""), moduleId.getOrElse("")).fromJson[Seq[CourseAdmission]])
+      val response = connection.getAdmissions(username.getOrElse(""), courseId.getOrElse(""), moduleId.getOrElse(""))
+      log.error(response)
+      replyTo ! StatusReply.success(response.fromJson[Seq[CourseAdmission]])
     case GetProposalForAddCourseAdmission(certificate, courseAdmission, replyTo) =>
       connection.getProposalAddAdmission(certificate, admission = courseAdmission.toJson) match {
         case (_, proposal) =>
