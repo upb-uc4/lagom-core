@@ -1,3 +1,9 @@
+# [v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.14.2...matriculation-v0.15.1) (2021-01-05)
+## Feature
+## Refactor
+## Bugfix
+- Increased internal timeout (timeout when called by another service) from 10s to 25s
+
 # [v0.14.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.14.1...matriculation-v0.14.2) (2020-12-15)
 ## Feature
  - Changed endpoints to newly defined api
