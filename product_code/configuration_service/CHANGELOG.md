@@ -1,3 +1,9 @@
+# [v0.15.0](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.14.2...configuration-v0.15.0) (2020-12-20)
+## Feature
+## Refactor
+## Bugfix
+- Fixed 500 on missing hyperledger network version
+
 # [v0.14.2](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.14.1...configuration-v0.14.2) (2020-12-17)
 ## Feature
 ## Refactor

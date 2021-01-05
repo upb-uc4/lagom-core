@@ -400,7 +400,7 @@ class UserServiceImpl(
         }
         catch {
           case throwable: Throwable =>
-            log.error("UserService cannot send invalid topic message {}", throwable.toString)
+            log.error("UserService cannot send invalid creation topic message {}", throwable.toString)
             Nil
         }
         case _ => Nil
@@ -413,16 +413,22 @@ class UserServiceImpl(
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)
         .mapConcat {
-          //Filter OnUserDelete events
+          //Filter ForceDelete events
           case EventStreamElement(_, OnUserForceDelete(user), offset) => try {
             immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
           }
+          catch {
+            case throwable: Throwable =>
+              log.error("UserService cannot send invalid minimal force delete topic message {}", throwable.toString)
+              Nil
+          }
+          //Filter SoftDeleteEvents
           case EventStreamElement(_, OnUserSoftDelete(user), offset) => try {
             immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUsername(user.username)), offset))
           }
           catch {
             case throwable: Throwable =>
-              log.error("UserService cannot send invalid topic message {}", throwable.toString)
+              log.error("UserService cannot send invalid minimal soft delete topic message {}", throwable.toString)
               Nil
           }
           case _ => Nil
@@ -435,16 +441,22 @@ class UserServiceImpl(
       persistentEntityRegistry
         .eventStream(UserEvent.Tag, fromOffset)
         .mapConcat {
-          //Filter OnUserDelete events
+          //Filter ForceDelete events
           case EventStreamElement(_, OnUserForceDelete(user), offset) => try {
             immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username, user.role, forceDelete = true)), offset))
           }
+          catch {
+            case throwable: Throwable =>
+              log.error("UserService cannot send invalid precise force delete topic message {}", throwable.toString)
+              Nil
+          }
+          //Filter SoftDelete events
           case EventStreamElement(_, OnUserSoftDelete(user), offset) => try {
             immutable.Seq((kafkaEncryptionUtility.encrypt(JsonUserData(user.username, user.role, forceDelete = false)), offset))
           }
           catch {
             case throwable: Throwable =>
-              log.error("UserService cannot send invalid topic message {}", throwable.toString)
+              log.error("UserService cannot send invalid precise soft delete topic message {}", throwable.toString)
               Nil
           }
           case _ => Nil
