@@ -12,7 +12,7 @@ case class CourseAdmission(
     moduleId: String,
     admissionId: String,
     timestamp: String
-) {
+) extends CourseAdmissionSerializable {
 
   def trim: CourseAdmission = copy(enrollmentId.trim, courseId.trim, moduleId.trim, admissionId.trim, timestamp.trim)
 
