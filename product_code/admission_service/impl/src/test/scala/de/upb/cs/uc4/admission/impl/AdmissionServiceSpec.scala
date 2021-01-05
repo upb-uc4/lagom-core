@@ -5,20 +5,20 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.admission.impl.actor.AdmissionBehaviour
-import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
+import de.upb.cs.uc4.admission.model.{CourseAdmission, DropAdmission}
 import de.upb.cs.uc4.certificate.CertificateServiceStub
-import de.upb.cs.uc4.course.{ CourseServiceStub, DefaultTestCourses }
-import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
+import de.upb.cs.uc4.course.{CourseServiceStub, DefaultTestCourses}
+import de.upb.cs.uc4.examreg.{DefaultTestExamRegs, ExamregServiceStub}
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
-import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
+import org.hyperledger.fabric.gateway.impl.{ContractImpl, GatewayImpl}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import play.api.libs.json.Json
 
 import java.nio.charset.StandardCharsets

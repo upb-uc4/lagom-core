@@ -74,11 +74,19 @@ class AdmissionServiceImpl(
             throw UC4Exception.NotEnoughPrivileges
         }
 
+        val enrollmentFuture = if (username.isDefined) {
+          certificateService.getEnrollmentId(username.get).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
+        } else {
+          Future.successful(None)
+        }
+
         future.flatMap { _ =>
-          entityRef.askWithStatus[Seq[CourseAdmission]](replyTo => GetCourseAdmissions(username, courseId, moduleId, replyTo)).map {
-            courseAdmissions =>
-              createETagHeader(header, courseAdmissions)
-          }.recover(handleException("Get course admission"))
+          enrollmentFuture.flatMap { enrollmentId =>
+            entityRef.askWithStatus[Array[CourseAdmission]](replyTo => GetCourseAdmissions(enrollmentId, courseId, moduleId, replyTo)).map {
+              courseAdmissions =>
+                createETagHeader(header, courseAdmissions.toSeq)
+            }.recover(handleException("Get course admission"))
+          }
         }
       }
     }
