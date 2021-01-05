@@ -32,7 +32,7 @@ trait ReportService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/reports/:username/archive", getUserReport _).withCircuitBreaker(CircuitBreaker.identifiedBy("HLTimeouts")),
+        restCall(Method.GET, pathPrefix + "/reports/:username/archive", getUserReport _),
         restCall(Method.DELETE, pathPrefix + "/reports/:username/archive", deleteUserReport _),
         restCall(Method.OPTIONS, pathPrefix + "/reports/:username/archive", allowedMethodsGETDELETE _)
       )
