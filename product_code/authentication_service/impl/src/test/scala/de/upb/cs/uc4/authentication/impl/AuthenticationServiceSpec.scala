@@ -32,7 +32,7 @@ import scala.concurrent.duration._
 
 /** Tests for the AuthenticationService */
 class AuthenticationServiceSpec extends AsyncWordSpec
-  with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures with PrivateMethodTester  {
+  with Matchers with BeforeAndAfterAll with Eventually with ScalaFutures {
 
   private var deletionStub: ProducerStub[EncryptionContainer] = _
   private var applicationConfig: Config = _
@@ -196,8 +196,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
         client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
           .invoke(AuthenticationUser("Gregory", "GregNew", AuthenticationRole.Student)).failed.map {
-          answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.PathParameterMismatch)
-        }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+            answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.PathParameterMismatch)
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
           .recoverWith(cleanupOnFailure(Seq("Gregor")))
       }
     }
@@ -218,8 +218,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
         client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
           .invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).failed.map {
-          answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
-        }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+            answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
           .recoverWith(cleanupOnFailure(Seq("Gregor")))
       }
     }
@@ -240,9 +240,9 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
         client.changePassword("Gre").handleRequestHeader(addTokenHeader(token))
           .invoke(AuthenticationUser("Gre", "GregNew", AuthenticationRole.Student)).failed.flatMap { answer =>
-          answer.asInstanceOf[UC4NonCriticalException].possibleErrorResponse.asInstanceOf[DetailedError]
-            .invalidParams.map(_.name) should contain("username")
-        }.flatMap(assertion => cleanupOnSuccess(Seq("Gre"), assertion))
+            answer.asInstanceOf[UC4NonCriticalException].possibleErrorResponse.asInstanceOf[DetailedError]
+              .invalidParams.map(_.name) should contain("username")
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gre"), assertion))
           .recoverWith(cleanupOnFailure(Seq("Gre")))
       }
     }
@@ -263,10 +263,10 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
         client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
           .invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Lecturer)).failed.flatMap { answer =>
-        answer.asInstanceOf[UC4NonCriticalException].possibleErrorResponse.asInstanceOf[DetailedError]
-          .invalidParams.map(_.name) should contain("role")
+            answer.asInstanceOf[UC4NonCriticalException].possibleErrorResponse.asInstanceOf[DetailedError]
+              .invalidParams.map(_.name) should contain("role")
 
-        }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
           .recoverWith(cleanupOnFailure(Seq("Gregor")))
       }
     }
@@ -296,7 +296,6 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
         .recoverWith(cleanupOnFailure(Seq("Gregor")))
     }
-
 
     "detect a wrong username" in {
       client.login.handleRequestHeader(addLoginHeader("studenta", "student")).invoke().failed.map {
@@ -615,7 +614,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
           .signWith(SignatureAlgorithm.HS256, "changeme")
           .compact()
 
-      client.refresh.handleRequestHeader(addTokenHeader(token, "login")).invoke().failed.map { answer =>
+      client.refresh.handleRequestHeader(addTokenHeader(token)).invoke().failed.map { answer =>
         answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
       }
     }
