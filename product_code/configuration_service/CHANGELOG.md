@@ -1,6 +1,17 @@
-# [WIP - v0.14.2](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.14.1...configuration-v0.14.2) (2020-XX-XX)
+# [WIP - v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.15.0...configuration-v0.15.1) (2021-XX-XX)
 ## Feature
 - Added validation information of CourseAdmission object to ValidationConfiguration
+## Refactor
+## Bugfix
+
+# [v0.15.0](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.14.2...configuration-v0.15.0) (2020-12-20)
+## Feature
+## Refactor
+## Bugfix
+- Fixed 500 on missing hyperledger network version
+
+# [v0.14.2](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.14.1...configuration-v0.14.2) (2020-12-17)
+## Feature
 ## Refactor
 - Renamed endpoint "version/hyperledger" to "version/hyperledger-network",
     as the endpoint does not return the same json object that any other "version/hyperledger" endpoint returns
