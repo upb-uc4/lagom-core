@@ -265,7 +265,7 @@ class UserServiceImpl(
   }
 
   /** Flags a user as deleted and deletes personal info from now on unrequired */
-  override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = identifiedAuthenticated(AuthenticationRole.Student, AuthenticationRole.Admin) {
+  override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = identifiedAuthenticated(AuthenticationRole.All :_*) {
     (authUsername, role) =>
       {
         ServerServiceCall {
