@@ -2,13 +2,13 @@ package de.upb.cs.uc4.admission.impl.commands
 
 import akka.actor.typed.ActorRef
 import akka.pattern.StatusReply
-import de.upb.cs.uc4.admission.model.CourseAdmission
+import de.upb.cs.uc4.admission.impl.actor.AdmissionsWrapper
 import de.upb.cs.uc4.hyperledger.commands.HyperledgerReadCommand
 
 case class GetCourseAdmissions(
-    username: Option[String],
+    enrollmentId: Option[String],
     courseId: Option[String],
     moduleId: Option[String],
-    replyTo: ActorRef[StatusReply[Seq[CourseAdmission]]]
+    replyTo: ActorRef[StatusReply[AdmissionsWrapper]]
 )
-  extends HyperledgerReadCommand[Seq[CourseAdmission]]
+  extends HyperledgerReadCommand[AdmissionsWrapper]

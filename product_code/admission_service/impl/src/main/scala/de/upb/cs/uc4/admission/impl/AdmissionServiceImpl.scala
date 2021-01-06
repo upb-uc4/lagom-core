@@ -9,7 +9,7 @@ import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHea
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.admission.api.AdmissionService
-import de.upb.cs.uc4.admission.impl.actor.AdmissionBehaviour
+import de.upb.cs.uc4.admission.impl.actor.{ AdmissionBehaviour, AdmissionsWrapper }
 import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetProposalForAddCourseAdmission, GetProposalForDropCourseAdmission }
 import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
@@ -74,11 +74,20 @@ class AdmissionServiceImpl(
             throw UC4Exception.NotEnoughPrivileges
         }
 
+        val enrollmentFuture = if (username.isDefined) {
+          certificateService.getEnrollmentId(username.get).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
+        }
+        else {
+          Future.successful(None)
+        }
+
         future.flatMap { _ =>
-          entityRef.askWithStatus[Seq[CourseAdmission]](replyTo => GetCourseAdmissions(username, courseId, moduleId, replyTo)).map {
-            courseAdmissions =>
-              createETagHeader(header, courseAdmissions)
-          }.recover(handleException("Get course admission"))
+          enrollmentFuture.flatMap { enrollmentId =>
+            entityRef.askWithStatus[AdmissionsWrapper](replyTo => GetCourseAdmissions(enrollmentId, courseId, moduleId, replyTo)).map {
+              courseAdmissions =>
+                createETagHeader(header, courseAdmissions.admissions)
+            }.recover(handleException("Get course admission"))
+          }
         }
       }
     }
