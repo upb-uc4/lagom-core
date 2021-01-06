@@ -8,10 +8,10 @@ import de.upb.cs.uc4.operation.model.OperationData
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
-/** The MatriculationService interface.
+/** The OperationService interface.
   *
   * This describes everything that Lagom needs to know about how to serve and
-  * consume the MatriculationService.
+  * consume the OperationService.
   */
 trait OperationService extends UC4HyperledgerService {
   /** Prefix for the path for the endpoints, a name/identifier for the service*/
@@ -19,7 +19,7 @@ trait OperationService extends UC4HyperledgerService {
   /** The name of the service */
   override val name: String = "operation"
 
-  /** Returns the Operations of a student with the given username */
+  /** Returns the Operations for the matching operationId */
   def getOperations(operationId: String): ServiceCall[NotUsed, OperationData]
 
   /** Allows GET */

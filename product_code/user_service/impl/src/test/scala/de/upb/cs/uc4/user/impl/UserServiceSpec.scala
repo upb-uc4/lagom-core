@@ -156,7 +156,7 @@ class UserServiceSpec extends AsyncWordSpec
     server.application.database.getAll(role)
   }
 
-  private def createUsernames(username: String, governmentId: String, enrollmentIdSecret: String): Usernames = Usernames(username, Hashing.sha256(s"$governmentId$enrollmentIdSecret"))
+  private def createUsernames(username: String, governmentId: String, enrollmentIdSecret: String, role: Role): Usernames = Usernames(username, Hashing.sha256(s"$governmentId$enrollmentIdSecret"), role)
 
   //Additional variables needed for some tests
   val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012", enrollmentIdSecret = "newEnrollmentIdSecret", isActive = false)
@@ -186,8 +186,8 @@ class UserServiceSpec extends AsyncWordSpec
               container =>
                 server.application.kafkaEncryptionUtility.decrypt[Usernames](container)
             } should contain theSameElementsAs Seq(
-              createUsernames("admin", "governmentIdAdmin", "YWRtaW5hZG1pbg=="),
-              createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret)
+              createUsernames("admin", "governmentIdAdmin", "YWRtaW5hZG1pbg==", Role.Admin),
+              createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret, student0.role)
             )
         }
 

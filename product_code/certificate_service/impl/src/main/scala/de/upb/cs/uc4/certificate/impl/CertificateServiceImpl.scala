@@ -1,36 +1,48 @@
 package de.upb.cs.uc4.certificate.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.util.Timeout
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
+import com.lightbend.lagom.scaladsl.api.broker.Topic
+import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader}
+import com.lightbend.lagom.scaladsl.broker.TopicProducer
+import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.certificate.impl.actor.{ CertificateState, CertificateUser }
-import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
-import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
+import de.upb.cs.uc4.certificate.impl.actor.{CertificateState, CertificateUser}
+import de.upb.cs.uc4.certificate.impl.commands.{CertificateCommand, GetCertificateUser, SetCertificateAndKey}
+import de.upb.cs.uc4.certificate.impl.events.{CertificateEvent, OnRegisterUser}
+import de.upb.cs.uc4.certificate.model._
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
-import de.upb.cs.uc4.hyperledger.{ HyperledgerAdminParts, HyperledgerUtils }
+import de.upb.cs.uc4.hyperledger.{HyperledgerAdminParts, HyperledgerUtils}
 import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.exceptions.{DetailedError, ErrorType, UC4Exception, UC4NonCriticalException}
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.Environment
 
+import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
+import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 
 /** Implementation of the UserService */
 class CertificateServiceImpl(
     clusterSharding: ClusterSharding,
+    persistentEntityRegistry: PersistentEntityRegistry,
     enrollmentManager: EnrollmentManagerTrait,
+    kafkaEncryptionUtility: KafkaEncryptionUtility,
     override val environment: Environment
 )(implicit ec: ExecutionContext, timeout: Timeout, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
+
+  protected final val log: Logger = LoggerFactory.getLogger(getClass)
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CertificateCommand] =
@@ -125,6 +137,25 @@ class CertificateServiceImpl(
           case _ =>
             throw UC4Exception.NotEnrolled
         }
+      }
+  }
+
+
+  /** Publishes every user that is registered at hyperledger */
+  override def userRegistrationTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset { fromOffset =>
+    persistentEntityRegistry
+      .eventStream(CertificateEvent.Tag, fromOffset)
+      .mapConcat {
+        //Filter only OnRegisterUser events
+        case EventStreamElement(_, OnRegisterUser(enrollmentId, _, role), offset) => try {
+          immutable.Seq((kafkaEncryptionUtility.encrypt(RegistrationUser(enrollmentId, role)), offset))
+        }
+        catch {
+          case throwable: Throwable =>
+            log.error("CertificateService cannot send invalid registration topic message {}", throwable.toString)
+            Nil
+        }
+        case _ => Nil
       }
   }
 

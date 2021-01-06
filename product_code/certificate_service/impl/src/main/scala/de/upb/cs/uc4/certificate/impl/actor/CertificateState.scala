@@ -24,8 +24,8 @@ case class CertificateState(
     */
   def applyCommand(cmd: CertificateCommand): ReplyEffect[CertificateEvent, CertificateState] =
     cmd match {
-      case RegisterUser(enrollmentId, secret, replyTo) =>
-        Effect.persist(OnRegisterUser(enrollmentId, secret)).thenReply(replyTo) { _ => Accepted.default }
+      case RegisterUser(enrollmentId, secret, role, replyTo) =>
+        Effect.persist(OnRegisterUser(enrollmentId, secret, role)).thenReply(replyTo) { _ => Accepted.default }
       case GetCertificateUser(replyTo) =>
         Effect.reply(replyTo)(CertificateUser(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey))
       case SetCertificateAndKey(certificate, encryptedPrivateKey, replyTo) =>
@@ -46,7 +46,7 @@ case class CertificateState(
     */
   def applyEvent(evt: CertificateEvent): CertificateState =
     evt match {
-      case OnRegisterUser(id, secret) =>
+      case OnRegisterUser(id, secret, _) =>
         copy(enrollmentId = Some(id), enrollmentSecret = Some(secret))
       case OnCertficateAndKeySet(cert, key) =>
         copy(certificate = Some(cert), encryptedPrivateKey = Some(key))

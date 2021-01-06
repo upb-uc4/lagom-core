@@ -388,7 +388,7 @@ class UserServiceImpl(
       .mapConcat {
         //Filter only OnUserCreate events
         case EventStreamElement(_, OnUserCreate(user, governmentId), offset) => try {
-          immutable.Seq((kafkaEncryptionUtility.encrypt(Usernames(user.username, Hashing.sha256(s"$governmentId${user.enrollmentIdSecret}"))), offset))
+          immutable.Seq((kafkaEncryptionUtility.encrypt(Usernames(user.username, Hashing.sha256(s"$governmentId${user.enrollmentIdSecret}"), user.role)), offset))
         }
         catch {
           case throwable: Throwable =>

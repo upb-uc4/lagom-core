@@ -1,10 +1,12 @@
 package de.upb.cs.uc4.certificate.api
 
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
+import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
-import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
+import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
+import de.upb.cs.uc4.certificate.model.{EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR}
 import de.upb.cs.uc4.shared.client.UC4HyperledgerService
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
 /** The CertificateService interface.
@@ -37,6 +39,11 @@ trait CertificateService extends UC4HyperledgerService {
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 
+  // TOPICS
+
+  /** Publishes every user that is registered at hyperledger */
+  def userRegistrationTopic(): Topic[EncryptionContainer]
+
   final override def descriptor: Descriptor = {
     import Service._
     super.descriptor
@@ -50,6 +57,13 @@ trait CertificateService extends UC4HyperledgerService {
         restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/enrollmentId", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/privateKey", allowedGet _)
       )
+      .addTopics(
+        topic(CertificateService.REGISTRATION_TOPIC_NAME, userRegistrationTopic _)
+      )
       .withAutoAcl(true)
   }
+}
+
+object CertificateService {
+  val REGISTRATION_TOPIC_NAME = "registration"
 }

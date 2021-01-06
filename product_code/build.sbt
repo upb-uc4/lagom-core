@@ -156,7 +156,7 @@ lazy val examreg_service = (project in file("examreg_service/impl"))
   .dependsOn(examreg_service_api % withTests, shared_client % withTests, shared_server % withTests, hyperledger_component)
 
 lazy val operation_service_api =  (project in file("operation_service/api"))
-  .settings(Settings.apiSettings("examreg_service_api"))
+  .settings(Settings.apiSettings("operation_service"))
   .dependsOn(shared_client)
 
 lazy val operation_service = (project in file("operation_service/impl"))
@@ -166,4 +166,18 @@ lazy val operation_service = (project in file("operation_service/impl"))
     libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
   )
   .settings(Settings.implSettings("operation_service"))
-  .dependsOn(operation_service_api % withTests, matriculation_service_api % withTests, shared_client % withTests, shared_server % withTests, hyperledger_component)
+  .dependsOn(operation_service_api % withTests, matriculation_service_api % withTests, certificate_service_api % withTests,
+    shared_client % withTests, shared_server % withTests, hyperledger_component)
+
+lazy val group_service_api =  (project in file("group_service/api"))
+  .settings(Settings.apiSettings("group_service_api"))
+  .dependsOn(shared_client)
+
+lazy val group_service = (project in file("group_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= Dependencies.implDefaultDependencies,
+    libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
+  )
+  .settings(Settings.implSettings("group_service"))
+  .dependsOn(group_service_api % withTests, certificate_service_api % withTests, shared_client % withTests, shared_server % withTests, hyperledger_component)

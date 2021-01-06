@@ -75,7 +75,7 @@ abstract class CertificateApplication(context: LagomApplicationContext)
     .atLeastOnce(
       Flow.fromFunction[EncryptionContainer, Future[Done]](container => try {
         val usernames = kafkaEncryptionUtility.decrypt[Usernames](container)
-        registerUser(usernames.username, usernames.enrollmentId)
+        registerUser(usernames.username, usernames.enrollmentId, usernames.role.toString)
       }
       catch {
         case throwable: Throwable =>
@@ -110,11 +110,11 @@ abstract class CertificateApplication(context: LagomApplicationContext)
         .mapAsync(8)(done => done)
     )
 
-  private def registerUser(username: String, enrollmentId: String): Future[Done] = {
+  private def registerUser(username: String, enrollmentId: String, role: String): Future[Done] = {
     try {
       val secret = registrationManager.register(caURL, tlsCert, enrollmentId, adminUsername, walletPath, organisationName)
       clusterSharding.entityRefFor(CertificateState.typeKey, username)
-        .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, replyTo)).map(_ => Done)
+        .ask[Confirmation](replyTo => RegisterUser(enrollmentId, secret, role, replyTo)).map(_ => Done)
     }
     catch {
       case e: Throwable =>
