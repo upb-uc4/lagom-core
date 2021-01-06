@@ -2,6 +2,7 @@
 ## Feature
 ## Refactor
 - Added more precise logs for errors in topics
+- Enabled users to request the deletion of their accounts
 ## Bugfix
 - Added missing catch in user delete topic
 

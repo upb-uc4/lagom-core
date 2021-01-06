@@ -1,12 +1,14 @@
 version: '3.2'
 services:
   postgres:
-    image: postgres:latest
+    image: uc4official/postgres:latest
     container_name: postgres
     environment:
       - "TZ=Europe/Amsterdam"
       - "POSTGRES_USER=admin"
       - "POSTGRES_PASSWORD=admin"
+    volumes:
+      - ./docker/postgres.conf:/uc4/postgresql.conf
     ports:
       - "5432:5432"
       
