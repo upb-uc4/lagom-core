@@ -23,6 +23,7 @@ abstract class AdmissionApplication(context: LagomApplicationContext)
   lazy val examRegService: ExamregService = serviceClient.implement[ExamregService]
   lazy val courseService: CourseService = serviceClient.implement[CourseService]
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
+  lazy val admissionService: AdmissionService = serviceClient.implement[AdmissionService]
 
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = AdmissionSerializerRegistry

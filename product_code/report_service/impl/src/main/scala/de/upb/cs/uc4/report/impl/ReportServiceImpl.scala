@@ -1,15 +1,17 @@
 package de.upb.cs.uc4.report.impl
 
 import java.io.FileWriter
-import java.nio.file.{ Files, Paths }
+import java.nio.file.{Files, Paths}
 import java.util.Calendar
-import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
-import akka.util.{ ByteString, Timeout }
-import akka.{ Done, NotUsed }
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.util.{ByteString, Timeout}
+import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, RequestHeader, ResponseHeader }
+import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, RequestHeader, ResponseHeader}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
+import de.upb.cs.uc4.admission.api.AdmissionService
+import de.upb.cs.uc4.admission.model.CourseAdmission
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
@@ -18,19 +20,19 @@ import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.report.api.ReportService
-import de.upb.cs.uc4.report.impl.actor.{ Report, ReportState, ReportStateEnum, ReportWrapper }
+import de.upb.cs.uc4.report.impl.actor.{Report, ReportState, ReportStateEnum, ReportWrapper}
 import de.upb.cs.uc4.report.impl.commands._
-import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, _ }
+import de.upb.cs.uc4.shared.client.exceptions.{UC4Exception, _}
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
 import de.upb.cs.uc4.user.api.UserService
 import net.lingala.zip4j.ZipFile
-import org.slf4j.{ Logger, LoggerFactory }
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.Environment
 import play.api.libs.json.Json
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.io.Directory
 import scala.util.Using
 
@@ -41,6 +43,7 @@ class ReportServiceImpl(
     courseService: CourseService,
     matriculationService: MatriculationService,
     certificateService: CertificateService,
+    admissionService: AdmissionService,
     override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ReportService {
 
@@ -71,6 +74,7 @@ class ReportServiceImpl(
       .map(Some(_)).recover { case _ => None }
     var matriculationFuture: Future[Option[ImmatriculationData]] = Future.successful(None)
     var coursesFuture: Future[Option[Seq[Course]]] = Future.successful(None)
+    var admissionFuture: Future[Option[Seq[CourseAdmission]]] = Future.successful(None)
 
     role match {
       case AuthenticationRole.Admin =>
@@ -80,6 +84,13 @@ class ReportServiceImpl(
             None
           case exception: Exception =>
             log.error(s"Prepare of $username at $timestamp ; matriculationFuture failed", exception)
+            throw exception
+        }
+        admissionFuture = admissionService.getCourseAdmissions(Some(username), None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+          case ue: UC4Exception if ue.possibleErrorResponse.`type` == ErrorType.HLNotFound || ue.possibleErrorResponse.`type` == ErrorType.KeyNotFound =>
+            None
+          case exception: Exception =>
+            log.error(s"Prepare of $username at $timestamp ; admissionFuture failed", exception)
             throw exception
         }
       case AuthenticationRole.Lecturer =>
@@ -97,8 +108,9 @@ class ReportServiceImpl(
       encryptedPrivateKey <- encryptedPrivateKeyFuture
       immatriculationData <- matriculationFuture
       courses <- coursesFuture
+      admissions <- admissionFuture
     } yield {
-      val report = Report(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey, immatriculationData, courses)
+      val report = Report(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey, immatriculationData, courses, admissions)
       entityRef(username).ask[Confirmation](replyTo => SetReport(report, timestamp, replyTo)).map {
         case Accepted(_) =>
         case Rejected(statusCode, reason) =>
