@@ -10,7 +10,7 @@ object Version {
     "examreg_service" -> "v0.15.0",
     "hyperledger_api" -> "0.14.5",
     "matriculation_service" -> "v0.15.1",
-    "user_service" -> "v0.14.1",
+    "user_service" -> "v0.15.1",
     "report_service" -> "v0.15.1"
   )
 
