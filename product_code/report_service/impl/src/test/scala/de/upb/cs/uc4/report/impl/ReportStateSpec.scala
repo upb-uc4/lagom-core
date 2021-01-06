@@ -45,7 +45,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
     "set a report" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-3")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None)
+      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
 
       // Prepare report
@@ -67,7 +67,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
     "delete a report" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None)
+      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
 
       // Prepare
@@ -124,7 +124,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
     "not prepare a report that is in ready state" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None)
+      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
 
       // Prepare report
@@ -146,7 +146,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
     "delete a report in preparing" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None)
+      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
 
       // Prepare
@@ -168,7 +168,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
     "delete a report in preparing and not be set afterwards" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None)
+      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
 
       // Prepare
@@ -196,7 +196,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
     "delete a report in preparing and prepare another report, without the older prepared report being applied" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None)
+      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestampOld = "2020-12-14"
       val timestampNew = "2020-12-15"
 
