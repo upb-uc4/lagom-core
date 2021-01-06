@@ -1,13 +1,13 @@
 package de.upb.cs.uc4.report.impl
 
 import java.io.FileWriter
-import java.nio.file.{Files, Paths}
+import java.nio.file.{ Files, Paths }
 import java.util.Calendar
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
-import akka.util.{ByteString, Timeout}
-import akka.{Done, NotUsed}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
+import akka.util.{ ByteString, Timeout }
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, RequestHeader, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, RequestHeader, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.admission.api.AdmissionService
@@ -20,19 +20,19 @@ import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.report.api.ReportService
-import de.upb.cs.uc4.report.impl.actor.{Report, ReportState, ReportStateEnum, ReportWrapper}
+import de.upb.cs.uc4.report.impl.actor.{ Report, ReportState, ReportStateEnum, ReportWrapper }
 import de.upb.cs.uc4.report.impl.commands._
-import de.upb.cs.uc4.shared.client.exceptions.{UC4Exception, _}
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, _ }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import net.lingala.zip4j.ZipFile
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 import play.api.libs.json.Json
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.reflect.io.Directory
 import scala.util.Using
 
