@@ -142,7 +142,7 @@ class AdmissionServiceImpl(
   override def getProposalDropCourseAdmission: ServiceCall[DropAdmission, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Student) {
     (authUser, _) =>
       ServerServiceCall {
-        (_, dropAdmissionRaw) =>
+        (header, dropAdmissionRaw) =>
           {
             val dropAdmission = dropAdmissionRaw.trim
             val validationList = try {
@@ -157,7 +157,7 @@ class AdmissionServiceImpl(
               throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
             }
 
-            certificateService.getCertificate(authUser).invoke().flatMap { certificate =>
+            certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { certificate =>
               entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForDropCourseAdmission(certificate.certificate, dropAdmission, replyTo)).map {
                 array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
               }.recover(handleException("Creation of drop courseAdmission proposal failed"))
