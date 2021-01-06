@@ -10,6 +10,7 @@ import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
+import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.authentication.model.JsonUsername
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
@@ -48,6 +49,7 @@ abstract class ReportApplication(context: LagomApplicationContext)
   lazy val courseService: CourseService = serviceClient.implement[CourseService]
   lazy val matriculationService: MatriculationService = serviceClient.implement[MatriculationService]
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
+  lazy val admissionService: AdmissionService = serviceClient.implement[AdmissionService]
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
   // a given sharding entity typeKey.
