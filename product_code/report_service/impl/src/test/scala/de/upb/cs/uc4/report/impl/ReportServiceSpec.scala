@@ -6,6 +6,8 @@ import akka.util.ByteString
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest }
+import de.upb.cs.uc4.admission.AdmissionServiceStub
+import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.course.CourseServiceStub
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
@@ -45,6 +47,7 @@ class ReportServiceSpec extends AsyncWordSpec
         override lazy val courseService: CourseServiceStub = new CourseServiceStub
         override lazy val matriculationService: MatriculationServiceStub = new MatriculationServiceStub
         override lazy val userService: UserServiceStub = new UserServiceStubWithTopic(internDeletionStub)
+        override lazy val admissionService: AdmissionService = new AdmissionServiceStub
       }
     }
 
