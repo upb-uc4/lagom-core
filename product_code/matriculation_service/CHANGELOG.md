@@ -1,3 +1,9 @@
+# [v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.14.2...matriculation-v0.15.1) (2020-01-06)
+## Feature
+- Redeploy for compatibility reasons
+## Refactor
+## Bugfix
+
 # [v0.14.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.14.1...matriculation-v0.14.2) (2020-12-15)
 ## Feature
  - Changed endpoints to newly defined api
