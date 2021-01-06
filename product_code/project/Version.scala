@@ -9,7 +9,7 @@ object Version {
     "course_service" -> "v0.14.1",
     "examreg_service" -> "v0.15.0",
     "hyperledger_api" -> "0.14.5",
-    "matriculation_service" -> "v0.14.2",
+    "matriculation_service" -> "v0.15.1",
     "user_service" -> "v0.14.1"
   )
 
