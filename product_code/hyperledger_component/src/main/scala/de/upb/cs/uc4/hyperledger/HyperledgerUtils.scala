@@ -66,10 +66,12 @@ object HyperledgerUtils {
         case ErrorType.HLNotFound => new UC4NonCriticalException(404, genericError)
         case ErrorType.HLConflict => new UC4NonCriticalException(409, genericError)
         case ErrorType.HLUnprocessableLedgerState => new UC4CriticalException(500, genericError, null)
+        case ErrorType.HLInsufficientApprovals => new UC4NonCriticalException(422, genericError)
         case _ => UC4Exception.InternalServerError("Unknown GenericError", s"Hyperledger uses a new ErrorType ${genericError.`type`}")
       }
       case detailedError: DetailedError => detailedError.`type` match {
         case ErrorType.HLUnprocessableEntity => new UC4NonCriticalException(422, detailedError)
+        case ErrorType.HLInvalidEntity => new UC4NonCriticalException(422, detailedError)
         case _ => UC4Exception.InternalServerError("Unknown DetailedError", s"Hyperledger uses a new ErrorType ${detailedError.`type`}")
       }
       case transactionError: TransactionError => transactionError.`type` match {

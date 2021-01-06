@@ -56,7 +56,8 @@ object RegexCollection {
     val dateRegex: Regex = """((((([0-9]{2})(0[48]|[2468][048]|[13579][26])|(([2468][048]|[13579][26])00))-(02-29))|(([0-9]{4})-(((0[13578]|1[02])-(31))|((0[13-9]|1[0-2])-(29|30))|((0[1-9])|(1[0-2]))-(0[1-9]|1[0-9]|2[0-8])))))""".stripMargin.r
 
     val longTextRegex: Regex = """[\s\S]{0,10000}""".r
-    val nameRegex: Regex = """[\s\S]{1,100}""".r // Allowed characters for name: 1-100 of everything
+    val nonEmpty100CharRegex: Regex = """[\s\S]{1,100}""".r // Allowed characters for name: 1-100 of everything
+    val nonEmptyCharRegex: Regex = """[\s\S]{1,10000}""".r // Allowed characters for name: 1-10000 of everything
   }
 
 }

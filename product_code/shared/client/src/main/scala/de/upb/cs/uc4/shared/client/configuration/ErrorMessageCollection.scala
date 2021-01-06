@@ -56,9 +56,10 @@ object ErrorMessageCollection {
   }
 
   object Commons {
-    val dateMessage: String = "Birthdate must be of the following format \"yyyy-mm-dd\"."
+    val dateMessage: String = "Date must be of the following format \"yyyy-mm-dd\"."
     val longTextMessage: String = "Text must contain 0 to 10000 characters."
-    val nameMessage: String = "Name must contain between 1 and 100 characters."
+    val nonEmpty100CharRegex: String = "Field must contain between 1 and 100 characters."
+    val nonEmptyCharRegex: String = "Field must contain between 1 and 10000 characters."
   }
 
 }
