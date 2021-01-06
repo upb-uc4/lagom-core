@@ -10,7 +10,6 @@ import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError }
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.libs.json.{ Format, Json }
-import de.upb.cs.uc4.shared.client.JsonUtility._
 
 /** The current state of a Report */
 case class ReportState(reportWrapper: ReportWrapper) {
@@ -24,10 +23,10 @@ case class ReportState(reportWrapper: ReportWrapper) {
   def applyCommand(cmd: ReportCommand): ReplyEffect[ReportEvent, ReportState] =
     cmd match {
       case GetReport(replyTo) => Effect.reply(replyTo)(reportWrapper)
-      case SetReport(report, timestamp, replyTo) =>
+      case SetReport(report, profilePicture, thumbnail, timestamp, replyTo) =>
         reportWrapper.state match {
           case ReportStateEnum.Ready     => Effect.reply(replyTo)(Rejected(500, GenericError(ErrorType.InternalServer, "Trying to set an already existing report.")))
-          case ReportStateEnum.Preparing => Effect.persist(OnSetReport(report, timestamp)).thenReply(replyTo) { _ => Accepted.default }
+          case ReportStateEnum.Preparing => Effect.persist(OnSetReport(report, profilePicture, thumbnail, timestamp)).thenReply(replyTo) { _ => Accepted.default }
           case ReportStateEnum.None      => Effect.reply(replyTo)(Accepted("Report already exists."))
         }
       case DeleteReport(replyTo) =>
@@ -53,14 +52,14 @@ case class ReportState(reportWrapper: ReportWrapper) {
     */
   def applyEvent(evt: ReportEvent): ReportState =
     evt match {
-      case OnSetReport(report, timestamp) if timestamp == reportWrapper.timestamp.getOrElse("") =>
-        copy(ReportWrapper(Some(report), reportWrapper.timestamp, ReportStateEnum.Ready))
-      case OnSetReport(report, timestamp) =>
+      case OnSetReport(report, profilePicture, thumbnail, timestamp) if timestamp == reportWrapper.timestamp.getOrElse("") =>
+        copy(ReportWrapper(Some(report), Some(profilePicture), Some(thumbnail), reportWrapper.timestamp, ReportStateEnum.Ready))
+      case OnSetReport(_, _, _, _) =>
         this
       case OnDeleteReport(_) =>
         initial
       case OnPrepareReport(timestamp) =>
-        copy(ReportWrapper(None, Some(timestamp), ReportStateEnum.Preparing))
+        copy(ReportWrapper(None, None, None, Some(timestamp), ReportStateEnum.Preparing))
       case _ =>
         println("Unknown Event")
         this
@@ -71,7 +70,7 @@ object ReportState {
 
   /** The initial state. This is used if there is no snapshotted state to be found.
     */
-  def initial: ReportState = ReportState(ReportWrapper(None, None, ReportStateEnum.None))
+  def initial: ReportState = ReportState(ReportWrapper(None, None, None, None, ReportStateEnum.None))
 
   /** The [[akka.persistence.typed.scaladsl.EventSourcedBehavior]] instances (aka Aggregates) run on sharded actors inside the Akka Cluster.
     * When sharding actors and distributing them across the cluster, each aggregate is

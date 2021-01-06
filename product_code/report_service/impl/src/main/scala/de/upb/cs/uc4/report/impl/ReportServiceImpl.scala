@@ -1,8 +1,5 @@
 package de.upb.cs.uc4.report.impl
 
-import java.io.FileWriter
-import java.nio.file.{ Files, Paths }
-import java.util.Calendar
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
@@ -20,7 +17,7 @@ import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.report.api.ReportService
-import de.upb.cs.uc4.report.impl.actor.{ Report, ReportState, ReportStateEnum, ReportWrapper }
+import de.upb.cs.uc4.report.impl.actor.{ ReportState, ReportStateEnum, ReportWrapper, TextReport }
 import de.upb.cs.uc4.report.impl.commands._
 import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, _ }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
@@ -31,6 +28,10 @@ import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 import play.api.libs.json.Json
 
+import java.io.{ ByteArrayInputStream, FileWriter }
+import java.nio.file.{ Files, Paths }
+import java.util.Calendar
+import javax.imageio.ImageIO
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.reflect.io.Directory
@@ -61,6 +62,16 @@ class ReportServiceImpl(
     val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
       case exception: Exception =>
         log.error(s"Prepare of $username at $timestamp ; userFuture failed", exception)
+        throw exception
+    }
+    val profilePictureFuture = userService.getImage(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+      case exception: Exception =>
+        log.error(s"Prepare of $username at $timestamp ; profilePictureFuture failed", exception)
+        throw exception
+    }
+    val thumbnailFuture = userService.getThumbnail(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+      case exception: Exception =>
+        log.error(s"Prepare of $username at $timestamp ; thumbnailFuture failed", exception)
         throw exception
     }
     val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
@@ -103,6 +114,8 @@ class ReportServiceImpl(
 
     for {
       user <- userFuture
+      profilePicture <- profilePictureFuture
+      thumbnail <- thumbnailFuture
       certificate <- certificateFuture
       jsonEnrollmentId <- enrollmentIdFuture
       encryptedPrivateKey <- encryptedPrivateKeyFuture
@@ -110,8 +123,8 @@ class ReportServiceImpl(
       courses <- coursesFuture
       admissions <- admissionFuture
     } yield {
-      val report = Report(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey, immatriculationData, courses, admissions)
-      entityRef(username).ask[Confirmation](replyTo => SetReport(report, timestamp, replyTo)).map {
+      val report = TextReport(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey, immatriculationData, courses, admissions, timestamp)
+      entityRef(username).ask[Confirmation](replyTo => SetReport(report, profilePicture.toArray, thumbnail.toArray, timestamp, replyTo)).map {
         case Accepted(_) =>
         case Rejected(statusCode, reason) =>
           log.error(s"Report of $username can't be persisted.", UC4Exception(statusCode, reason))
@@ -129,25 +142,36 @@ class ReportServiceImpl(
   def convertReadyReportToZip(username: String): Future[ByteString] =
     entityRef(username).ask[ReportWrapper](replyTo => GetReport(replyTo)).map {
       reportWrapper =>
-        val report = reportWrapper
+        val textReport = reportWrapper.textReport
         val zipPath = Paths.get(System.getProperty("java.io.tmpdir"), s"report_$username", "report.zip")
         val zipFile = new ZipFile(zipPath.toFile)
 
         val folderPath = Paths.get(System.getProperty("java.io.tmpdir"), s"report_$username")
         val reportPath = Paths.get(folderPath.toString, "userdata.json")
+        val profilePicturePath = Paths.get(folderPath.toString, "profilePicture.jpeg")
+        val thumbnailPath = Paths.get(folderPath.toString, "thumbnail.jpeg")
 
         if (!folderPath.toFile.exists()) {
           folderPath.toFile.mkdirs()
         }
 
-        val reportTxt = Json.prettyPrint(Json.toJson(report))
+        val reportTxt = Json.prettyPrint(Json.toJson(textReport))
+
         var array: Array[Byte] = null
 
         Using(new FileWriter(reportPath.toFile)) { writer =>
           writer.write(reportTxt)
         }
 
+        val profilePicture = ImageIO.read(new ByteArrayInputStream(reportWrapper.profilePicture.get))
+        ImageIO.write(profilePicture, "jpeg", profilePicturePath.toFile)
+
+        val thumbnail = ImageIO.read(new ByteArrayInputStream(reportWrapper.thumbnail.get))
+        ImageIO.write(thumbnail, "jpeg", thumbnailPath.toFile)
+
         zipFile.addFile(reportPath.toFile)
+        zipFile.addFile(profilePicturePath.toFile)
+        zipFile.addFile(thumbnailPath.toFile)
 
         array = Files.readAllBytes(zipFile.getFile.toPath)
 
@@ -205,6 +229,7 @@ class ReportServiceImpl(
       }
   }
 
+  /** Delete a user's report */
   override def deleteUserReport(username: String): ServiceCall[NotUsed, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUser, _) =>
       ServerServiceCall { (_, _) =>

@@ -7,16 +7,17 @@ import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.user.model.user.User
 import play.api.libs.json.{ Format, Json }
 
-case class Report(
+case class TextReport(
     user: User,
     certificate: Option[String],
     enrollmentId: String,
     encryptedPrivateKey: Option[EncryptedPrivateKey],
     immatriculationData: Option[ImmatriculationData],
     courses: Option[Seq[Course]],
-    admissions: Option[Seq[CourseAdmission]]
+    admissions: Option[Seq[CourseAdmission]],
+    timestamp: String
 )
 
-object Report {
-  implicit val format: Format[Report] = Json.format
+object TextReport {
+  implicit val format: Format[TextReport] = Json.format
 }

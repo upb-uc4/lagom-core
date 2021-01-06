@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.report.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
-import de.upb.cs.uc4.report.impl.actor.{ Report, ReportState, ReportWrapper }
+import de.upb.cs.uc4.report.impl.actor.{ ReportState, ReportWrapper, TextReport }
 import de.upb.cs.uc4.report.impl.events.{ OnDeleteReport, OnPrepareReport, OnSetReport }
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
@@ -25,6 +25,6 @@ object ReportSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[OnPrepareReport],
     //Data
     JsonSerializer[ReportWrapper],
-    JsonSerializer[Report]
+    JsonSerializer[TextReport]
   )
 }
