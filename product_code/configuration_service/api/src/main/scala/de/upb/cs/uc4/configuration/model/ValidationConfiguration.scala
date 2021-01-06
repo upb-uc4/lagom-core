@@ -12,7 +12,9 @@ case class ValidationConfiguration(
     lecturer: LecturerRegex,
     address: AddressRegex,
     examinationRegulation: ExaminationRegulationRegex,
-    module: ModuleRegex
+    module: ModuleRegex,
+    courseAdmission: CourseAdmissionRegex,
+    dropAdmission: DropAdmissionRegex
 )
 
 case class ValidationPair(regex: String, message: String)
@@ -60,6 +62,14 @@ object ValidationConfiguration {
   object ModuleRegex {
     implicit val format: Format[ModuleRegex] = Json.format
   }
+  case class CourseAdmissionRegex(courseId: ValidationPair, moduleId: ValidationPair)
+  object CourseAdmissionRegex {
+    implicit val format: Format[CourseAdmissionRegex] = Json.format
+  }
+  case class DropAdmissionRegex(admissionId: ValidationPair)
+  object DropAdmissionRegex {
+    implicit val format: Format[DropAdmissionRegex] = Json.format
+  }
 
   def build: ValidationConfiguration = {
     ValidationConfiguration(
@@ -71,18 +81,18 @@ object ValidationConfiguration {
         ValidationPair(RegexCollection.PostMessageCSR.csrRegex.regex, ErrorMessageCollection.PostMessageCSR.csrMessage)
       ),
       CourseRegex(
-        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.Course.courseNameMessage), //courseName
+        ValidationPair(RegexCollection.Commons.nonEmpty100CharRegex.regex, ErrorMessageCollection.Course.courseNameMessage), //courseName
         ValidationPair(RegexCollection.Commons.dateRegex.regex, ErrorMessageCollection.Course.startDateMessage),
         ValidationPair(RegexCollection.Commons.dateRegex.regex, ErrorMessageCollection.Course.endDateMessage),
         ValidationPair(RegexCollection.Course.ectsRegex.regex, ErrorMessageCollection.Course.ectsMessage),
-        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.Course.lecturerNameMessage), //lecturerId
+        ValidationPair(RegexCollection.Commons.nonEmpty100CharRegex.regex, ErrorMessageCollection.Course.lecturerNameMessage), //lecturerId
         ValidationPair(RegexCollection.Course.maxParticipantsRegex.regex, ErrorMessageCollection.Course.maxParticipantsMessage),
         ValidationPair(RegexCollection.Commons.longTextRegex.regex, ErrorMessageCollection.Commons.longTextMessage)
       ),
       UserRegex(
         ValidationPair(RegexCollection.User.usernameRegex.regex, ErrorMessageCollection.User.usernameMessage),
-        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.User.firstNameMessage),
-        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.User.lastNameMessage),
+        ValidationPair(RegexCollection.Commons.nonEmpty100CharRegex.regex, ErrorMessageCollection.User.firstNameMessage),
+        ValidationPair(RegexCollection.Commons.nonEmpty100CharRegex.regex, ErrorMessageCollection.User.lastNameMessage),
         ValidationPair(RegexCollection.User.mailRegex.regex, ErrorMessageCollection.User.mailMessage),
         ValidationPair(RegexCollection.User.phoneNumberRegex.regex, ErrorMessageCollection.User.phoneNumberMessage),
         ValidationPair(RegexCollection.Commons.dateRegex.regex, ErrorMessageCollection.Commons.dateMessage)
@@ -97,11 +107,18 @@ object ValidationConfiguration {
         ValidationPair(RegexCollection.Address.nameRegex.regex, ErrorMessageCollection.Address.cityNameMessage)
       ),
       ExaminationRegulationRegex(
-        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.ExaminationRegulation.nameMessage)
+        ValidationPair(RegexCollection.Commons.nonEmpty100CharRegex.regex, ErrorMessageCollection.ExaminationRegulation.nameMessage)
       ),
       ModuleRegex(
         ValidationPair(RegexCollection.Module.idRegex.regex, ErrorMessageCollection.Module.idMessage),
-        ValidationPair(RegexCollection.Commons.nameRegex.regex, ErrorMessageCollection.Module.nameMessage)
+        ValidationPair(RegexCollection.Commons.nonEmpty100CharRegex.regex, ErrorMessageCollection.Module.nameMessage)
+      ),
+      CourseAdmissionRegex(
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex),
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex)
+      ),
+      DropAdmissionRegex(
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex)
       )
     )
 

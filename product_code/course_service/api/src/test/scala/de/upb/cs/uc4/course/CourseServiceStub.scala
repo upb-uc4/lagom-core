@@ -28,10 +28,13 @@ class CourseServiceStub extends CourseService with DefaultTestCourses {
 
   /** Add a new course to the database */
   override def addCourse(): ServiceCall[Course, Course] = ServiceCall {
-    course =>
-      val courseToAdd = setUuid(course)
-      courses :+= courseToAdd
-      Future.successful(courseToAdd)
+    course => Future.successful(addCourse(course))
+  }
+
+  def addCourse(course: Course): Course = {
+    val courseToAdd = setUuid(course)
+    courses :+= courseToAdd
+    courseToAdd
   }
 
   /** Sets a course's UUID*/

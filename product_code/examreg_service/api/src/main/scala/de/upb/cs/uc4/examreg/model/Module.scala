@@ -21,7 +21,7 @@ case class Module(id: String, name: String) {
     var errors = List[SimpleError]()
 
     val idRegex = RegexCollection.Module.idRegex
-    val nameRegex = RegexCollection.Commons.nameRegex
+    val nameRegex = RegexCollection.Commons.nonEmpty100CharRegex
 
     if (!idRegex.matches(id)) {
       errors :+= SimpleError("id", ErrorMessageCollection.Module.idMessage)

@@ -1,3 +1,9 @@
+# [WIP - v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.15.0...configuration-v0.15.1) (2021-XX-XX)
+## Feature
+- Added validation information of CourseAdmission object to ValidationConfiguration
+## Refactor
+## Bugfix
+
 # [v0.15.0](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.14.2...configuration-v0.15.0) (2020-12-20)
 ## Feature
 ## Refactor
