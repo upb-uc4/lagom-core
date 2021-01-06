@@ -1,4 +1,10 @@
-# [WIP - v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.14.1...user-v0.15.1) (2020-XX-XX)
+# [v0.15.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.15.1...user-v0.15.2) (2020-01-06)
+## Feature
+## Refactor
+## Bugfix
+- Fixed bug that prevented lecturers from deleting themselves
+
+# [v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.14.1...user-v0.15.1) (2020-01-06)
 ## Feature
 ## Refactor
 - Added more precise logs for errors in topics

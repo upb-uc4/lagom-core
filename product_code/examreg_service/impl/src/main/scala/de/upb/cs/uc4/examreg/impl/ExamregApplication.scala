@@ -12,7 +12,7 @@ import de.upb.cs.uc4.examreg.impl.ExamregApplication.refreshCache
 import de.upb.cs.uc4.examreg.impl.actor.{ ExamregDatabaseBehaviour, ExamregHyperledgerBehaviour, ExamregState }
 import de.upb.cs.uc4.examreg.impl.commands.{ CreateExamregDatabase, GetAllExamregsHyperledger }
 import de.upb.cs.uc4.examreg.impl.readside.{ ExamregDatabase, ExamregEventProcessor }
-import de.upb.cs.uc4.examreg.model.ExaminationRegulation
+import de.upb.cs.uc4.examreg.model.ExaminationRegulationsWrapper
 import de.upb.cs.uc4.hyperledger.HyperledgerComponent
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.UC4Application
@@ -69,8 +69,8 @@ object ExamregApplication {
   /** Helper method to refresh the examination regulation cache */
   def refreshCache(clusterSharding: ClusterSharding, log: Logger)(implicit timeout: Timeout, ec: ExecutionContext): Runnable = () => {
     clusterSharding.entityRefFor(ExamregHyperledgerBehaviour.typeKey, "Cache")
-      .askWithStatus[Seq[ExaminationRegulation]](replyTo => GetAllExamregsHyperledger(replyTo)).map {
-        _.map { examinationRegulation =>
+      .askWithStatus[ExaminationRegulationsWrapper](replyTo => GetAllExamregsHyperledger(replyTo)).map { wrapper =>
+        wrapper.examinationRegulations.map { examinationRegulation =>
           clusterSharding.entityRefFor(ExamregState.typeKey, examinationRegulation.name).ask(replyTo => CreateExamregDatabase(examinationRegulation, replyTo)).map {
             case Accepted(_)                  => log.debug("Refreshed Cache of {} ", examinationRegulation.name)
             case Rejected(statusCode, reason) => log.error("Encountered Error during caching.", UC4Exception(statusCode, reason))
