@@ -2,11 +2,13 @@ package de.upb.cs.uc4.matriculation.api
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
-import com.lightbend.lagom.scaladsl.api.transport.Method
+import com.lightbend.lagom.scaladsl.api.transport.{ Method, RequestHeader }
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
+
+import scala.concurrent.Future
 
 /** The MatriculationService interface.
   *
@@ -30,6 +32,9 @@ trait MatriculationService extends UC4HyperledgerService {
 
   /** Returns the ImmatriculationData of a student with the given username */
   def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData]
+
+  /** updates the latest matriculation of the given user */
+  def updateLatestMatriculation(username: String, header: RequestHeader): Future[Done]
 
   /** Allows POST */
   def allowedPost: ServiceCall[NotUsed, Done]

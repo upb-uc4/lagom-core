@@ -79,7 +79,7 @@ class MatriculationServiceImpl(
     }
 
   /** Update the latest matriculation of the given user */
-  private def updateLatestMatriculation(username: String, header: RequestHeader): Future[Done] = {
+  def updateLatestMatriculation(username: String, header: RequestHeader): Future[Done] = {
     certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { json =>
       entityRef.askWithStatus(replyTo => GetMatriculationData(json.id, replyTo)).flatMap { immatriculationData =>
         val latestMatriculation = Utils.findLatestSemester(

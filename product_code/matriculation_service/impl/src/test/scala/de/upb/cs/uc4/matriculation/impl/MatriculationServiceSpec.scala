@@ -1,5 +1,7 @@
 package de.upb.cs.uc4.matriculation.impl
 
+import akka.Done
+import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
@@ -13,9 +15,11 @@ import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatric
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
+import de.upb.cs.uc4.user.model.user.Student
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
+import org.bouncycastle.util.test.TestFailedException
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{ BeforeAndAfterAll, PrivateMethodTester }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import play.api.libs.json.Json
@@ -23,11 +27,13 @@ import play.api.libs.json.Json
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.util.Base64
+import scala.concurrent.Future
 import scala.language.reflectiveCalls
 
 /** Tests for the MatriculationService */
 class MatriculationServiceSpec extends AsyncWordSpec
-  with UC4SpecUtils with Matchers with BeforeAndAfterAll with DefaultTestUsers with DefaultTestExamRegs {
+  with UC4SpecUtils with Matchers with BeforeAndAfterAll with DefaultTestUsers with DefaultTestExamRegs
+  with PrivateMethodTester {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup.withCluster()
@@ -250,6 +256,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
 
   val client: MatriculationService = server.serviceClient.implement[MatriculationService]
   val certificate: CertificateServiceStub = server.application.certificateService
+  val userService: UserServiceStub = server.application.userService
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -387,6 +394,25 @@ class MatriculationServiceSpec extends AsyncWordSpec
           }.andThen {
             case _ => cleanup()
           }
+      }
+    }
+
+    "update the latest matriculation correctly" in {
+      certificate.setup(student0.username)
+      userService.resetToDefaults()
+      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+        prepare(Seq(
+          ImmatriculationData(
+            jsonId.id,
+            Seq(SubjectMatriculation(examReg0.name, Seq("SS2020")))
+          )
+        ))
+        client.updateLatestMatriculation(student0.username, addAuthorizationHeader(student0.username)(RequestHeader.Default)).flatMap { _ =>
+          userService.getUser(student0.username).invoke().map {
+            case student: Student => student.latestImmatriculation should ===("SS2020")
+            case _ => fail()
+          }
+        }
       }
     }
 

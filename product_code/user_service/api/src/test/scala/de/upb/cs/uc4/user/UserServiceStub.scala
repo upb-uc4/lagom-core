@@ -99,7 +99,23 @@ class UserServiceStub extends UserService with DefaultTestUsers {
 
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
 
-  override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall { _ => Future.successful(Done) }
+  override def updateLatestMatriculation(): ServiceCall[MatriculationUpdate, Done] = ServiceCall {
+    matriculationUpdate =>
+      val optUser = users.find(_.username == matriculationUpdate.username)
+      optUser match {
+        case Some(user) =>
+          user match {
+            case student: Student =>
+              val updatedUser = student.copy(latestImmatriculation = matriculationUpdate.semester)
+              users = users.filter(_.username != matriculationUpdate.username)
+              users :+= updatedUser
+            case _ =>
+          }
+          Future.successful(Done)
+        case None =>
+          Future.failed(UC4Exception.NotFound)
+      }
+  }
 
   override def addUser(): ServiceCall[PostMessageUser, User] = ServiceCall { pmu =>
     val rnd = new Random
