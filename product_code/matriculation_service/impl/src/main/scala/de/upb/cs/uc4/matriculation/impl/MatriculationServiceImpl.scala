@@ -5,7 +5,7 @@ import akka.stream.Materializer
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, RequestHeader, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
@@ -27,16 +27,16 @@ import de.upb.cs.uc4.user.model.user.Student
 import play.api.Environment
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the MatriculationService */
 class MatriculationServiceImpl(
-    clusterSharding: ClusterSharding,
-    userService: UserService,
-    examregService: ExamregService,
-    certificateService: CertificateService,
-    override val environment: Environment
-)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
+                                clusterSharding: ClusterSharding,
+                                userService: UserService,
+                                examregService: ExamregService,
+                                certificateService: CertificateService,
+                                override val environment: Environment
+                              )(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
   extends MatriculationService {
 
   /** Looks up the entity for the given ID */
@@ -64,19 +64,33 @@ class MatriculationServiceImpl(
   /** Submits a transaction to matriculate a student */
   override def submitMatriculationTransaction(username: String): ServiceCall[SignedTransaction, Done] =
     identifiedAuthenticated[SignedTransaction, Done](AuthenticationRole.Student) { (authUser, _) =>
-      ServerServiceCall { (_, signedTransaction) =>
+      ServerServiceCall { (header, signedTransaction) =>
         if (authUser != username.trim) {
           throw UC4Exception.OwnerMismatch
         }
-
         entityRef.askWithStatus[Confirmation](replyTo => SubmitTransaction(signedTransaction, replyTo)).map {
           case Accepted(_) =>
+            updateLatestMatriculation(username, header)
             (ResponseHeader(202, MessageProtocol.empty, List()), Done)
           case Rejected(statusCode, reason) =>
             throw UC4Exception(statusCode, reason)
         }.recover(handleException("Submit transaction failed"))
       }
     }
+
+  /** Update the latest matriculation of the given user */
+  private def updateLatestMatriculation(username: String, header: RequestHeader): Future[Done] = {
+    certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { json =>
+      entityRef.askWithStatus(replyTo => GetMatriculationData(json.id, replyTo)).flatMap { immatriculationData =>
+        val latestMatriculation = Utils.findLatestSemester(
+          immatriculationData.matriculationStatus.flatMap { subjectMatriculation =>
+            subjectMatriculation.semesters
+          }.distinct
+        )
+        userService.updateLatestMatriculation().handleRequestHeader(addAuthenticationHeader(header)).invoke(MatriculationUpdate(username, latestMatriculation))
+      }
+    }.recover(handleException("Update latest matriculation failed with Exception."))
+  }
 
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
@@ -94,7 +108,7 @@ class MatriculationServiceImpl(
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
-          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
 
         examregService.getExaminationRegulations(Some(matriculationProposal.matriculation.map(_.fieldOfStudy).mkString(",")), Some(true)).invoke().flatMap {
@@ -139,20 +153,20 @@ class MatriculationServiceImpl(
                           }.recover(handleException("Creation of add entry proposal failed"))
 
                       }.recoverWith {
-                        case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
-                          val data = ImmatriculationData(
-                            enrollmentId,
-                            matriculationProposal.matriculation
-                          )
-                          entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddMatriculationData(certificate, data, replyTo)).map {
-                            array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
-                          }.recover(handleException("Creation of add matriculation data proposal failed"))
+                      case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
+                        val data = ImmatriculationData(
+                          enrollmentId,
+                          matriculationProposal.matriculation
+                        )
+                        entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddMatriculationData(certificate, data, replyTo)).map {
+                          array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
+                        }.recover(handleException("Creation of add matriculation data proposal failed"))
 
-                        case uc4Exception: UC4Exception => throw uc4Exception
+                      case uc4Exception: UC4Exception => throw uc4Exception
 
-                        case ex: Throwable =>
-                          throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
-                      }
+                      case ex: Throwable =>
+                        throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
+                    }
                   }
               }
         }
@@ -194,7 +208,7 @@ class MatriculationServiceImpl(
         }
         catch {
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
-          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
 
         if (validationList.nonEmpty) {
@@ -230,27 +244,27 @@ class MatriculationServiceImpl(
                         case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
                       }.recover(handleException("Error in AddEntriesToMatriculationData"))
                   }.recoverWith {
-                    case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
-                      val data = ImmatriculationData(
-                        enrollmentId,
-                        message.matriculation
-                      )
-                      entityRef.askWithStatus[Confirmation](replyTo => AddMatriculationData(data, replyTo)).map {
-                        case Accepted(_) =>
-                          userService.updateLatestMatriculation().invoke(MatriculationUpdate(
-                            username,
-                            Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
-                          ))
-                          (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/$username"))), Done)
+                  case uc4Exception: UC4Exception if uc4Exception.errorCode == 404 =>
+                    val data = ImmatriculationData(
+                      enrollmentId,
+                      message.matriculation
+                    )
+                    entityRef.askWithStatus[Confirmation](replyTo => AddMatriculationData(data, replyTo)).map {
+                      case Accepted(_) =>
+                        userService.updateLatestMatriculation().invoke(MatriculationUpdate(
+                          username,
+                          Utils.findLatestSemester(message.matriculation.flatMap(_.semesters))
+                        ))
+                        (ResponseHeader(201, MessageProtocol.empty, List(("Location", s"$pathPrefix/history/$username"))), Done)
 
-                        case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
-                      }.recover(handleException("Error in AddMatriculationData"))
+                      case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+                    }.recover(handleException("Error in AddMatriculationData"))
 
-                    case uc4Exception: UC4Exception => throw uc4Exception
+                  case uc4Exception: UC4Exception => throw uc4Exception
 
-                    case ex: Throwable =>
-                      throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
-                  }
+                  case ex: Throwable =>
+                    throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
+                }
               }
           }
       }
