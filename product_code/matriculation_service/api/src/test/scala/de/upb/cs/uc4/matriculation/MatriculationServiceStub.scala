@@ -6,7 +6,7 @@ import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
 import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
+import de.upb.cs.uc4.shared.client._
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -53,6 +53,9 @@ class MatriculationServiceStub extends MatriculationService {
       case None       => Future.failed(UC4Exception.NotFound)
     }
   }
+
+  /** Updates the latest matriculation of the given user */
+  override def updateLatestMatriculation(username: String): ServiceCall[NotUsed, Done] = { _ => Future.successful(Done) }
 
   /** Allows POST */
   override def allowedPost: ServiceCall[NotUsed, Done] = { _ => Future.successful(Done) }

@@ -1,7 +1,5 @@
 package de.upb.cs.uc4.matriculation.impl
 
-import akka.Done
-import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
@@ -17,17 +15,15 @@ import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exc
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.model.user.Student
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
-import org.bouncycastle.util.test.TestFailedException
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
-import org.scalatest.{ BeforeAndAfterAll, PrivateMethodTester }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatest.{ BeforeAndAfterAll, PrivateMethodTester }
 import play.api.libs.json.Json
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.util.Base64
-import scala.concurrent.Future
 import scala.language.reflectiveCalls
 
 /** Tests for the MatriculationService */
@@ -407,10 +403,10 @@ class MatriculationServiceSpec extends AsyncWordSpec
             Seq(SubjectMatriculation(examReg0.name, Seq("SS2020")))
           )
         ))
-        client.updateLatestMatriculation(student0.username, addAuthorizationHeader(student0.username)(RequestHeader.Default)).flatMap { _ =>
+        client.updateLatestMatriculation(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().flatMap { _ =>
           userService.getUser(student0.username).invoke().map {
             case student: Student => student.latestImmatriculation should ===("SS2020")
-            case _ => fail()
+            case _                => fail()
           }
         }
       }
