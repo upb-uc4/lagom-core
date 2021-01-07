@@ -404,7 +404,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
           )
         ))
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
-          .invoke(createSingleMatriculation(examReg0.name, "WS2021")).flatMap {
+          .invoke(createSingleMatriculation(examReg0.name, "SS2021")).flatMap {
             proposal =>
 
               client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
