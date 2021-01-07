@@ -7,11 +7,12 @@ import akka.pattern.StatusReply
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.commands._
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionTrait
-import de.upb.cs.uc4.hyperledger.exceptions.traits.OperationExceptionTrait
 import de.upb.cs.uc4.hyperledger.utilities.EnrollmentManager
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.messages.Accepted
 import org.slf4j.{ Logger, LoggerFactory }
+
+import scala.util.Random
 
 trait HyperledgerDefaultActorFactory[Connection <: ConnectionTrait] extends HyperledgerAdminParts {
 
@@ -100,5 +101,5 @@ trait HyperledgerActorObject {
   val typeKey: EntityTypeKey[HyperledgerBaseCommand]
 
   /** The reference to the entity */
-  val entityId: String
+  val entityId: String = Random.alphanumeric.take(100).mkString
 }
