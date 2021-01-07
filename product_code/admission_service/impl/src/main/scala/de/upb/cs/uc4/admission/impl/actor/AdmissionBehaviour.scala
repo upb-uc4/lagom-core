@@ -50,7 +50,5 @@ class AdmissionBehaviour(val config: Config) extends HyperledgerDefaultActorFact
 object AdmissionBehaviour extends HyperledgerActorObject {
   /** The EntityTypeKey of this actor */
   override val typeKey: EntityTypeKey[HyperledgerBaseCommand] = EntityTypeKey[HyperledgerBaseCommand]("uc4admission")
-  /** The reference to the entity */
-  override val entityId: String = "admission"
 }
 
