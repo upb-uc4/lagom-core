@@ -1,3 +1,9 @@
+# [v0.15.2](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.15.1...matriculation-v0.15.2) (2020-XX-XX)
+## Feature
+## Refactor
+## Bugfix
+- Fixed bug that prevented latest matriculation updates
+
 # [v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.14.2...matriculation-v0.15.1) (2020-01-06)
 ## Feature
 - Redeploy for compatibility reasons
