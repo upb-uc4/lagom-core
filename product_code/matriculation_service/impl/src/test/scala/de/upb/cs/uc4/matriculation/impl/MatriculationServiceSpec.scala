@@ -393,6 +393,38 @@ class MatriculationServiceSpec extends AsyncWordSpec
       }
     }
 
+    "extend matriculation data of an already existing field of study and update latest matriculation" in {
+      certificate.setup(student0.username)
+      userService.resetToDefaults()
+      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+        prepare(Seq(
+          ImmatriculationData(
+            jsonId.id,
+            Seq(SubjectMatriculation(examReg0.name, Seq("SS2020")))
+          )
+        ))
+        client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+          .invoke(createSingleMatriculation(examReg0.name, "WS2021")).flatMap {
+            proposal =>
+
+              client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+                .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
+
+                  client.submitMatriculationTransaction(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+                    .invoke(SignedTransaction(transaction.unsignedTransaction, "c2lnbmVk")).flatMap { _ =>
+
+                      userService.getUser(student0.username).invoke().map {
+                        case student: Student => student.latestImmatriculation should ===("SS2021")
+                        case _                => fail()
+                      }
+                    }
+                }
+          }.andThen {
+            case _ => cleanup()
+          }
+      }
+    }
+
     "update the latest matriculation correctly" in {
       certificate.setup(student0.username)
       userService.resetToDefaults()
