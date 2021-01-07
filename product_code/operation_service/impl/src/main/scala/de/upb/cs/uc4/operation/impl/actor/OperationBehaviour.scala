@@ -2,10 +2,10 @@ package de.upb.cs.uc4.operation.impl.actor
 
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import com.typesafe.config.Config
-import de.upb.cs.uc4.hyperledger.commands.{HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand}
+import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionOperation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationsTrait
-import de.upb.cs.uc4.hyperledger.{HyperledgerActorObject, HyperledgerDefaultActorFactory}
+import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
 
 class OperationBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionOperationsTrait] {
 

@@ -6,7 +6,7 @@ import de.upb.cs.uc4.user.impl.actor.UserState
 import de.upb.cs.uc4.user.impl.events._
 import de.upb.cs.uc4.user.model.Address
 import de.upb.cs.uc4.user.model.Role.Role
-import de.upb.cs.uc4.user.model.user.{Admin, Lecturer, Student, User}
+import de.upb.cs.uc4.user.model.user.{ Admin, Lecturer, Student, User }
 
 import scala.collection.immutable.Seq
 

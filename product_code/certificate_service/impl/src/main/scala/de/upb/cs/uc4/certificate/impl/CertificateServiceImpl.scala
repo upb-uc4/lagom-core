@@ -1,36 +1,36 @@
 package de.upb.cs.uc4.certificate.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
-import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry}
+import com.lightbend.lagom.scaladsl.persistence.{ EventStreamElement, PersistentEntityRegistry }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.certificate.impl.actor.{CertificateState, CertificateUser}
-import de.upb.cs.uc4.certificate.impl.commands.{CertificateCommand, GetCertificateUser, SetCertificateAndKey}
-import de.upb.cs.uc4.certificate.impl.events.{CertificateEvent, OnRegisterUser}
+import de.upb.cs.uc4.certificate.impl.actor.{ CertificateState, CertificateUser }
+import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
+import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnRegisterUser }
 import de.upb.cs.uc4.certificate.model._
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
-import de.upb.cs.uc4.hyperledger.{HyperledgerAdminParts, HyperledgerUtils}
+import de.upb.cs.uc4.hyperledger.{ HyperledgerAdminParts, HyperledgerUtils }
 import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
-import de.upb.cs.uc4.shared.client.exceptions.{DetailedError, ErrorType, UC4Exception, UC4NonCriticalException}
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
-import org.slf4j.{Logger, LoggerFactory}
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the UserService */
 class CertificateServiceImpl(
@@ -139,7 +139,6 @@ class CertificateServiceImpl(
         }
       }
   }
-
 
   /** Publishes every user that is registered at hyperledger */
   override def userRegistrationTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset { fromOffset =>

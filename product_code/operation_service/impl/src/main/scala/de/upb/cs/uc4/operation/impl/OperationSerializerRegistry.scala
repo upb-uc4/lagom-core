@@ -2,7 +2,7 @@ package de.upb.cs.uc4.operation.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.operation.model.OperationState.OperationState
-import de.upb.cs.uc4.operation.model.{ApprovalList, OperationData, TransactionInfo}
+import de.upb.cs.uc4.operation.model.{ ApprovalList, OperationData, TransactionInfo }
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq
