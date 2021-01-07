@@ -45,7 +45,6 @@ trait MatriculationService extends UC4HyperledgerService {
   def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done]
 
   /** Allows PUT */
-  @deprecated
   def allowedPut: ServiceCall[NotUsed, Done]
 
   final override def descriptor: Descriptor = {
@@ -56,11 +55,13 @@ trait MatriculationService extends UC4HyperledgerService {
         restCall(Method.POST, pathPrefix + "/matriculation/:username/unsigned_proposal", getMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/matriculation/:username/signed_transaction", submitMatriculationTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.GET, pathPrefix + "/history/:username", getMatriculationData _),
+        restCall(Method.PUT, pathPrefix + "/latest_matriculation/:username", updateLatestMatriculation _),
 
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/signed_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/unsigned_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/signed_transaction", allowedPost),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/signed_transaction", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/history/:username", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/latest_matriculation/:username", allowedPut _),
 
         //DEPRECATED
         restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
