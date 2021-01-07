@@ -3,7 +3,7 @@ package de.upb.cs.uc4.matriculation.api
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
+import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, ServiceCall }
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
@@ -66,6 +66,16 @@ trait MatriculationService extends UC4HyperledgerService {
         //DEPRECATED
         restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/:username", allowedPut _),
-      )
+      ).addAcls(
+          ServiceAcl.forMethodAndPathRegex(Method.POST, "\\Q" + pathPrefix + "/matriculation/\\E" + "(\\?([^\\/\\?]+))" + "\\Q/signed_proposal\\E"),
+          ServiceAcl.forMethodAndPathRegex(Method.POST, "\\Q" + pathPrefix + "/matriculation/\\E" + "(\\?([^\\/\\?]+))" + "\\Q/unsigned_proposal\\E"),
+          ServiceAcl.forMethodAndPathRegex(Method.POST, "\\Q" + pathPrefix + "/matriculation/\\E" + "(\\?([^\\/\\?]+))" + "\\Q/signed_transaction\\E"),
+          ServiceAcl.forMethodAndPathRegex(Method.GET, "\\Q" + pathPrefix + "/history/\\E" + "(\\?([^\\/\\?]+))"),
+
+          ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/matriculation/\\E" + "(\\?([^\\/\\?]+))" + "\\Q/signed_proposal\\E"),
+          ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/matriculation/\\E" + "(\\?([^\\/\\?]+))" + "\\Q/unsigned_proposal\\E"),
+          ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/matriculation/\\E" + "(\\?([^\\/\\?]+))" + "\\Q/signed_transaction\\E"),
+          ServiceAcl.forMethodAndPathRegex(Method.OPTIONS, "\\Q" + pathPrefix + "/history/\\E" + "(\\?([^\\/\\?]+))"),
+        )
   }
 }
