@@ -1,7 +1,5 @@
 package de.upb.cs.uc4.user.impl
 
-import java.util
-
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
@@ -33,6 +31,7 @@ import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
+import java.util
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
@@ -474,7 +473,7 @@ class UserServiceImpl(
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
-                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List())
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List())
                   .addHeader("ETag", checkImageETag(header, defaultProfilePicture)), ByteString(defaultProfilePicture))
             }
         }
@@ -492,7 +491,7 @@ class UserServiceImpl(
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
-                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List())
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List())
                   .addHeader("ETag", checkImageETag(header, defaultThumbnail)), ByteString(defaultThumbnail))
             }
         }

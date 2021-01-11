@@ -3,7 +3,7 @@ package de.upb.cs.uc4.report.api
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{ CircuitBreaker, Descriptor, Service, ServiceCall }
+import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.shared.client.UC4Service
 
 /** The ReportService interface.
@@ -22,7 +22,7 @@ trait ReportService extends UC4Service {
   /** Get all data for the specified user */
   def getUserReport(username: String): ServiceCall[NotUsed, ByteString]
 
-  /** Delete a User's report */
+  /** Delete a user's report */
   def deleteUserReport(username: String): ServiceCall[NotUsed, Done]
 
   /** Allows GET */

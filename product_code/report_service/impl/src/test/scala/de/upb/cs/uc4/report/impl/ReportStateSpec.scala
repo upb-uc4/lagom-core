@@ -1,15 +1,15 @@
 package de.upb.cs.uc4.report.impl
 
-import java.util.UUID
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import de.upb.cs.uc4.report.impl.actor.{ Report, ReportBehaviour, ReportStateEnum, ReportWrapper }
+import de.upb.cs.uc4.report.impl.actor.{ ReportBehaviour, ReportStateEnum, ReportWrapper, TextReport }
 import de.upb.cs.uc4.report.impl.commands.{ DeleteReport, GetReport, PrepareReport, SetReport }
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.DefaultTestUsers
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.UUID
 
 case class ReportStateSpec() extends ScalaTestWithActorTestKit(
   s"""
@@ -25,7 +25,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
       val probe = createTestProbe[ReportWrapper]()
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-1")))
       ref ! GetReport(probe.ref)
-      probe.expectMessage(ReportWrapper(None, None, ReportStateEnum.None))
+      probe.expectMessage(ReportWrapper(None, None, None, None, ReportStateEnum.None))
     }
 
     "prepare a report" in {
@@ -39,14 +39,14 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       val probe2 = createTestProbe[ReportWrapper]()
       ref ! GetReport(probe2.ref)
-      probe2.expectMessage(ReportWrapper(None, Some(timestamp), ReportStateEnum.Preparing))
+      probe2.expectMessage(ReportWrapper(None, None, None, Some(timestamp), ReportStateEnum.Preparing))
     }
 
     "set a report" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-3")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, timestamp)
 
       // Prepare report
       val probe1 = createTestProbe[Confirmation]()
@@ -55,20 +55,20 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       // Set report (preparing => ready)
       val probe2 = createTestProbe[Confirmation]()
-      ref ! SetReport(testReport, timestamp, probe2.ref)
+      ref ! SetReport(testReport, Array.emptyByteArray, Array.emptyByteArray, timestamp, probe2.ref)
       probe2.expectMessageType[Accepted]
 
       // Fetch ready report
       val probe3 = createTestProbe[ReportWrapper]()
       ref ! GetReport(probe3.ref)
-      probe3.expectMessage(ReportWrapper(Some(testReport), Some(timestamp), ReportStateEnum.Ready))
+      probe3.expectMessage(ReportWrapper(Some(testReport), Some(Array.emptyByteArray), Some(Array.emptyByteArray), Some(timestamp), ReportStateEnum.Ready))
     }
 
     "delete a report" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, timestamp)
 
       // Prepare
       val probe1 = createTestProbe[Confirmation]()
@@ -77,13 +77,13 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       // Set report (preparing => ready)
       val probe2 = createTestProbe[Confirmation]()
-      ref ! SetReport(testReport, timestamp, probe2.ref)
+      ref ! SetReport(testReport, Array.emptyByteArray, Array.emptyByteArray, timestamp, probe2.ref)
       probe2.expectMessageType[Accepted]
 
       // Fetch ready report
       val probe3 = createTestProbe[ReportWrapper]()
       ref ! GetReport(probe3.ref)
-      probe3.expectMessage(ReportWrapper(Some(testReport), Some(timestamp), ReportStateEnum.Ready))
+      probe3.expectMessage(ReportWrapper(Some(testReport), Some(Array.emptyByteArray), Some(Array.emptyByteArray), Some(timestamp), ReportStateEnum.Ready))
 
       // Delete Report
       val probe4 = createTestProbe[Confirmation]()
@@ -92,7 +92,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       val probe5 = createTestProbe[ReportWrapper]()
       ref ! GetReport(probe5.ref)
-      probe5.expectMessage(ReportWrapper(None, None, ReportStateEnum.None))
+      probe5.expectMessage(ReportWrapper(None, None, None, None, ReportStateEnum.None))
     }
 
     "not fail on trying to delete a non-existing report" in {
@@ -118,14 +118,14 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       val probe3 = createTestProbe[ReportWrapper]()
       ref ! GetReport(probe3.ref)
-      probe3.expectMessage(ReportWrapper(None, Some(timestamp), ReportStateEnum.Preparing))
+      probe3.expectMessage(ReportWrapper(None, None, None, Some(timestamp), ReportStateEnum.Preparing))
     }
 
     "not prepare a report that is in ready state" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, timestamp)
 
       // Prepare report
       val probe1 = createTestProbe[Confirmation]()
@@ -134,7 +134,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       // Set report (preparing => ready)
       val probe2 = createTestProbe[Confirmation]()
-      ref ! SetReport(testReport, timestamp, probe2.ref)
+      ref ! SetReport(testReport, Array.emptyByteArray, Array.emptyByteArray, timestamp, probe2.ref)
       probe2.expectMessageType[Accepted]
 
       // Prepare report again
@@ -146,7 +146,6 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
     "delete a report in preparing" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
 
       // Prepare
@@ -162,14 +161,14 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
       // Fetch preparing report
       val probe3 = createTestProbe[ReportWrapper]()
       ref ! GetReport(probe3.ref)
-      probe3.expectMessage(ReportWrapper(None, None, ReportStateEnum.None))
+      probe3.expectMessage(ReportWrapper(None, None, None, None, ReportStateEnum.None))
     }
 
     "delete a report in preparing and not be set afterwards" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestamp = "2020-12-14"
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, timestamp)
 
       // Prepare
       val probe1 = createTestProbe[Confirmation]()
@@ -183,21 +182,21 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       // Set report (preparing => ready)
       val probe3 = createTestProbe[Confirmation]()
-      ref ! SetReport(testReport, timestamp, probe3.ref)
+      ref ! SetReport(testReport, Array.emptyByteArray, Array.emptyByteArray, timestamp, probe3.ref)
       probe3.expectMessageType[Accepted]
 
       // Fetch preparing report
       val probe4 = createTestProbe[ReportWrapper]()
       ref ! GetReport(probe4.ref)
-      probe4.expectMessage(ReportWrapper(None, None, ReportStateEnum.None))
+      probe4.expectMessage(ReportWrapper(None, None, None, None, ReportStateEnum.None))
 
     }
 
     "delete a report in preparing and prepare another report, without the older prepared report being applied" in {
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
 
-      val testReport = Report(student0, None, student0.username + "enrollmentID", None, None, None, None)
       val timestampOld = "2020-12-14"
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, timestampOld)
       val timestampNew = "2020-12-15"
 
       // Prepare
@@ -217,13 +216,13 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       // Set report (preparing => ready)
       val probe4 = createTestProbe[Confirmation]()
-      ref ! SetReport(testReport, timestampOld, probe4.ref)
+      ref ! SetReport(testReport, Array.emptyByteArray, Array.emptyByteArray, timestampOld, probe4.ref)
       probe4.expectMessageType[Accepted]
 
       // Fetch preparing report
       val probe5 = createTestProbe[ReportWrapper]()
       ref ! GetReport(probe5.ref)
-      probe5.expectMessage(ReportWrapper(None, Some(timestampNew), ReportStateEnum.Preparing))
+      probe5.expectMessage(ReportWrapper(None, None, None, Some(timestampNew), ReportStateEnum.Preparing))
 
     }
   }
