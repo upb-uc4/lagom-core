@@ -4,6 +4,7 @@ import java.nio.file.Path
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.actor.Status.Success
 import akka.stream.Materializer
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
@@ -22,8 +23,8 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
-
-import scala.concurrent.Future
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
 
 class ExamregServiceSpec extends AsyncWordSpec
   with UC4SpecUtils with DefaultTestExamRegs with Matchers with BeforeAndAfterAll with Eventually {
@@ -103,6 +104,23 @@ class ExamregServiceSpec extends AsyncWordSpec
 
   override protected def afterAll(): Unit = server.stop()
 
+  override protected def beforeAll(): Unit = {
+   Future.sequence(tempExamRegs.map(reg =>
+      client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(reg))).map{ _=>
+
+      Future.sequence(defaultExamRegs.map(reg => {
+      if (!reg.active) {
+        client.closeExaminationRegulation(reg.name).handleRequestHeader(addAuthorizationHeader()).invoke()
+      }
+      else {
+        Future(Done)
+      }
+    }
+    ))
+  }
+    Await
+  }
+
   val defaultExamRegs: Seq[ExaminationRegulation] = Seq(
     ExaminationRegulation(
       "Bachelor Computer Science v3",
@@ -130,47 +148,115 @@ class ExamregServiceSpec extends AsyncWordSpec
         Module("M.1358.15653", "Theoretical Philosophy"),
         Module("M.1358.15418", "Applied Ethics")
       )
+    ),
+    ExaminationRegulation(
+      "Bachelor Physics",
+      active = false,
+      Seq(
+        Module("M.1358.14686", "Theoretical Physics"),
+        Module("M.1358.14653", "Experimental Physics"),
+        Module("M.1358.14418", "Physics and Philosophy")
+      )
     )
   )
+  val tempExamRegs: Seq[ExaminationRegulation] = defaultExamRegs.map(examReg => ExaminationRegulation(examReg.name,active = true,examReg.modules))
+  val activeExamRegs: Seq[ExaminationRegulation] = defaultExamRegs.filter(examReg => examReg.active)
+  val inactiveExamRegs: Seq[ExaminationRegulation] = defaultExamRegs.filter(examReg => !examReg.active)
 
   "ExamregService" should {
 
+    //Hyperledger
     "fetch the hyperledger versions" in {
       client.getHlfVersions.invoke().map { answer =>
         answer shouldBe a[JsonHyperledgerVersion]
       }
     }
 
-    "have a default examination regulation and get names of examination regulations" in {
-      Future.sequence(defaultExamRegs.map(reg => client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(reg)))
+    //GET
+    "get names of all examination regulations" in {
       eventually(timeout(Span(15, Seconds))) {
         client.getExaminationRegulationsNames(None).invoke().map {
           examRegNames =>
-            examRegNames should contain allElementsOf defaultExamRegs.map(_.name)
+            examRegNames should contain theSameElementsAs defaultExamRegs.map(_.name)
         }
       }
     }
 
-    "fetch examination regulations" in {
+    "get all examination regulations" in {
+      eventually(timeout(Span(15, Seconds))) {
+        client.getExaminationRegulations(None,None).invoke().map {
+          examRegs =>
+            examRegs should contain theSameElementsAs defaultExamRegs
+        }
+      }
+    }
+
+    "get all active examination regulations" in {
+      eventually(timeout(Span(15, Seconds))) {
+        client.getExaminationRegulations(None,Some(true)).invoke().map {
+          examRegs =>
+            examRegs should contain theSameElementsAs activeExamRegs
+        }
+      }
+    }
+
+    "get all inactive examination regulations" in {
+      eventually(timeout(Span(15, Seconds))) {
+        client.getExaminationRegulations(None,Some(false)).invoke().map {
+          examRegs =>
+            examRegs should contain theSameElementsAs inactiveExamRegs
+        }
+      }
+    }
+
+    "fetch a specific examination regulation" in {
       eventually(timeout(Span(15, Seconds))) {
         client.getExaminationRegulations(Some(defaultExamRegs.head.name), None).invoke().map {
           examRegs =>
-            examRegs should contain(defaultExamRegs.head)
+            examRegs should contain theSameElementsAs Seq(defaultExamRegs.head)
         }
       }
     }
 
-    "fetch modules of examination regulations" in {
+    "fetch all modules of examination regulations" in {
       eventually(timeout(Span(15, Seconds))) {
         client.getModules(None, None).invoke().map {
           modules =>
-            modules should contain allElementsOf defaultExamRegs.flatMap(_.modules)
+            modules should contain theSameElementsAs  defaultExamRegs.flatMap(_.modules).distinct
         }
       }
     }
 
+    "fetch active modules of examination regulations" in {
+      eventually(timeout(Span(15, Seconds))) {
+        client.getModules(None, Some(true)).invoke().map {
+          modules =>
+            modules should contain theSameElementsAs  activeExamRegs.flatMap(_.modules).distinct
+        }
+      }
+    }
+
+    "fetch inactive modules of examination regulations" in {
+      eventually(timeout(Span(15, Seconds))) {
+        client.getModules(None, Some(false)).invoke().map {
+          modules =>
+            modules should contain theSameElementsAs  inactiveExamRegs.flatMap(_.modules)
+        }
+      }
+    }
+
+    "fetch a specific module" in {
+      eventually(timeout(Span(15, Seconds))) {
+        client.getModules(Some(defaultExamRegs.head.modules.head.id), None).invoke().map {
+          examRegs =>
+            examRegs should contain theSameElementsAs Seq(defaultExamRegs.head.modules.head)
+        }
+      }
+    }
+
+
     "have working query parameters which" must {
-      "fetch modules of examination regulations given the moduleIds" in {
+      "fetch multiple modules of examination regulations given the moduleIds" in {
         eventually(timeout(Span(15, Seconds))) {
           client.getModules(Some(s"${defaultExamRegs.head.modules.head.id},${defaultExamRegs(1).modules.head.id}"), None).invoke().map {
             modules =>
@@ -178,60 +264,12 @@ class ExamregServiceSpec extends AsyncWordSpec
           }
         }
       }
-
-      "fetch examination regulations given the names" in {
+      "fetch multiply examination regulations given the names" in {
         eventually(timeout(Span(15, Seconds))) {
           client.getExaminationRegulations(Some(s"${defaultExamRegs.head.name},${defaultExamRegs(1).name}"), None).invoke().map {
             examRegs =>
               examRegs should contain theSameElementsAs Seq(defaultExamRegs.head, defaultExamRegs(1))
           }
-        }
-      }
-
-      "fetch only active examination regulations" in {
-
-        client.getExaminationRegulations(None, None).invoke().flatMap {
-          examRegs =>
-            val futureDone = if (examRegs.forall(_.active)) {
-              client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg2.copy(name = "inactive0")).flatMap { _ =>
-                client.closeExaminationRegulation("inactive0").handleRequestHeader(addAuthorizationHeader()).invoke()
-              }
-            }
-            else {
-              Future.successful(Done)
-            }
-            futureDone.flatMap {
-              _ =>
-                eventually(timeout(Span(15, Seconds))) {
-                  client.getExaminationRegulations(None, Some(true)).invoke().map {
-                    examRegs =>
-                      examRegs.map(_.name) should not contain "inactive0"
-                  }
-                }
-            }
-        }
-      }
-
-      "fetch only inactive examination regulations" in {
-        client.getExaminationRegulations(None, None).invoke().flatMap {
-          examRegs =>
-            val futureDone = if (examRegs.forall(_.active)) {
-              client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg2.copy(name = "inactive1")).flatMap { _ =>
-                client.closeExaminationRegulation("inactive1").handleRequestHeader(addAuthorizationHeader()).invoke()
-              }
-            }
-            else {
-              Future.successful(Done)
-            }
-            futureDone.flatMap {
-              _ =>
-                eventually(timeout(Span(15, Seconds))) {
-                  client.getExaminationRegulations(None, Some(false)).invoke().map {
-                    examRegs =>
-                      examRegs.map(_.name) should contain("inactive1")
-                  }
-                }
-            }
         }
       }
     }
@@ -253,6 +291,13 @@ class ExamregServiceSpec extends AsyncWordSpec
         .failed.map { exception =>
           exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
         }
+    }
+
+    "not add an inactive examination regulation" in {
+      client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(examReg1.copy(active = false))
+        .failed.map { exception =>
+        exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.Validation)
+      }
     }
 
     //DELETE
