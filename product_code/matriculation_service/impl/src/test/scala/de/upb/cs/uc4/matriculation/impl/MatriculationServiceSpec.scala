@@ -262,6 +262,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
   }
 
   private def createSingleMatriculation(field: String, semester: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester))))
+  private def createDoubleMatriculation(field: String, semester: String,fieldSecond : String, semesterSecond: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester)),SubjectMatriculation(fieldSecond,Seq(semesterSecond))))
   private def asString(unsignedProposal: String) = new String(Base64.getDecoder.decode(unsignedProposal), StandardCharsets.UTF_8)
 
   "MatriculationService service" should {
@@ -305,6 +306,82 @@ class MatriculationServiceSpec extends AsyncWordSpec
       }
     }
 
+
+    "fail getting a proposal for adding matriculation data for a student, given a proposal while using another auth username" in {
+      val message = createSingleMatriculation(examReg0.name, "SS2020")
+      certificate.setup(student0.username)
+      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+        client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username+"thisShouldFail"))
+          .invoke(message).failed.map { answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+          }.andThen {
+            case _ => cleanup()
+          }
+        }
+      }
+
+    "fail submitting a proposal for adding matriculation data for a student, given a proposal while using another auth username" in {
+      val message = createSingleMatriculation(examReg0.name, "SS2020")
+      certificate.setup(student0.username)
+      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+        client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+          .invoke(message).flatMap { proposal =>
+          client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username+ "thisShouldFail"))
+            .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).failed.map { answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+        }.andThen {
+          case _ => cleanup()
+        }
+      }
+    }
+    }
+
+    "fail submitting a transaction for adding matriculation data for a student, given a proposal while using another auth username" in {
+      certificate.setup(student0.username)
+      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+        prepare(Seq(
+          ImmatriculationData(
+            jsonId.id,
+            Seq(SubjectMatriculation(examReg0.name, Seq("SS2020")))
+          )
+        ))
+        client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+          .invoke(createSingleMatriculation(examReg0.name, "WS2020/21")).flatMap {
+          proposal =>
+
+            client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+              .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
+
+              client.submitMatriculationTransaction(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username+"thisShouldFail"))
+                .invoke(SignedTransaction(transaction.unsignedTransaction, "c2lnbmVk")).failed.map(answer=>
+              answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+              )
+            }
+        }.andThen {
+          case _ => cleanup()
+        }
+      }
+    }
+
+    "not get  matriculation data for another student" in {
+      client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username+"thisShouldFail"))
+        .invoke().failed.map { answer =>
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }.andThen {
+        case _ => cleanup()
+      }
+    }
+
+    "not get matriculation data for a lecturer" in {
+      client.getMatriculationData(admin0.username).handleRequestHeader(addAuthorizationHeader(admin0.username))
+        .invoke().failed.map { answer =>
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+      }.andThen {
+        case _ => cleanup()
+      }
+    }
+
+
     "not add empty matriculation data for a student" in {
       client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
         .invoke(createSingleMatriculation("", "")).failed.map { answer =>
@@ -323,6 +400,19 @@ class MatriculationServiceSpec extends AsyncWordSpec
           case _ => cleanup()
         }
     }
+
+    "not add matriculation data with one existing and one non-existing field of study/examreg" in {
+      client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+        .invoke(createDoubleMatriculation(examReg0.name, "SS2020","DoesNotExist","SS2020")).failed.map { answer =>
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+          .invalidParams.map(_.name) should contain("matriculation[1]")
+      }.andThen {
+        case _ => cleanup()
+      }
+    }
+
+
+
 
     "extend matriculation data of an already existing field of study" in {
       certificate.setup(student0.username)
