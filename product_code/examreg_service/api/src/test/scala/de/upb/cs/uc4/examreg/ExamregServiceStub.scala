@@ -16,12 +16,11 @@ class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
   /** Get all examination regulations, or the ones specified by the query parameter */
   override def getExaminationRegulations(regulations: Option[String], active: Option[Boolean]): ServiceCall[NotUsed, Seq[ExaminationRegulation]] = ServiceCall {
     _ =>
-      val fut = Future.successful(
+      Future.successful(
         examRegs
           .filter(examinationRegulation => regulations.isEmpty || regulations.get.contains(examinationRegulation.name))
           .filter(active.isEmpty || _.active == active.get)
       )
-  fut
   }
 
   /** Get all names of examination regulations */
