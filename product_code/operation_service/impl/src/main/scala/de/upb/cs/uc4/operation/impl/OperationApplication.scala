@@ -23,11 +23,6 @@ abstract class OperationApplication(context: LagomApplicationContext)
 
   override def createActorFactory: OperationHyperledgerBehaviour = wire[OperationHyperledgerBehaviour]
 
-  // Create ReadSide
-  lazy val database: OperationDatabase = wire[OperationDatabase]
-  lazy val processor: OperationEventProcessor = wire[OperationEventProcessor]
-  readSide.register(processor)
-
   // Bind UserService
   lazy val matriculationService: MatriculationService = serviceClient.implement[MatriculationService]
 

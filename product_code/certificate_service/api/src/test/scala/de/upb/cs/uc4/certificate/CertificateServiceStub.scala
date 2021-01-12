@@ -2,10 +2,12 @@ package de.upb.cs.uc4.certificate
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.broker.Topic
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
 import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -63,6 +65,8 @@ class CertificateServiceStub extends CertificateService {
         case None => Future.failed(UC4Exception.NotFound)
       }
   }
+  /** Publishes every user that is registered at hyperledger */
+  override def userRegistrationTopic(): Topic[EncryptionContainer] = null
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }
@@ -75,4 +79,5 @@ class CertificateServiceStub extends CertificateService {
 
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = { _ => Future.successful(JsonHyperledgerVersion("", "")) }
+
 }

@@ -68,4 +68,3 @@ object OperationState {
   implicit val format: Format[OperationState] = Json.format
 }
 
-
