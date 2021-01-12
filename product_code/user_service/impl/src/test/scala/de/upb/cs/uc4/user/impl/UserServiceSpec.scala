@@ -14,6 +14,7 @@ import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUs
 import de.upb.cs.uc4.image.ImageProcessingServiceStub
 import de.upb.cs.uc4.image.api.ImageProcessingService
 import de.upb.cs.uc4.shared.client.Hashing
+import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
@@ -377,7 +378,89 @@ class UserServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
-    "find a non-existing User" in {
+
+    "fetch all active Users from the database as an Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
+        client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllUsers(None,Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { deletedUser =>
+              val deleted = deletedUser.copy(
+                Seq(),
+                deletedUser.lecturers.map(_.copy(enrollmentIdSecret = "")),
+                deletedUser.admins.map(_.copy(enrollmentIdSecret = ""))
+              )
+              deleted.students should ===(Seq())
+              deleted.lecturers should ===(Seq(lecturer0))
+              deleted.admins should have size 2
+              deleted.admins should contain allElementsOf Seq(admin0)
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch all active Students from the database as an Admin" in {
+      prepare(Seq(student0, student1, student2)).flatMap { students =>
+        client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllUsers(None,Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { deletedUser =>
+              val deleted = deletedUser.copy(
+                deletedUser.students.map(_.copy(enrollmentIdSecret = "")),
+                Seq(),
+                deletedUser.admins.map(_.copy(enrollmentIdSecret = ""))
+              )
+
+              deleted.students should contain theSameElementsAs Seq(student1,student2)
+              deleted.lecturers should have size 0
+              deleted.admins should have size 1
+              //TODO work from here
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+
+
+
+
+
+    "not fetch the public information of all Users, as an non-Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
+        client.getAllUsers(None, None).handleRequestHeader(addAuthorizationHeader("student")).invoke().failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not fetch the public information of all Students, as an non-Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
+        client.getAllStudents(None, None).handleRequestHeader(addAuthorizationHeader("student")).invoke().failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "not fetch the public information of all Lecturers, as an non-Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
+        client.getAllLecturers(None, None).handleRequestHeader(addAuthorizationHeader("student")).invoke().failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "not fetch the public information of all Admins, as an non-Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
+        client.getAllAdmins(None, None).handleRequestHeader(addAuthorizationHeader("student")).invoke().failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "not find a non-existing User" in {
       client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
         answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
@@ -430,6 +513,65 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
+    "not update a user specified by another path" in {
+      prepare(Seq(lecturer0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
+
+        client.updateUser(lecturer0.username+"thisShouldFail").handleRequestHeader(addAuthorizationHeader(lecturer0.username))
+          .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.PathParameterMismatch)
+        }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not update a user with a malformed username" in {
+      prepare(Seq(lecturer0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy( username = lecturer0.username+":)" ,enrollmentIdSecret = enrollmentIdSecretFetched)
+
+        client.updateUser(lecturer0.username+":)").handleRequestHeader(addAuthorizationHeader(lecturer0.username+":)"))
+          .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+            .invalidParams should contain(SimpleError("username",ErrorMessageCollection.User.usernameMessage))
+        }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not update a user with a malformed new email" in {
+      prepare(Seq(lecturer0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched,email = "@@")
+
+        client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
+          .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+            .invalidParams should contain(SimpleError("username",ErrorMessageCollection.User.usernameMessage))
+        }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+
+    "not update another user as the user himself (as a non admin)" in {
+      prepare(Seq(lecturer0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
+        client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username+"weAreAnotherUserNow"))
+          .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+
     "not update uneditable fields as an admin" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedUneditable.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedUneditable.username))
@@ -451,6 +593,7 @@ class UserServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
+
 
     //DELETE TESTS
     "return an error on force deleting a non-existing user" in {
