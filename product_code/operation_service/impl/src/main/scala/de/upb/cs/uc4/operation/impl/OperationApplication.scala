@@ -9,7 +9,7 @@ import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.hyperledger.HyperledgerComponent
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.operation.api.OperationService
-import de.upb.cs.uc4.operation.impl.actor.OperationBehaviour
+import de.upb.cs.uc4.operation.impl.actor.OperationHyperledgerBehaviour
 import de.upb.cs.uc4.operation.impl.readside.{ OperationDatabase, OperationEventProcessor }
 import de.upb.cs.uc4.shared.server.UC4Application
 import play.api.db.HikariCPComponents
@@ -21,7 +21,7 @@ abstract class OperationApplication(context: LagomApplicationContext)
   with HikariCPComponents
   with HyperledgerComponent {
 
-  override def createActorFactory: OperationBehaviour = wire[OperationBehaviour]
+  override def createActorFactory: OperationHyperledgerBehaviour = wire[OperationHyperledgerBehaviour]
 
   // Create ReadSide
   lazy val database: OperationDatabase = wire[OperationDatabase]

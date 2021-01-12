@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.operation.impl
+package de.upb.cs.uc4.operation.impl.events
 
 import com.lightbend.lagom.scaladsl.persistence.{ AggregateEvent, AggregateEventTag }
 

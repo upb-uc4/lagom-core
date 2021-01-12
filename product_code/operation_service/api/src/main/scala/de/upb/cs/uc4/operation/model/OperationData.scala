@@ -8,6 +8,9 @@ case class OperationData(
     transactionInfo: TransactionInfo,
     state: OperationState,
     reason: String,
+    initiator: String,
+    initiatorTimestamp: String,
+    lastModifiedTimestamp: String,
     existingApprovals: ApprovalList,
     missingApprovals: ApprovalList
 )

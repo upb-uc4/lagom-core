@@ -7,7 +7,7 @@ import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionOperation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationsTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
 
-class OperationBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionOperationsTrait] {
+class OperationHyperledgerBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionOperationsTrait] {
 
   /** Creates the connection to the chaincode */
   override protected def createConnection: ConnectionOperationsTrait =
@@ -26,10 +26,10 @@ class OperationBehaviour(val config: Config) extends HyperledgerDefaultActorFact
   }
 
   /** The companion object */
-  override val companionObject: HyperledgerActorObject = OperationBehaviour
+  override val companionObject: HyperledgerActorObject = OperationHyperledgerBehaviour
 }
 
-object OperationBehaviour extends HyperledgerActorObject {
+object OperationHyperledgerBehaviour extends HyperledgerActorObject {
   /** The EntityTypeKey of this actor */
   override val typeKey: EntityTypeKey[HyperledgerBaseCommand] = EntityTypeKey[HyperledgerBaseCommand]("uc4operation")
   /** The reference to the entity */
