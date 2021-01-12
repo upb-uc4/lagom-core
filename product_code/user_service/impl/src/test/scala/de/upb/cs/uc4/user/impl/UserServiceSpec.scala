@@ -403,15 +403,15 @@ class UserServiceSpec extends AsyncWordSpec
     }
 
     "fetch all active Users from the database as an Admin" in {
-      prepare(Seq(student0, lecturer0, admin0)).flatMap { addedUser =>
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { addedUsers =>
         client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
             client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
 
               allUsers.students should have size 0
-              allUsers.lecturers should contain allElementsOf addedUser.filter(_.role == Role.Lecturer)
+              allUsers.lecturers should contain allElementsOf addedUsers.filter(_.role == Role.Lecturer)
               allUsers.admins should have size 2 //Has size two because system admin is always added
-              allUsers.admins should contain allElementsOf addedUser.filter(_.role == Role.Admin)
+              allUsers.admins should contain allElementsOf addedUsers.filter(_.role == Role.Admin) //TODO This fails in "fetch all active Admins from the database as an Admin"
             }
           }
         }
@@ -491,7 +491,7 @@ class UserServiceSpec extends AsyncWordSpec
 
               allUsers.students should have size 0
               allUsers.lecturers should have size 0
-              allUsers.admins should contain theSameElementsAs addedUsers.filter(user => user.role == Role.Admin && user.username != admin0.username)
+              allUsers.admins.filter(_.username != "admin") should contain theSameElementsAs addedUsers.filter(user => user.role == Role.Admin && user.username != admin0.username) //TODO Inconvenient assertion
             }
           }
         }
@@ -638,7 +638,7 @@ class UserServiceSpec extends AsyncWordSpec
         client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
           .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
             answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
-              .invalidParams should contain(SimpleError("username", ErrorMessageCollection.User.usernameMessage))
+              .invalidParams should contain(SimpleError("email", ErrorMessageCollection.User.mailMessage))
           }
 
       }.flatMap(cleanupOnSuccess)
