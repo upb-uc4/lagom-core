@@ -406,7 +406,7 @@ class UserServiceSpec extends AsyncWordSpec
       prepare(Seq(student0, lecturer0, admin0)).flatMap { addedUser =>
         client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
-            client.getAllUsers(None,Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+            client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
 
               allUsers.students should have size 0
               allUsers.lecturers should contain allElementsOf addedUser.filter(_.role == Role.Lecturer)
@@ -423,7 +423,7 @@ class UserServiceSpec extends AsyncWordSpec
       prepare(Seq(student0, student1, student2)).flatMap { addedUsers: Seq[User] =>
         client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
-            client.getAllUsers(None,Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+            client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
 
               allUsers.students should contain theSameElementsAs addedUsers.filter(user => user.role == Role.Student && user.username != student0.username)
               allUsers.lecturers should have size 0
@@ -439,7 +439,7 @@ class UserServiceSpec extends AsyncWordSpec
       prepare(Seq(student0, student1, student2)).flatMap { addedUsers: Seq[User] =>
         client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
-            client.getAllUsers(None,Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+            client.getAllUsers(None, Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
 
               allUsers.students.map(_.username) should contain theSameElementsAs addedUsers.filter(_.username == student0.username).map(_.username)
               allUsers.lecturers should have size 0
@@ -455,7 +455,7 @@ class UserServiceSpec extends AsyncWordSpec
       prepare(Seq(lecturer0, lecturer1, lecturer2)).flatMap { addedUsers: Seq[User] =>
         client.softDeleteUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
-            client.getAllUsers(None,Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+            client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
 
               allUsers.students should have size 0
               allUsers.lecturers should contain theSameElementsAs addedUsers.filter(user => user.role == Role.Lecturer && user.username != lecturer0.username)
@@ -471,7 +471,7 @@ class UserServiceSpec extends AsyncWordSpec
       prepare(Seq(lecturer0, lecturer1, lecturer2)).flatMap { addedUsers: Seq[User] =>
         client.softDeleteUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
-            client.getAllUsers(None,Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+            client.getAllUsers(None, Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
 
               allUsers.students.map(_.username) should have size 0
               allUsers.lecturers.map(_.username) should contain theSameElementsAs addedUsers.filter(_.username == lecturer0.username).map(_.username)
@@ -487,7 +487,7 @@ class UserServiceSpec extends AsyncWordSpec
       prepare(Seq(admin0, admin1, admin2)).flatMap { addedUsers: Seq[User] =>
         client.softDeleteUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
-            client.getAllUsers(None,Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+            client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
 
               allUsers.students should have size 0
               allUsers.lecturers should have size 0
@@ -503,7 +503,7 @@ class UserServiceSpec extends AsyncWordSpec
       prepare(Seq(admin0, admin1, admin2)).flatMap { addedUsers: Seq[User] =>
         client.softDeleteUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
-            client.getAllUsers(None,Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+            client.getAllUsers(None, Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
 
               allUsers.students.map(_.username) should have size 0
               allUsers.lecturers should have size 0
@@ -606,10 +606,10 @@ class UserServiceSpec extends AsyncWordSpec
         val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
         val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
 
-        client.updateUser(lecturer0.username+"thisShouldFail").handleRequestHeader(addAuthorizationHeader(lecturer0.username))
+        client.updateUser(lecturer0.username + "thisShouldFail").handleRequestHeader(addAuthorizationHeader(lecturer0.username))
           .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
-          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.PathParameterMismatch)
-        }
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.PathParameterMismatch)
+          }
 
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -618,13 +618,13 @@ class UserServiceSpec extends AsyncWordSpec
     "not update a user with a malformed username" in {
       prepare(Seq(lecturer0)).flatMap { userList =>
         val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
-        val lecturer0FetchedAndUpdated = lecturer0Updated.copy( username = lecturer0.username+":)" ,enrollmentIdSecret = enrollmentIdSecretFetched)
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(username = lecturer0.username + ":)", enrollmentIdSecret = enrollmentIdSecretFetched)
 
-        client.updateUser(lecturer0.username+":)").handleRequestHeader(addAuthorizationHeader(lecturer0.username+":)"))
+        client.updateUser(lecturer0.username + ":)").handleRequestHeader(addAuthorizationHeader(lecturer0.username + ":)"))
           .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
-          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
-            .invalidParams should contain(SimpleError("username",ErrorMessageCollection.User.usernameMessage))
-        }
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+              .invalidParams should contain(SimpleError("username", ErrorMessageCollection.User.usernameMessage))
+          }
 
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
@@ -633,32 +633,30 @@ class UserServiceSpec extends AsyncWordSpec
     "not update a user with a malformed new email" in {
       prepare(Seq(lecturer0)).flatMap { userList =>
         val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
-        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched,email = "@@")
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched, email = "@@")
 
         client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
           .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
-          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
-            .invalidParams should contain(SimpleError("username",ErrorMessageCollection.User.usernameMessage))
-        }
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+              .invalidParams should contain(SimpleError("username", ErrorMessageCollection.User.usernameMessage))
+          }
 
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
-
 
     "not update another user as the user himself (as a non admin)" in {
       prepare(Seq(lecturer0)).flatMap { userList =>
         val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
         val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
-        client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username+"weAreAnotherUserNow"))
+        client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username + "weAreAnotherUserNow"))
           .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
-        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
-      }
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+          }
 
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
-
 
     "not update uneditable fields as an admin" in {
       prepare(Seq(student0)).flatMap { _ =>
@@ -693,7 +691,6 @@ class UserServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
-
 
     //DELETE TESTS
     "return an error on force deleting a non-existing user" in {
