@@ -4,7 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
-import de.upb.cs.uc4.operation.model.{ OperationData, RejectMessageJson }
+import de.upb.cs.uc4.operation.model.{ JsonRejectMessage, OperationData }
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
@@ -29,7 +29,7 @@ trait OperationService extends UC4HyperledgerService {
   def removeOperation(operationId: String): ServiceCall[NotUsed, Done]
 
   /** Reject the operation with the given operationId*/
-  def getProposalRejectOperation(operationId: String): ServiceCall[RejectMessageJson, UnsignedProposal]
+  def getProposalRejectOperation(operationId: String): ServiceCall[JsonRejectMessage, UnsignedProposal]
 
   /** Submit a signed Proposal */
   def submitProposal(operationId: String): ServiceCall[SignedProposal, UnsignedTransaction]
