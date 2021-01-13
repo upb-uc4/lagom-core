@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.operation.model
+package de.upb.cs.uc4.shared.client.operation
 
 import play.api.libs.json.{ Format, Json }
 

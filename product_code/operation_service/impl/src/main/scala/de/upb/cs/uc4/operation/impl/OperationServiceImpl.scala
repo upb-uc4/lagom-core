@@ -12,24 +12,23 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils
 import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
-import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.{ OperationHyperledgerBehaviour, OperationState }
 import de.upb.cs.uc4.operation.impl.commands._
-import de.upb.cs.uc4.operation.model.{ JsonRejectMessage, OperationData, OperationDataState }
+import de.upb.cs.uc4.operation.model.{ JsonOperationId, JsonRejectMessage }
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.client.operation.{ OperationData, OperationDataState }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import play.api.Environment
 
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
 
 /** Implementation of the OperationService */
 class OperationServiceImpl(
     clusterSharding: ClusterSharding,
-    matriculationService: MatriculationService,
     certificateService: CertificateService,
     override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
@@ -160,6 +159,20 @@ class OperationServiceImpl(
             replyTo
           )).recover(handleException("Get operations")).map {
           case Accepted(_)                  => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(""))
+          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+        }
+      }
+  }
+
+  /** Adds a operationId to the watchlist */
+  def addToWatchList(username: String): ServiceCall[JsonOperationId, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+    (authUser, _) =>
+      ServerServiceCall { (_, jsonOperationId) =>
+        if (authUser != username.trim) {
+          throw UC4Exception.OwnerMismatch
+        }
+        entityRef(authUser).ask[Confirmation](replyTo => AddToWatchlist(jsonOperationId.id, replyTo)).map {
+          case Accepted(_)                  => (ResponseHeader(200, MessageProtocol.empty, List()), Done)
           case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
         }
       }

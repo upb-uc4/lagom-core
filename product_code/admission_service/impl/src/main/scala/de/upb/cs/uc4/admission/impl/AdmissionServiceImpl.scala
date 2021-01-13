@@ -16,7 +16,7 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils
+import de.upb.cs.uc4.hyperledger.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
@@ -134,8 +134,8 @@ class AdmissionServiceImpl(
                           else {
                             certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
                               certificate =>
-                                entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForAddCourseAdmission(certificate.certificate, courseAdmissionFinalized, replyTo)).map {
-                                  array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
+                                entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalForAddCourseAdmission(certificate.certificate, courseAdmissionFinalized, replyTo)).map {
+                                  proposalWrapper => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
                                 }.recover(handleException("Creation of add courseAdmission proposal failed"))
                             }
                           }
@@ -167,8 +167,8 @@ class AdmissionServiceImpl(
             }
 
             certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { certificate =>
-              entityRef.askWithStatus[Array[Byte]](replyTo => GetProposalForDropCourseAdmission(certificate.certificate, dropAdmission, replyTo)).map {
-                array => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(array))
+              entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalForDropCourseAdmission(certificate.certificate, dropAdmission, replyTo)).map {
+                proposalWrapper => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
               }.recover(handleException("Creation of drop courseAdmission proposal failed"))
             }
           }

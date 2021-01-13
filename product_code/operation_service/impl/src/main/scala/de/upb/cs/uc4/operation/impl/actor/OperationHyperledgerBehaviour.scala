@@ -9,7 +9,7 @@ import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationsTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
 import de.upb.cs.uc4.operation.impl.commands.{ GetOperationHyperledger, GetOperationsHyperledger, RejectOperationHyperledger }
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil._
-import de.upb.cs.uc4.operation.model.OperationData
+import de.upb.cs.uc4.shared.client.operation.OperationData
 import de.upb.cs.uc4.shared.server.messages.Accepted
 
 class OperationHyperledgerBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionOperationsTrait] {

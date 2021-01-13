@@ -10,6 +10,7 @@ import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
+import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
@@ -36,6 +37,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
         override lazy val userService: UserServiceStub = new UserServiceStub
         override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
         override lazy val examregService: ExamregServiceStub = new ExamregServiceStub
+        override lazy val operationService: OperationServiceStub = new OperationServiceStub
 
         userService.resetToDefaults()
 

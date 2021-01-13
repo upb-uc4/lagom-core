@@ -8,7 +8,6 @@ import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServe
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.hyperledger.HyperledgerComponent
-import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.{ OperationDatabaseBehaviour, OperationHyperledgerBehaviour, OperationState }
 import de.upb.cs.uc4.operation.impl.readside.OperationEventProcessor
@@ -26,9 +25,6 @@ abstract class OperationApplication(context: LagomApplicationContext)
   readSide.register(processor)
 
   override def createActorFactory: OperationHyperledgerBehaviour = wire[OperationHyperledgerBehaviour]
-
-  // Bind UserService
-  lazy val matriculationService: MatriculationService = serviceClient.implement[MatriculationService]
 
   //Bind CertificateService
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]

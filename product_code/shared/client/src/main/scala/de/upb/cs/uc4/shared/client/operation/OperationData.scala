@@ -1,7 +1,7 @@
-package de.upb.cs.uc4.operation.model
+package de.upb.cs.uc4.shared.client.operation
 
-import de.upb.cs.uc4.operation.model.OperationDataState.OperationDataState
-import play.api.libs.json.{Format, Json}
+import de.upb.cs.uc4.shared.client.operation.OperationDataState.OperationDataState
+import play.api.libs.json.{ Format, Json }
 
 case class OperationData(
     operationId: String,

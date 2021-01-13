@@ -120,7 +120,8 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .enablePlugins(LagomScala)
   .settings(libraryDependencies += lagomScaladslKafkaBroker)
   .settings(Settings.implSettings("matriculation_service"))
-  .dependsOn(user_service_api % withTests, certificate_service_api % withTests, shared_server % withTests, shared_client, matriculation_service_api, hyperledger_component, examreg_service_api % withTests)
+  .dependsOn(user_service_api % withTests, certificate_service_api % withTests, examreg_service_api % withTests, operation_service_api % withTests,
+    shared_server % withTests, shared_client, matriculation_service_api, hyperledger_component)
 
 lazy val certificate_service_api = (project in file("certificate_service/api"))
   .settings(Settings.apiSettings("certificate_service_api"))
@@ -185,7 +186,7 @@ lazy val operation_service = (project in file("operation_service/impl"))
     libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
   )
   .settings(Settings.implSettings("operation_service"))
-  .dependsOn(operation_service_api % withTests, matriculation_service_api % withTests, certificate_service_api % withTests,
+  .dependsOn(operation_service_api % withTests, certificate_service_api % withTests,
     shared_client % withTests, shared_server % withTests, hyperledger_component)
 
 lazy val group_service_api =  (project in file("group_service/api"))

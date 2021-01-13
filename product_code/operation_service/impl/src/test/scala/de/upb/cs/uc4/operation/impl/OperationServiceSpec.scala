@@ -5,12 +5,12 @@ import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationsTrait
-import de.upb.cs.uc4.matriculation.MatriculationServiceStub
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.OperationHyperledgerBehaviour
 import de.upb.cs.uc4.operation.model._
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exception }
+import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
 import org.scalatest.matchers.should.Matchers
@@ -30,7 +30,6 @@ class OperationServiceSpec extends AsyncWordSpec
   ) { ctx =>
       new OperationApplication(ctx) with LocalServiceLocator {
 
-        override lazy val matriculationService: MatriculationServiceStub = new MatriculationServiceStub
         override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
 
         var operationList: Seq[OperationData] = List()
@@ -96,7 +95,6 @@ class OperationServiceSpec extends AsyncWordSpec
 
   val client: OperationService = server.serviceClient.implement[OperationService]
   val certificate: CertificateServiceStub = server.application.certificateService
-  val matriculation: MatriculationServiceStub = server.application.matriculationService
 
   val groups: mutable.Map[String, String] = mutable.Map[String, String]()
 
@@ -132,7 +130,7 @@ class OperationServiceSpec extends AsyncWordSpec
   override protected def afterAll(): Unit = server.stop()
 
   def prepare(operations: Seq[OperationData]): Unit = {
-    server.application.operationList ++= operations
+    server.application.operationList :++= operations
   }
 
   def cleanup(): Unit = {

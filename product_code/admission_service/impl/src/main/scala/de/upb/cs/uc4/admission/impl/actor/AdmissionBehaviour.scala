@@ -8,7 +8,7 @@ import de.upb.cs.uc4.admission.model.CourseAdmission
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionAdmission
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
-import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
+import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory, ProposalWrapper }
 import de.upb.cs.uc4.shared.client.JsonUtility._
 
 class AdmissionBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionAdmissionTrait] {
@@ -31,15 +31,9 @@ class AdmissionBehaviour(val config: Config) extends HyperledgerDefaultActorFact
         connection.getAdmissions(enrollmentId.getOrElse(""), courseId.getOrElse(""), moduleId.getOrElse("")).fromJson[Seq[CourseAdmission]]
       ))
     case GetProposalForAddCourseAdmission(certificate, courseAdmission, replyTo) =>
-      connection.getProposalAddAdmission(certificate, admission = courseAdmission.toJson) match {
-        case (_, proposal) =>
-          replyTo ! StatusReply.success(proposal)
-      }
+      replyTo ! StatusReply.success(ProposalWrapper(connection.getProposalAddAdmission(certificate, admission = courseAdmission.toJson)))
     case GetProposalForDropCourseAdmission(certificate, dropAdmission, replyTo) =>
-      connection.getProposalDropAdmission(certificate, admissionId = dropAdmission.admissionId) match {
-        case (_, proposal) =>
-          replyTo ! StatusReply.success(proposal)
-      }
+      replyTo ! StatusReply.success(ProposalWrapper(connection.getProposalDropAdmission(certificate, admissionId = dropAdmission.admissionId)))
     case _ => println("Unknown command")
   }
 
