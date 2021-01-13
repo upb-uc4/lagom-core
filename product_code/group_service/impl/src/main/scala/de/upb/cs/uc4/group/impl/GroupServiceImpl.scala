@@ -1,9 +1,9 @@
 package de.upb.cs.uc4.group.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.stream.Materializer
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.group.api.GroupService

@@ -4,10 +4,10 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import com.typesafe.config.Config
 import de.upb.cs.uc4.group.impl.commands.SetGroup
-import de.upb.cs.uc4.hyperledger.commands.{HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand}
+import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionGroup
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionGroupTrait
-import de.upb.cs.uc4.hyperledger.{HyperledgerActorObject, HyperledgerDefaultActorFactory}
+import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
 import de.upb.cs.uc4.shared.server.messages.Accepted
 
 class GroupBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionGroupTrait] {

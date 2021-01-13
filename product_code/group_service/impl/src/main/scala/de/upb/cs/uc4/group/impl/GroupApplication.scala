@@ -4,7 +4,7 @@ import akka.Done
 import akka.stream.scaladsl.Flow
 import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{LagomApplicationContext, LagomServer}
+import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.RegistrationUser
@@ -16,15 +16,15 @@ import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 abstract class GroupApplication(context: LagomApplicationContext)
   extends UC4Application(context)
-    with HyperledgerComponent
-    with KafkaEncryptionComponent {
+  with HyperledgerComponent
+  with KafkaEncryptionComponent {
 
   protected final val log: Logger = LoggerFactory.getLogger(getClass)
 
@@ -51,7 +51,7 @@ abstract class GroupApplication(context: LagomApplicationContext)
           clusterSharding.entityRefFor(GroupBehaviour.typeKey, GroupBehaviour.entityId)
             .askWithStatus[Confirmation](replyTo => SetGroup(user.enrollmentId, user.role, replyTo))
             .map(_ => Done)
-            .recover{
+            .recover {
               case throwable: Throwable =>
                 log.error("GroupService received invalid topic message: {}", throwable.toString)
                 Done
