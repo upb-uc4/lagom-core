@@ -23,7 +23,7 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
 import play.api.Environment
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 
 /** Implementation of the OperationService */
@@ -38,6 +38,7 @@ class OperationServiceImpl(
   /** Looks up the entity for the given ID */
   private def entityRef: EntityRef[HyperledgerBaseCommand] =
     clusterSharding.entityRefFor(OperationHyperledgerBehaviour.typeKey, OperationHyperledgerBehaviour.entityId)
+
   private def entityRef(username: String): EntityRef[OperationCommand] =
     clusterSharding.entityRefFor(OperationState.typeKey, username)
 
@@ -66,21 +67,64 @@ class OperationServiceImpl(
   override def getOperations(selfInitiated: Option[Boolean], selfActionRequired: Option[Boolean], states: Option[String], watchlistOnly: Option[Boolean]): ServiceCall[NotUsed, Seq[OperationData]] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUser, role) =>
       ServerServiceCall { (header, _) =>
-        entityRef.askWithStatus(replyTo =>
-          GetOperationsHyperledger(
-            selfInitiated.getOrElse("").toString,
-            selfActionRequired.getOrElse("").toString,
-            states.getOrElse(""),
-            watchlistOnly.getOrElse("").toString,
-            replyTo
-          )).recover(handleException("Get operations"))
-          .flatMap {
-            operationDataList =>
-              certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
-                jsonEnrollmentId =>
-                  createETagHeader(header, operationDataList.operationDataList.filter(_.isInvolved(jsonEnrollmentId.id, role.toString)))
-              }
+        certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonId =>
+
+          val missingEnrollmentId = if (selfActionRequired.isDefined && selfActionRequired.get) {
+            jsonId.id
           }
+          else {
+            ""
+          }
+
+          val initiatorEnrollmentId = if (selfInitiated.isDefined && selfInitiated.get) {
+            jsonId.id
+          }
+          else {
+            ""
+          }
+
+          entityRef.askWithStatus(replyTo =>
+            GetOperationsHyperledger(
+              "", // Unused filter
+              missingEnrollmentId,
+              initiatorEnrollmentId,
+              "", // Unused filter
+              replyTo
+            )).recover(handleException("Get operations"))
+            //Involved filter
+            .map { operations =>
+              if (role == AuthenticationRole.Admin) {
+                operations.operationDataList
+              }
+              else {
+                operations.operationDataList.filter(_.isInvolved(jsonId.id, role.toString))
+              }
+            }
+            //State filter
+            .map { operations =>
+              operations.filter { op =>
+                states match {
+                  case Some(stateString) => stateString.split(",").map(_.trim).contains(op.state.toString)
+                  case None              => true
+                }
+              }
+            }
+            //Watchlist filter
+            .flatMap { operations =>
+              if (watchlistOnly.isDefined && watchlistOnly.get) {
+                entityRef(authUser).ask(replyTo => GetWatchlist(replyTo)).map(_.watchlist).map { ids =>
+                  operations.filter(op => ids.contains(op.operationId))
+                }
+              }
+              else {
+                Future.successful(operations)
+              }
+            }
+            //Finish
+            .map {
+              operations => createETagHeader(header, operations)
+            }
+        }
       }
   }
 
