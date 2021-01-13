@@ -7,7 +7,6 @@ import de.upb.cs.uc4.certificate.model.RegistrationUser
 import de.upb.cs.uc4.group.api.GroupService
 import de.upb.cs.uc4.group.impl.GroupApplication
 import de.upb.cs.uc4.group.impl.actor.GroupBehaviour
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionGroupTrait
 import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
