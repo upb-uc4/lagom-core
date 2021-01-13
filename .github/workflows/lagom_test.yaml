@@ -39,7 +39,7 @@ jobs:
     - name: Add -J to .sbtops
       run: |
         pushd ./product_code
-        echo "-J-Xms2048M -J-Xmx6144M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
+        echo "-J-Xms2048M -J-Xmx8192M -J-Xss2M -J-XX:MaxMetaspaceSize=1024M" > .sbtopts
         popd
     
     # run sbt tests
