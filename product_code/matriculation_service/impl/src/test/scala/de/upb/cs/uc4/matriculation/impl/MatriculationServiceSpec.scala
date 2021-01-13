@@ -13,6 +13,7 @@ import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatric
 import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -65,15 +66,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                   override val transactionName: String = "addEntriesToMatriculationData"
                   override val payload: String =
                     """{
-                      |  "type": "HLUnprocessableEntity",
-                      |  "title": "The following parameters do not conform to the specified format.",
-                      |  "invalidParams":[
-                      |     {
-                      |       "name":"matriculations",
-                      |       "reason":"Matriculation status must not be empty"
-                      |     }
-                      |  ]
-                      |}""".stripMargin
+                    |  "type": "HLUnprocessableEntity",
+                    |  "title": "The following parameters do not conform to the specified format.",
+                    |  "invalidParams":[
+                    |     {
+                    |       "name":"matriculations",
+                    |       "reason":"Matriculation status must not be empty"
+                    |     }
+                    |  ]
+                    |}""".stripMargin
                 }
               }
               jsonStringList :+= jsonMatriculationData
@@ -89,15 +90,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                   override val transactionName: String = "addEntriesToMatriculationData"
                   override val payload: String =
                     """{
-                      |  "type": "HLUnprocessableEntity",
-                      |  "title": "The following parameters do not conform to the specified format.",
-                      |  "invalidParams":[
-                      |     {
-                      |       "name":"matriculations",
-                      |       "reason":"Matriculation status must not be empty"
-                      |     }
-                      |  ]
-                      |}""".stripMargin
+                    |  "type": "HLUnprocessableEntity",
+                    |  "title": "The following parameters do not conform to the specified format.",
+                    |  "invalidParams":[
+                    |     {
+                    |       "name":"matriculations",
+                    |       "reason":"Matriculation status must not be empty"
+                    |     }
+                    |  ]
+                    |}""".stripMargin
                 }
               }
 
@@ -141,10 +142,10 @@ class MatriculationServiceSpec extends AsyncWordSpec
             }
 
             override def getProposalAddMatriculationData(certificate: String, AFFILITATION: String = AFFILIATION, jSonMatriculationData: String): (String, Array[Byte]) =
-              ("", jSonMatriculationData.getBytes())
+              (OperationData("mock", TransactionInfo("", "", Seq()), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, jSonMatriculationData.getBytes())
 
             override def getProposalAddEntriesToMatriculationData(certificate: String, AFFILITATION: String = AFFILIATION, enrollmentId: String, subjectMatriculationList: String): (String, Array[Byte]) =
-              ("", (enrollmentId + "#" + subjectMatriculationList).getBytes())
+              (OperationData("mock", TransactionInfo("", "", Seq()), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, (enrollmentId + "#" + subjectMatriculationList).getBytes())
 
             override def getUnsignedTransaction(proposalBytes: Array[Byte], signature: Array[Byte]): Array[Byte] = {
               "t:".getBytes() ++ proposalBytes
@@ -161,15 +162,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                       override val transactionName: String = "addEntriesToMatriculationData"
                       override val payload: String =
                         """{
-                          |  "type": "HLUnprocessableEntity",
-                          |  "title": "The following parameters do not conform to the specified format.",
-                          |  "invalidParams":[
-                          |     {
-                          |       "name":"matriculations",
-                          |       "reason":"Matriculation status must not be empty"
-                          |     }
-                          |  ]
-                          |}""".stripMargin
+                        |  "type": "HLUnprocessableEntity",
+                        |  "title": "The following parameters do not conform to the specified format.",
+                        |  "invalidParams":[
+                        |     {
+                        |       "name":"matriculations",
+                        |       "reason":"Matriculation status must not be empty"
+                        |     }
+                        |  ]
+                        |}""".stripMargin
                     }
                   }
 
@@ -201,15 +202,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                       override val transactionName: String = "submitSignedTransaction"
                       override val payload: String =
                         """{
-                          |  "type": "HLUnprocessableEntity",
-                          |  "title": "The following parameters do not conform to the specified format.",
-                          |  "invalidParams":[
-                          |     {
-                          |       "name":"matriculations",
-                          |       "reason":"Matriculation status must not be empty"
-                          |     }
-                          |  ]
-                          |}""".stripMargin
+                        |  "type": "HLUnprocessableEntity",
+                        |  "title": "The following parameters do not conform to the specified format.",
+                        |  "invalidParams":[
+                        |     {
+                        |       "name":"matriculations",
+                        |       "reason":"Matriculation status must not be empty"
+                        |     }
+                        |  ]
+                        |}""".stripMargin
                     }
                   }
                   jsonStringList :+= jsonMatriculationData
@@ -219,15 +220,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                     override val transactionName: String = "addEntriesToMatriculationData"
                     override val payload: String =
                       """{
-                        |  "type": "HLUnprocessableEntity",
-                        |  "title": "The following parameters do not conform to the specified format.",
-                        |  "invalidParams":[
-                        |     {
-                        |       "name":"TransactionNotKnown",
-                        |       "reason":"Received an unknown transaction!"
-                        |     }
-                        |  ]
-                        |}""".stripMargin
+                      |  "type": "HLUnprocessableEntity",
+                      |  "title": "The following parameters do not conform to the specified format.",
+                      |  "invalidParams":[
+                      |     {
+                      |       "name":"TransactionNotKnown",
+                      |       "reason":"Received an unknown transaction!"
+                      |     }
+                      |  ]
+                      |}""".stripMargin
                   }
               }
             }
@@ -235,8 +236,11 @@ class MatriculationServiceSpec extends AsyncWordSpec
             override def getChaincodeVersion: String = "testVersion"
 
             override def updateMatriculationData(jSonMatriculationData: String): String = ""
+
             override def getProposalUpdateMatriculationData(certificate: String, affiliation: String, jSonMatriculationData: String): (String, Array[Byte]) = ("", Array.emptyByteArray)
+
             override def getProposalGetMatriculationData(certificate: String, affiliation: String, enrollmentId: String): (String, Array[Byte]) = ("", Array.emptyByteArray)
+
             override val contractName: String = ""
             override lazy val contract: ContractImpl = null
             override lazy val gateway: GatewayImpl = null
@@ -264,6 +268,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
   }
 
   private def createSingleMatriculation(field: String, semester: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester))))
+
   private def asString(unsignedProposal: String) = new String(Base64.getDecoder.decode(unsignedProposal), StandardCharsets.UTF_8)
 
   "MatriculationService service" should {
