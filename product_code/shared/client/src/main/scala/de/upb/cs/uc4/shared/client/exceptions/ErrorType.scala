@@ -20,7 +20,7 @@ object ErrorType extends Enumeration {
   InternalServer, UndeserializableException, //500
   NotImplemented, //501
   HLInternal, //In an InformativeError
-  HLUnknownTransactionId, HLInsufficientApprovals, HLNotFound, HLConflict, HLUnprocessableLedgerState, //In a GenericError
+  HLUnknownTransactionId, HLInsufficientApprovals, HLNotFound, HLConflict, HLUnprocessableLedgerState, HLParameterNumberError, //In a GenericError
   HLUnprocessableEntity, HLInvalidEntity, //In a DetailedError
   HLInvalidTransactionCall //In a TransactionError
   = Value

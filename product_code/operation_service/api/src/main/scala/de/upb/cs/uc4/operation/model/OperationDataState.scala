@@ -3,10 +3,10 @@ package de.upb.cs.uc4.operation.model
 import play.api.libs.json.{ Format, Json }
 
 object OperationDataState extends Enumeration {
-  type OperationState = Value
+  type OperationDataState = Value
   val PENDING, FINISHED, REJECTED = Value
 
-  implicit val format: Format[OperationState] = Json.formatEnum(this)
+  implicit val format: Format[OperationDataState] = Json.formatEnum(this)
 
-  def All: Seq[OperationState] = values.toSeq
+  def All: Seq[OperationDataState] = values.toSeq
 }

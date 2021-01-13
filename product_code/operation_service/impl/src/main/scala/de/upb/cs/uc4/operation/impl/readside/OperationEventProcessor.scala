@@ -5,13 +5,12 @@ import com.lightbend.lagom.scaladsl.persistence.{ AggregateEventTag, ReadSidePro
 import de.upb.cs.uc4.operation.impl.OperationApplication
 import de.upb.cs.uc4.operation.impl.events.OperationEvent
 
-class OperationEventProcessor(readSide: SlickReadSide, database: OperationDatabase)
+class OperationEventProcessor(readSide: SlickReadSide)
   extends ReadSideProcessor[OperationEvent] {
 
   /** @inheritdoc */
   override def buildHandler(): ReadSideProcessor.ReadSideHandler[OperationEvent] =
     readSide.builder[OperationEvent](OperationApplication.offset)
-      .setGlobalPrepare(database.createTable())
       .build()
 
   /** @inheritdoc */

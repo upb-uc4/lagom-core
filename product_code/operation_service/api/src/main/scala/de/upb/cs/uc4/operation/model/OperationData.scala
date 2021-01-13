@@ -1,12 +1,12 @@
 package de.upb.cs.uc4.operation.model
 
-import de.upb.cs.uc4.operation.model.OperationDataState.OperationState
-import play.api.libs.json.{ Format, Json }
+import de.upb.cs.uc4.operation.model.OperationDataState.OperationDataState
+import play.api.libs.json.{Format, Json}
 
 case class OperationData(
     operationId: String,
     transactionInfo: TransactionInfo,
-    state: OperationState,
+    state: OperationDataState,
     reason: String,
     initiator: String,
     initiatorTimestamp: String,
