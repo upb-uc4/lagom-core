@@ -4,15 +4,14 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import com.typesafe.config.Config
 import de.upb.cs.uc4.examreg.impl.ExamregApplication
-import de.upb.cs.uc4.examreg.impl.commands.{ CloseExamregHyperledger, CreateExamregHyperledger }
-import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand }
-import de.upb.cs.uc4.hyperledger.connections.cases.{ ConnectionExaminationRegulation, ConnectionMatriculation }
-import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
+import de.upb.cs.uc4.examreg.impl.commands.{ CloseExamregHyperledger, CreateExamregHyperledger, GetAllExamregsHyperledger }
+import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, ExaminationRegulationsWrapper }
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil._
+import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand }
+import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionExaminationRegulation
+import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
+import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
 import de.upb.cs.uc4.shared.server.messages.Accepted
-
-import scala.util.Success
 
 class ExamregHyperledgerBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionExaminationRegulationTrait] {
 
@@ -30,6 +29,11 @@ class ExamregHyperledgerBehaviour(val config: Config) extends HyperledgerDefault
     */
   override protected def applyCommand(connection: ConnectionExaminationRegulationTrait, command: HyperledgerCommand[_]): Unit = command match {
 
+    case GetAllExamregsHyperledger(replyTo) =>
+      replyTo ! StatusReply.success(ExaminationRegulationsWrapper(
+        connection.getExaminationRegulations("").fromJson[Seq[ExaminationRegulation]]
+      ))
+
     case CreateExamregHyperledger(examreg, replyTo) =>
       connection.addExaminationRegulation(examreg.toJson)
       replyTo ! StatusReply.success(Accepted.default)
@@ -46,7 +50,5 @@ class ExamregHyperledgerBehaviour(val config: Config) extends HyperledgerDefault
 object ExamregHyperledgerBehaviour extends HyperledgerActorObject {
   /** The EntityTypeKey of this actor */
   override val typeKey: EntityTypeKey[HyperledgerBaseCommand] = EntityTypeKey[HyperledgerBaseCommand](ExamregApplication.hlOffset)
-  /** The reference to the entity */
-  override val entityId: String = "uc4examreg"
 }
 

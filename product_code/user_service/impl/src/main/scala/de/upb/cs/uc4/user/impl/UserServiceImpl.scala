@@ -1,7 +1,5 @@
 package de.upb.cs.uc4.user.impl
 
-import java.util
-
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
@@ -33,6 +31,7 @@ import de.upb.cs.uc4.user.model.{ PostMessageUser, _ }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
+import java.util
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
@@ -265,29 +264,37 @@ class UserServiceImpl(
   }
 
   /** Flags a user as deleted and deletes personal info from now on unrequired */
-  override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = authenticated(AuthenticationRole.Admin) {
-    ServerServiceCall {
-      (_, _) =>
-        val ref = entityRef(username)
-        ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
-          optUser =>
-            if (optUser.isEmpty) {
-              throw UC4Exception.NotFound
+  override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+    (authUsername, role) =>
+      {
+        ServerServiceCall {
+          (_, _) =>
+
+            if (role != AuthenticationRole.Admin && authUsername != username) {
+              throw UC4Exception.OwnerMismatch
             }
 
-            if (!optUser.get.isActive) {
-              throw UC4Exception.AlreadyDeleted
-            }
+            val ref = entityRef(username)
+            ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
+              optUser =>
+                if (optUser.isEmpty) {
+                  throw UC4Exception.NotFound
+                }
 
-            ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
-              .map {
-                case Accepted(_) => // Soft Deletion successful
-                  (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                case Rejected(code, reason) => //Update failed
-                  throw UC4Exception(code, reason)
-              }
+                if (!optUser.get.isActive) {
+                  throw UC4Exception.AlreadyDeleted
+                }
+
+                ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
+                  .map {
+                    case Accepted(_) => // Soft Deletion successful
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    case Rejected(code, reason) => //Update failed
+                      throw UC4Exception(code, reason)
+                  }
+            }
         }
-    }
+      }
   }
 
   /** Get all students from the database */
@@ -466,7 +473,7 @@ class UserServiceImpl(
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
-                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List())
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List())
                   .addHeader("ETag", checkImageETag(header, defaultProfilePicture)), ByteString(defaultProfilePicture))
             }
         }
@@ -484,7 +491,7 @@ class UserServiceImpl(
           case None =>
             getUser(username).invokeWithHeaders(header, NotUsed).map {
               _ =>
-                (ResponseHeader(200, MessageProtocol(contentType = Some("image/png; charset=UTF-8")), List())
+                (ResponseHeader(200, MessageProtocol(contentType = Some("image/jpeg; charset=UTF-8")), List())
                   .addHeader("ETag", checkImageETag(header, defaultThumbnail)), ByteString(defaultThumbnail))
             }
         }

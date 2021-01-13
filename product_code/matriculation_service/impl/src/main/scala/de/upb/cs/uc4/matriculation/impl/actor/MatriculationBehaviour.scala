@@ -52,6 +52,4 @@ class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActor
 object MatriculationBehaviour extends HyperledgerActorObject {
   /** The EntityTypeKey of this actor */
   override val typeKey: EntityTypeKey[HyperledgerBaseCommand] = EntityTypeKey[HyperledgerBaseCommand]("uc4matriculation")
-  /** The reference to the entity */
-  override val entityId: String = "matriculation"
 }

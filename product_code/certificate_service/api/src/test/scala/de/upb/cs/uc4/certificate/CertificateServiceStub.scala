@@ -15,13 +15,22 @@ import scala.concurrent.Future
 class CertificateServiceStub extends CertificateService {
   private val certificateUsers = mutable.HashMap[String, CertificateUserEntry]()
 
-  /** Create CertficateUser data for the given usernames. Without futures, for your convenience.
-    *
-    */
-  def setup(usernames: String*): Unit = {
+  /** Create CertficateUser data for the given usernames. Without futures, for your convenience. */
+  def addAll(usernames: String*): Unit = {
     usernames.foreach { username =>
       certificateUsers.put(username, CertificateUserEntry(username + "enrollmentId", username + "enrollmentSecret", username + "certificate", EncryptedPrivateKey("", "", "")))
     }
+  }
+
+  /** Deletes all certificate users */
+  def reset(): Unit = {
+    certificateUsers.clear()
+  }
+
+  /** Deletes all certificate users and adds the given users */
+  def setup(usernames: String*): Unit = {
+    reset()
+    addAll(usernames: _*)
   }
 
   /** Fetch CertficateUser data for the given username. Without futures, for your convenience. */

@@ -1,4 +1,4 @@
-# [WIP - v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/admission-v0.15.1...admission-v0.15.1) (2021-XX-XX)
+# [v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/admission-v0.15.1...admission-v0.15.1) (2021-01-06)
 ## Feature
  - Added GET course admission endpoint
  - Added GET proposal to add admission
