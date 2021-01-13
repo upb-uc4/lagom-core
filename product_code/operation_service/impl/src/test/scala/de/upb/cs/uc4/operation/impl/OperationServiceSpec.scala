@@ -13,7 +13,10 @@ import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exce
 import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
+import org.scalatest.concurrent.Eventually.eventually
+import org.scalatest.concurrent.Waiters.timeout
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
@@ -21,77 +24,77 @@ import java.nio.file.Path
 import scala.collection.mutable
 import scala.language.{ existentials, reflectiveCalls }
 
-/** Tests for the MatriculationService */
+/** Tests for the OperationService */
 class OperationServiceSpec extends AsyncWordSpec
   with UC4SpecUtils with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup.withJdbc()
   ) { ctx =>
-      new OperationApplication(ctx) with LocalServiceLocator {
+    new OperationApplication(ctx) with LocalServiceLocator {
 
-        override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
+      override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
 
-        var operationList: Seq[OperationData] = List()
+      var operationList: Seq[OperationData] = List()
 
-        override def createActorFactory: OperationHyperledgerBehaviour = new OperationHyperledgerBehaviour(config) {
+      override def createActorFactory: OperationHyperledgerBehaviour = new OperationHyperledgerBehaviour(config) {
 
-          override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
-          override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
-          override val tlsCert: Path = retrievePath("uc4.hyperledger.tlsCert", "")
+        override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
+        override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
+        override val tlsCert: Path = retrievePath("uc4.hyperledger.tlsCert", "")
 
-          override val channel: String = "myc"
-          override val chaincode: String = "mycc"
-          override val caURL: String = ""
+        override val channel: String = "myc"
+        override val chaincode: String = "mycc"
+        override val caURL: String = ""
 
-          override val adminUsername: String = "cli"
-          override val adminPassword: String = ""
+        override val adminUsername: String = "cli"
+        override val adminPassword: String = ""
 
-          override protected def createConnection: ConnectionOperationsTrait = new ConnectionOperationsTrait() {
+        override protected def createConnection: ConnectionOperationsTrait = new ConnectionOperationsTrait() {
 
-            override def getChaincodeVersion: String = "testVersion"
+          override def getChaincodeVersion: String = "testVersion"
 
-            override def approveTransaction(initiator: String, contractName: String, transactionName: String, params: String*): String = "APPROVED"
+          override def approveTransaction(initiator: String, contractName: String, transactionName: String, params: String*): String = "APPROVED"
 
-            override def rejectTransaction(operationId: String, rejectMessage: String): String = {
-              operationList = operationList.map { operation =>
-                if (operation.operationId == operationId) {
-                  operation.copy(state = OperationDataState.REJECTED, reason = rejectMessage)
-                }
-                else {
-                  operation
-                }
+          override def rejectTransaction(operationId: String, rejectMessage: String): String = {
+            operationList = operationList.map { operation =>
+              if (operation.operationId == operationId) {
+                operation.copy(state = OperationDataState.REJECTED, reason = rejectMessage)
               }
-              "REJECTED"
-            }
-
-            override def getOperations(existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, state: String): String = {
-              operationList
-                .filter(op => state.isEmpty || op.state.toString == state)
-                .filter(op => initiatorEnrollmentId.isEmpty || op.initiator == initiatorEnrollmentId)
-                .filter(op => missingEnrollmentId.isEmpty || op.missingApprovals.user.contains(missingEnrollmentId) || op.missingApprovals.groups.contains(groups(missingEnrollmentId)))
-                .filter(op => existingEnrollmentId.isEmpty || op.existingApprovals.user.contains(existingEnrollmentId))
-                .toJson
-            }
-
-            override def getOperationData(operationId: String): String = {
-              operationList.find(_.operationId == operationId) match {
-                case Some(value) => value.toJson
-                case None        => throw UC4Exception(404, GenericError(ErrorType.HLNotFound, ""))
+              else {
+                operation
               }
             }
-
-            override lazy val contract: ContractImpl = null
-            override lazy val gateway: GatewayImpl = null
-            override val username: String = ""
-            override val channel: String = ""
-            override val chaincode: String = ""
-            override val walletPath: Path = null
-            override val networkDescriptionPath: Path = null
+            "REJECTED"
           }
+
+          override def getOperations(existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, state: String): String = {
+            operationList
+              .filter(op => state.isEmpty || op.state.toString == state)
+              .filter(op => initiatorEnrollmentId.isEmpty || op.initiator == initiatorEnrollmentId)
+              .filter(op => missingEnrollmentId.isEmpty || op.missingApprovals.user.contains(missingEnrollmentId) || op.missingApprovals.groups.contains(groups(missingEnrollmentId)))
+              .filter(op => existingEnrollmentId.isEmpty || op.existingApprovals.user.contains(existingEnrollmentId))
+              .toJson
+          }
+
+          override def getOperationData(operationId: String): String = {
+            operationList.find(_.operationId == operationId) match {
+              case Some(value) => value.toJson
+              case None => throw UC4Exception(404, GenericError(ErrorType.HLNotFound, ""))
+            }
+          }
+
+          override lazy val contract: ContractImpl = null
+          override lazy val gateway: GatewayImpl = null
+          override val username: String = ""
+          override val channel: String = ""
+          override val chaincode: String = ""
+          override val walletPath: Path = null
+          override val networkDescriptionPath: Path = null
         }
       }
     }
+  }
 
   val client: OperationService = server.serviceClient.implement[OperationService]
   val certificate: CertificateServiceStub = server.application.certificateService
@@ -211,6 +214,24 @@ class OperationServiceSpec extends AsyncWordSpec
           val rejected = server.application.operationList.find(op => op.operationId == "op1").get
           (rejected.state, rejected.reason) should ===(OperationDataState.REJECTED, reason)
         }
+    }
+
+    "update the watchlist of a user" in {
+      prepare(Seq(operation1, operation2))
+      client.addToWatchList(student0).handleRequestHeader(addAuthorizationHeader(student0)).invoke(JsonOperationId(operation1.operationId)).flatMap {
+        _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getOperations(None, None, None, Some(true)).handleRequestHeader(addAuthorizationHeader(student1)).invoke().map {
+              operations => operations should contain theSameElementsAs Seq(operation1)
+            }
+          }
+      }
+    }
+
+    "should not add the watchlist of a user as another user" in {
+      client.addToWatchList(student0).handleRequestHeader(addAuthorizationHeader(student1)).invoke(JsonOperationId("test")).failed.map {
+        ex => ex.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
     }
   }
 }

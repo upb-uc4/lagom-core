@@ -10,7 +10,7 @@ import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.RegistrationUser
 import de.upb.cs.uc4.group.api.GroupService
 import de.upb.cs.uc4.group.impl.actor.GroupBehaviour
-import de.upb.cs.uc4.group.impl.commands.SetGroup
+import de.upb.cs.uc4.group.impl.commands.AddToGroup
 import de.upb.cs.uc4.hyperledger.HyperledgerComponent
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4Application
@@ -49,7 +49,7 @@ abstract class GroupApplication(context: LagomApplicationContext)
         try {
           val user = kafkaEncryptionUtility.decrypt[RegistrationUser](container)
           clusterSharding.entityRefFor(GroupBehaviour.typeKey, GroupBehaviour.entityId)
-            .askWithStatus[Confirmation](replyTo => SetGroup(user.enrollmentId, user.role, replyTo))
+            .askWithStatus[Confirmation](replyTo => AddToGroup(user.enrollmentId, user.role, replyTo))
             .map(_ => Done)
             .recover {
               case throwable: Throwable =>
