@@ -60,12 +60,6 @@ class MatriculationServiceStub extends MatriculationService {
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = { _ => Future.successful(Done) }
 
-  /** Immatriculates a student */
-  override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done] = { _ => Future.successful(Done) }
-
-  /** Allows PUT */
-  override def allowedPut: ServiceCall[NotUsed, Done] = { _ => Future.successful(Done) }
-
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = { _ =>
     Future.successful(JsonHyperledgerVersion("Version API", "Version Chaincode"))
