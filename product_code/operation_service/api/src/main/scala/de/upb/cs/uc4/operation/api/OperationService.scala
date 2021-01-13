@@ -68,7 +68,7 @@ trait OperationService extends UC4HyperledgerService {
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/signed_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/signed_transaction", allowedPost _),
 
-        restCall(Method.POST, pathPrefix + "/watchlist/:username", submitTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/watchlist/:username", addToWatchList _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/watchlist/:username", allowedPost _)
       )
   }

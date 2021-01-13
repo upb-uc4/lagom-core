@@ -17,7 +17,6 @@ class OperationStateSpec extends ScalaTestWithActorTestKit(s"""
       akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"
     """) with AnyWordSpecLike with Matchers {
 
-
   "OperationState" should {
 
     //GET
