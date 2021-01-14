@@ -50,13 +50,9 @@ class MatriculationServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   /** Submits a proposal to matriculate a student */
-  override def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction] =
-    identifiedAuthenticated[SignedProposal, UnsignedTransaction](AuthenticationRole.Student) { (authUser, _) =>
+  override def submitMatriculationProposal(): ServiceCall[SignedProposal, UnsignedTransaction] =
+    authenticated[SignedProposal, UnsignedTransaction](AuthenticationRole.Student, AuthenticationRole.Admin) {
       ServerServiceCall { (_, signedProposal) =>
-        if (authUser != username.trim) {
-          throw UC4Exception.OwnerMismatch
-        }
-
         entityRef.askWithStatus[Array[Byte]](replyTo => SubmitProposal(signedProposal, replyTo)).map { array =>
           (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedTransaction(array))
         }.recover(handleException("Submit proposal failed"))
@@ -64,13 +60,9 @@ class MatriculationServiceImpl(
     }
 
   /** Submits a transaction to matriculate a student */
-  override def submitMatriculationTransaction(username: String): ServiceCall[SignedTransaction, Done] =
-    identifiedAuthenticated[SignedTransaction, Done](AuthenticationRole.Student) { (authUser, _) =>
+  override def submitMatriculationTransaction(): ServiceCall[SignedTransaction, Done] =
+    authenticated[SignedTransaction, Done](AuthenticationRole.Student, AuthenticationRole.Admin) {
       ServerServiceCall { (_, signedTransaction) =>
-        if (authUser != username.trim) {
-          throw UC4Exception.OwnerMismatch
-        }
-
         entityRef.askWithStatus[Confirmation](replyTo => SubmitTransaction(signedTransaction, replyTo)).map {
           case Accepted(_) =>
             (ResponseHeader(202, MessageProtocol.empty, List()), Done)
@@ -82,7 +74,7 @@ class MatriculationServiceImpl(
 
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
-    identifiedAuthenticated[PutMessageMatriculation, UnsignedProposal](AuthenticationRole.Student) { (authUser, _) =>
+    identifiedAuthenticated[PutMessageMatriculation, UnsignedProposal](AuthenticationRole.Student, AuthenticationRole.Admin) { (authUser, _) =>
       ServerServiceCall { (header, rawMatriculationProposal) =>
 
         if (authUser != username.trim) {
@@ -138,7 +130,11 @@ class MatriculationServiceImpl(
                             replyTo
                           )).map {
                             proposalWrapper =>
-                              operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
+                              operationService.addToWatchList(username).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
+                                .recover {
+                                  case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
+                                  case throwable: Throwable => throw throwable
+                                }
                               (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
                           }.recover(handleException("Creation of add entry proposal failed"))
 
@@ -152,7 +148,11 @@ class MatriculationServiceImpl(
                             GetProposalForAddMatriculationData(certificate, data, replyTo)
                           }.map {
                             proposalWrapper =>
-                              operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
+                              operationService.addToWatchList(username).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
+                                .recover {
+                                  case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
+                                  case throwable: Throwable => throw throwable
+                                }
                               (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
                           }.recover(handleException("Creation of add matriculation data proposal failed"))
 
