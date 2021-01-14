@@ -302,7 +302,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
 
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(message).flatMap { proposal =>
-            client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+            client.submitMatriculationProposal().handleRequestHeader(addAuthorizationHeader(student0.username))
               .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
                 asString(transaction.unsignedTransaction) should ===("t:" + data.toJson)
               }
@@ -344,10 +344,10 @@ class MatriculationServiceSpec extends AsyncWordSpec
           .invoke(createSingleMatriculation(examReg0.name, "WS2020/21")).flatMap {
             proposal =>
 
-              client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+              client.submitMatriculationProposal().handleRequestHeader(addAuthorizationHeader(student0.username))
                 .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
 
-                  client.submitMatriculationTransaction(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+                  client.submitMatriculationTransaction().handleRequestHeader(addAuthorizationHeader(student0.username))
                     .invoke(SignedTransaction(transaction.unsignedTransaction, "c2lnbmVk")).flatMap { _ =>
 
                       client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
@@ -375,10 +375,10 @@ class MatriculationServiceSpec extends AsyncWordSpec
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(createSingleMatriculation(examReg1.name, "WS2021/22")).flatMap { proposal =>
 
-            client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+            client.submitMatriculationProposal().handleRequestHeader(addAuthorizationHeader(student0.username))
               .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
 
-                client.submitMatriculationTransaction(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+                client.submitMatriculationTransaction().handleRequestHeader(addAuthorizationHeader(student0.username))
                   .invoke(SignedTransaction(transaction.unsignedTransaction, "c2lnbmVk")).flatMap { _ =>
 
                     client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {

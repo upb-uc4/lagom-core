@@ -5,7 +5,7 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
-import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 
@@ -74,6 +74,19 @@ class CertificateServiceStub extends CertificateService {
         case None => Future.failed(UC4Exception.NotFound)
       }
   }
+
+  /** Returns the username that matches the given enrollmentId */
+  override def getUsername(enrollmentId: String): ServiceCall[NotUsed, JsonUsername] = ServiceCall {
+    _ =>
+      Future.successful(JsonUsername(
+        certificateUsers.filter {
+          case (_, entry) => entry.enrollmentId == enrollmentId.trim
+        }.map {
+          case (username, _) => username
+        }.head
+      ))
+  }
+
   /** Publishes every user that is registered at hyperledger */
   override def userRegistrationTopic(): Topic[EncryptionContainer] = null
 
@@ -88,5 +101,4 @@ class CertificateServiceStub extends CertificateService {
 
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = { _ => Future.successful(JsonHyperledgerVersion("", "")) }
-
 }

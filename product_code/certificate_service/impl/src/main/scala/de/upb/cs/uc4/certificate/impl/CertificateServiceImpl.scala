@@ -15,11 +15,12 @@ import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateState, CertificateUser }
 import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
 import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnRegisterUser }
+import de.upb.cs.uc4.certificate.impl.readside.CertificateDatabase
 import de.upb.cs.uc4.certificate.model._
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerAdminParts, HyperledgerUtils }
-import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
@@ -38,6 +39,7 @@ class CertificateServiceImpl(
     persistentEntityRegistry: PersistentEntityRegistry,
     enrollmentManager: EnrollmentManagerTrait,
     kafkaEncryptionUtility: KafkaEncryptionUtility,
+    database: CertificateDatabase,
     override val environment: Environment
 )(implicit ec: ExecutionContext, timeout: Timeout, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
@@ -140,13 +142,25 @@ class CertificateServiceImpl(
       }
   }
 
+  /** Returns the username that matches the given enrollmentId */
+  override def getUsername(enrollmentId: String): ServiceCall[NotUsed, JsonUsername] = authenticated(AuthenticationRole.Admin) {
+    ServerServiceCall {
+      (header, _) =>
+        database.get(enrollmentId).map {
+          case Some(username) => createETagHeader(header, JsonUsername(username))
+          case None           => throw UC4Exception.NotFound
+        }
+
+    }
+  }
+
   /** Publishes every user that is registered at hyperledger */
   override def userRegistrationTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(CertificateEvent.Tag, fromOffset)
       .mapConcat {
         //Filter only OnRegisterUser events
-        case EventStreamElement(_, OnRegisterUser(enrollmentId, _, role), offset) => try {
+        case EventStreamElement(_, OnRegisterUser(_, enrollmentId, _, role), offset) => try {
           immutable.Seq((kafkaEncryptionUtility.encrypt(RegistrationUser(enrollmentId, role)), offset))
         }
         catch {

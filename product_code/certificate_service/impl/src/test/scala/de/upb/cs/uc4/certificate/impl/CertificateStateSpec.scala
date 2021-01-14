@@ -34,7 +34,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
 
       //register a user
       val probe1 = createTestProbe[Confirmation]()
-      ref ! RegisterUser("enrollmentId", "enrollmentSecret", "role", probe1.ref)
+      ref ! RegisterUser("mockUsername", "enrollmentId", "enrollmentSecret", "role", probe1.ref)
       probe1.expectMessageType[Accepted]
 
       //fetch a registered user
@@ -48,7 +48,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
 
       //register a user
       val probe1 = createTestProbe[Confirmation]()
-      ref ! RegisterUser("enrollmentId", "enrollmentSecret", "role", probe1.ref)
+      ref ! RegisterUser("mockUsername", "enrollmentId", "enrollmentSecret", "role", probe1.ref)
       probe1.expectMessageType[Accepted]
 
       //set the certificate and key of a user
@@ -66,7 +66,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
     "register a CertificateUser" in {
       val probe = createTestProbe[Confirmation]()
       val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-5")))
-      ref ! RegisterUser("enrollmentId", "enrollmentSecret", "role", probe.ref)
+      ref ! RegisterUser("mockUsername", "enrollmentId", "enrollmentSecret", "role", probe.ref)
       probe.expectMessageType[Accepted]
     }
 
@@ -76,7 +76,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
 
       //register a user
       val probe1 = createTestProbe[Confirmation]()
-      ref ! RegisterUser("enrollmentId", "enrollmentSecret", "role", probe1.ref)
+      ref ! RegisterUser("mockUsername", "enrollmentId", "enrollmentSecret", "role", probe1.ref)
       probe1.expectMessageType[Accepted]
 
       //set the certificate and key of a user
@@ -93,7 +93,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-7")))
 
-      ref ! RegisterUser("enrollmentId", "enrollmentSecret", "role", probe1.ref)
+      ref ! RegisterUser("mockUsername", "enrollmentId", "enrollmentSecret", "role", probe1.ref)
       probe1.expectMessageType[Accepted]
 
       ref ! ForceDeleteCertificateUser("SomeUsername", Role.Lecturer, probe2.ref)
@@ -110,7 +110,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-8")))
 
-      ref ! RegisterUser("enrollmentId", "enrollmentSecret", "role", probe1.ref)
+      ref ! RegisterUser("mockUsername", "enrollmentId", "enrollmentSecret", "role", probe1.ref)
       probe1.expectMessageType[Accepted]
 
       ref ! SoftDeleteCertificateUser("SomeUsername", Role.Student, probe2.ref)
@@ -128,7 +128,7 @@ class CertificateStateSpec extends ScalaTestWithActorTestKit(s"""
 
       val ref = spawn(CertificateBehaviour.create(PersistenceId("fake-type-hint", "fake-id-9")))
 
-      ref ! RegisterUser("enrollmentId", "enrollmentSecret", "role", probe1.ref)
+      ref ! RegisterUser("mockUsername", "enrollmentId", "enrollmentSecret", "role", probe1.ref)
       probe1.expectMessageType[Accepted]
 
       ref ! SetCertificateAndKey("certificate", EncryptedPrivateKey("Key", "IV", "Salt"), probe2.ref)

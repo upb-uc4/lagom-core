@@ -5,7 +5,7 @@ import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
-import de.upb.cs.uc4.shared.client.UC4HyperledgerService
+import de.upb.cs.uc4.shared.client.{ JsonUsername, UC4HyperledgerService }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
@@ -32,6 +32,9 @@ trait CertificateService extends UC4HyperledgerService {
   /** Returns the encrypted private key of the given user */
   def getPrivateKey(username: String): ServiceCall[NotUsed, EncryptedPrivateKey]
 
+  /** Returns the username that matches the given enrollmentId */
+  def getUsername(enrollmentId: String): ServiceCall[NotUsed, JsonUsername]
+
   // OPTIONS
   /** Allows POST */
   def allowedPost: ServiceCall[NotUsed, Done]
@@ -52,10 +55,12 @@ trait CertificateService extends UC4HyperledgerService {
         restCall(Method.GET, pathPrefix + "/certificates/:username/certificate", getCertificate _),
         restCall(Method.GET, pathPrefix + "/certificates/:username/enrollmentId", getEnrollmentId _),
         restCall(Method.GET, pathPrefix + "/certificates/:username/privateKey", getPrivateKey _),
+        restCall(Method.GET, pathPrefix + "/certificates/:enrollmentId/username", getUsername _),
         restCall(Method.OPTIONS, pathPrefix + "/certificates/:username", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/certificate", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/enrollmentId", allowedGet _),
-        restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/privateKey", allowedGet _)
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/privateKey", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/:enrollmentId/username", allowedGet _)
       )
       .addTopics(
         topic(CertificateService.REGISTRATION_TOPIC_NAME, userRegistrationTopic _)

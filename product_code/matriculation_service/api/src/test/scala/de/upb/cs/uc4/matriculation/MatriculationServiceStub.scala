@@ -34,11 +34,11 @@ class MatriculationServiceStub extends MatriculationService {
   }
 
   /** Submits a proposal to matriculate a student */
-  override def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction] =
+  override def submitMatriculationProposal(): ServiceCall[SignedProposal, UnsignedTransaction] =
     proposal => Future.successful(UnsignedTransaction("t:".getBytes() ++ proposal.unsignedProposalAsByteArray))
 
   /** Submits a transaction to matriculate a student */
-  override def submitMatriculationTransaction(username: String): ServiceCall[SignedTransaction, Done] = {
+  override def submitMatriculationTransaction(): ServiceCall[SignedTransaction, Done] = {
     _ => Future.successful(Done)
   }
 

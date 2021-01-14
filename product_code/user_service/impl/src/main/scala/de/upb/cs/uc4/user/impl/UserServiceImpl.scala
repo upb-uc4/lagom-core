@@ -12,9 +12,9 @@ import com.lightbend.lagom.scaladsl.persistence.{ EventStreamElement, Persistent
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, JsonUsername }
+import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.image.api.ImageProcessingService
-import de.upb.cs.uc4.shared.client.Hashing
+import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
