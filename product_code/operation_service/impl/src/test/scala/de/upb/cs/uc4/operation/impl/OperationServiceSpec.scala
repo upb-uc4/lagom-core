@@ -221,7 +221,7 @@ class OperationServiceSpec extends AsyncWordSpec
       client.addToWatchList(student0).handleRequestHeader(addAuthorizationHeader(student0)).invoke(JsonOperationId(operation1.operationId)).flatMap {
         _ =>
           eventually(timeout(Span(15, Seconds))) {
-            client.getOperations(None, None, None, Some(true)).handleRequestHeader(addAuthorizationHeader(student1)).invoke().map {
+            client.getOperations(None, None, None, Some(true)).handleRequestHeader(addAuthorizationHeader(student0)).invoke().map {
               operations => operations should contain theSameElementsAs Seq(operation1)
             }
           }
