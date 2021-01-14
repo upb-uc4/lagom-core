@@ -116,15 +116,15 @@ class OperationServiceSpec extends AsyncWordSpec
     groups += certificate.get(student2).enrollmentId -> "Student"
     groups += certificate.get(admin0).enrollmentId -> "Admin"
 
-    operation1 = OperationData("op1", TransactionInfo("contract", "transaction", Seq()),
+    operation1 = OperationData("op1", TransactionInfo("contract", "transaction", ""),
       OperationDataState.PENDING, "", certificate.get(student0).enrollmentId, "", "",
       ApprovalList(Seq(), Seq("Admin")),
       ApprovalList(Seq(certificate.get(student1).enrollmentId), Seq()))
-    operation2 = OperationData("op2", TransactionInfo("contract", "transaction", Seq()),
+    operation2 = OperationData("op2", TransactionInfo("contract", "transaction", ""),
       OperationDataState.PENDING, "", certificate.get(student1).enrollmentId, "", "",
       ApprovalList(Seq(certificate.get(student2).enrollmentId), Seq()),
       ApprovalList(Seq(), Seq("Admin")))
-    operation3 = OperationData("op3", TransactionInfo("contract", "transaction", Seq()),
+    operation3 = OperationData("op3", TransactionInfo("contract", "transaction", ""),
       OperationDataState.REJECTED, "", certificate.get(student1).enrollmentId, "", "",
       ApprovalList(Seq(certificate.get(student2).enrollmentId), Seq()),
       ApprovalList(Seq(), Seq("Admin")))
