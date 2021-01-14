@@ -37,70 +37,70 @@ class OperationServiceSpec extends AsyncWordSpec
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup.withJdbc()
   ) { ctx =>
-    new OperationApplication(ctx) with LocalServiceLocator {
+      new OperationApplication(ctx) with LocalServiceLocator {
 
-      override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
+        override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
 
-      var operationList: Seq[OperationData] = List()
+        var operationList: Seq[OperationData] = List()
 
-      override def createActorFactory: OperationHyperledgerBehaviour = new OperationHyperledgerBehaviour(config) {
+        override def createActorFactory: OperationHyperledgerBehaviour = new OperationHyperledgerBehaviour(config) {
 
-        override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
-        override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
-        override val tlsCert: Path = retrievePath("uc4.hyperledger.tlsCert", "")
+          override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
+          override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
+          override val tlsCert: Path = retrievePath("uc4.hyperledger.tlsCert", "")
 
-        override val channel: String = "myc"
-        override val chaincode: String = "mycc"
-        override val caURL: String = ""
+          override val channel: String = "myc"
+          override val chaincode: String = "mycc"
+          override val caURL: String = ""
 
-        override val adminUsername: String = "cli"
-        override val adminPassword: String = ""
+          override val adminUsername: String = "cli"
+          override val adminPassword: String = ""
 
-        override protected def createConnection: ConnectionOperationsTrait = new ConnectionOperationsTrait() {
+          override protected def createConnection: ConnectionOperationsTrait = new ConnectionOperationsTrait() {
 
-          override def getChaincodeVersion: String = "testVersion"
+            override def getChaincodeVersion: String = "testVersion"
 
-          override def approveTransaction(initiator: String, contractName: String, transactionName: String, params: String*): String = "APPROVED"
+            override def approveTransaction(initiator: String, contractName: String, transactionName: String, params: String*): String = "APPROVED"
 
-          override def rejectTransaction(operationId: String, rejectMessage: String): String = {
-            operationList = operationList.map { operation =>
-              if (operation.operationId == operationId) {
-                operation.copy(state = OperationDataState.REJECTED, reason = rejectMessage)
+            override def rejectTransaction(operationId: String, rejectMessage: String): String = {
+              operationList = operationList.map { operation =>
+                if (operation.operationId == operationId) {
+                  operation.copy(state = OperationDataState.REJECTED, reason = rejectMessage)
+                }
+                else {
+                  operation
+                }
               }
-              else {
-                operation
+              "REJECTED"
+            }
+
+            override def getOperations(existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, state: String): String = {
+              operationList
+                .filter(op => state.isEmpty || op.state.toString == state)
+                .filter(op => initiatorEnrollmentId.isEmpty || op.initiator == initiatorEnrollmentId)
+                .filter(op => missingEnrollmentId.isEmpty || op.missingApprovals.users.contains(missingEnrollmentId) || op.missingApprovals.groups.contains(groups(missingEnrollmentId)))
+                .filter(op => existingEnrollmentId.isEmpty || op.existingApprovals.users.contains(existingEnrollmentId))
+                .toJson
+            }
+
+            override def getOperationData(operationId: String): String = {
+              operationList.find(_.operationId == operationId) match {
+                case Some(value) => value.toJson
+                case None        => throw UC4Exception(404, GenericError(ErrorType.HLNotFound, ""))
               }
             }
-            "REJECTED"
-          }
 
-          override def getOperations(existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, state: String): String = {
-            operationList
-              .filter(op => state.isEmpty || op.state.toString == state)
-              .filter(op => initiatorEnrollmentId.isEmpty || op.initiator == initiatorEnrollmentId)
-              .filter(op => missingEnrollmentId.isEmpty || op.missingApprovals.users.contains(missingEnrollmentId) || op.missingApprovals.groups.contains(groups(missingEnrollmentId)))
-              .filter(op => existingEnrollmentId.isEmpty || op.existingApprovals.users.contains(existingEnrollmentId))
-              .toJson
+            override lazy val contract: ContractImpl = null
+            override lazy val gateway: GatewayImpl = null
+            override val username: String = ""
+            override val channel: String = ""
+            override val chaincode: String = ""
+            override val walletPath: Path = null
+            override val networkDescriptionPath: Path = null
           }
-
-          override def getOperationData(operationId: String): String = {
-            operationList.find(_.operationId == operationId) match {
-              case Some(value) => value.toJson
-              case None => throw UC4Exception(404, GenericError(ErrorType.HLNotFound, ""))
-            }
-          }
-
-          override lazy val contract: ContractImpl = null
-          override lazy val gateway: GatewayImpl = null
-          override val username: String = ""
-          override val channel: String = ""
-          override val chaincode: String = ""
-          override val walletPath: Path = null
-          override val networkDescriptionPath: Path = null
         }
       }
     }
-  }
 
   val client: OperationService = server.serviceClient.implement[OperationService]
   val certificate: CertificateServiceStub = server.application.certificateService
@@ -145,7 +145,6 @@ class OperationServiceSpec extends AsyncWordSpec
   def cleanup(): Unit = {
     server.application.operationList = List()
   }
-
 
   implicit val actorTimeout: Timeout = Timeout(5.seconds)
 
