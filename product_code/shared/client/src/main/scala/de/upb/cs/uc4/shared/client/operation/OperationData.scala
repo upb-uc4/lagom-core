@@ -9,16 +9,16 @@ case class OperationData(
     state: OperationDataState,
     reason: String,
     initiator: String,
-    initiatorTimestamp: String,
+    initiatedTimestamp: String,
     lastModifiedTimestamp: String,
     existingApprovals: ApprovalList,
     missingApprovals: ApprovalList
 ) {
   def containsEnrollmentId(enrollmentId: String): Boolean =
-    initiator == enrollmentId || existingApprovals.user.contains(enrollmentId) || missingApprovals.user.contains(enrollmentId)
+    initiator == enrollmentId || existingApprovals.users.contains(enrollmentId) || missingApprovals.users.contains(enrollmentId)
 
   def containsGroup(group: String): Boolean =
-    existingApprovals.user.contains(group) || missingApprovals.user.contains(group)
+    existingApprovals.users.contains(group) || missingApprovals.users.contains(group)
 
   def isInvolved(enrollmentId: String, group: String): Boolean =
     containsEnrollmentId(enrollmentId) || containsGroup(group)
