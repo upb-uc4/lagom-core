@@ -12,7 +12,7 @@ object Version {
     "hyperledger_api" -> "0.15.7",
     "matriculation_service" -> "v0.15.1",
     "operation_service" -> "v0.15.1",
-    "user_service" -> "v0.15.2",
+    "user_service" -> "v0.15.3",
     "report_service" -> "v0.15.1"
   )
 
