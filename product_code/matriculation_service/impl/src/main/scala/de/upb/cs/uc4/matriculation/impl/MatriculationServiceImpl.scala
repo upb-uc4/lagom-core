@@ -74,10 +74,10 @@ class MatriculationServiceImpl(
 
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
-    identifiedAuthenticated[PutMessageMatriculation, UnsignedProposal](AuthenticationRole.Student, AuthenticationRole.Admin) { (authUser, _) =>
+    identifiedAuthenticated[PutMessageMatriculation, UnsignedProposal](AuthenticationRole.Student, AuthenticationRole.Admin) { (authUser, authRole) =>
       ServerServiceCall { (header, rawMatriculationProposal) =>
 
-        if (authUser != username.trim) {
+        if (authRole != AuthenticationRole.Admin && authUser != username.trim) {
           throw UC4Exception.OwnerMismatch
         }
 
