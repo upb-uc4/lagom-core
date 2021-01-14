@@ -389,6 +389,33 @@ class UserServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
+
+    "fetch the public information of all specified Users that are active, as a non-Admin" in {
+      prepare(Seq(student0, student1, student2, lecturer0, lecturer1, admin0, admin1)).flatMap { _ =>
+        client.softDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          client.softDeleteUser(lecturer1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+            client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username + "," + student1.username + "," + lecturer1.username), Some(true)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
+              answer should ===(GetAllUsersResponse(Seq(student0.toPublic), Seq(lecturer0.toPublic), Seq(admin0.toPublic)))
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch information of all specified Users that are inactive, as a non-Admin" in {
+      prepare(Seq(student0, student1, student2, lecturer0, lecturer1, admin0, admin1)).flatMap { _ =>
+        client.softDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          client.softDeleteUser(lecturer1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+            client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username + "," + student1.username + "," + lecturer1.username), Some(false)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
+              answer should ===(GetAllUsersResponse(Seq(student1.softDelete), Seq(lecturer1.softDelete), Seq()))
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
     "fetch the information of all specified Users, as an Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
         client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username), None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
@@ -411,7 +438,7 @@ class UserServiceSpec extends AsyncWordSpec
               allUsers.students should have size 0
               allUsers.lecturers should contain allElementsOf addedUsers.filter(_.role == Role.Lecturer)
               allUsers.admins should have size 2 //Has size two because system admin is always added
-              allUsers.admins should contain allElementsOf addedUsers.filter(_.role == Role.Admin) //TODO This fails in "fetch all active Admins from the database as an Admin"
+              allUsers.admins should contain allElementsOf addedUsers.filter(_.role == Role.Admin)
             }
           }
         }
@@ -485,13 +512,16 @@ class UserServiceSpec extends AsyncWordSpec
 
     "fetch all active Admins from the database as an Admin" in {
       prepare(Seq(admin0, admin1, admin2)).flatMap { addedUsers: Seq[User] =>
-        client.softDeleteUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+        val userToDelete = addedUsers.head
+        client.softDeleteUser(userToDelete.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          // val currentlyActive = addedUsers.diff()
           eventually(timeout(Span(15, Seconds))) {
             client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
-
               allUsers.students should have size 0
               allUsers.lecturers should have size 0
-              allUsers.admins.filter(_.username != "admin") should contain theSameElementsAs addedUsers.filter(user => user.role == Role.Admin && user.username != admin0.username) //TODO Inconvenient assertion
+              allUsers.admins should have size 3 //Has size three because system admin is always added
+              allUsers.admins should contain allElementsOf addedUsers.filter(_.role == Role.Admin).diff(Seq(userToDelete)) //without userToDelete
+
             }
           }
         }
@@ -508,6 +538,39 @@ class UserServiceSpec extends AsyncWordSpec
               allUsers.students.map(_.username) should have size 0
               allUsers.lecturers should have size 0
               allUsers.admins.map(_.username) should contain theSameElementsAs addedUsers.filter(_.username == admin0.username).map(_.username)
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch only the information of all specified Users that are active, as an Admin" in {
+      prepare(Seq(student0, student1, student2, lecturer0, lecturer1, admin0, admin1)).flatMap { _ =>
+        client.softDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          client.softDeleteUser(lecturer1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+            client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username + "," + student1.username + "," + lecturer1.username), Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
+              answer.copy(
+                answer.students.map(_.copy(enrollmentIdSecret = "")),
+                answer.lecturers.map(_.copy(enrollmentIdSecret = "")),
+                answer.admins.map(_.copy(enrollmentIdSecret = ""))
+              ) should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "fetch only the information of all specified Users that are inactive, as an Admin" in {
+      prepare(Seq(student0, student1, student2, lecturer0, lecturer1, admin0, admin1)).flatMap { _ =>
+        client.softDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          client.softDeleteUser(lecturer1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+            client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username + "," + student1.username + "," + lecturer1.username), Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
+              answer.copy(
+                answer.students.map(_.copy(enrollmentIdSecret = "")),
+                answer.lecturers.map(_.copy(enrollmentIdSecret = "")),
+                answer.admins.map(_.copy(enrollmentIdSecret = ""))
+              ) should ===(GetAllUsersResponse(Seq(student1.softDelete), Seq(lecturer1.softDelete), Seq()))
             }
           }
         }
@@ -681,7 +744,7 @@ class UserServiceSpec extends AsyncWordSpec
     }
 
     "update latest matriculation of a student" in {
-      prepare(Seq(student0)).flatMap { addedUser =>
+      prepare(Seq(student0)).flatMap { _ =>
         client.updateLatestMatriculation().invoke(MatriculationUpdate(student0.username, "SS2020")).flatMap { _ =>
           client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader(admin0.username)).invoke().map {
             user =>
@@ -904,5 +967,30 @@ class UserServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
+
+    "should not set the image thumbnail of aother user" in {
+      val profilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
+      val thumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example_thumbnail.jpeg"))
+
+      prepare(Seq(student1, student2)).flatMap { _ =>
+        client.setImage(student1.username).handleRequestHeader(addAuthorizationHeader(student2.username)).invoke(profilePicture).failed.flatMap {
+          answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "should get the default thumbnail of a user which has not set a thumbnail yet" in {
+      val thumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultThumbnail.jpg"))
+      prepare(Seq(admin0)).flatMap { _ =>
+        client.getThumbnail(admin0.username).handleRequestHeader(addAuthorizationHeader(admin0.username)).invoke().map {
+          thumb: ByteString =>
+            thumb.toArray should contain theSameElementsInOrderAs thumbnail
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
   }
 }
