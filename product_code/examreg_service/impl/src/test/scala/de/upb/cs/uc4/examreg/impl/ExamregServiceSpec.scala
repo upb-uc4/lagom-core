@@ -104,8 +104,9 @@ class ExamregServiceSpec extends AsyncWordSpec
   override protected def afterAll(): Unit = server.stop()
 
   override protected def beforeAll(): Unit = {
-    Future.sequence(tempExamRegs.map(reg =>
-      client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(reg))).map { _ =>
+    Future.sequence(tempExamRegs.map { reg =>
+      client.addExaminationRegulation().handleRequestHeader(addAuthorizationHeader()).invoke(reg)
+    }).map { _ =>
       Future.sequence(defaultExamRegs.map(reg => {
         if (!reg.active) {
           client.closeExaminationRegulation(reg.name).handleRequestHeader(addAuthorizationHeader()).invoke()
