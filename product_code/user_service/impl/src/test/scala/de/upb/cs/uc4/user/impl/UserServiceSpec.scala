@@ -494,7 +494,7 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
-    "fetch all non-active Lecturer from the database as an Admin" in {
+    "fetch all non-active Lecturers from the database as an Admin" in {
       prepare(Seq(lecturer0, lecturer1, lecturer2)).flatMap { addedUsers: Seq[User] =>
         client.softDeleteUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
