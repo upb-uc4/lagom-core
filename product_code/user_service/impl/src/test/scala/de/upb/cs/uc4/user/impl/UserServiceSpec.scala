@@ -708,7 +708,7 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
-    "not update another user as the user himself (as a non admin)" in {
+    "not update another user as another non admin" in {
       prepare(Seq(lecturer0)).flatMap { userList =>
         val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
         val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
