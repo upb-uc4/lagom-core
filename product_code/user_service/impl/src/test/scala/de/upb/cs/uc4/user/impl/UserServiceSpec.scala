@@ -664,7 +664,7 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
-    "not update a user specified by another path" in {
+    "not update a user with another username in path" in {
       prepare(Seq(lecturer0)).flatMap { userList =>
         val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
         val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
