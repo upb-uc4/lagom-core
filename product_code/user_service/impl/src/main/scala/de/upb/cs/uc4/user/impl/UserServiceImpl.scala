@@ -39,10 +39,10 @@ import scala.util.Random
 
 /** Implementation of the UserService */
 class UserServiceImpl(
-    clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry, database: UserDatabase,
-    authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService,
-    override val environment: Environment
-)(implicit ec: ExecutionContext, timeout: Timeout, config: Config) extends UserService {
+                       clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry, database: UserDatabase,
+                       authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService,
+                       override val environment: Environment
+                     )(implicit ec: ExecutionContext, timeout: Timeout, config: Config) extends UserService {
 
   private final val log: Logger = LoggerFactory.getLogger(classOf[UserServiceImpl])
 
@@ -103,13 +103,13 @@ class UserServiceImpl(
       }
       catch {
         case _: TimeoutException => throw UC4Exception.ValidationTimeout
-        case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
       }
 
       val validationErrorsFuture = postMessageUser.user match {
         case student: Student =>
           //For students we may encounter duplicate matriculationIDs
-          getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
+          getAll(None, Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
             matDuplicate =>
               if (matDuplicate) {
                 PostMessageUserErrors :+= SimpleError("user.matriculationId", "MatriculationID already in use.")
@@ -127,7 +127,7 @@ class UserServiceImpl(
       }
       catch {
         case _: TimeoutException => throw UC4Exception.ValidationTimeout
-        case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
       }
 
       // Check, if username errors exist, since entityRef might fail if username is incorrect
@@ -202,7 +202,7 @@ class UserServiceImpl(
             }
             catch {
               case _: TimeoutException => throw UC4Exception.ValidationTimeout
-              case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+              case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
             }
 
             if (validationErrors.map(_.name).contains("username")) {
@@ -265,36 +265,35 @@ class UserServiceImpl(
 
   /** Flags a user as deleted and deletes personal info from now on unrequired */
   override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUsername, role) =>
-      {
-        ServerServiceCall {
-          (_, _) =>
+    (authUsername, role) => {
+      ServerServiceCall {
+        (_, _) =>
 
-            if (role != AuthenticationRole.Admin && authUsername != username) {
-              throw UC4Exception.OwnerMismatch
-            }
+          if (role != AuthenticationRole.Admin && authUsername != username) {
+            throw UC4Exception.OwnerMismatch
+          }
 
-            val ref = entityRef(username)
-            ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
-              optUser =>
-                if (optUser.isEmpty) {
-                  throw UC4Exception.NotFound
+          val ref = entityRef(username)
+          ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
+            optUser =>
+              if (optUser.isEmpty) {
+                throw UC4Exception.NotFound
+              }
+
+              if (!optUser.get.isActive) {
+                throw UC4Exception.AlreadyDeleted
+              }
+
+              ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
+                .map {
+                  case Accepted(_) => // Soft Deletion successful
+                    (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                  case Rejected(code, reason) => //Update failed
+                    throw UC4Exception(code, reason)
                 }
-
-                if (!optUser.get.isActive) {
-                  throw UC4Exception.AlreadyDeleted
-                }
-
-                ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
-                  .map {
-                    case Accepted(_) => // Soft Deletion successful
-                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                    case Rejected(code, reason) => //Update failed
-                      throw UC4Exception(code, reason)
-                  }
-            }
-        }
+          }
       }
+    }
   }
 
   /** Get all students from the database */
@@ -305,11 +304,11 @@ class UserServiceImpl(
           case None if role != AuthenticationRole.Admin =>
             throw UC4Exception.NotEnoughPrivileges
           case None if role == AuthenticationRole.Admin =>
-            getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
+            getAll(usernames, Role.Student).map(_.map(user => user.asInstanceOf[Student]))
           case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-            getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student].toPublic))
+            getAll(usernames, Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student].toPublic))
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-            getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
+            getAll(usernames, Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
         }).map { students =>
           createETagHeader(header, students.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
@@ -324,11 +323,11 @@ class UserServiceImpl(
           case None if role != AuthenticationRole.Admin =>
             throw UC4Exception.NotEnoughPrivileges
           case None if role == AuthenticationRole.Admin =>
-            getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
+            getAll(usernames, Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
           case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-            getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer].toPublic))
+            getAll(usernames, Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer].toPublic))
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-            getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
+            getAll(usernames, Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
         }).map { lecturers =>
           createETagHeader(header, lecturers.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
@@ -343,11 +342,11 @@ class UserServiceImpl(
           case None if role != AuthenticationRole.Admin =>
             throw UC4Exception.NotEnoughPrivileges
           case None if role == AuthenticationRole.Admin =>
-            getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
+            getAll(usernames, Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
           case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-            getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin].toPublic))
+            getAll(usernames, Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin].toPublic))
           case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-            getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
+            getAll(usernames, Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
         }).map { admins =>
           createETagHeader(header, admins.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
@@ -355,14 +354,15 @@ class UserServiceImpl(
     }
 
   /** Helper method for getting all Users */
-  private def getAll(role: Role): Future[Seq[User]] = {
-    database.getAll(role)
-      .map(seq => seq
-        .map(entityRef(_).ask[Option[User]](replyTo => GetUser(replyTo))) //Future[Seq[Future[Option[User]]]]
-      )
-      .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[User]]]
-        .map(seq => seq
-          .filter(opt => opt.isDefined) //Get only existing users
+  private def getAll(usernames: Option[String], role: Role): Future[Seq[User]] = {
+    val fetchedUsernames = usernames match {
+      case Some(value) => Future.successful(value.split(",").toSeq)
+      case None => database.getAll(role)
+    }
+
+    fetchedUsernames.map(_.map(entityRef(_).ask[Option[User]](replyTo => GetUser(replyTo)))) //Future[Seq[Future[Option[User]]]]
+      .flatMap(Future.sequence(_) //Future[Seq[Option[User]]]
+        .map(_.filter(opt => opt.isDefined) //Get only existing users
           .map(opt => opt.get) //Future[Seq[User]]
         ))
   }
@@ -383,7 +383,7 @@ class UserServiceImpl(
     matriculationUpdate =>
       val ref = entityRef(matriculationUpdate.username)
       ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
-        case Accepted(_)             => Done
+        case Accepted(_) => Done
         case Rejected(error, reason) => throw UC4Exception(error, reason)
       }
   }
