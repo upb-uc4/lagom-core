@@ -2,7 +2,7 @@ package de.upb.cs.uc4.user
 
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
-import com.google.common.io.BaseEncoding
+import com.google.common.io.{ BaseEncoding, ByteStreams }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
@@ -15,6 +15,8 @@ import scala.concurrent.Future
 import scala.util.Random
 
 class UserServiceStub extends UserService with DefaultTestUsers {
+
+  private lazy val defaultThumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultThumbnail.jpg"))
 
   private var users: Seq[User] = Seq()
 
@@ -109,9 +111,9 @@ class UserServiceStub extends UserService with DefaultTestUsers {
     Future.successful(pmu.user)
   }
 
-  override def getImage(username: String): ServiceCall[NotUsed, ByteString] = ServiceCall { _ => Future.successful(null) }
+  override def getImage(username: String): ServiceCall[NotUsed, ByteString] = ServiceCall { _ => Future.successful(ByteString(defaultThumbnail)) }
 
-  override def getThumbnail(username: String): ServiceCall[NotUsed, ByteString] = ServiceCall { _ => Future.successful(null) }
+  override def getThumbnail(username: String): ServiceCall[NotUsed, ByteString] = ServiceCall { _ => Future.successful(ByteString(defaultThumbnail)) }
 
   override def setImage(username: String): ServiceCall[Array[Byte], Done] = ServiceCall { _ => Future.successful(Done) }
 

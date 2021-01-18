@@ -6,10 +6,11 @@ import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.api.LagomConfigComponent
 import com.lightbend.lagom.scaladsl.cluster.ClusterComponents
 import de.upb.cs.uc4.hyperledger.commands.{ Activation, Shutdown }
+import play.api.libs.concurrent.AkkaComponents
 
 import scala.concurrent.duration._
 
-trait HyperledgerComponent extends ClusterComponents with LagomConfigComponent {
+trait HyperledgerComponent extends ClusterComponents with LagomConfigComponent with AkkaComponents {
 
   /** Creates the HyperledgerActorFactory for this application.
     * Should not be called manually.

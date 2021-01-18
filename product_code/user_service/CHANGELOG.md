@@ -1,3 +1,17 @@
+# [v0.15.2](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.15.1...user-v0.15.2) (2021-01-06)
+## Feature
+## Refactor
+## Bugfix
+- Fixed bug that prevented lecturers from deleting themselves
+
+# [v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.14.1...user-v0.15.1) (2021-01-06)
+## Feature
+## Refactor
+- Added more precise logs for errors in topics
+- Enabled users to request the deletion of their accounts
+## Bugfix
+- Added missing catch in user delete topic
+
 # [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.13.3...user-v0.14.1) (2020-12-14)
 ## Feature
 ## Refactor

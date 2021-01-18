@@ -2,7 +2,7 @@ package de.upb.cs.uc4.matriculation.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, SubjectMatriculation }
-import de.upb.cs.uc4.shared.client.{ UnsignedProposal, UnsignedTransaction }
+import de.upb.cs.uc4.shared.client.{ SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq
@@ -21,6 +21,8 @@ object MatriculationSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[ImmatriculationData],
     JsonSerializer[SubjectMatriculation],
     JsonSerializer[UnsignedProposal],
-    JsonSerializer[UnsignedTransaction]
+    JsonSerializer[UnsignedTransaction],
+    JsonSerializer[SignedProposal],
+    JsonSerializer[SignedTransaction]
   )
 }

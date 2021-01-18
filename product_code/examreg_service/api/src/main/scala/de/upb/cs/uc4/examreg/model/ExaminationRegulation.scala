@@ -18,7 +18,7 @@ case class ExaminationRegulation(name: String, active: Boolean, modules: Seq[Mod
     * @return Filled Sequence of [[SimpleError]]
     */
   def validate(implicit executionContext: ExecutionContext): Future[Seq[SimpleError]] = {
-    val nameRegex = RegexCollection.Commons.nameRegex
+    val nameRegex = RegexCollection.Commons.nonEmpty100CharRegex
     var nameAndActiveErrors = List[SimpleError]()
 
     if (!nameRegex.matches(name)) {

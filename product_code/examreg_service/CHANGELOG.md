@@ -1,3 +1,10 @@
+# [v0.16.0](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.15.0...examreg-v0.16.0) (2021-01-18)
+## Feature
+## Refactor
+## Bugfix
+ - Fixed missing behaviour for "GetAllExamregsHyperledger" command
+ - Fixed sequence serialization error through a wrapper class
+
 # [v0.15.0](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.14.1...examreg-v0.15.0) (2020-12-20)
 ## Feature
 - Added caching for Examination Regulations through periodically fetching from hyperledger

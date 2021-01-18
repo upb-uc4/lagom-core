@@ -52,7 +52,7 @@ trait User {
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
 
     val usernameRegex = RegexCollection.User.usernameRegex
-    val nameRegex = RegexCollection.Commons.nameRegex
+    val nameRegex = RegexCollection.Commons.nonEmpty100CharRegex
     val mailRegex = RegexCollection.User.mailRegex
     val phoneNumberRegex = RegexCollection.User.phoneNumberRegex
     val dateRegex = RegexCollection.Commons.dateRegex

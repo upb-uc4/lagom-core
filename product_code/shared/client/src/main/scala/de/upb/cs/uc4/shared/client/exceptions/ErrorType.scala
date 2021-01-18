@@ -16,11 +16,12 @@ object ErrorType extends Enumeration {
   Teapot, //418
   PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, //422
   Validation, UneditableFields, //422 In a DetailedError
+  PreconditionRequired, //428
   InternalServer, UndeserializableException, //500
   NotImplemented, //501
   HLInternal, //In an InformativeError
-  HLUnknownTransactionId, HLUnprocessableEntity, HLNotFound, HLConflict, HLUnprocessableLedgerState, //In a GenericError
-  HLUnprocessableField, //In a DetailedError
+  HLUnknownTransactionId, HLInsufficientApprovals, HLNotFound, HLConflict, HLUnprocessableLedgerState, //In a GenericError
+  HLUnprocessableEntity, HLInvalidEntity, //In a DetailedError
   HLInvalidTransactionCall //In a TransactionError
   = Value
 
@@ -72,6 +73,8 @@ object ErrorType extends Enumeration {
       case UneditableFields => "Attempted to change uneditable fields" //In a DetailedError
       case RefreshTokenSignatureInvalid => "The long term token has a wrong signature"
       case LoginTokenSignatureInvalid => "The login term token has a wrong signature"
+      //428
+      case PreconditionRequired => "A required precondition for this call is not fulfilled"
       //500
       case InternalServer => "An internal server error has occurred"
       case UndeserializableException => "Internal error while deserializing Exception"
