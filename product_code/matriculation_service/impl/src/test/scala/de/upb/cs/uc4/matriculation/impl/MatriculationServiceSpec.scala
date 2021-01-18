@@ -325,7 +325,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "not get  matriculation data for another student" in {
+    "not get matriculation data for another student" in {
       client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username + "thisShouldFail"))
         .invoke().failed.map { answer =>
           answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
