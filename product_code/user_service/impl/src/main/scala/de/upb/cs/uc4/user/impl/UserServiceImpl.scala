@@ -39,10 +39,10 @@ import scala.util.Random
 
 /** Implementation of the UserService */
 class UserServiceImpl(
-                       clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry, database: UserDatabase,
-                       authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService,
-                       override val environment: Environment
-                     )(implicit ec: ExecutionContext, timeout: Timeout, config: Config) extends UserService {
+    clusterSharding: ClusterSharding, persistentEntityRegistry: PersistentEntityRegistry, database: UserDatabase,
+    authentication: AuthenticationService, kafkaEncryptionUtility: KafkaEncryptionUtility, imageProcessing: ImageProcessingService,
+    override val environment: Environment
+)(implicit ec: ExecutionContext, timeout: Timeout, config: Config) extends UserService {
 
   private final val log: Logger = LoggerFactory.getLogger(classOf[UserServiceImpl])
 
@@ -103,7 +103,7 @@ class UserServiceImpl(
       }
       catch {
         case _: TimeoutException => throw UC4Exception.ValidationTimeout
-        case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
       }
 
       val validationErrorsFuture = postMessageUser.user match {
@@ -127,7 +127,7 @@ class UserServiceImpl(
       }
       catch {
         case _: TimeoutException => throw UC4Exception.ValidationTimeout
-        case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+        case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
       }
 
       // Check, if username errors exist, since entityRef might fail if username is incorrect
@@ -202,7 +202,7 @@ class UserServiceImpl(
             }
             catch {
               case _: TimeoutException => throw UC4Exception.ValidationTimeout
-              case e: Exception => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+              case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
             }
 
             if (validationErrors.map(_.name).contains("username")) {
@@ -265,35 +265,36 @@ class UserServiceImpl(
 
   /** Flags a user as deleted and deletes personal info from now on unrequired */
   override def softDeleteUser(username: String): ServiceCall[NotUsed, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUsername, role) => {
-      ServerServiceCall {
-        (_, _) =>
+    (authUsername, role) =>
+      {
+        ServerServiceCall {
+          (_, _) =>
 
-          if (role != AuthenticationRole.Admin && authUsername != username) {
-            throw UC4Exception.OwnerMismatch
-          }
+            if (role != AuthenticationRole.Admin && authUsername != username) {
+              throw UC4Exception.OwnerMismatch
+            }
 
-          val ref = entityRef(username)
-          ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
-            optUser =>
-              if (optUser.isEmpty) {
-                throw UC4Exception.NotFound
-              }
-
-              if (!optUser.get.isActive) {
-                throw UC4Exception.AlreadyDeleted
-              }
-
-              ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
-                .map {
-                  case Accepted(_) => // Soft Deletion successful
-                    (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-                  case Rejected(code, reason) => //Update failed
-                    throw UC4Exception(code, reason)
+            val ref = entityRef(username)
+            ref.ask[Option[User]](replyTo => GetUser(replyTo)).flatMap {
+              optUser =>
+                if (optUser.isEmpty) {
+                  throw UC4Exception.NotFound
                 }
-          }
+
+                if (!optUser.get.isActive) {
+                  throw UC4Exception.AlreadyDeleted
+                }
+
+                ref.ask[Confirmation](replyTo => SoftDeleteUser(replyTo))
+                  .map {
+                    case Accepted(_) => // Soft Deletion successful
+                      (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+                    case Rejected(code, reason) => //Update failed
+                      throw UC4Exception(code, reason)
+                  }
+            }
+        }
       }
-    }
   }
 
   /** Get all students from the database */
@@ -357,7 +358,7 @@ class UserServiceImpl(
   private def getAll(usernames: Option[String], role: Role): Future[Seq[User]] = {
     val fetchedUsernames = usernames match {
       case Some(value) => Future.successful(value.split(",").toSeq)
-      case None => database.getAll(role)
+      case None        => database.getAll(role)
     }
 
     fetchedUsernames.map(_.map(entityRef(_).ask[Option[User]](replyTo => GetUser(replyTo)))) //Future[Seq[Future[Option[User]]]]
@@ -383,7 +384,7 @@ class UserServiceImpl(
     matriculationUpdate =>
       val ref = entityRef(matriculationUpdate.username)
       ref.ask[Confirmation](replyTo => UpdateLatestMatriculation(matriculationUpdate.semester, replyTo)).map {
-        case Accepted(_) => Done
+        case Accepted(_)             => Done
         case Rejected(error, reason) => throw UC4Exception(error, reason)
       }
   }
