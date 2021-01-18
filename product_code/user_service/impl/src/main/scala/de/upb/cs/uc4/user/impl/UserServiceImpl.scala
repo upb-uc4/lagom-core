@@ -231,10 +231,6 @@ class UserServiceImpl(
                   throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationErrors))
                 }
 
-                // TODO For the reviewer:
-                // Since our Json Deserializer casts the given object based on the role that was given,
-                // the user type is always the same as the Role and since changing the role results in an uneditable fields error
-                // it is not possible to go into one of the following match cases. As a result they could be safely deleted.
                 oldUser match {
                   case _: Student if !user.isInstanceOf[Student] => throw new UC4NonCriticalException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Student, but received non-Student"))
                   case _: Lecturer if !user.isInstanceOf[Lecturer] => throw new UC4NonCriticalException(400, InformativeError(ErrorType.UnexpectedEntity, "Expected Lecturer, but received non-Lecturer"))

@@ -492,7 +492,7 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
-    "fetch all active Lecturer from the database as an Admin" in {
+    "fetch all active Lecturers from the database as an Admin" in {
       prepare(Seq(lecturer0, lecturer1, lecturer2)).flatMap { addedUsers: Seq[User] =>
         client.softDeleteUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
@@ -508,7 +508,7 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
-    "fetch all non-active Lecturer from the database as an Admin" in {
+    "fetch all non-active Lecturers from the database as an Admin" in {
       prepare(Seq(lecturer0, lecturer1, lecturer2)).flatMap { addedUsers: Seq[User] =>
         client.softDeleteUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
           eventually(timeout(Span(15, Seconds))) {
@@ -678,7 +678,7 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
-    "not update a user specified by another path" in {
+    "not update a user with another username in path" in {
       prepare(Seq(lecturer0)).flatMap { userList =>
         val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
         val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
@@ -722,7 +722,7 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
-    "not update another user as the user himself (as a non admin)" in {
+    "not update another user as another non admin" in {
       prepare(Seq(lecturer0)).flatMap { userList =>
         val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
         val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
