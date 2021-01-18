@@ -261,8 +261,14 @@ class MatriculationServiceSpec extends AsyncWordSpec
     server.application.jsonStringList = List()
   }
 
-  private def createSingleMatriculation(field: String, semester: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester))))
-  private def createDoubleMatriculation(field: String, semester: String, fieldSecond: String, semesterSecond: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester)), SubjectMatriculation(fieldSecond, Seq(semesterSecond))))
+  private def createSingleMatriculation(field: String, semester: String) = createMultiMatriculation((field, semester))
+  private def createMultiMatriculation(fieldsAndSemesters: (String, String)*) =
+    PutMessageMatriculation(
+      fieldsAndSemesters.map {
+        case (field, semester) => SubjectMatriculation(field, Seq(semester))
+      }
+    )
+
   private def asString(unsignedProposal: String) = new String(Base64.getDecoder.decode(unsignedProposal), StandardCharsets.UTF_8)
 
   "MatriculationService service" should {
@@ -358,7 +364,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
 
     "not add matriculation data with one existing and one non-existing field of study/examreg" in {
       client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
-        .invoke(createDoubleMatriculation(examReg0.name, "SS2020", "DoesNotExist", "SS2020")).failed.map { answer =>
+        .invoke(createMultiMatriculation((examReg0.name, "SS2020"), ("DoesNotExist", "SS2020"))).failed.map { answer =>
           answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
             .invalidParams.map(_.name) should contain("matriculation[1]")
         }.andThen {

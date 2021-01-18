@@ -177,82 +177,81 @@ class UserServiceSpec extends AsyncWordSpec
         val creationSource: Source[EncryptionContainer, _] = client.userCreationTopic().subscribe.atMostOnceSource
         client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student0Auth, "governmentIdStudent0", student0)).flatMap {
           student0Created =>
-            val source = creationSource
-              .runWith(TestSink.probe[EncryptionContainer]).request(2)
-
-            val containerSeq = Seq(
-              source.expectNext(FiniteDuration(15, SECONDS)),
-              source.expectNext(FiniteDuration(15, SECONDS))
-            )
-            client.forceDeleteUser(student0Created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
-              containerSeq.map {
-                container =>
-                  server.application.kafkaEncryptionUtility.decrypt[Usernames](container)
-              } should contain theSameElementsAs Seq(
-                createUsernames("admin", "governmentIdAdmin", "YWRtaW5hZG1pbg=="),
-                createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret)
-              )
+            eventually(timeout(Span(15, Seconds))) {
+              val container: EncryptionContainer = creationSource
+                .runWith(TestSink.probe[EncryptionContainer])
+                .request(Long.MaxValue)
+                .receiveWithin(FiniteDuration(3, SECONDS)).last
+              server.application.kafkaEncryptionUtility.decrypt[Usernames](container) should ===(createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret))
             }
-        }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
       }
 
       "publish a force-deleted user in minimal format" in {
         client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
           student1created =>
+
             client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
-              val container: EncryptionContainer = deletionTopicMinimal
-                .runWith(TestSink.probe[EncryptionContainer])
-                .request(Long.MaxValue)
-                .receiveWithin(FiniteDuration(3, SECONDS)).last
-              server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student1created.username))
+              eventually(timeout(Span(15, Seconds))) {
+                val container: EncryptionContainer = deletionTopicMinimal
+                  .runWith(TestSink.probe[EncryptionContainer])
+                  .request(Long.MaxValue)
+                  .receiveWithin(FiniteDuration(3, SECONDS)).last
+                server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student1created.username))
+              }
             }
-        }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
       }
 
       "publish a force-deleted user in precise format" in {
         client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
           student1created =>
             client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
-              val container: EncryptionContainer = deletionTopicPrecise
-                .runWith(TestSink.probe[EncryptionContainer])
-                .request(Long.MaxValue)
-                .receiveWithin(FiniteDuration(3, SECONDS)).last
-              server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student1created.username, Role.Student, forceDelete = true))
+              eventually(timeout(Span(15, Seconds))) {
+                val container: EncryptionContainer = deletionTopicPrecise
+                  .runWith(TestSink.probe[EncryptionContainer])
+                  .request(Long.MaxValue)
+                  .receiveWithin(FiniteDuration(3, SECONDS)).last
+                server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student1created.username, Role.Student, forceDelete = true))
+              }
             }
-        }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
       }
 
       "publish a soft-deleted user in minimal format" in {
         client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
           student1created =>
             client.softDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
-              val container: EncryptionContainer = deletionTopicMinimal
-                .runWith(TestSink.probe[EncryptionContainer])
-                .request(Long.MaxValue)
-                .receiveWithin(FiniteDuration(3, SECONDS)).last
-              client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              eventually(timeout(Span(15, Seconds))) {
+                val container: EncryptionContainer = deletionTopicMinimal
+                  .runWith(TestSink.probe[EncryptionContainer])
+                  .request(Long.MaxValue)
+                  .receiveWithin(FiniteDuration(3, SECONDS)).last
                 server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student1created.username))
               }
             }
-
-        }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
       }
 
       "publish a soft-deleted user in precise format" in {
         client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
           student1created =>
             client.softDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
-              val container: EncryptionContainer = deletionTopicPrecise
-                .runWith(TestSink.probe[EncryptionContainer])
-                .request(Long.MaxValue)
-                .receiveWithin(FiniteDuration(3, SECONDS)).last
-              client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              eventually(timeout(Span(15, Seconds))) {
+                val container: EncryptionContainer = deletionTopicPrecise
+                  .runWith(TestSink.probe[EncryptionContainer])
+                  .request(Long.MaxValue)
+                  .receiveWithin(FiniteDuration(3, SECONDS)).last
                 server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student1created.username, Role.Student, forceDelete = false))
               }
             }
-        }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
       }
-
     }
 
     "get all users with default users" in {

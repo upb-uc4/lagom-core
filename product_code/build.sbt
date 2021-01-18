@@ -6,7 +6,7 @@ lagomCassandraEnabled in ThisBuild := false
 scalaVersion in ThisBuild := "2.13.0"
 scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
 lagomUnmanagedServices in ThisBuild := Map("imageprocessing" -> sys.env.getOrElse("IMAGE_PROCESSING", "http://localhost:9020"))
-coverageExcludedPackages in ThisBuild := "*Loader.scala"
+coverageExcludedFiles in ThisBuild := "*Loader.scala"
 
 val withTests = "compile->compile;test->test"
 
