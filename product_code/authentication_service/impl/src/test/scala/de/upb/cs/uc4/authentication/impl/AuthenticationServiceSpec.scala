@@ -15,7 +15,7 @@ import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication }
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, Tokens }
 import de.upb.cs.uc4.shared.client.Hashing
-import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.UserServiceStub
@@ -25,7 +25,7 @@ import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.{ Assertion, BeforeAndAfterAll }
+import org.scalatest.{ Assertion, BeforeAndAfterAll, PrivateMethodTester }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -180,6 +180,97 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
+    "not update login data with wrong authentication user" in {
+      prepare("Gregor").flatMap { _ =>
+        val time = Calendar.getInstance()
+        time.add(Calendar.DATE, 1)
+
+        val token =
+          Jwts.builder()
+            .setSubject("login")
+            .setExpiration(time.getTime)
+            .claim("username", "Gregor")
+            .claim("authenticationRole", "Student")
+            .signWith(SignatureAlgorithm.HS256, "changeme")
+            .compact()
+
+        client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
+          .invoke(AuthenticationUser("Gregory", "GregNew", AuthenticationRole.Student)).failed.map {
+            answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.PathParameterMismatch)
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+          .recoverWith(cleanupOnFailure(Seq("Gregor")))
+      }
+    }
+
+    "not update login data with the wrong owner" in {
+      prepare("Gregor").flatMap { _ =>
+        val time = Calendar.getInstance()
+        time.add(Calendar.DATE, 1)
+
+        val token =
+          Jwts.builder()
+            .setSubject("login")
+            .setExpiration(time.getTime)
+            .claim("username", "Gregory")
+            .claim("authenticationRole", "Student")
+            .signWith(SignatureAlgorithm.HS256, "changeme")
+            .compact()
+
+        client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
+          .invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Student)).failed.map {
+            answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+          .recoverWith(cleanupOnFailure(Seq("Gregor")))
+      }
+    }
+
+    "not update login data with malformed username" in {
+      prepare("Gre").flatMap { _ =>
+        val time = Calendar.getInstance()
+        time.add(Calendar.DATE, 1)
+
+        val token =
+          Jwts.builder()
+            .setSubject("login")
+            .setExpiration(time.getTime)
+            .claim("username", "Gre")
+            .claim("authenticationRole", "Student")
+            .signWith(SignatureAlgorithm.HS256, "changeme")
+            .compact()
+
+        client.changePassword("Gre").handleRequestHeader(addTokenHeader(token))
+          .invoke(AuthenticationUser("Gre", "GregNew", AuthenticationRole.Student)).failed.flatMap { answer =>
+            answer.asInstanceOf[UC4NonCriticalException].possibleErrorResponse.asInstanceOf[DetailedError]
+              .invalidParams.map(_.name) should contain("username")
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gre"), assertion))
+          .recoverWith(cleanupOnFailure(Seq("Gre")))
+      }
+    }
+
+    "not change role on password update" in {
+      prepare("Gregor").flatMap { _ =>
+        val time = Calendar.getInstance()
+        time.add(Calendar.DATE, 1)
+
+        val token =
+          Jwts.builder()
+            .setSubject("login")
+            .setExpiration(time.getTime)
+            .claim("username", "Gregor")
+            .claim("authenticationRole", "Student")
+            .signWith(SignatureAlgorithm.HS256, "changeme")
+            .compact()
+
+        client.changePassword("Gregor").handleRequestHeader(addTokenHeader(token))
+          .invoke(AuthenticationUser("Gregor", "GregNew", AuthenticationRole.Lecturer)).failed.flatMap { answer =>
+            answer.asInstanceOf[UC4NonCriticalException].possibleErrorResponse.asInstanceOf[DetailedError]
+              .invalidParams.map(_.name) should contain("role")
+
+          }.flatMap(assertion => cleanupOnSuccess(Seq("Gregor"), assertion))
+          .recoverWith(cleanupOnFailure(Seq("Gregor")))
+      }
+    }
+
     //DELETE
     "remove a user over the topic" in {
       prepare("Test").flatMap { _ =>
@@ -214,6 +305,23 @@ class AuthenticationServiceSpec extends AsyncWordSpec
 
     "detect a wrong password" in {
       client.login.handleRequestHeader(addLoginHeader("student", "studenta")).invoke().failed.map {
+        answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
+      }
+    }
+
+    "detect a missing password" in {
+      client.login.handleRequestHeader(addLoginHeader("student", "")).invoke().failed.map {
+        answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
+      }
+    }
+
+    "detect a wrong password as machine user" in {
+      client.loginMachineUser.handleRequestHeader(addLoginHeader("student", "studenta")).invoke().failed.map {
+        answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
+      }
+    }
+    "detect a wrong username as machine user" in {
+      client.loginMachineUser.handleRequestHeader(addLoginHeader("studenta", "student")).invoke().failed.map {
         answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.BasicAuthorization)
       }
     }
@@ -487,8 +595,26 @@ class AuthenticationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "detect that a header refresh token is missing" in {
+    "detect that a header refresh token is missing (no cookie)" in {
       client.refresh.invoke().failed.map { answer =>
+        answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
+      }
+    }
+
+    "detect that a header refresh token is missing" in {
+      val time = Calendar.getInstance()
+      time.add(Calendar.DATE, 1)
+
+      val token =
+        Jwts.builder()
+          .setSubject("login")
+          .setExpiration(time.getTime)
+          .claim("username", "daniel")
+          .claim("authenticationRole", "Student")
+          .signWith(SignatureAlgorithm.HS256, "changeme")
+          .compact()
+
+      client.refresh.handleRequestHeader(addTokenHeader(token)).invoke().failed.map { answer =>
         answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.RefreshTokenMissing)
       }
     }
