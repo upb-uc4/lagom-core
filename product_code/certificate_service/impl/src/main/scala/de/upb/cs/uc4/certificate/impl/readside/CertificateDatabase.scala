@@ -14,8 +14,8 @@ class CertificateDatabase(database: Database)(implicit ec: ExecutionContext, tim
 
   /** Table definition of a certificate table */
   class CertificateTable(tag: Tag) extends Table[CertificateEntry](tag, "uc4CertificateTable") {
-    def username: Rep[String] = column[String]("username", O.PrimaryKey)
     def enrollmentId: Rep[String] = column[String]("enrollmentId", O.PrimaryKey)
+    def username: Rep[String] = column[String]("username")
 
     override def * : ProvenShape[CertificateEntry] =
       (username, enrollmentId) <> ((CertificateEntry.apply _).tupled, CertificateEntry.unapply)
