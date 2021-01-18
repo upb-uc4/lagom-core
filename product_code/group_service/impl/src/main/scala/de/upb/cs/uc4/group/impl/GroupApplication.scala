@@ -41,6 +41,19 @@ abstract class GroupApplication(context: LagomApplicationContext)
 
   implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
+  // Register System and Registration-System to a group
+  addToGroup(config.getString("uc4.hyperledger.systemEnrollmentId"), config.getString("uc4.hyperledger.systemGroup"))
+    .recover {
+      case throwable: Throwable =>
+        log.error("GroupService can't add system: {}", throwable.toString)
+    }
+
+  addToGroup(config.getString("uc4.hyperledger.registrationSystemEnrollmentId"), config.getString("uc4.hyperledger.systemGroup"))
+    .recover {
+      case throwable: Throwable =>
+        log.error("GroupService can't add registration-system: {}", throwable.toString)
+    }
+
   certificateService
     .userRegistrationTopic()
     .subscribe
@@ -48,9 +61,7 @@ abstract class GroupApplication(context: LagomApplicationContext)
       Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
         try {
           val user = kafkaEncryptionUtility.decrypt[RegistrationUser](container)
-          clusterSharding.entityRefFor(GroupBehaviour.typeKey, GroupBehaviour.entityId)
-            .askWithStatus[Confirmation](replyTo => AddToGroup(user.enrollmentId, user.role, replyTo))
-            .map(_ => Done)
+          addToGroup(user.enrollmentId, user.role)
             .recover {
               case throwable: Throwable =>
                 log.error("GroupService received invalid topic message: {}", throwable.toString)
@@ -66,4 +77,10 @@ abstract class GroupApplication(context: LagomApplicationContext)
       }
         .mapAsync(8)(done => done)
     )
+
+  private def addToGroup(enrollmentId: String, role: String): Future[Done] = {
+    clusterSharding.entityRefFor(GroupBehaviour.typeKey, GroupBehaviour.entityId)
+      .askWithStatus[Confirmation](replyTo => AddToGroup(enrollmentId, role, replyTo))
+      .map(_ => Done)
+  }
 }
