@@ -56,7 +56,8 @@ class UserServiceSpec extends AsyncWordSpec
 
   val client: UserService = server.serviceClient.implement[UserService]
 
-  val deletionTopic: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
+  val deletionTopicMinimal: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
+  val deletionTopicPrecise: Source[EncryptionContainer, _] = client.userDeletionTopicPrecise().subscribe.atMostOnceSource
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -174,7 +175,7 @@ class UserServiceSpec extends AsyncWordSpec
     "test topics, which" must {
       "publish a created user" in {
         val creationSource: Source[EncryptionContainer, _] = client.userCreationTopic().subscribe.atMostOnceSource
-        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student0Auth, "governmentIdStudent0", student0)).map {
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student0Auth, "governmentIdStudent0", student0)).flatMap {
           student0Created =>
             val source = creationSource
               .runWith(TestSink.probe[EncryptionContainer]).request(2)
@@ -183,60 +184,73 @@ class UserServiceSpec extends AsyncWordSpec
               source.expectNext(FiniteDuration(15, SECONDS)),
               source.expectNext(FiniteDuration(15, SECONDS))
             )
-
-            containerSeq.map {
-              container =>
-                server.application.kafkaEncryptionUtility.decrypt[Usernames](container)
-            } should contain theSameElementsAs Seq(
-              createUsernames("admin", "governmentIdAdmin", "YWRtaW5hZG1pbg=="),
-              createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret)
-            )
+            client.forceDeleteUser(student0Created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              containerSeq.map {
+                container =>
+                  server.application.kafkaEncryptionUtility.decrypt[Usernames](container)
+              } should contain theSameElementsAs Seq(
+                createUsernames("admin", "governmentIdAdmin", "YWRtaW5hZG1pbg=="),
+                createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret)
+              )
+            }
         }
-
       }
 
       "publish a force-deleted user in minimal format" in {
-        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
-        client.forceDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
-
-        val container: EncryptionContainer = deletionSource
-          .runWith(TestSink.probe[EncryptionContainer])
-          .request(1)
-          .expectNext(FiniteDuration(15, SECONDS))
-        server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student0.username))
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
+          student1created =>
+            client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              val container: EncryptionContainer = deletionTopicMinimal
+                .runWith(TestSink.probe[EncryptionContainer])
+                .request(Long.MaxValue)
+                .receiveWithin(FiniteDuration(3, SECONDS)).last
+              server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student1created.username))
+            }
+        }
       }
 
       "publish a force-deleted user in precise format" in {
-        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicPrecise().subscribe.atMostOnceSource
-        client.forceDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke()
-
-        val container: EncryptionContainer = deletionSource
-          .runWith(TestSink.probe[EncryptionContainer])
-          .request(1)
-          .expectNext(FiniteDuration(15, SECONDS))
-        server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student0.username, Role.Student, forceDelete = true))
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
+          student1created =>
+            client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              val container: EncryptionContainer = deletionTopicPrecise
+                .runWith(TestSink.probe[EncryptionContainer])
+                .request(Long.MaxValue)
+                .receiveWithin(FiniteDuration(3, SECONDS)).last
+              server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student1created.username, Role.Student, forceDelete = true))
+            }
+        }
       }
 
       "publish a soft-deleted user in minimal format" in {
-        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
-        client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
+          student1created =>
+            client.softDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              val container: EncryptionContainer = deletionTopicMinimal
+                .runWith(TestSink.probe[EncryptionContainer])
+                .request(Long.MaxValue)
+                .receiveWithin(FiniteDuration(3, SECONDS)).last
+              client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+                server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student1created.username))
+              }
+            }
 
-        val container: EncryptionContainer = deletionSource
-          .runWith(TestSink.probe[EncryptionContainer])
-          .request(1)
-          .expectNext(FiniteDuration(15, SECONDS))
-        server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student0.username))
+        }
       }
 
       "publish a soft-deleted user in precise format" in {
-        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicPrecise().subscribe.atMostOnceSource
-        client.softDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke()
-
-        val container: EncryptionContainer = deletionSource
-          .runWith(TestSink.probe[EncryptionContainer])
-          .request(1)
-          .expectNext(FiniteDuration(15, SECONDS))
-        server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student0.username, Role.Student, forceDelete = true))
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
+          student1created =>
+            client.softDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              val container: EncryptionContainer = deletionTopicPrecise
+                .runWith(TestSink.probe[EncryptionContainer])
+                .request(Long.MaxValue)
+                .receiveWithin(FiniteDuration(3, SECONDS)).last
+              client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+                server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student1created.username, Role.Student, forceDelete = false))
+              }
+            }
+        }
       }
 
     }
