@@ -365,7 +365,7 @@ class UserServiceImpl(
       .flatMap(Future.sequence(_) //Future[Seq[Option[User]]]
         .map(_.filter(opt => opt.isDefined) //Get only existing users
           .map(opt => opt.get) //Future[Seq[User]]
-        ))
+          .filter(user => user.role == role)))
   }
 
   /** Get role of the user */
