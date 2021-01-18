@@ -306,7 +306,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "fail getting a proposal for adding matriculation data for a student, given a proposal while using another auth username" in {
+    "fail getting a proposal for adding matriculation data for a student as another student" in {
       val message = createSingleMatriculation(examReg0.name, "SS2020")
       certificate.setup(student0.username)
       certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
