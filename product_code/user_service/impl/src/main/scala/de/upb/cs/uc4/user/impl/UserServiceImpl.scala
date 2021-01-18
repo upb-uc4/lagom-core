@@ -304,12 +304,10 @@ class UserServiceImpl(
         (usernames match {
           case None if role != AuthenticationRole.Admin =>
             throw UC4Exception.NotEnoughPrivileges
-          case None if role == AuthenticationRole.Admin =>
+          case Some(_) if role != AuthenticationRole.Admin =>
+            getAll(usernames, Role.Student).map(_.map(user => user.asInstanceOf[Student].toPublic))
+          case _ if role == AuthenticationRole.Admin =>
             getAll(usernames, Role.Student).map(_.map(user => user.asInstanceOf[Student]))
-          case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-            getAll(usernames, Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student].toPublic))
-          case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-            getAll(usernames, Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
         }).map { students =>
           createETagHeader(header, students.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
@@ -323,12 +321,10 @@ class UserServiceImpl(
         (usernames match {
           case None if role != AuthenticationRole.Admin =>
             throw UC4Exception.NotEnoughPrivileges
-          case None if role == AuthenticationRole.Admin =>
+          case Some(_) if role != AuthenticationRole.Admin =>
+            getAll(usernames, Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer].toPublic))
+          case _ if role == AuthenticationRole.Admin =>
             getAll(usernames, Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
-          case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-            getAll(usernames, Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer].toPublic))
-          case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-            getAll(usernames, Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
         }).map { lecturers =>
           createETagHeader(header, lecturers.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
@@ -342,12 +338,10 @@ class UserServiceImpl(
         (usernames match {
           case None if role != AuthenticationRole.Admin =>
             throw UC4Exception.NotEnoughPrivileges
-          case None if role == AuthenticationRole.Admin =>
+          case Some(_) if role != AuthenticationRole.Admin =>
+            getAll(usernames, Role.Admin).map(_.map(user => user.asInstanceOf[Admin].toPublic))
+          case _ if role == AuthenticationRole.Admin =>
             getAll(usernames, Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
-          case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-            getAll(usernames, Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin].toPublic))
-          case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-            getAll(usernames, Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
         }).map { admins =>
           createETagHeader(header, admins.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
