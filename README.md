@@ -10,7 +10,7 @@
   * [Different Versions](###-Different-Versions)
   * [Changes necessary on UNIX](###-Changes-necessary-on-UNIX)
   * [Run](##_Run)
-    * [Erros](###-Errors)
+    * [Errors](###-Errors)
   * [Change settings of postgres](##-Change-settings-of-postgres)
   * [Dependecies of the different services](##-Dependecies-of-the-different-services)
   * [Running tests in IntelliJ](##-Running-tests-in-IntelliJ)
