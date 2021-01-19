@@ -7,7 +7,7 @@ import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.certificate.model.RegistrationUser
+import de.upb.cs.uc4.certificate.model.EnrollmentUser
 import de.upb.cs.uc4.group.api.GroupService
 import de.upb.cs.uc4.group.impl.actor.GroupBehaviour
 import de.upb.cs.uc4.group.impl.commands.AddToGroup
@@ -55,12 +55,12 @@ abstract class GroupApplication(context: LagomApplicationContext)
     }
 
   certificateService
-    .userRegistrationTopic()
+    .userEnrollmentTopic()
     .subscribe
     .atLeastOnce(
       Flow.fromFunction[EncryptionContainer, Future[Done]] { container =>
         try {
-          val user = kafkaEncryptionUtility.decrypt[RegistrationUser](container)
+          val user = kafkaEncryptionUtility.decrypt[EnrollmentUser](container)
           addToGroup(user.enrollmentId, user.role)
             .recover {
               case throwable: Throwable =>

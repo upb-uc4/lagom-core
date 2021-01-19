@@ -14,15 +14,15 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateState, CertificateUser }
 import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
-import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnRegisterUser }
+import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet }
 import de.upb.cs.uc4.certificate.impl.readside.CertificateDatabase
 import de.upb.cs.uc4.certificate.model._
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerAdminParts, HyperledgerUtils }
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, JsonUsername }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
@@ -54,7 +54,7 @@ class CertificateServiceImpl(
 
   /** Forwards the certificate signing request from the given user */
   override def setCertificate(username: String): ServerServiceCall[PostMessageCSR, JsonCertificate] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUsername, _) =>
+    (authUsername, role) =>
       ServerServiceCall { (_, pmcsrRaw) =>
         // One can only set his own certificate
         if (authUsername != username) {
@@ -78,7 +78,7 @@ class CertificateServiceImpl(
           case CertificateUser(Some(enrollmentId), Some(enrollmentSecret), None, None) =>
             try {
               val certificate = enrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
-              entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
+              entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(role.toString, certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
                 case Accepted(_) =>
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
                     .addHeader("Location", s"$pathPrefix/certificates/$username/certificate")
@@ -155,13 +155,13 @@ class CertificateServiceImpl(
   }
 
   /** Publishes every user that is registered at hyperledger */
-  override def userRegistrationTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset { fromOffset =>
+  override def userEnrollmentTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset { fromOffset =>
     persistentEntityRegistry
       .eventStream(CertificateEvent.Tag, fromOffset)
       .mapConcat {
         //Filter only OnRegisterUser events
-        case EventStreamElement(_, OnRegisterUser(_, enrollmentId, _, role), offset) => try {
-          immutable.Seq((kafkaEncryptionUtility.encrypt(RegistrationUser(enrollmentId, role)), offset))
+        case EventStreamElement(_, OnCertficateAndKeySet(enrollmentId, role, _, _), offset) => try {
+          immutable.Seq((kafkaEncryptionUtility.encrypt(EnrollmentUser(enrollmentId, role)), offset))
         }
         catch {
           case throwable: Throwable =>

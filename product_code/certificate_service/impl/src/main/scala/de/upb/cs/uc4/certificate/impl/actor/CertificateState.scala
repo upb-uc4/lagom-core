@@ -24,12 +24,12 @@ case class CertificateState(
     */
   def applyCommand(cmd: CertificateCommand): ReplyEffect[CertificateEvent, CertificateState] =
     cmd match {
-      case RegisterUser(username, enrollmentId, secret, role, replyTo) =>
-        Effect.persist(OnRegisterUser(username, enrollmentId, secret, role)).thenReply(replyTo) { _ => Accepted.default }
+      case RegisterUser(username, enrollmentId, secret, replyTo) =>
+        Effect.persist(OnRegisterUser(username, enrollmentId, secret)).thenReply(replyTo) { _ => Accepted.default }
       case GetCertificateUser(replyTo) =>
         Effect.reply(replyTo)(CertificateUser(enrollmentId, enrollmentSecret, certificate, encryptedPrivateKey))
-      case SetCertificateAndKey(certificate, encryptedPrivateKey, replyTo) =>
-        Effect.persist(OnCertficateAndKeySet(certificate, encryptedPrivateKey)).thenReply(replyTo) { _ => Accepted.default }
+      case SetCertificateAndKey(role, certificate, encryptedPrivateKey, replyTo) =>
+        Effect.persist(OnCertficateAndKeySet(enrollmentId.get, role, certificate, encryptedPrivateKey)).thenReply(replyTo) { _ => Accepted.default }
       case SoftDeleteCertificateUser(username, role, replyTo) =>
         Effect.persist(OnCertificateUserSoftDelete(username, role)).thenReply(replyTo) { _ => Accepted.default }
       case ForceDeleteCertificateUser(username, role, replyTo) =>
@@ -46,9 +46,9 @@ case class CertificateState(
     */
   def applyEvent(evt: CertificateEvent): CertificateState =
     evt match {
-      case OnRegisterUser(_, id, secret, _) =>
+      case OnRegisterUser(_, id, secret) =>
         copy(enrollmentId = Some(id), enrollmentSecret = Some(secret))
-      case OnCertficateAndKeySet(cert, key) =>
+      case OnCertficateAndKeySet(_, _, cert, key) =>
         copy(certificate = Some(cert), encryptedPrivateKey = Some(key))
       case OnCertificateUserSoftDelete(_, role) =>
         if (role == Role.Lecturer) {

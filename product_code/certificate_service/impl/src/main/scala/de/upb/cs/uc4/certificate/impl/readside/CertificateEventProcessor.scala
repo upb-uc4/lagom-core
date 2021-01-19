@@ -25,7 +25,7 @@ class CertificateEventProcessor(readSide: SlickReadSide, database: CertificateDa
           database.deleteEnrollmentId(envelope.event.username)
         }
         else {
-          DBIOAction.successful()
+          DBIOAction.successful(Nil)
         }
       }
       .build()

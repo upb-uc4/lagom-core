@@ -45,7 +45,7 @@ trait CertificateService extends UC4HyperledgerService {
   // TOPICS
 
   /** Publishes every user that is registered at hyperledger */
-  def userRegistrationTopic(): Topic[EncryptionContainer]
+  def userEnrollmentTopic(): Topic[EncryptionContainer]
 
   final override def descriptor: Descriptor = {
     import Service._
@@ -63,7 +63,7 @@ trait CertificateService extends UC4HyperledgerService {
         restCall(Method.OPTIONS, pathPrefix + "/certificates/:enrollmentId/username", allowedGet _)
       )
       .addTopics(
-        topic(CertificateService.REGISTRATION_TOPIC_NAME, userRegistrationTopic _)
+        topic(CertificateService.REGISTRATION_TOPIC_NAME, userEnrollmentTopic _)
       )
       .withAutoAcl(true)
   }

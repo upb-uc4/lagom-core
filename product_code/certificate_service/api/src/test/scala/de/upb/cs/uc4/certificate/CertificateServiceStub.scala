@@ -88,7 +88,7 @@ class CertificateServiceStub extends CertificateService {
   }
 
   /** Publishes every user that is registered at hyperledger */
-  override def userRegistrationTopic(): Topic[EncryptionContainer] = null
+  override def userEnrollmentTopic(): Topic[EncryptionContainer] = null
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = ServiceCall { _ => Future.successful(Done) }

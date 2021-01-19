@@ -3,7 +3,7 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.certificate.model.RegistrationUser
+import de.upb.cs.uc4.certificate.model.EnrollmentUser
 import de.upb.cs.uc4.group.api.GroupService
 import de.upb.cs.uc4.group.impl.GroupApplication
 import de.upb.cs.uc4.group.impl.actor.GroupBehaviour
@@ -106,7 +106,7 @@ class GroupServiceSpec extends AsyncWordSpec
 
     "add a user to a group" in {
       val enrollmentId = "student00"
-      val container = server.application.kafkaEncryptionUtility.encrypt(RegistrationUser(enrollmentId, "Student"))
+      val container = server.application.kafkaEncryptionUtility.encrypt(EnrollmentUser(enrollmentId, "Student"))
       registrationStub.send(container)
 
       eventually(timeout(Span(30, Seconds))) {
@@ -119,5 +119,5 @@ class GroupServiceSpec extends AsyncWordSpec
 
 class CertificateServiceStubWithTopic(registrationStub: ProducerStub[EncryptionContainer]) extends CertificateServiceStub {
 
-  override def userRegistrationTopic(): Topic[EncryptionContainer] = registrationStub.topic
+  override def userEnrollmentTopic(): Topic[EncryptionContainer] = registrationStub.topic
 }
