@@ -116,7 +116,7 @@ class MatriculationServiceImpl(
               .flatMap { jsonEnrollmentId =>
                 val enrollmentId = jsonEnrollmentId.id
 
-                certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+                certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke()
                   .flatMap { certificateJson =>
                     val certificate = certificateJson.certificate
 
