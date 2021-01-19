@@ -53,7 +53,7 @@ class OperationServiceImpl(
             operationData =>
               certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
                 jsonEnrollmentId =>
-                  if (!operationData.isInvolved(jsonEnrollmentId.id, role.toString)) {
+                  if (role != AuthenticationRole.Admin && !operationData.isInvolved(jsonEnrollmentId.id, role.toString)) {
                     throw UC4Exception.OwnerMismatch
                   }
                   createETagHeader(header, operationData)
