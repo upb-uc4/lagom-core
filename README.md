@@ -76,7 +76,7 @@ This file will be load when postgres starts.
 ## Dependecies of the different services
 ![Dependency tree](documentation/dependency_tree.jpg)
 
-The figure gives an overview of the interal communciation between services and therefore there dependencies among themselves. Inter service communcation is either realized through service calls or publish-subscribe techniques using Apache Kafka as message broker. Service calls are synchronous HTTP calls that use the defined REST api, while publishing messages allows asynchronous decoupled communication between services. Messages are published to some topics to which multiple services can subscribe to. Some services communicate with the underlying Hyperledger Fabric Framework, these services are marked with a red tag.
+The figure gives an overview of the internal communciation between services and therefore their dependencies. Inter-service communcation is either realized through service calls or publish-subscribe techniques using Apache Kafka as message broker. Service calls are synchronous HTTP calls that use the defined REST api, while publishing messages allows asynchronous decoupled communication between services. Messages are published to topics which multiple services can subscribe to. Some services communicate with the underlying Hyperledger Fabric Framework. These services are marked with a red tag.
 
 ## Running tests in IntelliJ
 IntelliJ expects some impressive Hardware.
