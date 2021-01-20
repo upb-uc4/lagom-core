@@ -41,7 +41,7 @@ class GroupServiceSpec extends AsyncWordSpec
         // Create a userService with ProducerStub as topic
         override lazy val certificateService: CertificateServiceStubWithTopic = new CertificateServiceStubWithTopic(internRegistrationStub)
 
-        override def createActorFactory: GroupBehaviour = new GroupBehaviour(config) {
+        override def createHyperledgerActor: GroupBehaviour = new GroupBehaviour(config) {
 
           override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
           override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")

@@ -1,7 +1,6 @@
 package de.upb.cs.uc4.examreg.impl
 
 import java.nio.file.Path
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -33,7 +32,7 @@ class ExamregServiceSpec extends AsyncWordSpec
       .withJdbc()
   ) { ctx =>
       new ExamregApplication(ctx) with LocalServiceLocator {
-        override def createActorFactory: ExamregHyperledgerBehaviour = new ExamregHyperledgerBehaviour(config) {
+        override def createHyperledgerActor: ExamregHyperledgerBehaviour = new ExamregHyperledgerBehaviour(config) {
 
           override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
           override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")

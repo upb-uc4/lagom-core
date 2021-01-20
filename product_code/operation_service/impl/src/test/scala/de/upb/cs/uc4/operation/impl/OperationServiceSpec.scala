@@ -5,7 +5,7 @@ import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils.JsonUtil.ToJsonUtil
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationsTrait
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.{ OperationHyperledgerBehaviour, OperationState, WatchlistWrapper }
@@ -43,7 +43,7 @@ class OperationServiceSpec extends AsyncWordSpec
 
         var operationList: Seq[OperationData] = List()
 
-        override def createActorFactory: OperationHyperledgerBehaviour = new OperationHyperledgerBehaviour(config) {
+        override def createHyperledgerActor: OperationHyperledgerBehaviour = new OperationHyperledgerBehaviour(config) {
 
           override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
           override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")

@@ -1,6 +1,6 @@
-package de.upb.cs.uc4.hyperledger
+package de.upb.cs.uc4.hyperledger.impl
 
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.FromJsonUtil
+import HyperledgerUtils.JsonUtil.FromJsonUtil
 import de.upb.cs.uc4.shared.client.operation.OperationData
 import play.api.libs.json.{ Format, Json }
 

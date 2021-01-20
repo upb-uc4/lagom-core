@@ -8,8 +8,8 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.group.api.GroupService
 import de.upb.cs.uc4.group.impl.actor.GroupBehaviour
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils
-import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils
+import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import play.api.Environment

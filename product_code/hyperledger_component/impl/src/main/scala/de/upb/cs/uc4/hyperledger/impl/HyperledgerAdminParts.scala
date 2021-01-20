@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.hyperledger
+package de.upb.cs.uc4.hyperledger.impl
 
 trait HyperledgerAdminParts extends HyperledgerDefaultParts {
 

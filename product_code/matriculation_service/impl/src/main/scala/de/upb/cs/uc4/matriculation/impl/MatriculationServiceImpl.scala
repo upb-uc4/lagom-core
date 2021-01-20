@@ -11,8 +11,8 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
-import de.upb.cs.uc4.hyperledger.{ HyperledgerUtils, ProposalWrapper }
+import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
+import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands._

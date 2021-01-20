@@ -17,9 +17,9 @@ import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertific
 import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet }
 import de.upb.cs.uc4.certificate.impl.readside.CertificateDatabase
 import de.upb.cs.uc4.certificate.model._
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
+import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerAdminParts, HyperledgerUtils }
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
-import de.upb.cs.uc4.hyperledger.{ HyperledgerAdminParts, HyperledgerUtils }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, JsonUsername }

@@ -10,8 +10,8 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils
-import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils
+import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.{ OperationHyperledgerBehaviour, OperationState }
 import de.upb.cs.uc4.operation.impl.commands._

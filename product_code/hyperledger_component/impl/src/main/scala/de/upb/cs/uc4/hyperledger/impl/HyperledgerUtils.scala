@@ -1,9 +1,10 @@
-package de.upb.cs.uc4.hyperledger
+package de.upb.cs.uc4.hyperledger.impl
 
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.util.Timeout
-import de.upb.cs.uc4.hyperledger.commands.{ GetChaincodeVersion, HyperledgerBaseCommand }
+import de.upb.cs.uc4.hyperledger.BuildInfo
 import de.upb.cs.uc4.hyperledger.exceptions.traits.{ HyperledgerExceptionTrait, NetworkExceptionTrait, OperationExceptionTrait, TransactionExceptionTrait }
+import de.upb.cs.uc4.hyperledger.impl.commands.{ GetChaincodeVersion, HyperledgerBaseCommand }
 import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }

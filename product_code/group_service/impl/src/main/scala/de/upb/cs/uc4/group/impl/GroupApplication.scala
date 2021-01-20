@@ -11,7 +11,7 @@ import de.upb.cs.uc4.certificate.model.EnrollmentUser
 import de.upb.cs.uc4.group.api.GroupService
 import de.upb.cs.uc4.group.impl.actor.GroupBehaviour
 import de.upb.cs.uc4.group.impl.commands.AddToGroup
-import de.upb.cs.uc4.hyperledger.HyperledgerComponent
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerComponent
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
@@ -28,7 +28,7 @@ abstract class GroupApplication(context: LagomApplicationContext)
 
   protected final val log: Logger = LoggerFactory.getLogger(getClass)
 
-  override def createActorFactory: GroupBehaviour = wire[GroupBehaviour]
+  override def createHyperledgerActor: GroupBehaviour = wire[GroupBehaviour]
 
   //Bind CertificateService
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]

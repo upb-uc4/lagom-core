@@ -47,7 +47,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
 
         var admissionList: Seq[CourseAdmission] = List()
 
-        override def createActorFactory: AdmissionBehaviour = new AdmissionBehaviour(config) {
+        override def createHyperledgerActor: AdmissionBehaviour = new AdmissionBehaviour(config) {
 
           override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
           override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")

@@ -3,15 +3,15 @@ package de.upb.cs.uc4.matriculation.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import com.typesafe.config.Config
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil._
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionMatriculation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
-import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory, ProposalWrapper }
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils.JsonUtil._
+import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
+import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerActor, HyperledgerActorObject, ProposalWrapper }
 import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 
-class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionMatriculationTrait] {
+class MatriculationBehaviour(val config: Config) extends HyperledgerActor[ConnectionMatriculationTrait] {
 
   /** Creates the connection to the chaincode */
   override protected def createConnection: ConnectionMatriculationTrait =

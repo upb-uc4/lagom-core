@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.hyperledger.commands
+package de.upb.cs.uc4.hyperledger.impl.commands
 
 import akka.actor.typed.ActorRef
 import akka.pattern.StatusReply
