@@ -26,7 +26,10 @@ object ServiceCallFactory {
     */
   def logged[Request, Response](serviceCall: ServerServiceCall[Request, Response]): ServerServiceCall[Request, Response] =
     ServerServiceCall.compose { requestHeader =>
-      log.info("Received {} {} with headers {}", requestHeader.method, requestHeader.uri, requestHeader.headers)
+      log.info("Received {} {} with headers:", requestHeader.method, requestHeader.uri)
+      requestHeader.headers.foreach {
+        case (key, content) => log.info(s"\t$key: $content")
+      }
       serviceCall
     }
 
