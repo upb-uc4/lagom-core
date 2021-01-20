@@ -4,7 +4,7 @@ import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.util.Timeout
 import de.upb.cs.uc4.hyperledger.BuildInfo
 import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
-import de.upb.cs.uc4.hyperledger.exceptions.traits.{ HyperledgerExceptionTrait, NetworkExceptionTrait, OperationExceptionTrait, TransactionExceptionTrait }
+import de.upb.cs.uc4.hyperledger.exceptions.traits.{ HyperledgerExceptionTrait, NetworkExceptionTrait, TransactionExceptionTrait }
 import de.upb.cs.uc4.hyperledger.impl.commands.{ GetChaincodeVersion, HyperledgerBaseCommand }
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
@@ -28,9 +28,6 @@ object HyperledgerUtils {
             s"NetworkException with ${exp.toString}",
             exp.innerException.getMessage
           )
-        case opEx: OperationExceptionTrait =>
-          // TODO To something with the approval result
-          opEx.chainError.toUC4Exception
         case transactionEx: TransactionExceptionTrait =>
           try {
             val json = Json.parse(transactionEx.payload)

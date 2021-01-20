@@ -1,11 +1,10 @@
 package de.upb.cs.uc4.matriculation.api
 
 import akka.{ Done, NotUsed }
-import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.hyperledger.api.UC4HyperledgerService
-import de.upb.cs.uc4.hyperledger.api.model.{ SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
+import de.upb.cs.uc4.hyperledger.api.model.UnsignedProposal
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
@@ -19,12 +18,6 @@ trait MatriculationService extends UC4HyperledgerService {
   override val pathPrefix: String = "/matriculation-management"
   /** The name of the service */
   override val name: String = "matriculation"
-
-  /** Submits a proposal to matriculate a student */
-  def submitMatriculationProposal(): ServiceCall[SignedProposal, UnsignedTransaction]
-
-  /** Submits a transaction to matriculate a student */
-  def submitMatriculationTransaction(): ServiceCall[SignedTransaction, Done]
 
   /** Get proposal to matriculate a student */
   def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal]
@@ -42,14 +35,10 @@ trait MatriculationService extends UC4HyperledgerService {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.POST, pathPrefix + "/matriculation/signed_proposal", submitMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/matriculation/:username/unsigned_proposal", getMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/matriculation/signed_transaction", submitMatriculationTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.GET, pathPrefix + "/matriculation/:username", getMatriculationData _),
 
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/signed_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/unsigned_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/signed_transaction", allowedPost),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/unsigned_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username", allowedGet _)
       )
   }

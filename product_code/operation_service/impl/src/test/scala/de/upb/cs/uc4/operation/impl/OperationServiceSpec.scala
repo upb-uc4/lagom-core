@@ -5,15 +5,15 @@ import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
-import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, operation }
 import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
-import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationsTrait
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, operation }
+import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationTrait
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.{ OperationHyperledgerBehaviour, OperationState, WatchlistWrapper }
 import de.upb.cs.uc4.operation.impl.commands.{ AddToWatchlist, GetWatchlist, OperationCommand, RemoveFromWatchlist }
 import de.upb.cs.uc4.operation.model._
 import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
-import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exception }
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -56,13 +56,13 @@ class OperationServiceSpec extends AsyncWordSpec
           override val adminUsername: String = "cli"
           override val adminPassword: String = ""
 
-          override protected def createConnection: ConnectionOperationsTrait = new ConnectionOperationsTrait() {
+          override protected def createConnection: ConnectionOperationTrait = new ConnectionOperationTrait() {
 
             override def getChaincodeVersion: String = "testVersion"
 
-            override def approveTransaction(initiator: String, contractName: String, transactionName: String, params: String*): String = "APPROVED"
+            override def approveOperation(operationId: String): String = "APPROVED"
 
-            override def rejectTransaction(operationId: String, rejectMessage: String): String = {
+            override def rejectOperation(operationId: String, rejectMessage: String): String = {
               operationList = operationList.map { operation =>
                 if (operation.operationId == operationId) {
                   operation.copy(state = OperationDataState.REJECTED, reason = rejectMessage)
@@ -74,20 +74,15 @@ class OperationServiceSpec extends AsyncWordSpec
               "REJECTED"
             }
 
-            override def getOperations(existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, state: String): String = {
+            override def getOperations(operationIds: List[String], existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, involvedEnrollmentId: String, states: List[String]): String = {
               operationList
-                .filter(op => state.isEmpty || op.state.toString == state)
+                .filter(op => operationIds.isEmpty || operationIds.contains(op.operationId))
+                .filter(op => states.isEmpty || states.contains(op.state))
                 .filter(op => initiatorEnrollmentId.isEmpty || op.initiator == initiatorEnrollmentId)
                 .filter(op => missingEnrollmentId.isEmpty || op.missingApprovals.users.contains(missingEnrollmentId) || op.missingApprovals.groups.contains(groups(missingEnrollmentId)))
                 .filter(op => existingEnrollmentId.isEmpty || op.existingApprovals.users.contains(existingEnrollmentId))
+                .filter(op => involvedEnrollmentId.isEmpty || op.isInvolved(involvedEnrollmentId, groups(involvedEnrollmentId)))
                 .toJson
-            }
-
-            override def getOperationData(operationId: String): String = {
-              operationList.find(_.operationId == operationId) match {
-                case Some(value) => value.toJson
-                case None        => throw UC4Exception(404, GenericError(ErrorType.HLNotFound, ""))
-              }
             }
 
             override lazy val contract: ContractImpl = null
@@ -97,6 +92,14 @@ class OperationServiceSpec extends AsyncWordSpec
             override val chaincode: String = ""
             override val walletPath: Path = null
             override val networkDescriptionPath: Path = null
+
+            override def initiateOperation(initiator: String, contractName: String, transactionName: String, params: String*): String = "not needed"
+
+            override def getProposalInitiateOperation(certificate: String, affiliation: String, initiator: String, contractName: String, transactionName: String, params: Array[String]): Array[Byte] = Array.emptyByteArray
+
+            override def getProposalApproveOperation(certificate: String, affiliation: String, operationId: String): Array[Byte] = ???
+
+            override def getProposalRejectOperation(certificate: String, affiliation: String, operationId: String, rejectMessage: String): Array[Byte] = ???
           }
         }
       }

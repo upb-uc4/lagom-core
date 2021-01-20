@@ -26,13 +26,6 @@ object SubmitProposal {
     new SubmitProposal(proposal.unsignedProposalAsByteArray, proposal.signatureAsByteArray, replyTo)
 }
 
-final case class SubmitTransaction(unsignedTransaction: Array[Byte], signature: Array[Byte], replyTo: ActorRef[StatusReply[Confirmation]]) extends HyperledgerInternCommand[Confirmation]
-
-object SubmitTransaction {
-  def apply(transaction: SignedTransaction, replyTo: ActorRef[StatusReply[Confirmation]]) =
-    new SubmitTransaction(transaction.unsignedTransactionAsByteArray, transaction.signatureAsByteArray, replyTo)
-}
-
 final case class GetChaincodeVersion(replyTo: ActorRef[StatusReply[Confirmation]]) extends HyperledgerInternCommand[Confirmation]
 
 trait HyperledgerCommand[PayloadType] extends HyperledgerInternCommand[PayloadType]
@@ -41,3 +34,9 @@ trait HyperledgerReadCommand[PayloadType] extends HyperledgerCommand[PayloadType
 
 trait HyperledgerWriteCommand extends HyperledgerCommand[Confirmation]
 
+final case class SubmitTransaction(unsignedTransaction: Array[Byte], signature: Array[Byte], replyTo: ActorRef[StatusReply[Confirmation]]) extends HyperledgerWriteCommand
+
+object SubmitTransaction {
+  def apply(transaction: SignedTransaction, replyTo: ActorRef[StatusReply[Confirmation]]) =
+    new SubmitTransaction(transaction.unsignedTransactionAsByteArray, transaction.signatureAsByteArray, replyTo)
+}

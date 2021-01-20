@@ -55,9 +55,6 @@ trait HyperledgerActor[Connection <: ConnectionTrait] extends HyperledgerAdminPa
                   cmd match {
                     case SubmitProposal(proposal, signature, replyTo) =>
                       replyTo ! StatusReply.success(connection.getUnsignedTransaction(proposal, signature))
-                    case SubmitTransaction(transaction, signature, replyTo) =>
-                      connection.submitSignedTransaction(transaction, signature)
-                      replyTo ! StatusReply.success(Accepted.default)
                     case GetChaincodeVersion(replyTo) =>
                       val version = connection.getChaincodeVersion
                       replyTo ! StatusReply.success(Accepted(version))

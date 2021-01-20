@@ -2,7 +2,7 @@ package de.upb.cs.uc4.matriculation
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
 import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
@@ -31,15 +31,6 @@ class MatriculationServiceStub extends MatriculationService {
   /** Delete all matriculation data */
   def reset(): Unit = {
     matriculationData.clear()
-  }
-
-  /** Submits a proposal to matriculate a student */
-  override def submitMatriculationProposal(): ServiceCall[SignedProposal, UnsignedTransaction] =
-    proposal => Future.successful(UnsignedTransaction("t:".getBytes() ++ proposal.unsignedProposalAsByteArray))
-
-  /** Submits a transaction to matriculate a student */
-  override def submitMatriculationTransaction(): ServiceCall[SignedTransaction, Done] = {
-    _ => Future.successful(Done)
   }
 
   /** Get proposal to matriculate a student */
