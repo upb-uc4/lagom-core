@@ -7,9 +7,9 @@
 
 ## Table of Contents
 
-  * [Different Versions](###-Different-Versions)
+  * [Versions in this project](###-Versions-in-this-project)
   * [Changes necessary on UNIX](###-Changes-necessary-on-UNIX)
-  * [Run](##_Run)
+  * [Running in development mode](##-Running-in-development-mode)
     * [Errors](###-Errors)
   * [Change settings of postgres](##-Change-settings-of-postgres)
   * [Dependecies of the different services](##-Dependecies-of-the-different-services)
