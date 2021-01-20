@@ -8,6 +8,7 @@ scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
 lagomUnmanagedServices in ThisBuild := Map("imageprocessing" -> sys.env.getOrElse("IMAGE_PROCESSING", "http://localhost:9020"))
 
 val withTests = "compile->compile;test->test"
+val onlyTests = "test->test"
 
 // Projects
 lazy val lagom = (project in file("."))
@@ -175,7 +176,8 @@ lazy val admission_service = (project in file("admission_service/impl"))
   .settings(Settings.implSettings("examreg_service"))
   .dependsOn(admission_service_api % withTests, shared_client % withTests, shared_server % withTests,
     hyperledger_component, matriculation_service_api % withTests, examreg_service_api % withTests,
-    course_service_api % withTests, certificate_service % withTests)
+    course_service_api % withTests, certificate_service_api % withTests, operation_service_api % withTests,
+    user_service_api % onlyTests)
 
 lazy val operation_service_api =  (project in file("operation_service/api"))
   .settings(Settings.apiSettings("operation_service"))
