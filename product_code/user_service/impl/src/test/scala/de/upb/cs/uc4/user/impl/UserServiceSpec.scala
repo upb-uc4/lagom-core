@@ -14,10 +14,10 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.image.ImageProcessingServiceStub
 import de.upb.cs.uc4.image.api.ImageProcessingService
-import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
-import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
+import de.upb.cs.uc4.shared.client.configuration.ErrorMessageCollection
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
@@ -182,7 +182,7 @@ class UserServiceSpec extends AsyncWordSpec
                 .runWith(TestSink.probe[EncryptionContainer])
                 .request(Long.MaxValue)
                 .receiveWithin(FiniteDuration(3, SECONDS)).last
-              server.application.kafkaEncryptionUtility.decrypt[Usernames](container) should ===(createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret))
+              server.application.kafkaEncryptionUtility.decrypt[Usernames](container) should ===(createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret, student0.role))
             }
         }.flatMap(cleanupOnSuccess)
           .recoverWith(cleanupOnFailure())
