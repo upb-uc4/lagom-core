@@ -53,8 +53,6 @@ trait HyperledgerActor[Connection <: ConnectionTrait] extends HyperledgerAdminPa
               if (enrolled) {
                 try {
                   cmd match {
-                    case SubmitProposal(proposal, signature, replyTo) =>
-                      replyTo ! StatusReply.success(connection.getUnsignedTransaction(proposal, signature))
                     case GetChaincodeVersion(replyTo) =>
                       val version = connection.getChaincodeVersion
                       replyTo ! StatusReply.success(Accepted(version))

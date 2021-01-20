@@ -7,7 +7,7 @@ import de.upb.cs.uc4.hyperledger.api.model.UnsignedProposal
 import de.upb.cs.uc4.hyperledger.api.model.operation.OperationData
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionOperation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationTrait
-import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, SubmitTransaction }
+import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, SubmitProposal, SubmitTransaction }
 import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerActor, HyperledgerActorObject }
 import de.upb.cs.uc4.operation.impl.commands.{ GetOperationHyperledger, GetOperationsHyperledger, GetProposalRejectOperationHyperledger }
 import de.upb.cs.uc4.shared.client.JsonUtility.FromJsonUtil
@@ -28,6 +28,8 @@ class OperationHyperledgerBehaviour(val config: Config) extends HyperledgerActor
     * @param command    which should get executed
     */
   override protected def applyCommand(connection: ConnectionOperationTrait, command: HyperledgerCommand[_]): Unit = command match {
+    case SubmitProposal(proposal, signature, replyTo) =>
+      replyTo ! StatusReply.success(connection.getUnsignedTransaction(proposal, signature))
     case SubmitTransaction(transaction, signature, replyTo) =>
       val jsonOperationData = connection.submitSignedTransaction(transaction, signature)
       val operationData = jsonOperationData.fromJson[OperationData]
