@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.shared.client.operation
+package de.upb.cs.uc4.hyperledger.api.model.operation
 
 import play.api.libs.json.{ Format, Json }
 

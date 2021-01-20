@@ -5,7 +5,8 @@ import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
-import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, operation }
+import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationsTrait
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.{ OperationHyperledgerBehaviour, OperationState, WatchlistWrapper }
@@ -13,7 +14,6 @@ import de.upb.cs.uc4.operation.impl.commands.{ AddToWatchlist, GetWatchlist, Ope
 import de.upb.cs.uc4.operation.model._
 import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exception }
-import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -122,15 +122,15 @@ class OperationServiceSpec extends AsyncWordSpec
     groups += certificate.get(student2).enrollmentId -> "Student"
     groups += certificate.get(admin0).enrollmentId -> "Admin"
 
-    operation1 = OperationData("op1", TransactionInfo("contract", "transaction", ""),
+    operation1 = operation.OperationData("op1", TransactionInfo("contract", "transaction", ""),
       OperationDataState.PENDING, "", certificate.get(student0).enrollmentId, "", "",
       ApprovalList(Seq(), Seq("Admin")),
       ApprovalList(Seq(certificate.get(student1).enrollmentId), Seq()))
-    operation2 = OperationData("op2", TransactionInfo("contract", "transaction", ""),
+    operation2 = operation.OperationData("op2", TransactionInfo("contract", "transaction", ""),
       OperationDataState.PENDING, "", certificate.get(student1).enrollmentId, "", "",
       ApprovalList(Seq(certificate.get(student2).enrollmentId), Seq()),
       ApprovalList(Seq(), Seq("Admin")))
-    operation3 = OperationData("op3", TransactionInfo("contract", "transaction", ""),
+    operation3 = operation.OperationData("op3", TransactionInfo("contract", "transaction", ""),
       OperationDataState.REJECTED, "", certificate.get(student1).enrollmentId, "", "",
       ApprovalList(Seq(certificate.get(student2).enrollmentId), Seq()),
       ApprovalList(Seq(), Seq("Admin")))

@@ -10,6 +10,7 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
+import de.upb.cs.uc4.hyperledger.api.model.operation.{ OperationData, OperationDataState }
 import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils
 import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
@@ -19,7 +20,6 @@ import de.upb.cs.uc4.operation.impl.commands._
 import de.upb.cs.uc4.operation.model.{ JsonOperationId, JsonRejectMessage }
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
-import de.upb.cs.uc4.shared.client.operation.{ OperationData, OperationDataState }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import play.api.Environment

@@ -3,13 +3,13 @@ package de.upb.cs.uc4.operation.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import com.typesafe.config.Config
+import de.upb.cs.uc4.hyperledger.api.model.operation.OperationData
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionOperation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationsTrait
 import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerActor, HyperledgerActorObject }
 import de.upb.cs.uc4.operation.impl.commands.{ GetOperationHyperledger, GetOperationsHyperledger, RejectOperationHyperledger }
 import de.upb.cs.uc4.shared.client.JsonUtility.FromJsonUtil
-import de.upb.cs.uc4.shared.client.operation.OperationData
 import de.upb.cs.uc4.shared.server.messages.Accepted
 
 class OperationHyperledgerBehaviour(val config: Config) extends HyperledgerActor[ConnectionOperationsTrait] {

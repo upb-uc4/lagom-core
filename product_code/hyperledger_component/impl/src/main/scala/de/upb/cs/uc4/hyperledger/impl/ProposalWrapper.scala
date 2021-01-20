@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.hyperledger.impl
 
+import de.upb.cs.uc4.hyperledger.api.model.operation.OperationData
 import de.upb.cs.uc4.shared.client.JsonUtility.FromJsonUtil
-import de.upb.cs.uc4.shared.client.operation.OperationData
 import play.api.libs.json.{ Format, Json }
 
 case class ProposalWrapper(operationId: String, proposal: Array[Byte])

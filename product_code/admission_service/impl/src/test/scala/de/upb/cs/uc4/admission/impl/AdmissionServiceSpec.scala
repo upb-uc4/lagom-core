@@ -9,12 +9,13 @@ import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.course.{ CourseServiceStub, DefaultTestCourses }
 import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
+import de.upb.cs.uc4.hyperledger.api.model
+import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._
 import de.upb.cs.uc4.shared.client._
-import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -78,7 +79,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
               (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, courseAdmission.getBytes())
 
             override def getProposalDropAdmission(certificate: String, AFFILITATION: String = AFFILIATION, admissionId: String): (String, Array[Byte]) =
-              (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, ("id#" + admissionId).getBytes())
+              (model.operation.OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, ("id#" + admissionId).getBytes())
 
             override def getUnsignedTransaction(proposalBytes: Array[Byte], signature: Array[Byte]): Array[Byte] = {
               "t:".getBytes() ++ proposalBytes

@@ -4,7 +4,8 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
-import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction }
+import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, operation }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
 import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
@@ -13,7 +14,6 @@ import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatric
 import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
-import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -145,7 +145,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
               (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, jSonMatriculationData.getBytes())
 
             override def getProposalAddEntriesToMatriculationData(certificate: String, AFFILITATION: String = AFFILIATION, enrollmentId: String, subjectMatriculationList: String): (String, Array[Byte]) =
-              (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, (enrollmentId + "#" + subjectMatriculationList).getBytes())
+              (operation.OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, (enrollmentId + "#" + subjectMatriculationList).getBytes())
 
             override def getUnsignedTransaction(proposalBytes: Array[Byte], signature: Array[Byte]): Array[Byte] = {
               "t:".getBytes() ++ proposalBytes
