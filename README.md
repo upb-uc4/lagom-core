@@ -18,7 +18,7 @@
 
 ---
 
-## Different Versions
+## Versions in this project
 * Scala: 2.13.0  
 * sbt: 1.4.3
 * Java: 1.8
