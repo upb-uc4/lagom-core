@@ -60,7 +60,7 @@ If this doesn\'t help: Open an issue.
 
 ## Changelog
 
-To get an overview of our developmental process, we tagged our releases and added mutltiple changelogs, like the one of the [user service](product_code/user_service/CHANGELOG.md), to our repository which reveals our different releases along with a respective description/enumeration of our changes.
+To get an overview of our development process, we tagged our releases and added changelogs for every service, like the one of the [user service](product_code/user_service/CHANGELOG.md), to our repository, which lists our different releases along with a description/enumeration of the changes between versions.
 Each service has an individual tag which starts with the name of the service followed by the version-number.
 
 ## Create Docker Images
