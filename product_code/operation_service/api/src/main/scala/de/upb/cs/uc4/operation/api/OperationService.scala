@@ -30,6 +30,9 @@ trait OperationService extends UC4HyperledgerService {
   /** Remove an Operation from watchlist */
   def removeOperation(operationId: String): ServiceCall[NotUsed, Done]
 
+  /** Approve the operation with the given operationId */
+  def getProposalApproveOperation(operationId: String): ServiceCall[NotUsed, UnsignedProposal]
+
   /** Reject the operation with the given operationId*/
   def getProposalRejectOperation(operationId: String): ServiceCall[JsonRejectMessage, UnsignedProposal]
 
@@ -62,9 +65,11 @@ trait OperationService extends UC4HyperledgerService {
         restCall(Method.DELETE, pathPrefix + "/operations/:operationId", removeOperation _),
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId", allowedGetDelete _),
 
+        restCall(Method.POST, pathPrefix + "/operations/:operationId/unsigned_proposal_approve", getProposalApproveOperation _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/operations/:operationId/unsigned_proposal_reject", getProposalRejectOperation _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/operations/:operationId/signed_proposal", submitProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/operations/:operationId/signed_transaction", submitTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/unsigned_proposal_approve", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/unsigned_proposal_reject", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/signed_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/signed_transaction", allowedPost _),

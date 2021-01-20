@@ -19,6 +19,9 @@ class OperationServiceStub extends OperationService {
   /** Remove an Operation from watchlist */
   override def removeOperation(operationId: String): ServiceCall[NotUsed, Done] = _ => Future.successful(Done)
 
+  /** Approve the operation with the given operationId */
+  override def getProposalApproveOperation(operationId: String): ServiceCall[NotUsed, UnsignedProposal] = _ => Future.successful(UnsignedProposal(""))
+
   /** Reject the operation with the given operationId */
   override def getProposalRejectOperation(operationId: String): ServiceCall[JsonRejectMessage, UnsignedProposal] = _ => Future.successful(UnsignedProposal(""))
 

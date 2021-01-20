@@ -19,9 +19,10 @@ object HyperledgerUtils {
     def toUC4Exception: UC4Exception = {
       exception match {
         case exp: HyperledgerExceptionTrait =>
+          val message = exp.innerException.getMessage
           UC4Exception.InternalServerError(
             s"HyperledgerException thrown by ${exp.actionName}",
-            exp.innerException.getMessage
+            if (message != null) message else exp.innerException.toString
           )
         case exp: NetworkExceptionTrait =>
           UC4Exception.InternalServerError(

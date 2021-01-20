@@ -150,6 +150,23 @@ class OperationServiceImpl(
       }
   }
 
+  /** Approve the operation with the given operationId */
+  override def getProposalApproveOperation(operationId: String): ServiceCall[NotUsed, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+    (authUser, _) =>
+      ServerServiceCall { (header, _) =>
+        certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonCertificate =>
+          entityRef.askWithStatus(replyTo =>
+            GetProposalApproveOperationHyperledger(
+              jsonCertificate.certificate,
+              operationId,
+              replyTo
+            )).recover(handleException("Approve operation")).map { unsignedProposal =>
+            (ResponseHeader(200, MessageProtocol.empty, List()), unsignedProposal)
+          }
+        }
+      }
+  }
+
   /** Returns a proposal for rejecting the operation with the given operationId */
   override def getProposalRejectOperation(operationId: String): ServiceCall[JsonRejectMessage, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUser, _) =>
@@ -161,7 +178,7 @@ class OperationServiceImpl(
               operationId,
               jsonRejectMessage.rejectMessage,
               replyTo
-            )).recover(handleException("Get operations")).map { unsignedProposal =>
+            )).recover(handleException("Reject operation")).map { unsignedProposal =>
             (ResponseHeader(200, MessageProtocol.empty, List()), unsignedProposal)
           }
         }
