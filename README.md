@@ -7,14 +7,14 @@
 
 ## Table of Contents
 
-  * [Versions in this project](###-Versions-in-this-project)
-  * [Changes necessary on UNIX](###-Changes-necessary-on-UNIX)
-  * [Running in development mode](##-Running-in-development-mode)
-    * [Errors](###-Errors)
-  * [Change settings of postgres](##-Change-settings-of-postgres)
-  * [Dependecies of the different services](##-Dependecies-of-the-different-services)
-  * [Running tests in IntelliJ](##-Running-tests-in-IntelliJ)
-  * [License](##_License)
+  * [Versions in this project](#versions-in-this-project)
+  * [Changes necessary on UNIX](#changes-necessary-on-unix)
+  * [Running in development mode](#running-in-development-mode)
+    * [Errors](#errors)
+  * [Change settings of postgres](#change-settings-of-postgres)
+  * [Dependecies of the different services](#dependecies-of-the-different-services)
+  * [Running tests in IntelliJ](#running-tests-in-intellij)
+  * [License](#license)
 
 ---
 
