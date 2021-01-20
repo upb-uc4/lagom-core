@@ -36,7 +36,7 @@ Should look like this:
 -J-XX:MaxMetaspaceSize=2048M
 ```
 
-## Run
+## Running in development mode
 First start Postgres and Imagenary with the default settings:
 ```shell script
 docker-compose up
