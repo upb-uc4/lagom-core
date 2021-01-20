@@ -5,11 +5,11 @@ import akka.pattern.StatusReply
 import com.typesafe.config.Config
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionMatriculation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
-import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils.JsonUtil._
 import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerActor, HyperledgerActorObject, ProposalWrapper }
 import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
+import de.upb.cs.uc4.shared.client.JsonUtility._
 
 class MatriculationBehaviour(val config: Config) extends HyperledgerActor[ConnectionMatriculationTrait] {
 

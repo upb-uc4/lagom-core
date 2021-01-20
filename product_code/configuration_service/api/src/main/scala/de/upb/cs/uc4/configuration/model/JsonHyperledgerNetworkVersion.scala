@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.shared.client
+package de.upb.cs.uc4.configuration.model
 
 import play.api.libs.json.{ Format, Json }
 

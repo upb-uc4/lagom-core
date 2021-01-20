@@ -5,8 +5,8 @@ import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.course.DefaultTestCourses
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
 import de.upb.cs.uc4.examreg.api.ExamregService
+import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.UserServiceStub

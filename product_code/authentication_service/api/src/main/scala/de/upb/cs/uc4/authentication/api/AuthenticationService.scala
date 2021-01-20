@@ -5,8 +5,8 @@ import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceAcl, ServiceCall }
 import de.upb.cs.uc4.authentication.model.{ AuthenticationUser, RefreshToken, Tokens }
-import de.upb.cs.uc4.shared.client.{ JsonUsername, UC4Service }
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
+import de.upb.cs.uc4.shared.client.{ JsonUsername, UC4Service }
 
 /** The AuthenticationService interface.
   *

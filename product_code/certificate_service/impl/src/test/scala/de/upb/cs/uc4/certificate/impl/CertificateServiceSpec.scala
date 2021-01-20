@@ -1,6 +1,5 @@
 package de.upb.cs.uc4.certificate.impl
 
-import java.nio.file.Path
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
@@ -18,6 +17,8 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
+
+import java.nio.file.Path
 
 /** Tests for the CertificateService */
 class CertificateServiceSpec extends AsyncWordSpec

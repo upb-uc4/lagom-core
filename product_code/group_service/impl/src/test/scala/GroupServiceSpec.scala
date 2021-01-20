@@ -7,8 +7,8 @@ import de.upb.cs.uc4.certificate.model.EnrollmentUser
 import de.upb.cs.uc4.group.api.GroupService
 import de.upb.cs.uc4.group.impl.GroupApplication
 import de.upb.cs.uc4.group.impl.actor.GroupBehaviour
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionGroupTrait
-import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import org.scalatest.BeforeAndAfterAll

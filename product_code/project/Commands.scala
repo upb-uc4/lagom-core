@@ -1,7 +1,7 @@
-import java.io.{ File, PrintWriter }
-
 import sbt.internal.util.ConsoleLogger
 import sbt.{ Command, Project, State }
+
+import java.io.{ File, PrintWriter }
 
 object Commands {
 

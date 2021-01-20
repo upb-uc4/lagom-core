@@ -2,10 +2,11 @@ package de.upb.cs.uc4.operation
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.{ JsonOperationId, JsonRejectMessage }
-import de.upb.cs.uc4.shared.client.operation.OperationData
 import de.upb.cs.uc4.shared.client._
+import de.upb.cs.uc4.shared.client.operation.OperationData
 
 import scala.concurrent.Future
 

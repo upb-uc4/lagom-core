@@ -1,7 +1,8 @@
-package de.upb.cs.uc4.shared.client
+package de.upb.cs.uc4.hyperledger.api.model
+
+import play.api.libs.json.{ Format, Json }
 
 import java.util.Base64
-import play.api.libs.json.{ Format, Json }
 
 /** The default response for a unsigned transaction
   *
@@ -11,7 +12,7 @@ case class UnsignedProposal(unsignedProposal: String)
 
 object UnsignedProposal {
 
-  /** Creates a [[de.upb.cs.uc4.shared.client.UnsignedProposal]] out of a byte array
+  /** Creates a [[UnsignedProposal]] out of a byte array
     *
     * @param unsignedProposal byte array which gets base64 encoded
     * @return base64 encoded proposal

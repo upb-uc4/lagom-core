@@ -8,9 +8,9 @@ import de.upb.cs.uc4.examreg.impl.commands.{ CloseExamregHyperledger, CreateExam
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, ExaminationRegulationsWrapper }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionExaminationRegulation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
-import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils.JsonUtil._
 import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerActor, HyperledgerActorObject }
+import de.upb.cs.uc4.shared.client.JsonUtility._
 import de.upb.cs.uc4.shared.server.messages.Accepted
 
 class ExamregHyperledgerBehaviour(val config: Config) extends HyperledgerActor[ConnectionExaminationRegulationTrait] {

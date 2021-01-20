@@ -4,7 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
-import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 
 import scala.concurrent.Future

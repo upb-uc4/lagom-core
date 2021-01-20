@@ -3,12 +3,12 @@ package de.upb.cs.uc4.hyperledger.impl
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.util.Timeout
 import de.upb.cs.uc4.hyperledger.BuildInfo
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.hyperledger.exceptions.traits.{ HyperledgerExceptionTrait, NetworkExceptionTrait, OperationExceptionTrait, TransactionExceptionTrait }
 import de.upb.cs.uc4.hyperledger.impl.commands.{ GetChaincodeVersion, HyperledgerBaseCommand }
-import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
-import play.api.libs.json.{ Format, JsResultException, Json }
+import play.api.libs.json.{ JsResultException, Json }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -80,17 +80,6 @@ object HyperledgerUtils {
         case ErrorType.HLInvalidTransactionCall => new UC4CriticalException(500, transactionError, null)
         case _ => UC4Exception.InternalServerError("Unknown TransactionError", s"Hyperledger uses a new ErrorType ${transactionError.`type`}")
       }
-    }
-  }
-
-  object JsonUtil {
-
-    implicit class ToJsonUtil[Type](val obj: Type)(implicit format: Format[Type]) {
-      def toJson: String = Json.stringify(Json.toJson(obj))
-    }
-
-    implicit class FromJsonUtil(val json: String) {
-      def fromJson[Type](implicit format: Format[Type]): Type = Json.parse(json).as[Type]
     }
   }
 

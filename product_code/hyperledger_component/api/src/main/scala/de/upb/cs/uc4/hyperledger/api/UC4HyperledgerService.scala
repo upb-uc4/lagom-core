@@ -1,8 +1,10 @@
-package de.upb.cs.uc4.shared.client
+package de.upb.cs.uc4.hyperledger.api
 
 import akka.NotUsed
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
+import de.upb.cs.uc4.shared.client.UC4Service
 
 trait UC4HyperledgerService extends UC4Service {
 

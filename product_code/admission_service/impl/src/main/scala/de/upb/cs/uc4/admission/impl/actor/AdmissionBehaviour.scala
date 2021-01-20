@@ -7,8 +7,8 @@ import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetProposalF
 import de.upb.cs.uc4.admission.model.CourseAdmission
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionAdmission
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
-import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerActor, HyperledgerActorObject, ProposalWrapper }
 import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
+import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerActor, HyperledgerActorObject, ProposalWrapper }
 import de.upb.cs.uc4.shared.client.JsonUtility._
 
 class AdmissionBehaviour(val config: Config) extends HyperledgerActor[ConnectionAdmissionTrait] {

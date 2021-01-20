@@ -74,7 +74,7 @@ lazy val hyperledger_component_api = (project in file("hyperledger_component/api
     version := Version("hyperledger_api")
   )
   .settings(Settings.commonSettings("hyperledger_component_api"))
-  .dependsOn(shared_server)
+  .dependsOn(shared_client)
 
 lazy val hyperledger_component_impl = (project in file("hyperledger_component/impl"))
   .settings(
@@ -128,7 +128,7 @@ lazy val user_service = (project in file("user_service/impl"))
 
 lazy val matriculation_service_api = (project in file("matriculation_service/api"))
   .settings(Settings.apiSettings("matriculation_service_api"))
-  .dependsOn(examreg_service_api % withTests, shared_client)
+  .dependsOn(examreg_service_api % withTests, hyperledger_component_api, shared_client)
 
 lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .enablePlugins(LagomScala)
@@ -139,7 +139,7 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
 
 lazy val certificate_service_api = (project in file("certificate_service/api"))
   .settings(Settings.apiSettings("certificate_service_api"))
-  .dependsOn(shared_client)
+  .dependsOn(shared_client, hyperledger_component_api)
 
 lazy val certificate_service = (project in file("certificate_service/impl"))
   .enablePlugins(LagomScala)
@@ -149,7 +149,7 @@ lazy val certificate_service = (project in file("certificate_service/impl"))
 
 lazy val configuration_service_api =  (project in file("configuration_service/api"))
   .settings(Settings.apiSettings("configuration_service_api"))
-  .dependsOn(shared_client)
+  .dependsOn(shared_client, hyperledger_component_api)
 
 lazy val configuration_service = (project in file("configuration_service/impl"))
   .enablePlugins(LagomScala)
@@ -163,7 +163,7 @@ lazy val image_processing_api = (project in file("image_processing/api"))
 
 lazy val examreg_service_api =  (project in file("examreg_service/api"))
   .settings(Settings.apiSettings("examreg_service_api"))
-  .dependsOn(shared_client)
+  .dependsOn(shared_client, hyperledger_component_api)
 
 lazy val examreg_service = (project in file("examreg_service/impl"))
   .enablePlugins(LagomScala)
@@ -176,7 +176,7 @@ lazy val examreg_service = (project in file("examreg_service/impl"))
 
 lazy val admission_service_api =  (project in file("admission_service/api"))
   .settings(Settings.apiSettings("admission_service_api"))
-  .dependsOn(shared_client)
+  .dependsOn(shared_client, hyperledger_component_api)
 
 lazy val admission_service = (project in file("admission_service/impl"))
   .enablePlugins(LagomScala)
@@ -191,7 +191,7 @@ lazy val admission_service = (project in file("admission_service/impl"))
 
 lazy val operation_service_api =  (project in file("operation_service/api"))
   .settings(Settings.apiSettings("operation_service"))
-  .dependsOn(shared_client)
+  .dependsOn(shared_client, hyperledger_component_api)
 
 lazy val operation_service = (project in file("operation_service/impl"))
   .enablePlugins(LagomScala)
@@ -205,7 +205,7 @@ lazy val operation_service = (project in file("operation_service/impl"))
 
 lazy val group_service_api =  (project in file("group_service/api"))
   .settings(Settings.apiSettings("group_service_api"))
-  .dependsOn(shared_client)
+  .dependsOn(shared_client, hyperledger_component_api)
 
 lazy val group_service = (project in file("group_service/impl"))
   .enablePlugins(LagomScala)
@@ -218,7 +218,7 @@ lazy val group_service = (project in file("group_service/impl"))
 
 lazy val report_service_api =  (project in file("report_service/api"))
   .settings(Settings.apiSettings("report_service_api"))
-  .dependsOn(shared_client)
+  .dependsOn(shared_client, hyperledger_component_api)
 
 lazy val report_service = (project in file("report_service/impl"))
   .enablePlugins(LagomScala)

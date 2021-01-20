@@ -1,11 +1,11 @@
 package de.upb.cs.uc4.shared.server
 
-import java.util.Calendar
-
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import io.jsonwebtoken.{ Jwts, SignatureAlgorithm }
+
+import java.util.Calendar
 
 /** Utility trait containing useful methods for testing service implementations */
 trait UC4SpecUtils {

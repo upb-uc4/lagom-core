@@ -2,7 +2,7 @@ package de.upb.cs.uc4.hyperledger.impl.commands
 
 import akka.actor.typed.ActorRef
 import akka.pattern.StatusReply
-import de.upb.cs.uc4.shared.client.{ SignedProposal, SignedTransaction }
+import de.upb.cs.uc4.hyperledger.api.model.{ SignedProposal, SignedTransaction }
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 
 /** The trait for the commands needed in the state

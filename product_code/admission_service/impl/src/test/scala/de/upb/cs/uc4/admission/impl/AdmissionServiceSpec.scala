@@ -9,6 +9,7 @@ import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.course.{ CourseServiceStub, DefaultTestCourses }
 import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._

@@ -1,9 +1,9 @@
 package de.upb.cs.uc4.hyperledger.impl
 
+import com.typesafe.config.Config
+
 import java.io.File
 import java.nio.file.{ Path, Paths }
-
-import com.typesafe.config.Config
 
 trait HyperledgerDefaultParts {
 

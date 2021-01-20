@@ -1,6 +1,5 @@
 package de.upb.cs.uc4.examreg.impl
 
-import java.nio.file.Path
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -10,8 +9,8 @@ import de.upb.cs.uc4.examreg.DefaultTestExamRegs
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examreg.impl.actor.ExamregHyperledgerBehaviour
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExaminationRegulationTrait
-import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.JsonUtility.{ FromJsonUtil, ToJsonUtil }
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
@@ -22,6 +21,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
 
+import java.nio.file.Path
 import scala.concurrent.Future
 
 class ExamregServiceSpec extends AsyncWordSpec

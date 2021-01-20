@@ -14,9 +14,9 @@ import de.upb.cs.uc4.certificate.impl.actor.{ CertificateBehaviour, CertificateS
 import de.upb.cs.uc4.certificate.impl.commands.{ ForceDeleteCertificateUser, RegisterUser, SoftDeleteCertificateUser }
 import de.upb.cs.uc4.certificate.impl.readside.{ CertificateDatabase, CertificateEventProcessor }
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerAdminParts
-import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
-import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils.ExceptionUtils
+import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
+import de.upb.cs.uc4.hyperledger.utilities.{ EnrollmentManager, RegistrationManager }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent

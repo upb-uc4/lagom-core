@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.group.api
 
-import de.upb.cs.uc4.shared.client._
+import de.upb.cs.uc4.hyperledger.api.UC4HyperledgerService
 
 /** The GroupService interface.
   *
