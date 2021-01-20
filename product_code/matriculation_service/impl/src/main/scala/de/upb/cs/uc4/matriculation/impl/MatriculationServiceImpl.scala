@@ -25,6 +25,7 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.Student
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
 import scala.concurrent.duration._
@@ -48,6 +49,8 @@ class MatriculationServiceImpl(
   implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
+
+  private final val log: Logger = LoggerFactory.getLogger(classOf[MatriculationServiceImpl])
 
   /** Submits a proposal to matriculate a student */
   override def submitMatriculationProposal(): ServiceCall[SignedProposal, UnsignedTransaction] =
@@ -133,7 +136,9 @@ class MatriculationServiceImpl(
                               operationService.addToWatchList(username).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
                                 .recover {
                                   case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
-                                  case throwable: Throwable => throw throwable
+                                  case throwable: Throwable =>
+                                    log.error("Exception in addToWatchlist AddEntries", throwable)
+                                    throw throwable
                                 }
                               (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
                           }.recover(handleException("Creation of add entry proposal failed"))
@@ -151,7 +156,9 @@ class MatriculationServiceImpl(
                               operationService.addToWatchList(username).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
                                 .recover {
                                   case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
-                                  case throwable: Throwable => throw throwable
+                                  case throwable: Throwable =>
+                                    log.error("Exception in addToWatchlist AddMatriculationData", throwable)
+                                    throw throwable
                                 }
                               (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
                           }.recover(handleException("Creation of add matriculation data proposal failed"))
