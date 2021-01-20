@@ -2,7 +2,7 @@
 ## Feature
 ## Refactor
 ## Bugfix
- - Correct lecturerID error message
+ - Corrected lecturerID error message
 
 # [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.13.1...course-v0.14.1) (2020-12-14)
 ## Feature
