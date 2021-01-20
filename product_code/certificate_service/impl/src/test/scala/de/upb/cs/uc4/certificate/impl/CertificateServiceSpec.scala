@@ -6,6 +6,7 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR }
+import de.upb.cs.uc4.hyperledger.BuildInfo
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4Exception }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
@@ -111,6 +112,22 @@ class CertificateServiceSpec extends AsyncWordSpec
       client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
         .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).flatMap {
           answer => answer.certificate should ===(s"certificate for " + enrollmentId)
+        }
+    }
+
+    "successfully  fetch  the certificate of an enrolled user" in {
+      val username = "student02a"
+      val enrollmentId = username + "enroll"
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, enrollmentId))
+      creationStub.send(container)
+
+      client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
+        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).flatMap {
+          _ =>
+            client.getCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
+              .invoke().flatMap {
+                answer => answer.certificate should ===(s"certificate for " + enrollmentId)
+              }
         }
     }
 

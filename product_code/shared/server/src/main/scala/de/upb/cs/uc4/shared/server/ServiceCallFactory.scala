@@ -26,7 +26,7 @@ object ServiceCallFactory {
     */
   def logged[Request, Response](serviceCall: ServerServiceCall[Request, Response]): ServerServiceCall[Request, Response] =
     ServerServiceCall.compose { requestHeader =>
-      log.info("Received {} {}", requestHeader.method, requestHeader.uri)
+      log.info("Received {} {} with headers {}", requestHeader.method, requestHeader.uri, requestHeader.headers)
       serviceCall
     }
 
