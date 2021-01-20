@@ -1,3 +1,9 @@
+# [WIP - v0.16.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.14.1...course-v0.15.1) (2021-XX-XX)
+## Feature
+## Refactor
+## Bugfix
+ - Corrected lecturerID error message
+
 # [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.13.1...course-v0.14.1) (2020-12-14)
 ## Feature
 ## Refactor

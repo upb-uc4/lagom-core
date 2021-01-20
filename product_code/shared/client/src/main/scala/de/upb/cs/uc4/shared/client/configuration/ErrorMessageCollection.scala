@@ -23,7 +23,7 @@ object ErrorMessageCollection {
     val startDateMessage: String = "Start date must be of the following format \"yyyy-mm-dd\"."
     val endDateMessage: String = "End date must be of the following format \"yyyy-mm-dd\"."
     val ectsMessage: String = "ECTS must be a positive integer between 0 and 999."
-    val lecturerNameMessage: String = "LecturerID must not be empty."
+    val lecturerNameMessage: String = "LecturerID must contain between 1 and 100 characters."
     val maxParticipantsMessage: String = "Number of maximum participants must be a positive integer between 1 and 9999."
   }
 
@@ -32,7 +32,6 @@ object ErrorMessageCollection {
   }
 
   object User {
-    val generalMessage: String = "" // Allowed characters for general strings TBD
     val usernameMessage: String = "Username must consist of 4 to 16 characters, and must only contain letters, numbers, '-', and '.'."
     val mailMessage: String = "Email must be in email format example@xyz.com."
     val phoneNumberMessage: String = "Phone number must be of the following format \"+xxxxxxxxxxxx\"."
