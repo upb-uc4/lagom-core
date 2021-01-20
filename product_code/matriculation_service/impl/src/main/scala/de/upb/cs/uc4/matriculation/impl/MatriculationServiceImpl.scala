@@ -136,6 +136,7 @@ class MatriculationServiceImpl(
                               operationService.addToWatchList(username).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
                                 .recover {
                                   case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
+                                    log.error(s"OwnerMismatch in addToWatchlist AddEntries u:$username auth:$authUser", ex)
                                   case throwable: Throwable =>
                                     log.error("Exception in addToWatchlist AddEntries", throwable)
                                     throw throwable
@@ -156,6 +157,7 @@ class MatriculationServiceImpl(
                               operationService.addToWatchList(username).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
                                 .recover {
                                   case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
+                                    log.error(s"OwnerMismatch in addToWatchlist AddMatriculationData u:$username auth:$authUser", ex)
                                   case throwable: Throwable =>
                                     log.error("Exception in addToWatchlist AddMatriculationData", throwable)
                                     throw throwable
