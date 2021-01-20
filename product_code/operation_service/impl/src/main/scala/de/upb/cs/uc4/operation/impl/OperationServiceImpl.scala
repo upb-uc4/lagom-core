@@ -168,17 +168,19 @@ class OperationServiceImpl(
   }
 
   /** Adds a operationId to the watchlist */
-  def addToWatchList(username: String): ServiceCall[JsonOperationId, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUser, _) =>
-      ServerServiceCall { (_, jsonOperationId) =>
-        if (authUser != username.trim) {
-          throw UC4Exception.OwnerMismatch
+  def addToWatchList(username: String): ServiceCall[JsonOperationId, Done] = logged {
+    identifiedAuthenticated(AuthenticationRole.All: _*) {
+      (authUser, _) =>
+        ServerServiceCall { (_, jsonOperationId) =>
+          if (authUser != username.trim) {
+            throw UC4Exception.OwnerMismatch
+          }
+          entityRef(authUser).ask[Confirmation](replyTo => AddToWatchlist(jsonOperationId.id, replyTo)).map {
+            case Accepted(_)                  => (ResponseHeader(200, MessageProtocol.empty, List()), Done)
+            case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+          }
         }
-        entityRef(authUser).ask[Confirmation](replyTo => AddToWatchlist(jsonOperationId.id, replyTo)).map {
-          case Accepted(_)                  => (ResponseHeader(200, MessageProtocol.empty, List()), Done)
-          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
-        }
-      }
+    }
   }
 
   /** Submit a signed Proposal */
