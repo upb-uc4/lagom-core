@@ -5,7 +5,11 @@ lagomServiceEnableSsl in ThisBuild := true
 lagomCassandraEnabled in ThisBuild := false
 scalaVersion in ThisBuild := "2.13.0"
 scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
-lagomUnmanagedServices in ThisBuild := Map("imageprocessing" -> sys.env.getOrElse("IMAGE_PROCESSING", "http://localhost:9020"))
+lagomUnmanagedServices in ThisBuild := Map(
+  "imageprocessing" -> sys.env.getOrElse("IMAGE_PROCESSING", "http://localhost:9020"),
+  "pdfprocessing" -> sys.env.getOrElse("PDF_PROCESSING", "http://localhost:9030")
+
+)
 
 val withTests = "compile->compile;test->test"
 
@@ -141,6 +145,10 @@ lazy val configuration_service = (project in file("configuration_service/impl"))
   .dependsOn(configuration_service_api % withTests, shared_client, shared_server % withTests)
 
 lazy val image_processing_api = (project in file("image_processing/api"))
+  .settings(libraryDependencies ++= Dependencies.apiDefaultDependencies)
+  .dependsOn(shared_client)
+
+lazy val pdf_processing_api = (project in file("pdf_processing/api"))
   .settings(libraryDependencies ++= Dependencies.apiDefaultDependencies)
   .dependsOn(shared_client)
 

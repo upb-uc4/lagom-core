@@ -22,7 +22,7 @@ services:
       - "9020:9000"
 
   pdf:
-    image: thecodingmachine/gotenberg:latest
+    image: kurzdigital/html-to-pdf:latest
     container_name: pdf
     ports:
-      - "9030:3000"
+      - "9030:8080"
