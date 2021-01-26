@@ -21,8 +21,8 @@ services:
     ports:
       - "9020:9000"
 
-    pdf:
-      image: thecodingmachine/gotenberg:latest
-        container_name: pdf
-        ports:
-          - "9030:3000"
+  pdf:
+    image: thecodingmachine/gotenberg:latest
+    container_name: pdf
+    ports:
+      - "9030:3000"
