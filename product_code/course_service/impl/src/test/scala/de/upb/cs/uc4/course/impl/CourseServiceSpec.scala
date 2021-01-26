@@ -219,6 +219,14 @@ class CourseServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
+    "not create a course with an malformed lecturerId" in {
+      client.addCourse().handleRequestHeader(addAuthorizationHeader())
+        .invoke(course0.copy(lecturerId = "")).failed.map { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should contain theSameElementsAs Seq("lecturerId")
+        }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
     "not create an invalid course" in {
       client.addCourse().handleRequestHeader(addAuthorizationHeader()).invoke(course0.copy(startDate = "ab15-37-42")).failed.map {
         answer =>
@@ -251,12 +259,33 @@ class CourseServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
+    "not delete an existing course from another lecturer" in {
+      prepare(Seq(course2)).flatMap { createdCourses =>
+        client.deleteCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader("lecturer0"))
+          .invoke().failed.flatMap {
+            answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
     "not update a non-existing course" in {
       client.updateCourse("GutenMorgen").handleRequestHeader(addAuthorizationHeader()).invoke(course3.copy(courseId = "GutenMorgen")).failed.map {
         answer =>
           answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
             .invalidParams.map(_.name) should contain("courseId")
       }
+    }
+
+    "not update a course of with missmatching id, as a lecturer" in {
+      prepare(Seq(course0, course1)).flatMap { createdCourses =>
+        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader("lecturer0"))
+          .invoke(createdCourses.tail.head.copy(courseId = "newId")).failed.map {
+            answer =>
+              answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.PathParameterMismatch)
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
     }
 
     "not update a course of another lecturer, as a lecturer" in {
@@ -303,6 +332,31 @@ class CourseServiceSpec extends AsyncWordSpec
                   answer should ===(course4)
                 }
             }
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not update an existing course with a new course containing a malformed lecturerId" in {
+      prepare(Seq(course2)).flatMap { createdCourses =>
+        val course4 = createdCourses.head.copy(lecturerId = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901")
+        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
+          .invoke(course4).failed.flatMap { answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
+              contain theSameElementsAs Seq("lecturerId")
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not update an existing course with a non existing moduleId" in {
+      prepare(Seq(course2)).flatMap { createdCourses =>
+        val course4 = createdCourses.head.copy(moduleIds = Seq("hallo"))
+        client.updateCourse(createdCourses.head.courseId).handleRequestHeader(addAuthorizationHeader())
+          .invoke(course4).failed.flatMap {
+            answer =>
+              answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
+                contain theSameElementsAs Seq("moduleIds[0]")
           }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())

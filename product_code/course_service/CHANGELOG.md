@@ -1,8 +1,9 @@
-# [v0.16.1 - WIP](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.14.1...course-v0.16.1) (2020-XX-XX)
+# [WIP - v0.16.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.14.1...course-v0.15.1) (2021-XX-XX)
 ## Feature
  - Added an examregName filter to the query parameters in getCourses call, filtering over the modules of examination regulations with the given names
 ## Refactor
 ## Bugfix
+ - Corrected lecturerID error message
 
 # [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.13.1...course-v0.14.1) (2020-12-14)
 ## Feature
