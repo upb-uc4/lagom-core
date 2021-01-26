@@ -127,9 +127,19 @@ class CourseServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
-    "get all courses with matching names and lecturerIds and moduleId" in {
+    "get all courses with matching examregNames" in {
+      prepare(Seq(course0, course1WithModules, course2WithModules)).flatMap { _ =>
+        client.getAllCourses(None, None, None, Some(examReg0.name)).handleRequestHeader(addAuthorizationHeader())
+          .invoke().map { answer =>
+            answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1WithModules, course2WithModules)
+          }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "get all courses with matching names and lecturerIds and moduleId and examregNames" in {
       prepare(Seq(course0, course1WithModules, course2)).flatMap { _ =>
-        client.getAllCourses(Some(course1WithModules.courseName), Some(course1WithModules.lecturerId), Some(course1WithModules.moduleIds.head)).handleRequestHeader(addAuthorizationHeader())
+        client.getAllCourses(Some(course1WithModules.courseName), Some(course1WithModules.lecturerId), Some(course1WithModules.moduleIds.head), Some(examReg0.name)).handleRequestHeader(addAuthorizationHeader())
           .invoke().map { answer =>
             answer.map(_.copy(courseId = "")) should contain theSameElementsAs Seq(course1WithModules)
           }
