@@ -238,7 +238,7 @@ class OperationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get operations where the user initiated the operation" in {
+    "get all operations a user initiated, as the initiator" in {
       prepare(Seq(operation1, operation2))
       client.getOperations(Some(true), None, None, None).handleRequestHeader(addAuthorizationHeader(student0)).invoke().map {
         operations => operations should contain theSameElementsAs Seq(operation1)
