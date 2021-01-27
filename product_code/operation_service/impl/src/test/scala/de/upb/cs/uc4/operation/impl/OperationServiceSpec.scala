@@ -217,7 +217,7 @@ class OperationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get an operation with OwnerMismatch" in {
+    "fail with OwnerMismatch on trying to get an operation as an uninvolved user" in {
       prepare(Seq(operation1))
       client.getOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(student2)).invoke().failed.map {
         ex => ex.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
