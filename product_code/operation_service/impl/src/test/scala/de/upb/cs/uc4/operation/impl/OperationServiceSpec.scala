@@ -245,7 +245,7 @@ class OperationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get operations where the user asks for a state" in {
+    "get all operations with a specific state" in {
       prepare(Seq(operation1, operation2, operation3))
       client.getOperations(None, None, Some(OperationDataState.REJECTED.toString), None).handleRequestHeader(addAuthorizationHeader(student1)).invoke().map {
         operations => operations should contain theSameElementsAs Seq(operation3)
