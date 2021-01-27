@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.matriculation.api
 
+import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
@@ -31,6 +32,9 @@ trait MatriculationService extends UC4HyperledgerService {
   /** Returns the ImmatriculationData of a student with the given username */
   def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData]
 
+  /** Returns a pdf with the certificate of enrollment */
+  def getCertificateOfEnrollment(username: String): ServiceCall[NotUsed, ByteString]
+
   /** Allows POST */
   def allowedPost: ServiceCall[NotUsed, Done]
 
@@ -53,11 +57,13 @@ trait MatriculationService extends UC4HyperledgerService {
         restCall(Method.POST, pathPrefix + "/matriculation/:username/unsigned_proposal", getMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/matriculation/:username/signed_transaction", submitMatriculationTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.GET, pathPrefix + "/history/:username", getMatriculationData _),
+        restCall(Method.GET, pathPrefix + "/pdf/:username", getCertificateOfEnrollment _),
 
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/signed_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/unsigned_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/signed_transaction", allowedPost),
         restCall(Method.OPTIONS, pathPrefix + "/history/:username", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/pdf/:username", allowedGet _),
 
         //DEPRECATED
         restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),

@@ -13,7 +13,7 @@ trait PdfProcessingService extends Service {
     import Service._
     named("pdfprocessing")
       .withCalls(
-        restCall(Method.POST, "", convertHtml _)
+        restCall(Method.POST, "/", convertHtml _)
       )
       .withAutoAcl(false)
   }

@@ -8,7 +8,6 @@ scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
 lagomUnmanagedServices in ThisBuild := Map(
   "imageprocessing" -> sys.env.getOrElse("IMAGE_PROCESSING", "http://localhost:9020"),
   "pdfprocessing" -> sys.env.getOrElse("PDF_PROCESSING", "http://localhost:9030")
-
 )
 
 val withTests = "compile->compile;test->test"
@@ -16,7 +15,7 @@ val withTests = "compile->compile;test->test"
 // Projects
 lazy val lagom = (project in file("."))
   .settings(commands ++= Commands.all)
-  .aggregate(shared_client, shared_server, hyperledger_component,
+  .aggregate(shared_client, shared_server, hyperledger_component, pdf_processing_api,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
     configuration_service_api, configuration_service,
@@ -26,7 +25,7 @@ lazy val lagom = (project in file("."))
     examreg_service_api, examreg_service,
     admission_service_api, admission_service,
     report_service_api, report_service)
-  .dependsOn(shared_client, shared_server, hyperledger_component,
+  .dependsOn(shared_client, shared_server, hyperledger_component, pdf_processing_api,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
     configuration_service_api, configuration_service,
@@ -121,8 +120,10 @@ lazy val matriculation_service_api = (project in file("matriculation_service/api
 lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .enablePlugins(LagomScala)
   .settings(libraryDependencies += lagomScaladslKafkaBroker)
+  .settings(libraryDependencies += Dependencies.pdf)
   .settings(Settings.implSettings("matriculation_service"))
-  .dependsOn(user_service_api % withTests, certificate_service_api % withTests, shared_server % withTests, shared_client, matriculation_service_api, hyperledger_component, examreg_service_api % withTests)
+  .dependsOn(user_service_api % withTests, certificate_service_api % withTests, shared_server % withTests, shared_client,
+    matriculation_service_api, hyperledger_component, examreg_service_api % withTests, pdf_processing_api)
 
 lazy val certificate_service_api = (project in file("certificate_service/api"))
   .settings(Settings.apiSettings("certificate_service_api"))

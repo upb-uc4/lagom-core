@@ -8,6 +8,7 @@ import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.hyperledger.HyperledgerComponent
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
+import de.upb.cs.uc4.pdf.api.PdfProcessingService
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.user.api.UserService
 
@@ -17,11 +18,10 @@ abstract class MatriculationApplication(context: LagomApplicationContext)
 
   override def createActorFactory: MatriculationBehaviour = wire[MatriculationBehaviour]
 
-  // Bind UserService
+  // Bind Services
   lazy val userService: UserService = serviceClient.implement[UserService]
   lazy val examregService: ExamregService = serviceClient.implement[ExamregService]
-
-  //Bind CertificateService
+  lazy val pdfService: PdfProcessingService = serviceClient.implement[PdfProcessingService]
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
 
   // Register the JSON serializer registry
