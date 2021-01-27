@@ -203,7 +203,7 @@ class OperationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get an operation as initiator" in {
+    "get an operation as its initiator" in {
       prepare(Seq(operation1))
       client.getOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(student0)).invoke().map {
         operation => operation should ===(operation1)
