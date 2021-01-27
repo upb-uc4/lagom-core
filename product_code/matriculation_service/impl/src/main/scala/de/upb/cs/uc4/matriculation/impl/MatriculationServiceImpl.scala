@@ -16,6 +16,7 @@ import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitPropos
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands._
+import de.upb.cs.uc4.matriculation.impl.signature.SigningService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.pdf.api.PdfProcessingService
 import de.upb.cs.uc4.pdf.model.PdfProcessor
@@ -26,16 +27,11 @@ import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.MatriculationUpdate
 import de.upb.cs.uc4.user.model.user.Student
-import org.apache.pdfbox.pdmodel.PDDocument
-import org.apache.pdfbox.pdmodel.interactive.digitalsignature.{ PDSignature, SignatureOptions }
 import play.api.Environment
 
-import java.io.{ ByteArrayOutputStream, InputStream }
-import java.util.Calendar
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
 import scala.io.Source
-import scala.util.Using
 
 /** Implementation of the MatriculationService */
 class MatriculationServiceImpl(
@@ -57,7 +53,6 @@ class MatriculationServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   lazy val certificateEnrollmentHtml: String = Source.fromResource("certificateEnrollment.html").getLines().mkString("\n")
-  lazy val signature: InputStream = getClass.getResourceAsStream("/signature.jpg")
 
   /** Submits a proposal to matriculate a student */
   override def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction] =
@@ -206,32 +201,11 @@ class MatriculationServiceImpl(
 
           pdfService.convertHtml().invoke(PdfProcessor(certificateEnrollmentHtml)).map { pdfBytes =>
 
-            val output: ByteArrayOutputStream = new ByteArrayOutputStream()
+            val signatureService = new SigningService("/keystore.jks", "upbuc4", "key", "http://timestamp.digicert.com/")
 
-            Using(PDDocument.load(pdfBytes.toArray)) { pdfDocument =>
-              val pdfSignature: PDSignature = new PDSignature()
-              pdfSignature.setFilter(PDSignature.FILTER_VERISIGN_PPKVS)
-              pdfSignature.setSubFilter(PDSignature.SUBFILTER_ADBE_PKCS7_SHA1)
-              pdfSignature.setName("UC4")
-              pdfSignature.setLocation("Germany")
-              pdfSignature.setReason("It needs to be safe")
-              pdfSignature.setSignDate(Calendar.getInstance)
+            val output = signatureService.signPdf(pdfBytes.toArray)
 
-              try {
-
-                val options: SignatureOptions = new SignatureOptions
-                options.setVisualSignature(signature)
-              }
-              catch {
-                case e: Throwable => e.printStackTrace()
-              }
-
-              pdfDocument.addSignature(pdfSignature)
-
-              pdfDocument.save(output)
-            }
-
-            (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output.toByteArray))
+            (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
           }
         }
     }
