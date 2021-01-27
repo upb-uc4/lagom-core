@@ -252,7 +252,7 @@ class OperationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get operations where the user asks for his watchlist" in {
+    "get all operations from a user's watchlist, as the user" in {
       prepare(Seq(operation1, operation2, operation3))
       client.getOperations(None, None, None, Some(true)).handleRequestHeader(addAuthorizationHeader(student1)).invoke().map {
         operations => operations should contain theSameElementsAs Seq()
