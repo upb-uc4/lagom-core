@@ -104,7 +104,7 @@ class OperationServiceSpec extends AsyncWordSpec
               }
             }
 
-            override def executeTransaction(jsonOperationData: String): String = "SUBMITTED"
+            override def executeTransaction(jsonOperationData: String, timeoutMilliseconds: Int = 5000, timeoutAttempts: Int = 5): String = "SUBMITTED"
 
             override def getUnsignedTransaction(proposalBytes: Array[Byte], signatureBytes: Array[Byte]): Array[Byte] = {
               new String(proposalBytes) match {
