@@ -51,7 +51,6 @@ class MatriculationServiceImpl(
 
   private final val log: Logger = LoggerFactory.getLogger(classOf[MatriculationServiceImpl])
 
-
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
     identifiedAuthenticated[PutMessageMatriculation, UnsignedProposal](AuthenticationRole.Student, AuthenticationRole.Admin) { (authUser, authRole) =>

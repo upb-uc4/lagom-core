@@ -11,7 +11,6 @@ import de.upb.cs.uc4.group.impl.actor.GroupBehaviour
 import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils
 import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
-import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import play.api.Environment
 

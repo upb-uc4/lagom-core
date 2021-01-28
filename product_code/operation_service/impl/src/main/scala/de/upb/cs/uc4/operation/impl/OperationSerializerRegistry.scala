@@ -1,11 +1,11 @@
 package de.upb.cs.uc4.operation.impl
 
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
+import de.upb.cs.uc4.hyperledger.api.model.operation.OperationDataState.OperationDataState
 import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, TransactionInfo }
 import de.upb.cs.uc4.operation.impl.actor.{ OperationDataList, OperationState, WatchlistWrapper }
 import de.upb.cs.uc4.operation.impl.events.{ OnAddToWatchlist, OnRemoveFromWatchlist }
 import de.upb.cs.uc4.operation.model.JsonRejectMessage
-import de.upb.cs.uc4.hyperledger.api.model.operation.OperationDataState.OperationDataState
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
 import scala.collection.immutable.Seq

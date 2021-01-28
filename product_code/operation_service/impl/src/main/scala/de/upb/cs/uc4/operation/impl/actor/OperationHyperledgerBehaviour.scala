@@ -7,7 +7,7 @@ import de.upb.cs.uc4.hyperledger.api.model.UnsignedProposal
 import de.upb.cs.uc4.hyperledger.api.model.operation.{ OperationData, OperationDataState }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionOperation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationTrait
-import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand, SubmitProposal, SubmitTransaction }
+import de.upb.cs.uc4.hyperledger.impl.commands._
 import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerActor, HyperledgerActorObject }
 import de.upb.cs.uc4.operation.impl.commands.{ GetOperationHyperledger, GetOperationsHyperledger, GetProposalApproveOperationHyperledger, GetProposalRejectOperationHyperledger }
 import de.upb.cs.uc4.shared.client.JsonUtility.FromJsonUtil

@@ -16,15 +16,14 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.operation.api.OperationService
-import de.upb.cs.uc4.operation.model.JsonOperationId
 import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
 import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
 import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
+import de.upb.cs.uc4.operation.api.OperationService
+import de.upb.cs.uc4.operation.model.JsonOperationId
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 

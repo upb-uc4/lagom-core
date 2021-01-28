@@ -8,9 +8,9 @@ import de.upb.cs.uc4.admission.impl.actor.AdmissionBehaviour
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerComponent
 import de.upb.cs.uc4.matriculation.api.MatriculationService
+import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.shared.server.UC4Application
 
 abstract class AdmissionApplication(context: LagomApplicationContext)

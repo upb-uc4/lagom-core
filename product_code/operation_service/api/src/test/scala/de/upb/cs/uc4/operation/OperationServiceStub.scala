@@ -2,8 +2,8 @@ package de.upb.cs.uc4.operation
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import de.upb.cs.uc4.hyperledger.api.model.operation.OperationData
 import de.upb.cs.uc4.hyperledger.api.model._
+import de.upb.cs.uc4.hyperledger.api.model.operation.OperationData
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.{ JsonOperationId, JsonRejectMessage }
 

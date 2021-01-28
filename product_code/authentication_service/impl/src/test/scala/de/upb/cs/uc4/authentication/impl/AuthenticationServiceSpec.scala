@@ -23,7 +23,7 @@ import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.{ Assertion, BeforeAndAfterAll, PrivateMethodTester }
+import org.scalatest.{ Assertion, BeforeAndAfterAll }
 
 import java.util.{ Base64, Calendar, Date }
 import scala.concurrent.Future

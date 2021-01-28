@@ -1,6 +1,6 @@
 package de.upb.cs.uc4.hyperledger.api.model.operation
 
-import OperationDataState.OperationDataState
+import de.upb.cs.uc4.hyperledger.api.model.operation.OperationDataState.OperationDataState
 import play.api.libs.json.{ Format, Json }
 
 case class OperationData(

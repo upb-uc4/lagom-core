@@ -21,9 +21,9 @@ import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerAdminParts, HyperledgerUtils }
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
+import de.upb.cs.uc4.shared.client.JsonUsername
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
-import de.upb.cs.uc4.shared.client.JsonUsername
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
