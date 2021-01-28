@@ -30,7 +30,7 @@ abstract class GroupApplication(context: LagomApplicationContext)
 
   override def createActorFactory: GroupBehaviour = wire[GroupBehaviour]
 
-  //Bind CertificateService
+  // Bind CertificateService
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
 
   // Register the JSON serializer registry
