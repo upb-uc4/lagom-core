@@ -16,12 +16,16 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.examreg.api.ExamregService
+import de.upb.cs.uc4.operation.api.OperationService
+import de.upb.cs.uc4.operation.model.JsonOperationId
 import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
 import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
 import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
 import java.time.LocalDateTime
@@ -36,6 +40,7 @@ class AdmissionServiceImpl(
     examregService: ExamregService,
     courseService: CourseService,
     certificateService: CertificateService,
+    operationService: OperationService,
     override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
   extends AdmissionService {
@@ -47,6 +52,8 @@ class AdmissionServiceImpl(
   implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
+
+  private final val log: Logger = LoggerFactory.getLogger(classOf[AdmissionServiceImpl])
 
   /** Returns course admissions */
   override def getCourseAdmissions(username: Option[String], courseId: Option[String], moduleId: Option[String]): ServiceCall[NotUsed, Seq[CourseAdmission]] =
@@ -134,7 +141,14 @@ class AdmissionServiceImpl(
                             certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
                               certificate =>
                                 entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalForAddCourseAdmission(certificate.certificate, courseAdmissionFinalized, replyTo)).map {
-                                  proposalWrapper => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+                                  proposalWrapper =>
+                                    operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
+                                      .recover {
+                                        case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
+                                        case throwable: Throwable =>
+                                          log.error("Exception in addToWatchlist addAdmission", throwable)
+                                      }
+                                    (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
                                 }.recover(handleException("Creation of add courseAdmission proposal failed"))
                             }
                           }
@@ -167,7 +181,14 @@ class AdmissionServiceImpl(
 
             certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { certificate =>
               entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalForDropCourseAdmission(certificate.certificate, dropAdmission, replyTo)).map {
-                proposalWrapper => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+                proposalWrapper =>
+                  operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
+                    .recover {
+                      case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
+                      case throwable: Throwable =>
+                        log.error("Exception in addToWatchlist dropAdmission", throwable)
+                    }
+                  (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
               }.recover(handleException("Creation of drop courseAdmission proposal failed"))
             }
           }

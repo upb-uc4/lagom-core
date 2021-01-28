@@ -32,7 +32,7 @@ trait CourseService extends UC4Service {
   def findCourseByCourseId(id: String): ServiceCall[NotUsed, Course]
 
   /** Get all courses, with optional query parameters */
-  def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]]
+  def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String], examregNames: Option[String] = None): ServiceCall[NotUsed, Seq[Course]]
 
   /** Update an existing course */
   def updateCourse(id: String): ServiceCall[Course, Done]
@@ -47,7 +47,7 @@ trait CourseService extends UC4Service {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/courses?courseName&lecturerId&moduleIds", getAllCourses _),
+        restCall(Method.GET, pathPrefix + "/courses?courseName&lecturerId&moduleIds&examregNames", getAllCourses _),
         restCall(Method.POST, pathPrefix + "/courses", addCourse _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.PUT, pathPrefix + "/courses/:id", updateCourse _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.DELETE, pathPrefix + "/courses/:id", deleteCourse _),

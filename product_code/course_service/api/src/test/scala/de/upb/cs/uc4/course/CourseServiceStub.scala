@@ -62,7 +62,7 @@ class CourseServiceStub extends CourseService with DefaultTestCourses {
   }
 
   /** Get all courses, with optional query parameters */
-  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = ServiceCall {
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String], examregNames: Option[String] = None): ServiceCall[NotUsed, Seq[Course]] = ServiceCall {
     _ =>
       Future.successful(
         courses.filter { course =>
@@ -83,6 +83,7 @@ class CourseServiceStub extends CourseService with DefaultTestCourses {
                 false
             }
         }
+      // No examreg filter yet, since functionality was not needed yet
       )
   }
 

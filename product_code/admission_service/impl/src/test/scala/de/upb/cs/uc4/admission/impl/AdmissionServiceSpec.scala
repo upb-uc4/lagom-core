@@ -13,6 +13,7 @@ import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
+import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
@@ -39,6 +40,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
         override lazy val matriculationService: MatriculationServiceStub = new MatriculationServiceStub
         override lazy val examRegService: ExamregServiceStub = new ExamregServiceStub
         override lazy val courseService: CourseServiceStub = new CourseServiceStub
+        override lazy val operationService: OperationServiceStub = new OperationServiceStub
 
         certificateService.setup(student0.username)
         matriculationService.addImmatriculationData(student0.username, matriculationService.createSingleImmatriculationData(

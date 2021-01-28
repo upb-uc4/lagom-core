@@ -237,7 +237,7 @@ class OperationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get an operation as initiator" in {
+    "get an operation as its initiator" in {
       prepare(Seq(operation1))
       client.getOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(student0)).invoke().map {
         operation => operation should ===(operation1)
@@ -251,7 +251,7 @@ class OperationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get an operation with OwnerMismatch" in {
+    "fail with OwnerMismatch on trying to get an operation as an uninvolved user" in {
       prepare(Seq(operation1))
       client.getOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(student2)).invoke().failed.map {
         ex => ex.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
@@ -272,21 +272,21 @@ class OperationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get operations where the user initiated the operation" in {
+    "get all operations a user initiated, as the initiator" in {
       prepare(Seq(operation1, operation2))
       client.getOperations(Some(true), None, None, None).handleRequestHeader(addAuthorizationHeader(student0)).invoke().map {
         operations => operations should contain theSameElementsAs Seq(operation1)
       }
     }
 
-    "get operations where the user asks for a state" in {
+    "get all operations with a specific state" in {
       prepare(Seq(operation1, operation2, operation3))
       client.getOperations(None, None, Some(OperationDataState.REJECTED.toString), None).handleRequestHeader(addAuthorizationHeader(student1)).invoke().map {
         operations => operations should contain theSameElementsAs Seq(operation3)
       }
     }
 
-    "get operations where the user asks for his watchlist" in {
+    "get all operations from a user's watchlist, as the user" in {
       prepare(Seq(operation1, operation2, operation3))
       client.getOperations(None, None, None, Some(true)).handleRequestHeader(addAuthorizationHeader(student1)).invoke().map {
         operations => operations should contain theSameElementsAs Seq()

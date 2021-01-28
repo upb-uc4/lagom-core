@@ -115,6 +115,22 @@ class CertificateServiceSpec extends AsyncWordSpec
         }
     }
 
+    "successfully  fetch  the certificate of an enrolled user" in {
+      val username = "student02a"
+      val enrollmentId = username + "enroll"
+      val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, enrollmentId, Role.Student))
+      creationStub.send(container)
+
+      client.setCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
+        .invoke(PostMessageCSR("csr", EncryptedPrivateKey("", "", ""))).flatMap {
+          _ =>
+            client.getCertificate(username).handleRequestHeader(addAuthorizationHeader(username))
+              .invoke().flatMap {
+                answer => answer.certificate should ===(s"certificate for " + enrollmentId)
+              }
+        }
+    }
+
     "return an error when fetching the certificate of a non-enrolled user" in {
       val username = "student03"
       val container = server.application.kafkaEncryptionUtility.encrypt(Usernames(username, username + "enroll", Role.Student))

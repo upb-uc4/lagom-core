@@ -43,7 +43,7 @@ class OperationServiceImpl(
 
   implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
-  /** Returns the Operations for the matching operationId */
+  /** Returns the Operation for the matching operationId */
   override def getOperation(operationId: String): ServiceCall[NotUsed, OperationData] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUser, role) =>
       ServerServiceCall { (header, _) =>
@@ -53,7 +53,7 @@ class OperationServiceImpl(
             operationData =>
               certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
                 jsonEnrollmentId =>
-                  if (!operationData.isInvolved(jsonEnrollmentId.id, role.toString)) {
+                  if (role != AuthenticationRole.Admin && !operationData.isInvolved(jsonEnrollmentId.id, role.toString)) {
                     throw UC4Exception.OwnerMismatch
                   }
                   createETagHeader(header, operationData)

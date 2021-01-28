@@ -11,7 +11,7 @@ object ProposalWrapper {
   def apply(tuple: (String, Array[Byte])): ProposalWrapper = {
     val (json, proposal) = tuple
     val operationData: OperationData = json.fromJson[OperationData]
-    new ProposalWrapper(operationData.initiator, proposal)
+    new ProposalWrapper(operationData.operationId, proposal)
   }
 
   implicit val format: Format[ProposalWrapper] = Json.format

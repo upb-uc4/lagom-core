@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
+import akka.util.ByteString
 import com.google.common.io.ByteStreams
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
@@ -13,6 +14,7 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.image.ImageProcessingServiceStub
 import de.upb.cs.uc4.image.api.ImageProcessingService
+import de.upb.cs.uc4.shared.client.configuration.ErrorMessageCollection
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
@@ -54,7 +56,8 @@ class UserServiceSpec extends AsyncWordSpec
 
   val client: UserService = server.serviceClient.implement[UserService]
 
-  val deletionTopic: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
+  val deletionTopicMinimal: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
+  val deletionTopicPrecise: Source[EncryptionContainer, _] = client.userDeletionTopicPrecise().subscribe.atMostOnceSource
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -172,49 +175,83 @@ class UserServiceSpec extends AsyncWordSpec
     "test topics, which" must {
       "publish a created user" in {
         val creationSource: Source[EncryptionContainer, _] = client.userCreationTopic().subscribe.atMostOnceSource
-        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student0Auth, "governmentIdStudent0", student0)).map {
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student0Auth, "governmentIdStudent0", student0)).flatMap {
           student0Created =>
-            val source = creationSource
-              .runWith(TestSink.probe[EncryptionContainer]).request(2)
-
-            val containerSeq = Seq(
-              source.expectNext(FiniteDuration(15, SECONDS)),
-              source.expectNext(FiniteDuration(15, SECONDS))
-            )
-
-            containerSeq.map {
-              container =>
-                server.application.kafkaEncryptionUtility.decrypt[Usernames](container)
-            } should contain theSameElementsAs Seq(
-              createUsernames("admin", "governmentIdAdmin", "YWRtaW5hZG1pbg==", Role.Admin),
-              createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret, student0.role)
-            )
-        }
-
+            eventually(timeout(Span(15, Seconds))) {
+              val container: EncryptionContainer = creationSource
+                .runWith(TestSink.probe[EncryptionContainer])
+                .request(Long.MaxValue)
+                .receiveWithin(FiniteDuration(3, SECONDS)).last
+              server.application.kafkaEncryptionUtility.decrypt[Usernames](container) should ===(createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret, student0.role))
+            }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
       }
 
-      "publish a deleted user in minimal format" in {
-        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicMinimal().subscribe.atMostOnceSource
-        client.forceDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke()
+      "publish a force-deleted user in minimal format" in {
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
+          student1created =>
 
-        val container: EncryptionContainer = deletionSource
-          .runWith(TestSink.probe[EncryptionContainer])
-          .request(1)
-          .expectNext(FiniteDuration(15, SECONDS))
-        server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student0.username))
+            client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              eventually(timeout(Span(15, Seconds))) {
+                val container: EncryptionContainer = deletionTopicMinimal
+                  .runWith(TestSink.probe[EncryptionContainer])
+                  .request(Long.MaxValue)
+                  .receiveWithin(FiniteDuration(3, SECONDS)).last
+                server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student1created.username))
+              }
+            }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
       }
 
-      "publish a deleted user in precise format" in {
-        val deletionSource: Source[EncryptionContainer, _] = client.userDeletionTopicPrecise().subscribe.atMostOnceSource
-        client.forceDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke()
-
-        val container: EncryptionContainer = deletionSource
-          .runWith(TestSink.probe[EncryptionContainer])
-          .request(1)
-          .expectNext(FiniteDuration(15, SECONDS))
-        server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student0.username, Role.Student, forceDelete = true))
+      "publish a force-deleted user in precise format" in {
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
+          student1created =>
+            client.forceDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              eventually(timeout(Span(15, Seconds))) {
+                val container: EncryptionContainer = deletionTopicPrecise
+                  .runWith(TestSink.probe[EncryptionContainer])
+                  .request(Long.MaxValue)
+                  .receiveWithin(FiniteDuration(3, SECONDS)).last
+                server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student1created.username, Role.Student, forceDelete = true))
+              }
+            }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
       }
 
+      "publish a soft-deleted user in minimal format" in {
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
+          student1created =>
+            client.softDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              eventually(timeout(Span(15, Seconds))) {
+                val container: EncryptionContainer = deletionTopicMinimal
+                  .runWith(TestSink.probe[EncryptionContainer])
+                  .request(Long.MaxValue)
+                  .receiveWithin(FiniteDuration(3, SECONDS)).last
+                server.application.kafkaEncryptionUtility.decrypt[JsonUsername](container) should ===(JsonUsername(student1created.username))
+              }
+            }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
+      }
+
+      "publish a soft-deleted user in precise format" in {
+        client.addUser().handleRequestHeader(addAuthorizationHeader()).invoke(PostMessageUser(student1Auth, "governmentIdStudent1", student1)).flatMap {
+          student1created =>
+            client.softDeleteUser(student1created.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+              eventually(timeout(Span(15, Seconds))) {
+                val container: EncryptionContainer = deletionTopicPrecise
+                  .runWith(TestSink.probe[EncryptionContainer])
+                  .request(Long.MaxValue)
+                  .receiveWithin(FiniteDuration(3, SECONDS)).last
+                server.application.kafkaEncryptionUtility.decrypt[JsonUserData](container) should ===(JsonUserData(student1created.username, Role.Student, forceDelete = false))
+              }
+            }
+        }.flatMap(cleanupOnSuccess)
+          .recoverWith(cleanupOnFailure())
+      }
     }
 
     "get all users with default users" in {
@@ -365,6 +402,33 @@ class UserServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
+
+    "fetch the public information of all specified Users that are active, as a non-Admin" in {
+      prepare(Seq(student0, student1, student2, lecturer0, lecturer1, admin0, admin1)).flatMap { _ =>
+        client.softDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          client.softDeleteUser(lecturer1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+            client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username + "," + student1.username + "," + lecturer1.username), Some(true)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
+              answer should ===(GetAllUsersResponse(Seq(student0.toPublic), Seq(lecturer0.toPublic), Seq(admin0.toPublic)))
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch information of all specified Users that are inactive, as a non-Admin" in {
+      prepare(Seq(student0, student1, student2, lecturer0, lecturer1, admin0, admin1)).flatMap { _ =>
+        client.softDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          client.softDeleteUser(lecturer1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+            client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username + "," + student1.username + "," + lecturer1.username), Some(false)).handleRequestHeader(addAuthorizationHeader("student")).invoke().flatMap { answer =>
+              answer should ===(GetAllUsersResponse(Seq(student1.softDelete), Seq(lecturer1.softDelete), Seq()))
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
     "fetch the information of all specified Users, as an Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
         client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username), None).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
@@ -377,7 +441,190 @@ class UserServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
-    "find a non-existing User" in {
+
+    "fetch all active Users from the database as an Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { addedUsers =>
+        client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+
+              allUsers.students should have size 0
+              allUsers.lecturers should contain allElementsOf addedUsers.filter(_.role == Role.Lecturer)
+              allUsers.admins should have size 2 //Has size two because system admin is always added
+              allUsers.admins should contain allElementsOf addedUsers.filter(_.role == Role.Admin)
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch all active Students from the database as an Admin" in {
+      prepare(Seq(student0, student1, student2)).flatMap { addedUsers: Seq[User] =>
+        client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+
+              allUsers.students should contain theSameElementsAs addedUsers.filter(user => user.role == Role.Student && user.username != student0.username)
+              allUsers.lecturers should have size 0
+              allUsers.admins should have size 1
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch all non-active Students from the database as an Admin" in {
+      prepare(Seq(student0, student1, student2)).flatMap { addedUsers: Seq[User] =>
+        client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllUsers(None, Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+
+              allUsers.students.map(_.username) should contain theSameElementsAs addedUsers.filter(_.username == student0.username).map(_.username)
+              allUsers.lecturers should have size 0
+              allUsers.admins should have size 0
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch all active Lecturers from the database as an Admin" in {
+      prepare(Seq(lecturer0, lecturer1, lecturer2)).flatMap { addedUsers: Seq[User] =>
+        client.softDeleteUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+
+              allUsers.students should have size 0
+              allUsers.lecturers should contain theSameElementsAs addedUsers.filter(user => user.role == Role.Lecturer && user.username != lecturer0.username)
+              allUsers.admins should have size 1
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch all non-active Lecturers from the database as an Admin" in {
+      prepare(Seq(lecturer0, lecturer1, lecturer2)).flatMap { addedUsers: Seq[User] =>
+        client.softDeleteUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllUsers(None, Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+
+              allUsers.students.map(_.username) should have size 0
+              allUsers.lecturers.map(_.username) should contain theSameElementsAs addedUsers.filter(_.username == lecturer0.username).map(_.username)
+              allUsers.admins should have size 0
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch all active Admins from the database as an Admin" in {
+      prepare(Seq(admin0, admin1, admin2)).flatMap { addedUsers: Seq[User] =>
+        val userToDelete = addedUsers.head
+        client.softDeleteUser(userToDelete.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          // val currentlyActive = addedUsers.diff()
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllUsers(None, Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+              allUsers.students should have size 0
+              allUsers.lecturers should have size 0
+              allUsers.admins should have size 3 //Has size three because system admin is always added
+              allUsers.admins should contain allElementsOf addedUsers.filter(_.role == Role.Admin).diff(Seq(userToDelete)) //without userToDelete
+
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch all non-active Admins from the database as an Admin" in {
+      prepare(Seq(admin0, admin1, admin2)).flatMap { addedUsers: Seq[User] =>
+        client.softDeleteUser(admin0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          eventually(timeout(Span(15, Seconds))) {
+            client.getAllUsers(None, Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { allUsers =>
+
+              allUsers.students.map(_.username) should have size 0
+              allUsers.lecturers should have size 0
+              allUsers.admins.map(_.username) should contain theSameElementsAs addedUsers.filter(_.username == admin0.username).map(_.username)
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "fetch only the information of all specified Users that are active, as an Admin" in {
+      prepare(Seq(student0, student1, student2, lecturer0, lecturer1, admin0, admin1)).flatMap { _ =>
+        client.softDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          client.softDeleteUser(lecturer1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+            client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username + "," + student1.username + "," + lecturer1.username), Some(true)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
+              answer.copy(
+                answer.students.map(_.copy(enrollmentIdSecret = "")),
+                answer.lecturers.map(_.copy(enrollmentIdSecret = "")),
+                answer.admins.map(_.copy(enrollmentIdSecret = ""))
+              ) should ===(GetAllUsersResponse(Seq(student0), Seq(lecturer0), Seq(admin0)))
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "fetch only the information of all specified Users that are inactive, as an Admin" in {
+      prepare(Seq(student0, student1, student2, lecturer0, lecturer1, admin0, admin1)).flatMap { _ =>
+        client.softDeleteUser(student1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+          client.softDeleteUser(lecturer1.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>
+            client.getAllUsers(Some(student0.username + "," + lecturer0.username + "," + admin0.username + "," + student1.username + "," + lecturer1.username), Some(false)).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { answer =>
+              answer.copy(
+                answer.students.map(_.copy(enrollmentIdSecret = "")),
+                answer.lecturers.map(_.copy(enrollmentIdSecret = "")),
+                answer.admins.map(_.copy(enrollmentIdSecret = ""))
+              ) should ===(GetAllUsersResponse(Seq(student1.softDelete), Seq(lecturer1.softDelete), Seq()))
+            }
+          }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not fetch the public information of all Users, as an non-Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
+        client.getAllUsers(None, None).handleRequestHeader(addAuthorizationHeader("student")).invoke().failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not fetch the public information of all Students, as an non-Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
+        client.getAllStudents(None, None).handleRequestHeader(addAuthorizationHeader("student")).invoke().failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "not fetch the public information of all Lecturers, as an non-Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
+        client.getAllLecturers(None, None).handleRequestHeader(addAuthorizationHeader("student")).invoke().failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "not fetch the public information of all Admins, as an non-Admin" in {
+      prepare(Seq(student0, lecturer0, admin0)).flatMap { _ =>
+        client.getAllAdmins(None, None).handleRequestHeader(addAuthorizationHeader("student")).invoke().failed.flatMap { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.NotEnoughPrivileges)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+    "not find a non-existing User" in {
       client.getUser("Guten Abend").handleRequestHeader(addAuthorizationHeader()).invoke().failed.map { answer =>
         answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
       }
@@ -430,6 +677,63 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
+    "not update a user with another username in path" in {
+      prepare(Seq(lecturer0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
+
+        client.updateUser(lecturer0.username + "thisShouldFail").handleRequestHeader(addAuthorizationHeader(lecturer0.username))
+          .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.PathParameterMismatch)
+          }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not update a user with a malformed username" in {
+      prepare(Seq(lecturer0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(username = lecturer0.username + ":)", enrollmentIdSecret = enrollmentIdSecretFetched)
+
+        client.updateUser(lecturer0.username + ":)").handleRequestHeader(addAuthorizationHeader(lecturer0.username + ":)"))
+          .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+              .invalidParams should contain(SimpleError("username", ErrorMessageCollection.User.usernameMessage))
+          }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not update a user with a malformed new email" in {
+      prepare(Seq(lecturer0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched, email = "@@")
+
+        client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username))
+          .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+              .invalidParams should contain(SimpleError("email", ErrorMessageCollection.User.mailMessage))
+          }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not update another user as another non admin" in {
+      prepare(Seq(lecturer0)).flatMap { userList =>
+        val enrollmentIdSecretFetched = userList.find(_.username == lecturer0.username).get.enrollmentIdSecret
+        val lecturer0FetchedAndUpdated = lecturer0Updated.copy(enrollmentIdSecret = enrollmentIdSecretFetched)
+        client.updateUser(lecturer0.username).handleRequestHeader(addAuthorizationHeader(lecturer0.username + "weAreAnotherUserNow"))
+          .invoke(lecturer0FetchedAndUpdated).failed.flatMap { answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+          }
+
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
     "not update uneditable fields as an admin" in {
       prepare(Seq(student0)).flatMap { _ =>
         client.updateUser(student0UpdatedUneditable.username).handleRequestHeader(addAuthorizationHeader(student0UpdatedUneditable.username))
@@ -448,6 +752,18 @@ class UserServiceSpec extends AsyncWordSpec
             answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
               have length protectedErrorSize
           }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "update latest matriculation of a student" in {
+      prepare(Seq(student0)).flatMap { _ =>
+        client.updateLatestMatriculation().invoke(MatriculationUpdate(student0.username, "SS2020")).flatMap { _ =>
+          client.getUser(student0.username).handleRequestHeader(addAuthorizationHeader(admin0.username)).invoke().map {
+            user =>
+              user.asInstanceOf[Student].latestImmatriculation should ===("SS2020")
+          }
+        }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
@@ -648,5 +964,46 @@ class UserServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
     }
+
+    "should get thumbnail of a user" in {
+      val profilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
+      val thumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example_thumbnail.jpeg"))
+
+      prepare(Seq(admin0)).flatMap { _ =>
+        server.application.database.setImage(admin0.username, profilePicture, thumbnail).flatMap {
+          _ =>
+            client.getThumbnail(admin0.username).handleRequestHeader(addAuthorizationHeader(admin0.username)).invoke().map {
+              thumb: ByteString =>
+                thumb.toArray should contain theSameElementsInOrderAs thumbnail
+            }
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "should not set the image thumbnail of aother user" in {
+      val profilePicture = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example.png"))
+      val thumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/Example_thumbnail.jpeg"))
+
+      prepare(Seq(student1, student2)).flatMap { _ =>
+        client.setImage(student1.username).handleRequestHeader(addAuthorizationHeader(student2.username)).invoke(profilePicture).failed.flatMap {
+          answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "should get the default thumbnail of a user which has not set a thumbnail yet" in {
+      val thumbnail = ByteStreams.toByteArray(getClass.getResourceAsStream("/DefaultThumbnail.jpg"))
+      prepare(Seq(admin0)).flatMap { _ =>
+        client.getThumbnail(admin0.username).handleRequestHeader(addAuthorizationHeader(admin0.username)).invoke().map {
+          thumb: ByteString =>
+            thumb.toArray should contain theSameElementsInOrderAs thumbnail
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
   }
 }

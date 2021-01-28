@@ -16,7 +16,7 @@ class GroupBehaviour(val config: Config) extends HyperledgerActor[ConnectionGrou
   override protected def createConnection: ConnectionGroupTrait =
     ConnectionGroup(adminUsername, channel, chaincode, walletPath, networkDescriptionPath)
 
-  /** Gets called every time when the actor receives a command
+  /** Gets called every time when the actor receives a command.
     * Errors which this method will thrown will be handled accordingly
     * if the command implements [[HyperledgerReadCommand]] or the
     * [[HyperledgerWriteCommand]].

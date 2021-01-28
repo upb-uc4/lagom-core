@@ -5,6 +5,7 @@ import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.configuration.api.ConfigurationService
 import de.upb.cs.uc4.configuration.model.{ Configuration, JsonHyperledgerNetworkVersion, ValidationConfiguration }
 import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, CourseLanguage, CourseType }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, SimpleError, UC4Exception }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
@@ -30,6 +31,20 @@ class ConfigurationServiceSpec extends AsyncWordSpec with Matchers {
       client.getSemester(Some("2020-10-14")).invoke().map {
         answer =>
           answer.semester should ===("WS2020/21")
+      }
+    }
+
+    "fail getting the semester with an empty date" in {
+      client.getSemester(None).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should contain theSameElementsAs Seq(SimpleError("date", "Query parameter \"date\" must be set."))
+      }
+    }
+
+    "fail getting the semester with an malformed date" in {
+      client.getSemester(Some("1234-12-1")).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should contain theSameElementsAs Seq(SimpleError("date", "Date must be of the following format \"yyyy-mm-dd\"."))
       }
     }
 

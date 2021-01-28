@@ -1,4 +1,10 @@
-# [WIP - v0.15.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.15.0...examreg-v0.15.1) (2021-XX-XX)
+# [v0.16.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.16.0...examreg-v0.16.1) (2021-01-28)
+## Feature
+## Refactor
+ - Redeploy for compatibility reasons
+## Bugfix
+
+# [v0.16.0](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.15.0...examreg-v0.16.0) (2021-01-18)
 ## Feature
 ## Refactor
 ## Bugfix
