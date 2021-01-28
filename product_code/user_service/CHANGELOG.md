@@ -1,4 +1,4 @@
-# [v0.15.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.15.2...user-v0.15.3) (2020-XX-XX)
+# [v0.15.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.15.2...user-v0.15.3) (2021-XX-XX)
 ## Feature
 - Add role to user creation topic for addition to hyperledger groups
 ## Refactor
