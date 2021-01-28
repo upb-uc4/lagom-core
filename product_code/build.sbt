@@ -8,6 +8,7 @@ scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
 lagomUnmanagedServices in ThisBuild := Map("imageprocessing" -> sys.env.getOrElse("IMAGE_PROCESSING", "http://localhost:9020"))
 
 val withTests = "compile->compile;test->test"
+val onlyTests = "test->test"
 
 // Projects
 lazy val lagom = (project in file("."))
@@ -19,8 +20,10 @@ lazy val lagom = (project in file("."))
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service,
+    operation_service_api, operation_service,
     examreg_service_api, examreg_service,
     admission_service_api, admission_service,
+    group_service_api, group_service,
     report_service_api, report_service)
   .dependsOn(shared_client, shared_server, hyperledger_component,
     course_service_api, course_service,
@@ -29,8 +32,10 @@ lazy val lagom = (project in file("."))
     authentication_service_api, authentication_service,
     user_service_api, user_service,
     matriculation_service_api, matriculation_service,
+    operation_service_api, operation_service,
     examreg_service_api, examreg_service,
     admission_service_api, admission_service,
+    group_service_api, group_service,
     report_service_api, report_service)
 
 // This project is not allowed to have lagom server dependencies
@@ -118,7 +123,8 @@ lazy val matriculation_service = (project in file("matriculation_service/impl"))
   .enablePlugins(LagomScala)
   .settings(libraryDependencies += lagomScaladslKafkaBroker)
   .settings(Settings.implSettings("matriculation_service"))
-  .dependsOn(user_service_api % withTests, certificate_service_api % withTests, shared_server % withTests, shared_client, matriculation_service_api, hyperledger_component, examreg_service_api % withTests)
+  .dependsOn(user_service_api % withTests, certificate_service_api % withTests, examreg_service_api % withTests, operation_service_api % withTests,
+    shared_server % withTests, shared_client, matriculation_service_api, hyperledger_component)
 
 lazy val certificate_service_api = (project in file("certificate_service/api"))
   .settings(Settings.apiSettings("certificate_service_api"))
@@ -170,7 +176,36 @@ lazy val admission_service = (project in file("admission_service/impl"))
   .settings(Settings.implSettings("examreg_service"))
   .dependsOn(admission_service_api % withTests, shared_client % withTests, shared_server % withTests,
     hyperledger_component, matriculation_service_api % withTests, examreg_service_api % withTests,
-    course_service_api % withTests, certificate_service % withTests)
+    course_service_api % withTests, certificate_service_api % withTests, operation_service_api % withTests,
+    user_service_api % onlyTests)
+
+lazy val operation_service_api =  (project in file("operation_service/api"))
+  .settings(Settings.apiSettings("operation_service"))
+  .dependsOn(shared_client)
+
+lazy val operation_service = (project in file("operation_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= Dependencies.implDefaultDependencies,
+    libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
+  )
+  .settings(Settings.implSettings("operation_service"))
+  .dependsOn(operation_service_api % withTests, certificate_service_api % withTests,
+    shared_client % withTests, shared_server % withTests, hyperledger_component)
+
+lazy val group_service_api =  (project in file("group_service/api"))
+  .settings(Settings.apiSettings("group_service_api"))
+  .dependsOn(shared_client)
+
+lazy val group_service = (project in file("group_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= Dependencies.implDefaultDependencies,
+    libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
+  )
+  .settings(Settings.implSettings("group_service"))
+  .dependsOn(group_service_api % withTests, certificate_service_api % withTests, shared_client % withTests, shared_server % withTests, hyperledger_component)
+
 lazy val report_service_api =  (project in file("report_service/api"))
   .settings(Settings.apiSettings("report_service_api"))
   .dependsOn(shared_client)

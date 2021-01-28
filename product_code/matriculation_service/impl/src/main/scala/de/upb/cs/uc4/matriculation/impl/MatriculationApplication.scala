@@ -8,6 +8,7 @@ import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.hyperledger.HyperledgerComponent
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
+import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.user.api.UserService
 
@@ -20,6 +21,7 @@ abstract class MatriculationApplication(context: LagomApplicationContext)
   // Bind UserService
   lazy val userService: UserService = serviceClient.implement[UserService]
   lazy val examregService: ExamregService = serviceClient.implement[ExamregService]
+  lazy val operationService: OperationService = serviceClient.implement[OperationService]
 
   //Bind CertificateService
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]

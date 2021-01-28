@@ -34,11 +34,11 @@ class MatriculationServiceStub extends MatriculationService {
   }
 
   /** Submits a proposal to matriculate a student */
-  override def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction] =
+  override def submitMatriculationProposal(): ServiceCall[SignedProposal, UnsignedTransaction] =
     proposal => Future.successful(UnsignedTransaction("t:".getBytes() ++ proposal.unsignedProposalAsByteArray))
 
   /** Submits a transaction to matriculate a student */
-  override def submitMatriculationTransaction(username: String): ServiceCall[SignedTransaction, Done] = {
+  override def submitMatriculationTransaction(): ServiceCall[SignedTransaction, Done] = {
     _ => Future.successful(Done)
   }
 
@@ -59,12 +59,6 @@ class MatriculationServiceStub extends MatriculationService {
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = { _ => Future.successful(Done) }
-
-  /** Immatriculates a student */
-  override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done] = { _ => Future.successful(Done) }
-
-  /** Allows PUT */
-  override def allowedPut: ServiceCall[NotUsed, Done] = { _ => Future.successful(Done) }
 
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = { _ =>

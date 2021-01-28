@@ -67,6 +67,7 @@ object HyperledgerUtils {
         case ErrorType.HLConflict => new UC4NonCriticalException(409, genericError)
         case ErrorType.HLUnprocessableLedgerState => new UC4CriticalException(500, genericError, null)
         case ErrorType.HLInsufficientApprovals => new UC4NonCriticalException(422, genericError)
+        case ErrorType.HLParameterNumberError => new UC4CriticalException(500, genericError)
         case _ => UC4Exception.InternalServerError("Unknown GenericError", s"Hyperledger uses a new ErrorType ${genericError.`type`}")
       }
       case detailedError: DetailedError => detailedError.`type` match {

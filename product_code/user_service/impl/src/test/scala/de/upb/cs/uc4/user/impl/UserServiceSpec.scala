@@ -11,13 +11,13 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.authentication.AuthenticationServiceStub
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser }
 import de.upb.cs.uc4.image.ImageProcessingServiceStub
 import de.upb.cs.uc4.image.api.ImageProcessingService
-import de.upb.cs.uc4.shared.client.Hashing
-import de.upb.cs.uc4.shared.client.configuration.{ ErrorMessageCollection, RegexCollection }
+import de.upb.cs.uc4.shared.client.configuration.ErrorMessageCollection
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import de.upb.cs.uc4.user.api.UserService
@@ -159,7 +159,7 @@ class UserServiceSpec extends AsyncWordSpec
     server.application.database.getAll(role)
   }
 
-  private def createUsernames(username: String, governmentId: String, enrollmentIdSecret: String): Usernames = Usernames(username, Hashing.sha256(s"$governmentId$enrollmentIdSecret"))
+  private def createUsernames(username: String, governmentId: String, enrollmentIdSecret: String, role: Role): Usernames = Usernames(username, Hashing.sha256(s"$governmentId$enrollmentIdSecret"), role)
 
   //Additional variables needed for some tests
   val student0UpdatedUneditable: Student = student0.copy(latestImmatriculation = "SS2012", enrollmentIdSecret = "newEnrollmentIdSecret", isActive = false)
@@ -182,7 +182,7 @@ class UserServiceSpec extends AsyncWordSpec
                 .runWith(TestSink.probe[EncryptionContainer])
                 .request(Long.MaxValue)
                 .receiveWithin(FiniteDuration(3, SECONDS)).last
-              server.application.kafkaEncryptionUtility.decrypt[Usernames](container) should ===(createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret))
+              server.application.kafkaEncryptionUtility.decrypt[Usernames](container) should ===(createUsernames(student0.username, "governmentIdStudent0", student0Created.enrollmentIdSecret, student0.role))
             }
         }.flatMap(cleanupOnSuccess)
           .recoverWith(cleanupOnFailure())

@@ -1,7 +1,6 @@
 package de.upb.cs.uc4.authentication.impl
 
 import java.util.{ Base64, Calendar, Date }
-
 import akka.Done
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.util.Timeout
@@ -13,8 +12,8 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication }
-import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, JsonUsername, Tokens }
-import de.upb.cs.uc4.shared.client.Hashing
+import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, Tokens }
+import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.messages.Confirmation

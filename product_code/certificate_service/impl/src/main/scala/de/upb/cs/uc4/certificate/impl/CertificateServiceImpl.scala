@@ -4,33 +4,47 @@ import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
+import com.lightbend.lagom.scaladsl.broker.TopicProducer
+import com.lightbend.lagom.scaladsl.persistence.{ EventStreamElement, PersistentEntityRegistry }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.impl.actor.{ CertificateState, CertificateUser }
 import de.upb.cs.uc4.certificate.impl.commands.{ CertificateCommand, GetCertificateUser, SetCertificateAndKey }
-import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
+import de.upb.cs.uc4.certificate.impl.events.{ CertificateEvent, OnCertficateAndKeySet }
+import de.upb.cs.uc4.certificate.impl.readside.CertificateDatabase
+import de.upb.cs.uc4.certificate.model._
 import de.upb.cs.uc4.hyperledger.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
 import de.upb.cs.uc4.hyperledger.{ HyperledgerAdminParts, HyperledgerUtils }
-import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, JsonUsername }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the UserService */
 class CertificateServiceImpl(
     clusterSharding: ClusterSharding,
+    persistentEntityRegistry: PersistentEntityRegistry,
     enrollmentManager: EnrollmentManagerTrait,
+    kafkaEncryptionUtility: KafkaEncryptionUtility,
+    database: CertificateDatabase,
     override val environment: Environment
 )(implicit ec: ExecutionContext, timeout: Timeout, val config: Config)
   extends CertificateService with HyperledgerAdminParts {
+
+  protected final val log: Logger = LoggerFactory.getLogger(getClass)
 
   /** Looks up the entity for the given ID */
   private def entityRef(id: String): EntityRef[CertificateCommand] =
@@ -40,7 +54,7 @@ class CertificateServiceImpl(
 
   /** Forwards the certificate signing request from the given user */
   override def setCertificate(username: String): ServerServiceCall[PostMessageCSR, JsonCertificate] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (authUsername, _) =>
+    (authUsername, role) =>
       ServerServiceCall { (_, pmcsrRaw) =>
         // One can only set his own certificate
         if (authUsername != username) {
@@ -64,7 +78,7 @@ class CertificateServiceImpl(
           case CertificateUser(Some(enrollmentId), Some(enrollmentSecret), None, None) =>
             try {
               val certificate = enrollmentManager.enrollSecure(caURL, tlsCert, enrollmentId, enrollmentSecret, pmcsrRaw.certificateSigningRequest, adminUsername, walletPath, channel, chaincode, networkDescriptionPath)
-              entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
+              entityRef(username).ask[Confirmation](replyTo => SetCertificateAndKey(role.toString, certificate, pmcsrRaw.encryptedPrivateKey, replyTo)).map {
                 case Accepted(_) =>
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
                     .addHeader("Location", s"$pathPrefix/certificates/$username/certificate")
@@ -125,6 +139,36 @@ class CertificateServiceImpl(
           case _ =>
             throw UC4Exception.NotEnrolled
         }
+      }
+  }
+
+  /** Returns the username that matches the given enrollmentId */
+  override def getUsername(enrollmentId: String): ServiceCall[NotUsed, JsonUsername] = authenticated(AuthenticationRole.Admin) {
+    ServerServiceCall {
+      (header, _) =>
+        database.get(enrollmentId).map {
+          case Some(username) => createETagHeader(header, JsonUsername(username))
+          case None           => throw UC4Exception.NotFound
+        }
+
+    }
+  }
+
+  /** Publishes every user that is registered at hyperledger */
+  override def userEnrollmentTopic(): Topic[EncryptionContainer] = TopicProducer.singleStreamWithOffset { fromOffset =>
+    persistentEntityRegistry
+      .eventStream(CertificateEvent.Tag, fromOffset)
+      .mapConcat {
+        //Filter only OnRegisterUser events
+        case EventStreamElement(_, OnCertficateAndKeySet(enrollmentId, role, _, _), offset) => try {
+          immutable.Seq((kafkaEncryptionUtility.encrypt(EnrollmentUser(enrollmentId, role)), offset))
+        }
+        catch {
+          case throwable: Throwable =>
+            log.error("CertificateService cannot send invalid registration topic message {}", throwable.toString)
+            Nil
+        }
+        case _ => Nil
       }
   }
 
