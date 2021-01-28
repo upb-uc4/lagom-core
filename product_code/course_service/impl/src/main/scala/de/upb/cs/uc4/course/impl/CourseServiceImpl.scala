@@ -43,7 +43,7 @@ class CourseServiceImpl(
   lazy val internalQueryTimeout: FiniteDuration = config.getInt("uc4.timeouts.database").milliseconds
 
   /** @inheritdoc */
-  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String]): ServiceCall[NotUsed, Seq[Course]] = {
+  override def getAllCourses(courseName: Option[String], lecturerId: Option[String], moduleIds: Option[String], examregNames: Option[String] = None): ServiceCall[NotUsed, Seq[Course]] = {
     ServerServiceCall { (header, _) =>
       database.getAll
         .map(seq => seq
@@ -57,10 +57,18 @@ class CourseServiceImpl(
         .map { seq =>
           seq
             .filter { course =>
-              //If courseName query is set, we check that every whitespace seperated parameter is contained
-              courseName.isEmpty || courseName.get.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
+              courseName match {
+                case None                => true
+                //If courseName query is set, we check that every whitespace separated parameter is contained
+                case Some(courseNameGet) => courseNameGet.toLowerCase.split("""\s+""").forall(course.courseName.toLowerCase.contains(_))
+              }
             }
-            .filter(course => lecturerId.isEmpty || course.lecturerId == lecturerId.get)
+            .filter { course =>
+              lecturerId match {
+                case None                => true
+                case Some(lecturerIdGet) => course.lecturerId == lecturerIdGet
+              }
+            }
             .filter {
               course =>
                 moduleIds match {
@@ -69,6 +77,16 @@ class CourseServiceImpl(
                     listOfModuleIds.toLowerCase.split(',').exists(moduleId => course.moduleIds.map(_.toLowerCase).contains(moduleId.trim))
                 }
             }
+        }
+        .flatMap { courses =>
+          examregNames match {
+            case None => Future.successful(courses)
+            case Some(examregNameList) => examregService.getExaminationRegulations(Some(examregNameList), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
+              examregs =>
+                val moduleIdList = examregs.flatMap(_.modules).map(_.id)
+                courses.filter(course => moduleIdList.exists(id => course.moduleIds.contains(id)))
+            }
+          }
         }.map(courses => createETagHeader(header, courses))
     }
   }
