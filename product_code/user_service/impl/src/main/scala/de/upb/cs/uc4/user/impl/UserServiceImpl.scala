@@ -156,7 +156,7 @@ class UserServiceImpl(
               authentication.setAuthentication().invoke(postMessageFinalized.authUser)
                 .map { _ =>
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
-                    .addHeader("Location", s"$pathPrefix/users/students/${postMessageFinalized.user.username}")
+                    .addHeader("Location", s"$pathPrefix/users/${postMessageFinalized.user.username}")
                   (header, postMessageFinalized.user)
                 }
                 // In case the password cant be saved
