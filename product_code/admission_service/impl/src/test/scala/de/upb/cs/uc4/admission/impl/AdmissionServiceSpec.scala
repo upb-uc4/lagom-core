@@ -11,8 +11,10 @@ import de.upb.cs.uc4.course.{ CourseServiceStub, DefaultTestCourses }
 import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
+import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._
 import de.upb.cs.uc4.shared.client._
+import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -38,6 +40,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
         override lazy val matriculationService: MatriculationServiceStub = new MatriculationServiceStub
         override lazy val examRegService: ExamregServiceStub = new ExamregServiceStub
         override lazy val courseService: CourseServiceStub = new CourseServiceStub
+        override lazy val operationService: OperationServiceStub = new OperationServiceStub
 
         certificateService.setup(student0.username)
         matriculationService.addImmatriculationData(student0.username, matriculationService.createSingleImmatriculationData(
@@ -73,10 +76,10 @@ class AdmissionServiceSpec extends AsyncWordSpec
             }
 
             override def getProposalAddAdmission(certificate: String, AFFILITATION: String = AFFILIATION, courseAdmission: String): (String, Array[Byte]) =
-              ("", courseAdmission.getBytes())
+              (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, courseAdmission.getBytes())
 
             override def getProposalDropAdmission(certificate: String, AFFILITATION: String = AFFILIATION, admissionId: String): (String, Array[Byte]) =
-              ("", ("id#" + admissionId).getBytes())
+              (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, ("id#" + admissionId).getBytes())
 
             override def getUnsignedTransaction(proposalBytes: Array[Byte], signature: Array[Byte]): Array[Byte] = {
               "t:".getBytes() ++ proposalBytes

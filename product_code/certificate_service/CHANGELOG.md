@@ -1,3 +1,9 @@
+# [v0.16.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.14.1...certificate-v0.16.1) (2021-01-28)
+## Feature
+ - Added endpoint for fetching username given an enrollmentId
+## Refactor
+## Bugfix
+
 # [v0.14.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.13.1...certificate-v0.14.1) (2020-12-14)
 ## Feature
 - Added Version endpoint for Hyperledger
