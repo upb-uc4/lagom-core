@@ -40,10 +40,10 @@ trait OperationService extends UC4HyperledgerService {
   def addToWatchList(username: String): ServiceCall[JsonOperationId, Done]
 
   /** Submit a signed Proposal */
-  def submitProposal(operationId: String): ServiceCall[SignedProposal, UnsignedTransaction]
+  def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction]
 
   /** Submit a signed Proposal */
-  def submitTransaction(operationId: String): ServiceCall[SignedTransaction, Done]
+  def submitTransaction(): ServiceCall[SignedTransaction, Done]
 
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
@@ -67,12 +67,12 @@ trait OperationService extends UC4HyperledgerService {
 
         restCall(Method.POST, pathPrefix + "/operations/:operationId/unsigned_proposal_approve", getProposalApproveOperation _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/operations/:operationId/unsigned_proposal_reject", getProposalRejectOperation _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/operations/:operationId/signed_proposal", submitProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/operations/:operationId/signed_transaction", submitTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/operations/signed_proposal", submitProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/operations/signed_transaction", submitTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/unsigned_proposal_approve", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/unsigned_proposal_reject", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/signed_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/signed_transaction", allowedPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/operations/signed_proposal", allowedPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/operations/signed_transaction", allowedPost _),
 
         restCall(Method.POST, pathPrefix + "/watchlist/:username", addToWatchList _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/watchlist/:username", allowedPost _)

@@ -307,10 +307,10 @@ class OperationServiceSpec extends AsyncWordSpec
       val reason = "Reasons"
       client.getProposalRejectOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke(JsonRejectMessage(reason))
         .flatMap { proposal =>
-          client.submitProposal(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposal, "")).flatMap {
+          client.submitProposal().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposal, "")).flatMap {
             unsignedTransaction =>
               unsignedTransaction should ===(UnsignedTransaction(s"t:${operation1.operationId}#$reason".getBytes()))
-              client.submitTransaction(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransaction, "")).map { _ =>
+              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransaction, "")).map { _ =>
                 server.application.operationList.find(op => op.operationId == operation1.operationId).get.state should ===(OperationDataState.REJECTED)
               }
           }
@@ -321,10 +321,10 @@ class OperationServiceSpec extends AsyncWordSpec
       prepare(Seq(operation1, operation2, operation3))
       client.getProposalApproveOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke()
         .flatMap { proposal =>
-          client.submitProposal(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposal, "")).flatMap {
+          client.submitProposal().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposal, "")).flatMap {
             unsignedTransaction =>
               unsignedTransaction should ===(UnsignedTransaction(s"t:${operation1.operationId}".getBytes()))
-              client.submitTransaction(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransaction, "")).map { _ =>
+              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransaction, "")).map { _ =>
                 val op = server.application.operationList.find(op => op.operationId == operation1.operationId).get
                 (op.state, op.missingApprovals) should ===(OperationDataState.PENDING, ApprovalList(Seq(), Seq()))
               }

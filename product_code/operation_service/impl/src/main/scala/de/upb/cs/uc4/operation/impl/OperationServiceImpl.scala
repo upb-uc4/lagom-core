@@ -200,7 +200,7 @@ class OperationServiceImpl(
   }
 
   /** Submit a signed Proposal */
-  override def submitProposal(operationId: String): ServiceCall[SignedProposal, UnsignedTransaction] =
+  override def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction] =
     authenticated[SignedProposal, UnsignedTransaction](AuthenticationRole.All: _*) {
       ServerServiceCall { (_, signedProposal) =>
         entityRef.askWithStatus[Array[Byte]](replyTo => SubmitProposal(signedProposal, replyTo)).map { array =>
@@ -210,7 +210,7 @@ class OperationServiceImpl(
     }
 
   /** Submit a signed Transaction */
-  override def submitTransaction(operationId: String): ServiceCall[SignedTransaction, Done] =
+  override def submitTransaction(): ServiceCall[SignedTransaction, Done] =
     authenticated[SignedTransaction, Done](AuthenticationRole.All: _*) {
       ServerServiceCall { (_, signedTransaction) =>
         entityRef.askWithStatus[Confirmation](replyTo => SubmitTransaction(signedTransaction, replyTo)).map {

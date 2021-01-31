@@ -29,10 +29,10 @@ class OperationServiceStub extends OperationService {
   override def addToWatchList(username: String): ServiceCall[JsonOperationId, Done] = _ => Future.successful(Done)
 
   /** Submit a signed Proposal */
-  override def submitProposal(operationId: String): ServiceCall[SignedProposal, UnsignedTransaction] = _ => Future.successful(UnsignedTransaction(""))
+  override def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction] = _ => Future.successful(UnsignedTransaction(""))
 
   /** Submit a signed Proposal */
-  override def submitTransaction(operationId: String): ServiceCall[SignedTransaction, Done] = _ => Future.successful(Done)
+  override def submitTransaction(): ServiceCall[SignedTransaction, Done] = _ => Future.successful(Done)
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = _ => Future.successful(Done)
