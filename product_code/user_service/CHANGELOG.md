@@ -1,4 +1,4 @@
-# [WIP - v0.17.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.15.3...user-v0.17.0) (2021-XX-XX)
+# [v0.17.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.15.3...user-v0.17.0) (2021-02-01)
 ## Feature
 ## Refactor
 - Improved performance of getAllUsers call
