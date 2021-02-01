@@ -135,9 +135,6 @@ class OperationServiceImpl(
           operationData =>
             certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
               jsonEnrollmentId =>
-                if (operationData.initiator != jsonEnrollmentId.id) {
-                  throw UC4Exception.OwnerMismatch
-                }
                 if (operationData.initiator == jsonEnrollmentId.id && operationData.state == OperationDataState.PENDING) {
                   throw UC4Exception.RemovalNotAllowed
                 }
