@@ -15,6 +15,6 @@ import scala.collection.immutable.Seq
   */
 object ExamSerializerRegistry extends SharedSerializerRegistry {
   override def customSerializers: Seq[JsonSerializer[_]] = Seq( // state and events can use play-json, but commands should use jackson because of ActorRef[T] (see application.conf)
-    //Data
+  //Data
   )
 }

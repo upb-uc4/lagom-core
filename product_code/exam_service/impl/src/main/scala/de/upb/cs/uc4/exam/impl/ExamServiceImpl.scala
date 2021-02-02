@@ -21,10 +21,10 @@ import scala.concurrent.duration._
 
 /** Implementation of the ExamService */
 class ExamServiceImpl(
-                       clusterSharding: ClusterSharding,
-                       courseService: CourseService,
-                       operationService: OperationService,
-                       override val environment: Environment
+    clusterSharding: ClusterSharding,
+    courseService: CourseService,
+    operationService: OperationService,
+    override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
   extends ExamService {
 
