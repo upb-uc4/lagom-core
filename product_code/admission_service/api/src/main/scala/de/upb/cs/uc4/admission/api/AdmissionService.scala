@@ -4,7 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
-import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
+import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission, ExamAdmission }
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 import de.upb.cs.uc4.shared.client._
 
@@ -24,14 +24,14 @@ trait AdmissionService extends UC4HyperledgerService {
   /** Gets a proposal for adding a course admission */
   def getProposalAddCourseAdmission: ServiceCall[CourseAdmission, UnsignedProposal]
 
+  /** Returns exam admissions */
+  def getExamAdmissions(username: Option[String], admissionIDs: Option[String], examIDs: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]]
+
+  /** Gets a proposal for adding a exam admission */
+  def getProposalAddExamAdmission: ServiceCall[ExamAdmission, UnsignedProposal]
+
   /** Gets a proposal for dropping a course admission */
-  def getProposalDropCourseAdmission: ServiceCall[DropAdmission, UnsignedProposal]
-
-  /** Submits a proposal */
-  def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction]
-
-  /** Submits a transaction */
-  def submitTransaction(): ServiceCall[SignedTransaction, Done]
+  def getProposalDropAdmission: ServiceCall[DropAdmission, UnsignedProposal]
 
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
@@ -45,15 +45,14 @@ trait AdmissionService extends UC4HyperledgerService {
       .addCalls(
         restCall(Method.GET, pathPrefix + "/admissions/courses?username&courseId&moduleId", getCourseAdmissions _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/admissions/courses/unsigned_add_proposal", getProposalAddCourseAdmission _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/admissions/courses/unsigned_drop_proposal", getProposalDropCourseAdmission _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/admissions/signed_proposal", submitProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/admissions/signed_transaction", submitTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
-
+        restCall(Method.GET, pathPrefix + "/admissions/exam?username&courseIds&examIds", getExamAdmissions _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/admissions/exam/unsigned_add_proposal", getProposalAddExamAdmission _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/admissions/courses/unsigned_drop_proposal", getProposalDropAdmission _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/admissions/courses?username&courseId&moduleId", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/admissions/courses/unsigned_add_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/admissions/courses/unsigned_drop_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/admissions/signed_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/admissions/signed_transaction", allowedPost _)
+        restCall(Method.OPTIONS, pathPrefix + "/admissions/exam?username&courseIds&examIds", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/admissions/exam/unsigned_add_proposal", allowedPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/admissions/unsigned_drop_proposal", allowedPost _)
       )
   }
 }

@@ -3,7 +3,7 @@ package de.upb.cs.uc4.admission.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import com.typesafe.config.Config
-import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetProposalForAddCourseAdmission, GetProposalForDropCourseAdmission }
+import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetProposalForAddCourseAdmission, GetProposalForAddExamAdmission, GetProposalForDropAdmission }
 import de.upb.cs.uc4.admission.model.CourseAdmission
 import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionAdmission
@@ -30,10 +30,15 @@ class AdmissionBehaviour(val config: Config) extends HyperledgerDefaultActorFact
       replyTo ! StatusReply.success(AdmissionsWrapper(
         connection.getAdmissions(enrollmentId.getOrElse(""), courseId.getOrElse(""), moduleId.getOrElse("")).fromJson[Seq[CourseAdmission]]
       ))
+
     case GetProposalForAddCourseAdmission(certificate, courseAdmission, replyTo) =>
       replyTo ! StatusReply.success(ProposalWrapper(connection.getProposalAddAdmission(certificate, admission = courseAdmission.toJson)))
-    case GetProposalForDropCourseAdmission(certificate, dropAdmission, replyTo) =>
+
+    case GetProposalForAddExamAdmission(certificate, examAdmission, replyTo) =>
+
+    case GetProposalForDropAdmission(certificate, dropAdmission, replyTo) =>
       replyTo ! StatusReply.success(ProposalWrapper(connection.getProposalDropAdmission(certificate, admissionId = dropAdmission.admissionId)))
+
     case _ => println("Unknown command")
   }
 

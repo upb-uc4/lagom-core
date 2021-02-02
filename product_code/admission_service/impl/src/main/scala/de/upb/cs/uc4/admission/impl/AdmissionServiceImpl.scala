@@ -10,21 +10,20 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.admission.impl.actor.{ AdmissionBehaviour, AdmissionsWrapper }
-import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetProposalForAddCourseAdmission, GetProposalForDropCourseAdmission }
-import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
+import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetProposalForAddCourseAdmission, GetProposalForDropAdmission }
+import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission, ExamAdmission }
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.examreg.api.ExamregService
+import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.hyperledger.{ HyperledgerUtils, ProposalWrapper }
+import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
-import de.upb.cs.uc4.hyperledger.{ HyperledgerUtils, ProposalWrapper }
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
-import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, UnsignedProposal }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
@@ -90,8 +89,10 @@ class AdmissionServiceImpl(
         future.flatMap { _ =>
           enrollmentFuture.flatMap { enrollmentId =>
             entityRef.askWithStatus[AdmissionsWrapper](replyTo => GetCourseAdmissions(enrollmentId, courseId, moduleId, replyTo)).map {
+              admissionsWrapper: AdmissionsWrapper => admissionsWrapper.admissions.map { _.asInstanceOf[CourseAdmission] }
+            }.map {
               courseAdmissions =>
-                createETagHeader(header, courseAdmissions.admissions)
+                createETagHeader(header, courseAdmissions)
             }.recover(handleException("Get course admission"))
           }
         }
@@ -160,8 +161,42 @@ class AdmissionServiceImpl(
       }
   }
 
-  /** Gets a proposal for dropping a course admission */
-  override def getProposalDropCourseAdmission: ServiceCall[DropAdmission, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Student) {
+  /** Returns exam admissions */
+  override def getExamAdmissions(username: Option[String], admissionIDs: Option[String], examIDs: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]] =
+    identifiedAuthenticated(AuthenticationRole.All: _*) { (authUser, role) =>
+      ServerServiceCall { (header, _) =>
+        throw UC4Exception.NotImplemented
+      }
+    }
+
+  /** Gets a proposal for adding a exam admission */
+  override def getProposalAddExamAdmission: ServiceCall[ExamAdmission, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Student) {
+    (authUser, _) =>
+      {
+        ServerServiceCall { (header, examAdmissionRaw) =>
+
+          val examAdmissionTrimmed = examAdmissionRaw.trim
+
+          var validationList = try {
+            Await.result(examAdmissionTrimmed.validateOnCreation, validationTimeout)
+          }
+          catch {
+            case _: TimeoutException => throw UC4Exception.ValidationTimeout
+            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
+          }
+
+          certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonId =>
+
+            val examAdmissionFinalized = examAdmissionTrimmed.copy(enrollmentId = jsonId.id, timestamp = LocalDateTime.now.format(DateTimeFormatter.ISO_DATE_TIME))
+
+            throw UC4Exception.NotImplemented
+          }
+        }
+      }
+  }
+
+  /** Gets a proposal for dropping a admission */
+  override def getProposalDropAdmission: ServiceCall[DropAdmission, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Student) {
     (authUser, _) =>
       ServerServiceCall {
         (header, dropAdmissionRaw) =>
@@ -180,7 +215,7 @@ class AdmissionServiceImpl(
             }
 
             certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { certificate =>
-              entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalForDropCourseAdmission(certificate.certificate, dropAdmission, replyTo)).map {
+              entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalForDropAdmission(certificate.certificate, dropAdmission, replyTo)).map {
                 proposalWrapper =>
                   operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
                     .recover {
@@ -189,30 +224,9 @@ class AdmissionServiceImpl(
                         log.error("Exception in addToWatchlist dropAdmission", throwable)
                     }
                   (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
-              }.recover(handleException("Creation of drop courseAdmission proposal failed"))
+              }.recover(handleException("Creation of drop Admission proposal failed"))
             }
           }
-      }
-  }
-
-  /** Submits a proposal */
-  override def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction] = ServiceCall {
-    signedProposal =>
-      {
-        entityRef.askWithStatus[Array[Byte]](replyTo => SubmitProposal(signedProposal, replyTo)).map {
-          array => UnsignedTransaction(array)
-        }.recover(handleException("Submit proposal failed"))
-      }
-  }
-
-  /** Submits a transaction */
-  def submitTransaction(): ServiceCall[SignedTransaction, Done] = ServiceCall {
-    signedTransaction =>
-      {
-        entityRef.askWithStatus[Confirmation](replyTo => SubmitTransaction(signedTransaction, replyTo)).map {
-          case Accepted(_)                  => Done
-          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
-        }.recover(handleException("Submit transaction failed"))
       }
   }
 

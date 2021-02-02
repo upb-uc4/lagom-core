@@ -6,5 +6,5 @@ import de.upb.cs.uc4.admission.model.DropAdmission
 import de.upb.cs.uc4.hyperledger.ProposalWrapper
 import de.upb.cs.uc4.hyperledger.commands.HyperledgerProposalCommand
 
-case class GetProposalForDropCourseAdmission(certificate: String, dropAdmission: DropAdmission, replyTo: ActorRef[StatusReply[ProposalWrapper]]) extends HyperledgerProposalCommand
+case class GetProposalForDropAdmission(certificate: String, dropAdmission: DropAdmission, replyTo: ActorRef[StatusReply[ProposalWrapper]]) extends HyperledgerProposalCommand
 
