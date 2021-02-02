@@ -206,6 +206,20 @@ lazy val group_service = (project in file("group_service/impl"))
   .settings(Settings.implSettings("group_service"))
   .dependsOn(group_service_api % withTests, certificate_service_api % withTests, shared_client % withTests, shared_server % withTests, hyperledger_component)
 
+lazy val exam_service_api =  (project in file("exam_service/api"))
+  .settings(Settings.apiSettings("exam_service_api"))
+  .dependsOn(shared_client)
+
+lazy val exam_service = (project in file("exam_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= Dependencies.implDefaultDependencies
+  )
+  .settings(Settings.implSettings("exam_service"))
+  .dependsOn(operation_service_api % withTests, course_service_api % withTests, exam_service_api % withTests,
+    shared_client % withTests, shared_server % withTests, hyperledger_component)
+
+
 lazy val report_service_api =  (project in file("report_service/api"))
   .settings(Settings.apiSettings("report_service_api"))
   .dependsOn(shared_client)
