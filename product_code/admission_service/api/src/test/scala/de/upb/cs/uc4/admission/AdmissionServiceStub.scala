@@ -4,7 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission, ExamAdmission }
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
+import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, UnsignedProposal }
 
 import scala.concurrent.Future
 
@@ -12,7 +12,6 @@ class AdmissionServiceStub extends AdmissionService {
 
   protected var courseAdmissions: Seq[CourseAdmission] = Seq()
   protected var examAdmissions: Seq[ExamAdmission] = Seq()
-
 
   def reset(): Unit = {
     courseAdmissions = Seq()
@@ -51,7 +50,6 @@ class AdmissionServiceStub extends AdmissionService {
   override def getProposalDropAdmission: ServiceCall[DropAdmission, UnsignedProposal] = ServiceCall {
     _ => Future.successful(UnsignedProposal(""))
   }
-
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall {

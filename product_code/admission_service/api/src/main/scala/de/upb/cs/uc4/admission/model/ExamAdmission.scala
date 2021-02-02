@@ -7,11 +7,12 @@ import play.api.libs.json.{ Format, Json }
 import scala.concurrent.{ ExecutionContext, Future }
 
 case class ExamAdmission(
-  admissionId:	String,
-  enrollmentId: String,
-  timestamp:	String,
-  `type`:	String,
-  examId: String) extends AbstractAdmission {
+    admissionId: String,
+    enrollmentId: String,
+    timestamp: String,
+    `type`: String,
+    examId: String
+) extends AbstractAdmission {
 
   override def copyAdmission(admissionId: String, enrollmentId: String, timestamp: String, `type`: String): ExamAdmission = copy(admissionId, enrollmentId, timestamp, `type`)
 

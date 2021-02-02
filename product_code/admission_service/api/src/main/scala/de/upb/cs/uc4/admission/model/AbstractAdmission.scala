@@ -15,11 +15,11 @@ trait AbstractAdmission {
   val `type`: String
 
   def copyAdmission(
-                     admissionId: String = this.admissionId,
-                     enrollmentId: String = this.enrollmentId,
-                     timestamp: String = this.timestamp,
-                     `type`: String = this.`type`
-                   ): AbstractAdmission
+      admissionId: String = this.admissionId,
+      enrollmentId: String = this.enrollmentId,
+      timestamp: String = this.timestamp,
+      `type`: String = this.`type`
+  ): AbstractAdmission
 
   def trim: AbstractAdmission = copyAdmission(admissionId.trim, enrollmentId.trim, timestamp.trim, `type`.trim)
 
@@ -44,14 +44,14 @@ object AbstractAdmission {
     override def reads(json: JsValue): JsResult[AbstractAdmission] = {
       json("type").as[AdmissionType] match {
         case AdmissionType.Course => Json.fromJson[CourseAdmission](json)
-        case AdmissionType.Exam => Json.fromJson[ExamAdmission](json)
+        case AdmissionType.Exam   => Json.fromJson[ExamAdmission](json)
       }
     }
 
     override def writes(o: AbstractAdmission): JsValue = {
       o match {
         case courseAdmission: CourseAdmission => Json.toJson(courseAdmission)
-        case examAdmission: ExamAdmission => Json.toJson(examAdmission)
+        case examAdmission: ExamAdmission     => Json.toJson(examAdmission)
       }
     }
   }

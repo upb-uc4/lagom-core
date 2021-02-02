@@ -7,13 +7,13 @@ import play.api.libs.json.{ Format, Json }
 import scala.concurrent.{ ExecutionContext, Future }
 
 case class CourseAdmission(
-                            admissionId: String,
-                            enrollmentId: String,
-                            timestamp: String,
-                            `type`: String,
-                            courseId: String,
-                            moduleId: String,
-                          ) extends AbstractAdmission {
+    admissionId: String,
+    enrollmentId: String,
+    timestamp: String,
+    `type`: String,
+    courseId: String,
+    moduleId: String
+) extends AbstractAdmission {
 
   override def copyAdmission(admissionId: String, enrollmentId: String, timestamp: String, `type`: String): CourseAdmission =
     copy(admissionId, enrollmentId, timestamp, `type`)
@@ -21,8 +21,7 @@ case class CourseAdmission(
   override def trim: CourseAdmission =
     super.trim.asInstanceOf[CourseAdmission].copy(courseId = courseId.trim, moduleId = moduleId.trim)
 
-
-  override def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] =  {
+  override def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
     val errorsFuture = super.validateOnCreation
     errorsFuture.map { errors: Seq[SimpleError] =>
 
