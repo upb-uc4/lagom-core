@@ -29,9 +29,11 @@ import de.upb.cs.uc4.user.model.MatriculationUpdate
 import de.upb.cs.uc4.user.model.user.Student
 import play.api.Environment
 
+import java.io.File
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
 import scala.io.Source
+import scala.util.Using
 
 /** Implementation of the MatriculationService */
 class MatriculationServiceImpl(
@@ -52,7 +54,21 @@ class MatriculationServiceImpl(
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
-  lazy val certificateEnrollmentHtml: String = Source.fromResource("certificateEnrollment.html").getLines().mkString("\n")
+  private lazy val absoluteCertificateEnrollmentHtml = new File(config.getString("uc4.pdf.certificateEnrollmentHtml"))
+  lazy val certificateEnrollmentHtml: String = if (absoluteCertificateEnrollmentHtml.exists()) {
+    Using(Source.fromFile(absoluteCertificateEnrollmentHtml)) { source =>
+      source.getLines().mkString("\n")
+    }.getOrElse("")
+  } else {
+    Source.fromResource("certificateEnrollment.html").getLines().mkString("\n")
+  }
+
+  lazy val signatureService = new SigningService(
+    config.getString("uc4.pdf.keyStorePath"),
+    config.getString("uc4.pdf.keyStorePassword"),
+    config.getString("uc4.pdf.certificateAlias"),
+    config.getString("uc4.pdf.tsaURL")
+  )
 
   /** Submits a proposal to matriculate a student */
   override def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction] =
@@ -194,18 +210,22 @@ class MatriculationServiceImpl(
   override def getCertificateOfEnrollment(username: String): ServiceCall[NotUsed, ByteString] =
     identifiedAuthenticated(AuthenticationRole.Student) {
       (authUsername, _) =>
-        ServerServiceCall { (_, _) =>
+        ServerServiceCall { (header, _) =>
           if (authUsername != username) {
             throw UC4Exception.OwnerMismatch
           }
 
-          pdfService.convertHtml().invoke(PdfProcessor(certificateEnrollmentHtml)).map { pdfBytes =>
+          getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { data =>
+            val latestSemester = Utils.findLatestSemester(data.matriculationStatus.flatMap(_.semesters.toSeq))
+            val fieldOfStudy = data.matriculationStatus.filter(sub => sub.semesters.contains(latestSemester)).head
 
-            val signatureService = new SigningService("/keystore.jks", "upbuc4", "key", "http://timestamp.digicert.com/")
+            val pdf = certificateEnrollmentHtml.format(fieldOfStudy, latestSemester)
 
-            val output = signatureService.signPdf(pdfBytes.toArray)
+            pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
+              val output = signatureService.signPdf(pdfBytes.toArray)
 
-            (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
+              (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
+            }
           }
         }
     }

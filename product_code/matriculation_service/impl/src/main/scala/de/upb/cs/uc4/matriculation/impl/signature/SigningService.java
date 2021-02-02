@@ -69,7 +69,13 @@ public class SigningService {
 
     private KeyStore getKeyStore() throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
         KeyStore keyStore = KeyStore.getInstance(KEY_STORE_TYPE);
-        File key = new File(getClass().getResource(keyStorePath).getPath());
+        File absolutPath = new File(keyStorePath);
+        File key;
+        if (absolutPath.exists()) {
+            key = absolutPath;
+        } else {
+            key = new File(getClass().getResource(keyStorePath).getPath());
+        }
         keyStore.load(new FileInputStream(key), keyStorePassword.toCharArray());
         return keyStore;
     }

@@ -40,7 +40,7 @@ object Utils {
       *         1  if this semester is after the other
       */
     def compareSemester(other: String): Int = {
-      if ((semester.validateSemester.nonEmpty && !semester.isEmpty) || other.validateSemester.nonEmpty && !other.isEmpty) {
+      if ((semester.validateSemester.nonEmpty && semester.nonEmpty) || other.validateSemester.nonEmpty && other.nonEmpty) {
         throw UC4Exception.InternalServerError("Semester validation error", "The semester string was compared without being validated")
       }
       else {
