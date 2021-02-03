@@ -442,6 +442,34 @@ class UserServiceSpec extends AsyncWordSpec
         .recoverWith(cleanupOnFailure())
     }
 
+    "not fail on trying to filter for an empty username" in {
+      prepare(Seq(student0)).flatMap { _ =>
+        client.getAllUsers(Some("," + student0.username), None).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+          answer =>
+          answer.copy(
+            answer.students.map(_.copy(enrollmentIdSecret = "")),
+            answer.lecturers.map(_.copy(enrollmentIdSecret = "")),
+            answer.admins.map(_.copy(enrollmentIdSecret = ""))
+          ) should ===(GetAllUsersResponse(Seq(student0), Seq(), Seq()))
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
+    "not fail on trying to filter for only empty usernames" in {
+      prepare(Seq(student0)).flatMap { _ =>
+        client.getAllUsers(Some(","), None).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+          answer =>
+            answer.copy(
+              answer.students.map(_.copy(enrollmentIdSecret = "")),
+              answer.lecturers.map(_.copy(enrollmentIdSecret = "")),
+              answer.admins.map(_.copy(enrollmentIdSecret = ""))
+            ) should ===(GetAllUsersResponse(Seq(), Seq(), Seq()))
+        }
+      }.flatMap(cleanupOnSuccess)
+        .recoverWith(cleanupOnFailure())
+    }
+
     "fetch all active Users from the database as an Admin" in {
       prepare(Seq(student0, lecturer0, admin0)).flatMap { addedUsers =>
         client.softDeleteUser(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().flatMap { _ =>

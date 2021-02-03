@@ -351,7 +351,7 @@ class UserServiceImpl(
   /** Helper method for getting all Users */
   private def getAll(usernames: Option[String], role: Role): Future[Seq[User]] = {
     val fetchedUsernames = usernames match {
-      case Some(value) => Future.successful(value.split(",").toSeq)
+      case Some(value) => Future.successful(value.split(",").toSeq.filter(_.trim.nonEmpty))
       case None        => database.getAll(role)
     }
 
