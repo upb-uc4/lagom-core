@@ -20,10 +20,10 @@ trait MatriculationService extends UC4HyperledgerService {
   override val name: String = "matriculation"
 
   /** Submits a proposal to matriculate a student */
-  def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction]
+  def submitMatriculationProposal(): ServiceCall[SignedProposal, UnsignedTransaction]
 
   /** Submits a transaction to matriculate a student */
-  def submitMatriculationTransaction(username: String): ServiceCall[SignedTransaction, Done]
+  def submitMatriculationTransaction(): ServiceCall[SignedTransaction, Done]
 
   /** Get proposal to matriculate a student */
   def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal]
@@ -37,31 +37,19 @@ trait MatriculationService extends UC4HyperledgerService {
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 
-  /** Immatriculates a student */
-  @deprecated
-  def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done]
-
-  /** Allows PUT */
-  @deprecated
-  def allowedPut: ServiceCall[NotUsed, Done]
-
   final override def descriptor: Descriptor = {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.POST, pathPrefix + "/matriculation/:username/signed_proposal", submitMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/matriculation/signed_proposal", submitMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/matriculation/:username/unsigned_proposal", getMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/matriculation/:username/signed_transaction", submitMatriculationTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
-        restCall(Method.GET, pathPrefix + "/history/:username", getMatriculationData _),
+        restCall(Method.POST, pathPrefix + "/matriculation/signed_transaction", submitMatriculationTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.GET, pathPrefix + "/matriculation/:username", getMatriculationData _),
 
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/signed_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/unsigned_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/signed_transaction", allowedPost),
-        restCall(Method.OPTIONS, pathPrefix + "/history/:username", allowedGet _),
-
-        //DEPRECATED
-        restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
-        restCall(Method.OPTIONS, pathPrefix + "/:username", allowedPut _),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/signed_proposal", allowedPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/unsigned_proposal", allowedPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/signed_transaction", allowedPost),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username", allowedGet _)
       )
   }
 }

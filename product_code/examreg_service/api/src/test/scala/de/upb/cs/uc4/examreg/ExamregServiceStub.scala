@@ -18,7 +18,7 @@ class ExamregServiceStub extends ExamregService with DefaultTestExamRegs {
     _ =>
       Future.successful(
         examRegs
-          .filter(examinationRegulation => regulations.isEmpty || regulations.contains(examinationRegulation.name))
+          .filter(examinationRegulation => regulations.isEmpty || regulations.get.contains(examinationRegulation.name))
           .filter(active.isEmpty || _.active == active.get)
       )
   }

@@ -10,8 +10,10 @@ import de.upb.cs.uc4.hyperledger.exceptions.traits.TransactionExceptionTrait
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
+import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.{ DefaultTestUsers, UserServiceStub }
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -36,6 +38,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
         override lazy val userService: UserServiceStub = new UserServiceStub
         override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
         override lazy val examregService: ExamregServiceStub = new ExamregServiceStub
+        override lazy val operationService: OperationServiceStub = new OperationServiceStub
 
         userService.resetToDefaults()
 
@@ -63,15 +66,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                   override val transactionName: String = "addEntriesToMatriculationData"
                   override val payload: String =
                     """{
-                      |  "type": "HLUnprocessableEntity",
-                      |  "title": "The following parameters do not conform to the specified format.",
-                      |  "invalidParams":[
-                      |     {
-                      |       "name":"matriculations",
-                      |       "reason":"Matriculation status must not be empty"
-                      |     }
-                      |  ]
-                      |}""".stripMargin
+                    |  "type": "HLUnprocessableEntity",
+                    |  "title": "The following parameters do not conform to the specified format.",
+                    |  "invalidParams":[
+                    |     {
+                    |       "name":"matriculations",
+                    |       "reason":"Matriculation status must not be empty"
+                    |     }
+                    |  ]
+                    |}""".stripMargin
                 }
               }
               jsonStringList :+= jsonMatriculationData
@@ -87,15 +90,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                   override val transactionName: String = "addEntriesToMatriculationData"
                   override val payload: String =
                     """{
-                      |  "type": "HLUnprocessableEntity",
-                      |  "title": "The following parameters do not conform to the specified format.",
-                      |  "invalidParams":[
-                      |     {
-                      |       "name":"matriculations",
-                      |       "reason":"Matriculation status must not be empty"
-                      |     }
-                      |  ]
-                      |}""".stripMargin
+                    |  "type": "HLUnprocessableEntity",
+                    |  "title": "The following parameters do not conform to the specified format.",
+                    |  "invalidParams":[
+                    |     {
+                    |       "name":"matriculations",
+                    |       "reason":"Matriculation status must not be empty"
+                    |     }
+                    |  ]
+                    |}""".stripMargin
                 }
               }
 
@@ -139,10 +142,10 @@ class MatriculationServiceSpec extends AsyncWordSpec
             }
 
             override def getProposalAddMatriculationData(certificate: String, AFFILITATION: String = AFFILIATION, jSonMatriculationData: String): (String, Array[Byte]) =
-              ("", jSonMatriculationData.getBytes())
+              (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, jSonMatriculationData.getBytes())
 
             override def getProposalAddEntriesToMatriculationData(certificate: String, AFFILITATION: String = AFFILIATION, enrollmentId: String, subjectMatriculationList: String): (String, Array[Byte]) =
-              ("", (enrollmentId + "#" + subjectMatriculationList).getBytes())
+              (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, (enrollmentId + "#" + subjectMatriculationList).getBytes())
 
             override def getUnsignedTransaction(proposalBytes: Array[Byte], signature: Array[Byte]): Array[Byte] = {
               "t:".getBytes() ++ proposalBytes
@@ -159,15 +162,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                       override val transactionName: String = "addEntriesToMatriculationData"
                       override val payload: String =
                         """{
-                          |  "type": "HLUnprocessableEntity",
-                          |  "title": "The following parameters do not conform to the specified format.",
-                          |  "invalidParams":[
-                          |     {
-                          |       "name":"matriculations",
-                          |       "reason":"Matriculation status must not be empty"
-                          |     }
-                          |  ]
-                          |}""".stripMargin
+                        |  "type": "HLUnprocessableEntity",
+                        |  "title": "The following parameters do not conform to the specified format.",
+                        |  "invalidParams":[
+                        |     {
+                        |       "name":"matriculations",
+                        |       "reason":"Matriculation status must not be empty"
+                        |     }
+                        |  ]
+                        |}""".stripMargin
                     }
                   }
 
@@ -199,15 +202,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                       override val transactionName: String = "submitSignedTransaction"
                       override val payload: String =
                         """{
-                          |  "type": "HLUnprocessableEntity",
-                          |  "title": "The following parameters do not conform to the specified format.",
-                          |  "invalidParams":[
-                          |     {
-                          |       "name":"matriculations",
-                          |       "reason":"Matriculation status must not be empty"
-                          |     }
-                          |  ]
-                          |}""".stripMargin
+                        |  "type": "HLUnprocessableEntity",
+                        |  "title": "The following parameters do not conform to the specified format.",
+                        |  "invalidParams":[
+                        |     {
+                        |       "name":"matriculations",
+                        |       "reason":"Matriculation status must not be empty"
+                        |     }
+                        |  ]
+                        |}""".stripMargin
                     }
                   }
                   jsonStringList :+= jsonMatriculationData
@@ -217,15 +220,15 @@ class MatriculationServiceSpec extends AsyncWordSpec
                     override val transactionName: String = "addEntriesToMatriculationData"
                     override val payload: String =
                       """{
-                        |  "type": "HLUnprocessableEntity",
-                        |  "title": "The following parameters do not conform to the specified format.",
-                        |  "invalidParams":[
-                        |     {
-                        |       "name":"TransactionNotKnown",
-                        |       "reason":"Received an unknown transaction!"
-                        |     }
-                        |  ]
-                        |}""".stripMargin
+                      |  "type": "HLUnprocessableEntity",
+                      |  "title": "The following parameters do not conform to the specified format.",
+                      |  "invalidParams":[
+                      |     {
+                      |       "name":"TransactionNotKnown",
+                      |       "reason":"Received an unknown transaction!"
+                      |     }
+                      |  ]
+                      |}""".stripMargin
                   }
               }
             }
@@ -233,8 +236,11 @@ class MatriculationServiceSpec extends AsyncWordSpec
             override def getChaincodeVersion: String = "testVersion"
 
             override def updateMatriculationData(jSonMatriculationData: String): String = ""
+
             override def getProposalUpdateMatriculationData(certificate: String, affiliation: String, jSonMatriculationData: String): (String, Array[Byte]) = ("", Array.emptyByteArray)
+
             override def getProposalGetMatriculationData(certificate: String, affiliation: String, enrollmentId: String): (String, Array[Byte]) = ("", Array.emptyByteArray)
+
             override val contractName: String = ""
             override lazy val contract: ContractImpl = null
             override lazy val gateway: GatewayImpl = null
@@ -261,7 +267,13 @@ class MatriculationServiceSpec extends AsyncWordSpec
     server.application.jsonStringList = List()
   }
 
-  private def createSingleMatriculation(field: String, semester: String) = PutMessageMatriculation(Seq(SubjectMatriculation(field, Seq(semester))))
+  private def createSingleMatriculation(field: String, semester: String) = createMultiMatriculation((field, semester))
+  private def createMultiMatriculation(fieldsAndSemesters: (String, String)*) =
+    PutMessageMatriculation(
+      fieldsAndSemesters.map {
+        case (field, semester) => SubjectMatriculation(field, Seq(semester))
+      }
+    )
   private def asString(unsignedProposal: String) = new String(Base64.getDecoder.decode(unsignedProposal), StandardCharsets.UTF_8)
 
   "MatriculationService service" should {
@@ -295,7 +307,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
 
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(message).flatMap { proposal =>
-            client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+            client.submitMatriculationProposal().handleRequestHeader(addAuthorizationHeader(student0.username))
               .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
                 asString(transaction.unsignedTransaction) should ===("t:" + data.toJson)
               }
@@ -303,6 +315,37 @@ class MatriculationServiceSpec extends AsyncWordSpec
             case _ => cleanup()
           }
       }
+    }
+
+    "fail getting a proposal for adding matriculation data for a student as another student" in {
+      val message = createSingleMatriculation(examReg0.name, "SS2020")
+      certificate.setup(student0.username)
+      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+        client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username + "thisShouldFail"))
+          .invoke(message).failed.map { answer =>
+            answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+          }.andThen {
+            case _ => cleanup()
+          }
+      }
+    }
+
+    "not get matriculation data for another student" in {
+      client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username + "thisShouldFail"))
+        .invoke().failed.map { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+        }.andThen {
+          case _ => cleanup()
+        }
+    }
+
+    "not get matriculation data for a lecturer" in {
+      client.getMatriculationData(admin0.username).handleRequestHeader(addAuthorizationHeader(admin0.username))
+        .invoke().failed.map { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+        }.andThen {
+          case _ => cleanup()
+        }
     }
 
     "not add empty matriculation data for a student" in {
@@ -324,6 +367,16 @@ class MatriculationServiceSpec extends AsyncWordSpec
         }
     }
 
+    "not add matriculation data with one existing and one non-existing field of study/examreg" in {
+      client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+        .invoke(createMultiMatriculation((examReg0.name, "SS2020"), ("DoesNotExist", "SS2020"))).failed.map { answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError]
+            .invalidParams.map(_.name) should contain("matriculation[1]")
+        }.andThen {
+          case _ => cleanup()
+        }
+    }
+
     "extend matriculation data of an already existing field of study" in {
       certificate.setup(student0.username)
       certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
@@ -337,10 +390,10 @@ class MatriculationServiceSpec extends AsyncWordSpec
           .invoke(createSingleMatriculation(examReg0.name, "WS2020/21")).flatMap {
             proposal =>
 
-              client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+              client.submitMatriculationProposal().handleRequestHeader(addAuthorizationHeader(student0.username))
                 .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
 
-                  client.submitMatriculationTransaction(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+                  client.submitMatriculationTransaction().handleRequestHeader(addAuthorizationHeader(student0.username))
                     .invoke(SignedTransaction(transaction.unsignedTransaction, "c2lnbmVk")).flatMap { _ =>
 
                       client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
@@ -368,10 +421,10 @@ class MatriculationServiceSpec extends AsyncWordSpec
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(createSingleMatriculation(examReg1.name, "WS2021/22")).flatMap { proposal =>
 
-            client.submitMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+            client.submitMatriculationProposal().handleRequestHeader(addAuthorizationHeader(student0.username))
               .invoke(SignedProposal(proposal.unsignedProposal, "c2lnbmVk")).flatMap { transaction =>
 
-                client.submitMatriculationTransaction(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
+                client.submitMatriculationTransaction().handleRequestHeader(addAuthorizationHeader(student0.username))
                   .invoke(SignedTransaction(transaction.unsignedTransaction, "c2lnbmVk")).flatMap { _ =>
 
                     client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
@@ -389,98 +442,5 @@ class MatriculationServiceSpec extends AsyncWordSpec
           }
       }
     }
-
-    //DEPRECATED
-    "use deprecated method that" must {
-      "add matriculation data for a student" in {
-        certificate.setup(student0.username)
-        certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
-          prepare(Seq(
-            ImmatriculationData(
-              jsonId.id,
-              Seq(SubjectMatriculation(examReg0.name, Seq("SS2020")))
-            )
-          ))
-          client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
-            .invoke(PutMessageMatriculation(Seq(SubjectMatriculation(examReg0.name, Seq("SS2020"))))).flatMap { _ =>
-              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-                answer =>
-                  answer.enrollmentId should ===(jsonId.id)
-                  answer.matriculationStatus should contain theSameElementsAs
-                    Seq(SubjectMatriculation(examReg0.name, Seq("SS2020")))
-              }
-            }.andThen {
-              case _ => cleanup()
-            }
-
-        }
-      }
-
-      "not add empty matriculation data for a student" in {
-        certificate.setup(student0.username)
-        certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
-          prepare(Seq(
-            ImmatriculationData(
-              jsonId.id,
-              Seq(SubjectMatriculation(examReg0.name, Seq("SS2020", "WS2020/21")))
-            )
-          ))
-          client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
-            .invoke(PutMessageMatriculation(Seq())).failed.map { answer =>
-              answer.asInstanceOf[UC4Exception].errorCode should ===(422)
-            }.andThen {
-              case _ => cleanup()
-            }
-        }
-      }
-
-      "extend matriculation data of an already existing field of study" in {
-        certificate.setup(student0.username)
-        certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
-          prepare(Seq(
-            ImmatriculationData(
-              jsonId.id,
-              Seq(SubjectMatriculation(examReg0.name, Seq("SS2020")))
-            )
-          ))
-          client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
-            .invoke(createSingleMatriculation(examReg0.name, "WS2020/21")).flatMap { _ =>
-              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-                answer =>
-                  answer.matriculationStatus should contain theSameElementsAs
-                    Seq(SubjectMatriculation(examReg0.name, Seq("SS2020", "WS2020/21")))
-              }
-            }.andThen {
-              case _ => cleanup()
-            }
-        }
-      }
-
-      "extend matriculation data of a non-existing field of study" in {
-        certificate.setup(student0.username)
-        certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
-          prepare(Seq(
-            ImmatriculationData(
-              jsonId.id,
-              Seq(SubjectMatriculation(examReg0.name, Seq("SS2020", "WS2020/21")))
-            )
-          ))
-          client.addMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader())
-            .invoke(createSingleMatriculation(examReg1.name, "WS2021/22")).flatMap { _ =>
-              client.getMatriculationData(student0.username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-                answer =>
-                  answer.matriculationStatus should contain theSameElementsAs
-                    Seq(
-                      SubjectMatriculation(examReg0.name, Seq("SS2020", "WS2020/21")),
-                      SubjectMatriculation(examReg1.name, Seq("WS2021/22"))
-                    )
-              }
-            }.andThen {
-              case _ => cleanup()
-            }
-        }
-      }
-    }
-
   }
 }

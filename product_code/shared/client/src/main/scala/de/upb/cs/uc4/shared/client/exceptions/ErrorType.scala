@@ -10,7 +10,7 @@ object ErrorType extends Enumeration {
   BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
   NotEnoughPrivileges, OwnerMismatch, //403
   KeyNotFound, NotEnrolled, //404
-  AlreadyEnrolled, KeyDuplicate, //409
+  AlreadyEnrolled, KeyDuplicate, RemovalNotAllowed, //409
   EntityTooLarge, //413
   UnsupportedMediaType, //415
   Teapot, //418
@@ -20,7 +20,7 @@ object ErrorType extends Enumeration {
   InternalServer, UndeserializableException, //500
   NotImplemented, //501
   HLInternal, //In an InformativeError
-  HLUnknownTransactionId, HLInsufficientApprovals, HLNotFound, HLConflict, HLUnprocessableLedgerState, //In a GenericError
+  HLUnknownTransactionId, HLInsufficientApprovals, HLNotFound, HLConflict, HLUnprocessableLedgerState, HLParameterNumberError, //In a GenericError
   HLUnprocessableEntity, HLInvalidEntity, //In a DetailedError
   HLInvalidTransactionCall //In a TransactionError
   = Value
@@ -60,6 +60,7 @@ object ErrorType extends Enumeration {
       //409
       case KeyDuplicate => "Key is already in use"
       case AlreadyEnrolled => "You are already enrolled"
+      case RemovalNotAllowed => "Resource cannot be removed in the current state"
       //413
       case EntityTooLarge => "Entity is too large"
       //415

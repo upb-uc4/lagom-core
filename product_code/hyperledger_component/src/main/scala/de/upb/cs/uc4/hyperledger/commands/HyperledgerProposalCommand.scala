@@ -1,3 +1,5 @@
 package de.upb.cs.uc4.hyperledger.commands
 
-trait HyperledgerProposalCommand extends HyperledgerReadCommand[Array[Byte]]
+import de.upb.cs.uc4.hyperledger.ProposalWrapper
+
+trait HyperledgerProposalCommand extends HyperledgerReadCommand[ProposalWrapper]
