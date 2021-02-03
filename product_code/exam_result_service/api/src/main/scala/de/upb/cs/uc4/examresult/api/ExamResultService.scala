@@ -30,11 +30,11 @@ trait ExamResultService extends UC4HyperledgerService {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.GET, pathPrefix + "/examresults?username&examIds", getExamResults _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.OPTIONS, pathPrefix + "/examresults?username&examIds", allowedGet _),
+        restCall(Method.GET, pathPrefix + "/exam_results?username&examIds", getExamResults _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.OPTIONS, pathPrefix + "/exam_results?username&examIds", allowedGet _),
 
-        restCall(Method.POST, pathPrefix + "/examresults/unsigned_add_proposal", getProposalAddExamResult _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.OPTIONS, pathPrefix + "/examresults/unsigned_add_proposal", allowedPost _),
+        restCall(Method.POST, pathPrefix + "/exam_results/unsigned_add_proposal", getProposalAddExamResult _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.OPTIONS, pathPrefix + "/exam_results/unsigned_add_proposal", allowedPost _),
       )
   }
 }
