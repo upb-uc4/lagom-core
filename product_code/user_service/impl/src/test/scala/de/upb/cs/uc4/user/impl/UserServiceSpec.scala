@@ -446,11 +446,11 @@ class UserServiceSpec extends AsyncWordSpec
       prepare(Seq(student0)).flatMap { _ =>
         client.getAllUsers(Some("," + student0.username), None).handleRequestHeader(addAuthorizationHeader()).invoke().map {
           answer =>
-          answer.copy(
-            answer.students.map(_.copy(enrollmentIdSecret = "")),
-            answer.lecturers.map(_.copy(enrollmentIdSecret = "")),
-            answer.admins.map(_.copy(enrollmentIdSecret = ""))
-          ) should ===(GetAllUsersResponse(Seq(student0), Seq(), Seq()))
+            answer.copy(
+              answer.students.map(_.copy(enrollmentIdSecret = "")),
+              answer.lecturers.map(_.copy(enrollmentIdSecret = "")),
+              answer.admins.map(_.copy(enrollmentIdSecret = ""))
+            ) should ===(GetAllUsersResponse(Seq(student0), Seq(), Seq()))
         }
       }.flatMap(cleanupOnSuccess)
         .recoverWith(cleanupOnFailure())
