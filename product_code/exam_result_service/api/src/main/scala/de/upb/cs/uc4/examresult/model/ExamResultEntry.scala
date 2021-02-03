@@ -5,7 +5,7 @@ import play.api.libs.json.{Format, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class ExamResultEntry(enrollmentId: String, examId: String, grade: String){
+case class ExamResultEntry(enrollmentId: String, examId: String, grade: String) {
   def trim: ExamResultEntry = {
     copy(enrollmentId.trim, examId.trim, grade.trim)
   }
@@ -16,9 +16,17 @@ case class ExamResultEntry(enrollmentId: String, examId: String, grade: String){
     * @return Filled Sequence of [[SimpleError]]
     */
   def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
-    // TODO validation
     var errors = List[SimpleError]()
 
+    if (enrollmentId.isEmpty) {
+      errors :+= SimpleError("enrollmentId", "EnrollmentId must not be empty.")
+    }
+    if (examId.isEmpty) {
+      errors :+= SimpleError("examId", "ExamId must not be empty.")
+    }
+    if (grade.isEmpty) {
+      errors :+= SimpleError("grade", "Grade must not be empty.")
+    }
     errors
   }
 }

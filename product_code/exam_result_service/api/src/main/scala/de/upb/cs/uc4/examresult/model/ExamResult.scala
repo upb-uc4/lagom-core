@@ -5,7 +5,7 @@ import play.api.libs.json.{Format, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class ExamResult(examResultEntries: Seq[ExamResultEntry]){
+case class ExamResult(examResultEntries: Seq[ExamResultEntry]) {
   def trim: ExamResult = {
     copy(examResultEntries.map(_.trim))
   }
@@ -15,10 +15,18 @@ case class ExamResult(examResultEntries: Seq[ExamResultEntry]){
     *
     * @return Filled Sequence of [[SimpleError]]
     */
-  def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
-    // TODO validation
-    var errors = List[SimpleError]()
+  def validate(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
 
+    val errors = Future.sequence(
+      examResultEntries.map { examResultEntry =>
+        examResultEntry.validate.map {
+          _.map {
+            singleError =>
+              SimpleError(s"examResultEntries[${examResultEntries.indexOf(examResultEntry)}].${singleError.name}", singleError.reason)
+          }
+        }
+      }
+    ).map(_.flatten)
     errors
   }
 }
