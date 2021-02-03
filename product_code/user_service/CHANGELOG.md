@@ -1,3 +1,9 @@
+# [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.17.0...user-v0.17.1) (2021-XX-XX)
+## Feature
+## Refactor
+## Bugfix
+- Fixed bug that lead to timeout when filtering for empty usernames
+
 # [v0.17.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.15.3...user-v0.17.0) (2021-02-01)
 ## Feature
 ## Refactor
