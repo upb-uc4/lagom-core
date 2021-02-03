@@ -106,7 +106,8 @@ class OperationServiceImpl(
             // Check, that if the query parameter watchlistOnly is set, but list is empty, return empty without querying hyperledger
             if (watchlistOnly.isDefined && watchlistOnly.get && watchlistFilter.isEmpty) {
               Future.successful(createETagHeader(header, Seq[OperationData]()))
-            } else {
+            }
+            else {
               entityRef.askWithStatus(replyTo =>
                 GetOperationsHyperledger(
                   watchlistFilter,
