@@ -22,7 +22,7 @@ trait ExamService extends UC4HyperledgerService {
   /** Returns Exams, optionally filtered */
   def getExams(examIds: Option[String], courseIds : Option[String], lecturerIds: Option[String], moduleIds: Option[String], types: Option[String], admittableAt: Option[String], droppableAt: Option[String]): ServiceCall[NotUsed, Seq[Exam]]
 
-  /** Get a proposas for adding an Exam */
+  /** Get a proposal for adding an Exam */
   def getProposalAddExam(): ServiceCall[Exam, UnsignedProposal]
 
   /** Allows GET */

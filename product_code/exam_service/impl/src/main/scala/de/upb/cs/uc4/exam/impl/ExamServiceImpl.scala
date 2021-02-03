@@ -60,7 +60,7 @@ class ExamServiceImpl(
     }
   }
 
-  /** Get a proposas for adding an Exam */
+  /** Get a proposal for adding an Exam */
   override def getProposalAddExam(): ServiceCall[Exam, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Lecturer) {
     (authUser, role) =>
       ServerServiceCall { (header, _) =>
