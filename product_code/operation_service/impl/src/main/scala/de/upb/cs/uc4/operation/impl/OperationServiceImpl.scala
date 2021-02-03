@@ -96,33 +96,35 @@ class OperationServiceImpl(
             Seq()
           }
 
-          entityRef.askWithStatus(replyTo =>
-            GetOperationsHyperledger(
-              Seq(),
-              "", // Unused filter
-              missingEnrollmentId,
-              initiatorEnrollmentId,
-              involvedEnrollmentId,
-              stateSeq,
-              replyTo
-            )).recover(handleException("Get operations"))
-            //Involved filter
-            .map(_.operationDataList)
-            //Watchlist filter
-            .flatMap { operations =>
-              if (watchlistOnly.isDefined && watchlistOnly.get) {
-                entityRef(authUser).ask(replyTo => GetWatchlist(replyTo)).map(_.watchlist).map { ids =>
-                  operations.filter(op => ids.contains(op.operationId))
+          val watchlistFuture = if (watchlistOnly.isDefined && watchlistOnly.get) {
+            entityRef(authUser).ask(replyTo => GetWatchlist(replyTo)).map(_.watchlist)
+          }
+          else {
+            Future.successful(Seq())
+          }
+          watchlistFuture.flatMap { watchlistFilter =>
+            // Check, that if the query parameter watchlistOnly is set, but list is empty, return empty without querying hyperledger
+            if (watchlistOnly.isDefined && watchlistOnly.get && watchlistFilter.isEmpty) {
+              Future.successful(createETagHeader(header, Seq[OperationData]()))
+            } else {
+              entityRef.askWithStatus(replyTo =>
+                GetOperationsHyperledger(
+                  watchlistFilter,
+                  "", // Unused filter
+                  missingEnrollmentId,
+                  initiatorEnrollmentId,
+                  involvedEnrollmentId,
+                  stateSeq,
+                  replyTo
+                )).recover(handleException("Get operations"))
+                //Involved filter
+                .map(_.operationDataList)
+                //Finish
+                .map {
+                  operations => createETagHeader(header, operations)
                 }
-              }
-              else {
-                Future.successful(operations)
-              }
             }
-            //Finish
-            .map {
-              operations => createETagHeader(header, operations)
-            }
+          }
         }
       }
   }
