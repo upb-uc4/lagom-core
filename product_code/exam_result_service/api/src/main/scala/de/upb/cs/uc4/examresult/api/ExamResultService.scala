@@ -1,12 +1,12 @@
 package de.upb.cs.uc4.examresult.api
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
-import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
-import de.upb.cs.uc4.examresult.model.{ExamResult, ExamResultEntry}
+import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
+import de.upb.cs.uc4.examresult.model.{ ExamResult, ExamResultEntry }
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
-import de.upb.cs.uc4.shared.client.{UC4HyperledgerService, UnsignedProposal}
+import de.upb.cs.uc4.shared.client.{ UC4HyperledgerService, UnsignedProposal }
 
 trait ExamResultService extends UC4HyperledgerService {
   /** Prefix for the path for the endpoints, a name/identifier for the service */

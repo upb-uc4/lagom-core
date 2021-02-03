@@ -1,9 +1,9 @@
 package de.upb.cs.uc4.exam.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.stream.Materializer
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
@@ -17,7 +17,7 @@ import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
 import scala.concurrent.ExecutionContext
@@ -51,7 +51,7 @@ class ExamServiceImpl(
   }
 
   /** Returns Exams, optionally filtered */
-  override def getExams(examIds: Option[String], courseIds: Option[String], lecturerIds: Option[String], moduleIds: Option[String], types: Option[String], admittableAt: Option[String], droppableAt: Option[String]): ServiceCall[NotUsed, Seq[Exam]] =  authenticated(AuthenticationRole.All: _*) {
+  override def getExams(examIds: Option[String], courseIds: Option[String], lecturerIds: Option[String], moduleIds: Option[String], types: Option[String], admittableAt: Option[String], droppableAt: Option[String]): ServiceCall[NotUsed, Seq[Exam]] = authenticated(AuthenticationRole.All: _*) {
     ServerServiceCall { (_, _) =>
       // TODO implement call
       // Just authenticated, no filtering by authUser or something, just good old fetch and filter

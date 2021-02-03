@@ -1,7 +1,7 @@
 package de.upb.cs.uc4.exam.api
 
-import akka.{Done, NotUsed}
-import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
+import akka.{ Done, NotUsed }
+import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import de.upb.cs.uc4.exam.model.Exam
@@ -20,7 +20,7 @@ trait ExamService extends UC4HyperledgerService {
   override val name: String = "exam"
 
   /** Returns Exams, optionally filtered */
-  def getExams(examIds: Option[String], courseIds : Option[String], lecturerIds: Option[String], moduleIds: Option[String], types: Option[String], admittableAt: Option[String], droppableAt: Option[String]): ServiceCall[NotUsed, Seq[Exam]]
+  def getExams(examIds: Option[String], courseIds: Option[String], lecturerIds: Option[String], moduleIds: Option[String], types: Option[String], admittableAt: Option[String], droppableAt: Option[String]): ServiceCall[NotUsed, Seq[Exam]]
 
   /** Get a proposal for adding an Exam */
   def getProposalAddExam(): ServiceCall[Exam, UnsignedProposal]

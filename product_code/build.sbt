@@ -21,6 +21,8 @@ lazy val lagom = (project in file("."))
     user_service_api, user_service,
     matriculation_service_api, matriculation_service,
     operation_service_api, operation_service,
+    exam_result_service_api, exam_result_service,
+    exam_service_api, exam_service,
     examreg_service_api, examreg_service,
     admission_service_api, admission_service,
     group_service_api, group_service,
@@ -219,6 +221,18 @@ lazy val exam_service = (project in file("exam_service/impl"))
   .dependsOn(operation_service_api % withTests, course_service_api % withTests, exam_service_api % withTests,
     shared_client % withTests, shared_server % withTests, hyperledger_component)
 
+lazy val exam_result_service_api =  (project in file("exam_result_service/api"))
+  .settings(Settings.apiSettings("exam_service_api"))
+  .dependsOn(shared_client)
+
+lazy val exam_result_service = (project in file("exam_result_service/impl"))
+  .enablePlugins(LagomScala)
+  .settings(
+    libraryDependencies ++= Dependencies.implDefaultDependencies
+  )
+  .settings(Settings.implSettings("exam_service"))
+  .dependsOn(operation_service_api % withTests, exam_service_api % withTests,
+    shared_client % withTests, shared_server % withTests, hyperledger_component)
 
 lazy val report_service_api =  (project in file("report_service/api"))
   .settings(Settings.apiSettings("report_service_api"))
