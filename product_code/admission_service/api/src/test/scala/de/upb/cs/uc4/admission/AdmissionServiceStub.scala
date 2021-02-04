@@ -4,7 +4,7 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission, ExamAdmission }
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, UnsignedProposal }
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
 
 import scala.concurrent.Future
 
@@ -43,11 +43,6 @@ class AdmissionServiceStub extends AdmissionService {
 
   /** Gets a proposal for adding a exam admission */
   override def getProposalAddExamAdmission: ServiceCall[ExamAdmission, UnsignedProposal] = ServiceCall {
-    _ => Future.successful(UnsignedProposal(""))
-  }
-
-  /** Gets a proposal for dropping a admission */
-  override def getProposalDropAdmission: ServiceCall[DropAdmission, UnsignedProposal] = ServiceCall {
     _ => Future.successful(UnsignedProposal(""))
   }
 

@@ -1,17 +1,16 @@
 package de.upb.cs.uc4.shared.server.kafka
 
+import de.upb.cs.uc4.shared.client.JsonUtility._
+import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility.{ GCM_IV_LENGTH, secureRandom }
+import play.api.libs.json.Format
+
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
-
-import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
-import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
-import de.upb.cs.uc4.shared.client.JsonUtility._
-import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility.{ GCM_IV_LENGTH, secureRandom }
 import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.{ AEADBadTagException, Cipher, SecretKey }
-import play.api.libs.json.{ Format, __ }
-
+import javax.crypto.{ Cipher, SecretKey }
 import scala.reflect.{ ClassTag, classTag }
 
 /** Provides methods for encryption, decryption and authentication of objects which shall be send through Kafka

@@ -5,8 +5,9 @@ import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission, ExamAdmission }
+import de.upb.cs.uc4.hyperledger.api.UC4HyperledgerService
+import de.upb.cs.uc4.hyperledger.api.model.UnsignedProposal
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
-import de.upb.cs.uc4.shared.client._
 
 /** The AdmissionService interface.
   *
@@ -32,7 +33,6 @@ trait AdmissionService extends UC4HyperledgerService {
 
   /** Gets a proposal for dropping a course admission */
   def getProposalDropAdmission: ServiceCall[DropAdmission, UnsignedProposal]
-
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 

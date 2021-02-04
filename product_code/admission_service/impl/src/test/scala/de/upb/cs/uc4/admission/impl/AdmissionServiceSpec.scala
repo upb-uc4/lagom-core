@@ -1,6 +1,5 @@
 package de.upb.cs.uc4.admission.impl
 
-import akka.Done
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.admission.api.AdmissionService
@@ -9,12 +8,13 @@ import de.upb.cs.uc4.admission.model.{ AdmissionType, CourseAdmission, DropAdmis
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.course.{ CourseServiceStub, DefaultTestCourses }
 import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
+import de.upb.cs.uc4.hyperledger.api.model
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
+import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
 import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._
-import de.upb.cs.uc4.shared.client._
-import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -50,7 +50,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
         var courseAdmissionList: Seq[CourseAdmission] = List()
         var examAdmissionList: Seq[ExamAdmission] = List()
 
-        override def createActorFactory: AdmissionBehaviour = new AdmissionBehaviour(config) {
+        override def createHyperledgerActor: AdmissionBehaviour = new AdmissionBehaviour(config) {
 
           override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
           override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
@@ -80,21 +80,10 @@ class AdmissionServiceSpec extends AsyncWordSpec
               (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, courseAdmission.getBytes())
 
             override def getProposalDropAdmission(certificate: String, AFFILITATION: String = AFFILIATION, admissionId: String): (String, Array[Byte]) =
-              (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, ("id#" + admissionId).getBytes())
+              (model.operation.OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, ("id#" + admissionId).getBytes())
 
             override def getUnsignedTransaction(proposalBytes: Array[Byte], signature: Array[Byte]): Array[Byte] = {
               "t:".getBytes() ++ proposalBytes
-            }
-
-            override def submitSignedTransaction(transactionBytes: Array[Byte], signature: Array[Byte]): (String, String) = {
-              new String(transactionBytes, StandardCharsets.UTF_8) match {
-                case s"t:id#$admissionId" =>
-                  courseAdmissionList = courseAdmissionList.filter(admission => admission.admissionId != admissionId)
-                  ("", "")
-                case s"t:$courseAdmission" =>
-                  courseAdmissionList :+= courseAdmission.fromJson[CourseAdmission]
-                  ("", "")
-              }
             }
 
             override def getChaincodeVersion: String = "testVersion"
@@ -164,6 +153,5 @@ class AdmissionServiceSpec extends AsyncWordSpec
           asString(unsignedProposalJson.unsignedProposal) should ===("id#id")
       }
     }
-
   }
 }

@@ -1,9 +1,8 @@
 package de.upb.cs.uc4.shared.server
 
 import java.util.Base64
-
-import javax.crypto.{ SecretKey, SecretKeyFactory }
 import javax.crypto.spec.{ PBEKeySpec, SecretKeySpec }
+import javax.crypto.{ SecretKey, SecretKeyFactory }
 
 object SecretsUtility {
 

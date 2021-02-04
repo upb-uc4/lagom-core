@@ -1,8 +1,5 @@
 package de.upb.cs.uc4.shared.server
 
-import java.io.File
-import java.util.Calendar
-
 import akka.NotUsed
 import com.lightbend.lagom.scaladsl.api.transport.RequestHeader
 import com.typesafe.config._
@@ -13,6 +10,8 @@ import org.scalatest.PrivateMethodTester
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
+import java.io.File
+import java.util.Calendar
 import scala.concurrent.Future
 
 class ServiceCallFactorySpec extends AsyncWordSpec with Matchers with PrivateMethodTester {

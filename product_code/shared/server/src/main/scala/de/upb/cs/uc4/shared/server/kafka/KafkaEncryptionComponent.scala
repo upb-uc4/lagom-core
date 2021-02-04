@@ -3,6 +3,7 @@ package de.upb.cs.uc4.shared.server.kafka
 import com.lightbend.lagom.scaladsl.api.LagomConfigComponent
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.shared.server.SecretsUtility
+
 import javax.crypto.SecretKey
 
 /** Used to allow services access the [[de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility]]

@@ -13,9 +13,9 @@ import de.upb.cs.uc4.examreg.impl.actor.{ ExamregHyperledgerBehaviour, ExamregSt
 import de.upb.cs.uc4.examreg.impl.commands._
 import de.upb.cs.uc4.examreg.impl.readside.ExamregDatabase
 import de.upb.cs.uc4.examreg.model.{ ExaminationRegulation, Module }
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils
-import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
-import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils
+import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Exception }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }

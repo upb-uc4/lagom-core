@@ -13,7 +13,7 @@ import de.upb.cs.uc4.examreg.impl.actor.{ ExamregDatabaseBehaviour, ExamregHyper
 import de.upb.cs.uc4.examreg.impl.commands.{ CreateExamregDatabase, GetAllExamregsHyperledger }
 import de.upb.cs.uc4.examreg.impl.readside.{ ExamregDatabase, ExamregEventProcessor }
 import de.upb.cs.uc4.examreg.model.ExaminationRegulationsWrapper
-import de.upb.cs.uc4.hyperledger.HyperledgerComponent
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerComponent
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Rejected }
@@ -40,7 +40,7 @@ abstract class ExamregApplication(context: LagomApplicationContext)
 
   implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
-  override def createActorFactory: ExamregHyperledgerBehaviour = wire[ExamregHyperledgerBehaviour]
+  override def createHyperledgerActor: ExamregHyperledgerBehaviour = wire[ExamregHyperledgerBehaviour]
 
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = ExamregSerializerRegistry
