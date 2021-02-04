@@ -1,12 +1,9 @@
-package de.upb.cs.uc4.matriculation.impl
+package de.upb.cs.uc4.examresult.impl
 
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
-import de.upb.cs.uc4.course.CourseServiceStub
 import de.upb.cs.uc4.exam.api.ExamService
-import de.upb.cs.uc4.exam.impl.ExamApplication
-import de.upb.cs.uc4.exam.impl.actor.ExamBehaviour
-import de.upb.cs.uc4.examreg.DefaultTestExamRegs
+import de.upb.cs.uc4.examresult.impl.actor.ExamResultBehaviour
 import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
@@ -16,22 +13,20 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.language.reflectiveCalls
 
-/** Tests for the MatriculationService */
-class ExamServiceSpec extends AsyncWordSpec
-  with UC4SpecUtils with Matchers with BeforeAndAfterAll with DefaultTestExamRegs {
+/** Tests for the ExamResultService */
+class ExamResultServiceSpec extends AsyncWordSpec
+  with UC4SpecUtils with Matchers with BeforeAndAfterAll {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup.withCluster()
   ) { ctx =>
-      new ExamApplication(ctx) with LocalServiceLocator {
-        override lazy val courseService: CourseServiceStub = new CourseServiceStub
+      new ExamResultApplication(ctx) with LocalServiceLocator {
+        override lazy val examService: ExamService = null //TODO
         override lazy val operationService: OperationServiceStub = new OperationServiceStub
-
-        courseService.resetToDefaults()
 
         var jsonStringList: Seq[String] = List()
 
-        override def createActorFactory: ExamBehaviour = new ExamBehaviour(config) {
+        override def createActorFactory: ExamResultBehaviour = new ExamResultBehaviour(config) {
 
         }
       }
@@ -46,7 +41,7 @@ class ExamServiceSpec extends AsyncWordSpec
     server.application.jsonStringList = List()
   }
 
-  "ExamService service" should {
+  "ExamResultService service" should {
 
     "fetch the hyperledger versions" in {
       client.getHlfVersions.invoke().map { answer =>

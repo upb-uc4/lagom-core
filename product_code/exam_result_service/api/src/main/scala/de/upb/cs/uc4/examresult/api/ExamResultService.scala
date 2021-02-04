@@ -12,7 +12,7 @@ trait ExamResultService extends UC4HyperledgerService {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
   override val pathPrefix: String = "/exam-result-management"
   /** The name of the service */
-  override val name: String = "exam-result"
+  override val name: String = "examresult"
 
   /** Returns ExamResultEntries, optionally filtered */
   def getExamResults(username: Option[String], examIds: Option[String]): ServiceCall[NotUsed, Seq[ExamResultEntry]]
