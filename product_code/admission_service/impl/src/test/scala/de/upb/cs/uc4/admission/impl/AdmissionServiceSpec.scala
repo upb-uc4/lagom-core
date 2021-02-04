@@ -148,7 +148,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
     }
 
     "get proposal add course admission" in {
-      client.getProposalAddCourseAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission).map {
+      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission).map {
         unsignedProposalJson =>
           asString(unsignedProposalJson.unsignedProposal).fromJson[CourseAdmission]
             .copy(timestamp = "") should ===(defaultCourseAdmission.copy(enrollmentId = certificate.get(student0.username).enrollmentId))
