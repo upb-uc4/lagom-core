@@ -1,4 +1,4 @@
-# [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.17.0...user-v0.17.1) (2021-XX-XX)
+# [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.17.0...user-v0.17.1) (2021-02-04)
 ## Feature
 ## Refactor
 ## Bugfix
