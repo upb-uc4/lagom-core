@@ -109,7 +109,7 @@ class UserServiceImpl(
       val validationErrorsFuture = postMessageUser.user match {
         case student: Student =>
           //For students we may encounter duplicate matriculationIDs
-          getAll(Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
+          getAll(None, Role.Student).map(_.map(_.asInstanceOf[Student].matriculationId).contains(student.matriculationId)).map {
             matDuplicate =>
               if (matDuplicate) {
                 PostMessageUserErrors :+= SimpleError("user.matriculationId", "MatriculationID already in use.")
@@ -156,7 +156,7 @@ class UserServiceImpl(
               authentication.setAuthentication().invoke(postMessageFinalized.authUser)
                 .map { _ =>
                   val header = ResponseHeader(201, MessageProtocol.empty, List())
-                    .addHeader("Location", s"$pathPrefix/users/students/${postMessageFinalized.user.username}")
+                    .addHeader("Location", s"$pathPrefix/users/${postMessageFinalized.user.username}")
                   (header, postMessageFinalized.user)
                 }
                 // In case the password cant be saved
@@ -304,12 +304,10 @@ class UserServiceImpl(
         (usernames match {
           case None if role != AuthenticationRole.Admin =>
             throw UC4Exception.NotEnoughPrivileges
-          case None if role == AuthenticationRole.Admin =>
-            getAll(Role.Student).map(_.map(user => user.asInstanceOf[Student]))
-          case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-            getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student].toPublic))
-          case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-            getAll(Role.Student).map(_.filter(student => listOfUsernames.split(',').contains(student.username)).map(user => user.asInstanceOf[Student]))
+          case Some(_) if role != AuthenticationRole.Admin =>
+            getAll(usernames, Role.Student).map(_.map(user => user.asInstanceOf[Student].toPublic))
+          case _ if role == AuthenticationRole.Admin =>
+            getAll(usernames, Role.Student).map(_.map(user => user.asInstanceOf[Student]))
         }).map { students =>
           createETagHeader(header, students.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
@@ -323,12 +321,10 @@ class UserServiceImpl(
         (usernames match {
           case None if role != AuthenticationRole.Admin =>
             throw UC4Exception.NotEnoughPrivileges
-          case None if role == AuthenticationRole.Admin =>
-            getAll(Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
-          case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-            getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer].toPublic))
-          case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-            getAll(Role.Lecturer).map(_.filter(lecturer => listOfUsernames.split(',').contains(lecturer.username)).map(user => user.asInstanceOf[Lecturer]))
+          case Some(_) if role != AuthenticationRole.Admin =>
+            getAll(usernames, Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer].toPublic))
+          case _ if role == AuthenticationRole.Admin =>
+            getAll(usernames, Role.Lecturer).map(_.map(user => user.asInstanceOf[Lecturer]))
         }).map { lecturers =>
           createETagHeader(header, lecturers.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
@@ -342,12 +338,10 @@ class UserServiceImpl(
         (usernames match {
           case None if role != AuthenticationRole.Admin =>
             throw UC4Exception.NotEnoughPrivileges
-          case None if role == AuthenticationRole.Admin =>
-            getAll(Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
-          case Some(listOfUsernames) if role != AuthenticationRole.Admin =>
-            getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin].toPublic))
-          case Some(listOfUsernames) if role == AuthenticationRole.Admin =>
-            getAll(Role.Admin).map(_.filter(admin => listOfUsernames.split(',').contains(admin.username)).map(user => user.asInstanceOf[Admin]))
+          case Some(_) if role != AuthenticationRole.Admin =>
+            getAll(usernames, Role.Admin).map(_.map(user => user.asInstanceOf[Admin].toPublic))
+          case _ if role == AuthenticationRole.Admin =>
+            getAll(usernames, Role.Admin).map(_.map(user => user.asInstanceOf[Admin]))
         }).map { admins =>
           createETagHeader(header, admins.filter(isActive.isEmpty || _.isActive == isActive.get))
         }
@@ -355,16 +349,17 @@ class UserServiceImpl(
     }
 
   /** Helper method for getting all Users */
-  private def getAll(role: Role): Future[Seq[User]] = {
-    database.getAll(role)
-      .map(seq => seq
-        .map(entityRef(_).ask[Option[User]](replyTo => GetUser(replyTo))) //Future[Seq[Future[Option[User]]]]
-      )
-      .flatMap(seq => Future.sequence(seq) //Future[Seq[Option[User]]]
-        .map(seq => seq
-          .filter(opt => opt.isDefined) //Get only existing users
+  private def getAll(usernames: Option[String], role: Role): Future[Seq[User]] = {
+    val fetchedUsernames = usernames match {
+      case Some(value) => Future.successful(value.split(",").toSeq.filter(_.trim.nonEmpty))
+      case None        => database.getAll(role)
+    }
+
+    fetchedUsernames.map(_.map(entityRef(_).ask[Option[User]](replyTo => GetUser(replyTo)))) //Future[Seq[Future[Option[User]]]]
+      .flatMap(Future.sequence(_) //Future[Seq[Option[User]]]
+        .map(_.filter(opt => opt.isDefined) //Get only existing users
           .map(opt => opt.get) //Future[Seq[User]]
-        ))
+          .filter(user => user.role == role)))
   }
 
   /** Get role of the user */

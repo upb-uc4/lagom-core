@@ -1,6 +1,19 @@
+# [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.17.0...user-v0.17.1) (2021-02-04)
+## Feature
+## Refactor
+## Bugfix
+- Fixed bug that lead to timeout when filtering for empty usernames
+
+# [v0.17.0](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.15.3...user-v0.17.0) (2021-02-01)
+## Feature
+## Refactor
+- Improved performance of getAllUsers call
+## Bugfix
+- Fixed incorrect location header when adding users
+
 # [v0.15.3](https://github.com/upb-uc4/University-Credits-4.0/compare/user-v0.15.2...user-v0.15.3) (2021-01-14)
 ## Feature
-- Add role to user creation topic for addition to hyperledger groups
+- Added role to user creation topic for addition to hyperledger groups
 ## Refactor
 ## Bugfix
 
