@@ -4,6 +4,7 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.examresult.impl.actor.ExamResultBehaviour
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
@@ -26,7 +27,7 @@ class ExamResultServiceSpec extends AsyncWordSpec
 
         var jsonStringList: Seq[String] = List()
 
-        override def createActorFactory: ExamResultBehaviour = new ExamResultBehaviour(config) {
+        override def createHyperledgerActor: ExamResultBehaviour = new ExamResultBehaviour(config) {
 
         }
       }

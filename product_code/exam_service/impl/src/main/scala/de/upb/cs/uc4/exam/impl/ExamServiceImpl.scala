@@ -10,11 +10,12 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.exam.api.ExamService
+import de.upb.cs.uc4.exam.impl.actor.ExamBehaviour
 import de.upb.cs.uc4.exam.model.Exam
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils
-import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils
+import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
 import de.upb.cs.uc4.operation.api.OperationService
-import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import org.slf4j.{ Logger, LoggerFactory }
@@ -34,7 +35,7 @@ class ExamServiceImpl(
 
   /** Looks up the entity for the given ID */
   private def entityRef: EntityRef[HyperledgerBaseCommand] =
-    clusterSharding.entityRefFor(null, null) //TODO
+    clusterSharding.entityRefFor(ExamBehaviour.typeKey, ExamBehaviour.entityId)
 
   implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
@@ -61,7 +62,7 @@ class ExamServiceImpl(
   }
 
   /** Get a proposal for adding an Exam */
-  override def getProposalAddExam(): ServiceCall[Exam, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Lecturer) {
+  override def getProposalAddExam: ServiceCall[Exam, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Lecturer) {
     (authUser, role) =>
       ServerServiceCall { (header, _) =>
         // TODO implement call

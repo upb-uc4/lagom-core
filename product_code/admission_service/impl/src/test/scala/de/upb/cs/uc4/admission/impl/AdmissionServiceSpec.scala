@@ -65,7 +65,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
 
           override protected def createConnection: ConnectionAdmissionTrait = new ConnectionAdmissionTrait() {
 
-            override def getProposalGetAdmission(certificate: String, affiliation: String, enrollmentId: String, courseId: String, moduleId: String): (String, Array[Byte]) = ("", Array.empty)
+            override def getProposalGetAdmissions(certificate: String, affiliation: String = AFFILIATION, enrollmentId: String = "", courseId: String = "", moduleId: String = ""): (String, Array[Byte]) = ("", Array.empty)
 
             override def getAdmissions(enrollmentId: String, courseId: String, moduleId: String): String = {
               Json.stringify(Json.toJson(
@@ -99,6 +99,14 @@ class AdmissionServiceSpec extends AsyncWordSpec
             override val chaincode: String = ""
             override val walletPath: Path = null
             override val networkDescriptionPath: Path = null
+
+            override def getProposalGetCourseAdmissions(certificate: String, affiliation: String, enrollmentId: String, courseId: String, moduleId: String): (String, Array[Byte]) = ???
+
+            override def getProposalGetExamAdmissions(certificate: String, affiliation: String, admissionIds: List[String], enrollmentId: String, examIds: List[String]): (String, Array[Byte]) = ???
+
+            override def getCourseAdmissions(enrollmentId: String, courseId: String, moduleId: String): String = ???
+
+            override def getExamAdmissions(admissionIds: List[String], enrollmentId: String, examIds: List[String]): String = ???
           }
         }
       }

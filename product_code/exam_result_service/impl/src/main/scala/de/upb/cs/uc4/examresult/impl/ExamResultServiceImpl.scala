@@ -7,11 +7,12 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.examresult.api.ExamResultService
+import de.upb.cs.uc4.examresult.impl.actor.ExamResultBehaviour
 import de.upb.cs.uc4.examresult.model.{ ExamResult, ExamResultEntry }
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils
-import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils
+import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
 import de.upb.cs.uc4.operation.api.OperationService
-import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
@@ -29,7 +30,7 @@ class ExamResultServiceImpl(
 
   /** Looks up the entity for the given ID */
   private def entityRef: EntityRef[HyperledgerBaseCommand] =
-    clusterSharding.entityRefFor(null, null) //TODO
+    clusterSharding.entityRefFor(ExamResultBehaviour.typeKey, ExamResultBehaviour.entityId)
 
   implicit val timeout: Timeout = Timeout(config.getInt("uc4.timeouts.hyperledger").milliseconds)
 
@@ -55,5 +56,5 @@ class ExamResultServiceImpl(
   override def allowedPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("POST")
 
   /** Get a proposals for adding the result of an exam */
-  override def getProposalAddExamResult(): ServiceCall[ExamResult, UnsignedProposal] = ???
+  override def getProposalAddExamResult: ServiceCall[ExamResult, UnsignedProposal] = ???
 }

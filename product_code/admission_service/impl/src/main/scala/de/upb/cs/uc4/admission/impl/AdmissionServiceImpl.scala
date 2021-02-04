@@ -22,13 +22,7 @@ import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
-import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
-import de.upb.cs.uc4.hyperledger.{ HyperledgerUtils, ProposalWrapper }
-import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.operation.api.OperationService
-import de.upb.cs.uc4.operation.model.JsonOperationId
 import de.upb.cs.uc4.shared.client.exceptions._
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, UnsignedProposal }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment

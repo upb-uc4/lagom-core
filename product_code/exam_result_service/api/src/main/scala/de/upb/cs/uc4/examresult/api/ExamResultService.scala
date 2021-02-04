@@ -5,8 +5,9 @@ import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
 import de.upb.cs.uc4.examresult.model.{ ExamResult, ExamResultEntry }
+import de.upb.cs.uc4.hyperledger.api.UC4HyperledgerService
+import de.upb.cs.uc4.hyperledger.api.model.UnsignedProposal
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
-import de.upb.cs.uc4.shared.client.{ UC4HyperledgerService, UnsignedProposal }
 
 trait ExamResultService extends UC4HyperledgerService {
   /** Prefix for the path for the endpoints, a name/identifier for the service */
@@ -18,7 +19,7 @@ trait ExamResultService extends UC4HyperledgerService {
   def getExamResults(username: Option[String], examIds: Option[String]): ServiceCall[NotUsed, Seq[ExamResultEntry]]
 
   /** Get a proposals for adding the result of an exam */
-  def getProposalAddExamResult(): ServiceCall[ExamResult, UnsignedProposal]
+  def getProposalAddExamResult: ServiceCall[ExamResult, UnsignedProposal]
 
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]

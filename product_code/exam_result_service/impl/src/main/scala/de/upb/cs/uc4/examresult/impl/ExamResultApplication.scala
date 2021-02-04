@@ -6,7 +6,7 @@ import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.examresult.api.ExamResultService
 import de.upb.cs.uc4.examresult.impl.actor.ExamResultBehaviour
-import de.upb.cs.uc4.hyperledger.HyperledgerComponent
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerComponent
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.shared.server.UC4Application
 
@@ -14,7 +14,7 @@ abstract class ExamResultApplication(context: LagomApplicationContext)
   extends UC4Application(context)
   with HyperledgerComponent {
 
-  override def createActorFactory: ExamResultBehaviour = wire[ExamResultBehaviour]
+  override def createHyperledgerActor: ExamResultBehaviour = wire[ExamResultBehaviour]
 
   lazy val examService: ExamService = serviceClient.implement[ExamService]
   lazy val operationService: OperationService = serviceClient.implement[OperationService]

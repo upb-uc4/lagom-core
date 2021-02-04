@@ -7,8 +7,8 @@ import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.exam.impl.ExamApplication
 import de.upb.cs.uc4.exam.impl.actor.ExamBehaviour
 import de.upb.cs.uc4.examreg.DefaultTestExamRegs
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.operation.OperationServiceStub
-import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -31,7 +31,7 @@ class ExamServiceSpec extends AsyncWordSpec
 
         var jsonStringList: Seq[String] = List()
 
-        override def createActorFactory: ExamBehaviour = new ExamBehaviour(config) {
+        override def createHyperledgerActor: ExamBehaviour = new ExamBehaviour(config) {
 
         }
       }
