@@ -7,7 +7,8 @@ import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerReadCommand
 
 case class GetExamAdmissions(
     enrollmentId: Option[String],
-    examId: Option[String],
+    admissionIds: Option[Seq[String]],
+    examIds: Option[Seq[String]],
     replyTo: ActorRef[StatusReply[AdmissionsWrapper]]
 )
   extends HyperledgerReadCommand[AdmissionsWrapper]

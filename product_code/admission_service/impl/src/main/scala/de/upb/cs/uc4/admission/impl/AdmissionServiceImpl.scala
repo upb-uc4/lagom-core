@@ -5,13 +5,13 @@ import akka.stream.Materializer
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, RequestHeader, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.admission.impl.actor.{ AdmissionBehaviour, AdmissionsWrapper }
-import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetProposalForAddCourseAdmission, GetProposalForDropAdmission }
-import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission, ExamAdmission }
+import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetExamAdmissions, GetProposalForAddAdmission, GetProposalForDropAdmission }
+import de.upb.cs.uc4.admission.model.{ AbstractAdmission, CourseAdmission, DropAdmission, ExamAdmission }
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
@@ -89,7 +89,10 @@ class AdmissionServiceImpl(
         future.flatMap { _ =>
           enrollmentFuture.flatMap { enrollmentId =>
             entityRef.askWithStatus[AdmissionsWrapper](replyTo => GetCourseAdmissions(enrollmentId, courseId, moduleId, replyTo)).map {
-              admissionsWrapper: AdmissionsWrapper => admissionsWrapper.admissions.map { _.asInstanceOf[CourseAdmission] }
+              admissionsWrapper: AdmissionsWrapper =>
+                admissionsWrapper.admissions.map {
+                  _.asInstanceOf[CourseAdmission]
+                }
             }.map {
               courseAdmissions =>
                 createETagHeader(header, courseAdmissions)
@@ -99,100 +102,130 @@ class AdmissionServiceImpl(
       }
     }
 
+  /** Returns exam admissions */
+  override def getExamAdmissions(username: Option[String], admissionIDs: Option[String], examIDs: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]] =
+    identifiedAuthenticated(AuthenticationRole.All: _*) { (authUser, role) =>
+      ServerServiceCall { (header, _) =>
+
+        if (role != AuthenticationRole.Admin && (username.isEmpty || username.get.trim != authUser)) {
+          throw UC4Exception.OwnerMismatch
+        }
+
+        val optEnrollmentId = username match {
+          case Some(id) =>
+            certificateService.getEnrollmentId(id).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
+          case None =>
+            Future.successful(None)
+        }
+
+        optEnrollmentId.flatMap { id =>
+          entityRef.askWithStatus[AdmissionsWrapper](replyTo => GetExamAdmissions(id, admissionIDs.map(_.trim.split(",")), examIDs.map(_.trim.split(",")), replyTo)).map {
+            admissions =>
+              (ResponseHeader(200, MessageProtocol.empty, List()), admissions.admissions.map(_.asInstanceOf[ExamAdmission]))
+          }.recover(handleException("getExamAdmission proposal failed"))
+        }
+      }
+    }
+
   /** Gets a proposal for adding a course admission */
-  override def getProposalAddCourseAdmission: ServiceCall[CourseAdmission, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Student) {
+  override def getProposalAddAdmission: ServiceCall[AbstractAdmission, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Student) {
     (authUser, _) =>
       {
-        ServerServiceCall { (header, courseAdmissionRaw) =>
+        ServerServiceCall { (header, admissionRaw) =>
+          val admissionTrimmed = admissionRaw.trim
 
-          val courseAdmissionTrimmed = courseAdmissionRaw.trim
-
-          var validationList = try {
-            Await.result(courseAdmissionTrimmed.validateOnCreation, validationTimeout)
+          val validationList = try {
+            Await.result(admissionTrimmed.validateOnCreation, validationTimeout)
           }
           catch {
             case _: TimeoutException => throw UC4Exception.ValidationTimeout
             case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
           }
 
-          certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonId =>
+          certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+            jsonId =>
 
-            val courseAdmissionFinalized = courseAdmissionTrimmed.copy(enrollmentId = jsonId.id, timestamp = LocalDateTime.now.format(DateTimeFormatter.ISO_DATE_TIME))
+              if (jsonId.id != admissionTrimmed.enrollmentId) {
+                throw UC4Exception.OwnerMismatch
+              }
 
-            courseService.findCourseByCourseId(courseAdmissionFinalized.courseId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-              course =>
-                if (!course.moduleIds.contains(courseAdmissionFinalized.moduleId)) {
-                  validationList :+= SimpleError("moduleId", "CourseId can not be attributed to module with the given moduleId.")
-                  validationList :+= SimpleError("courseId", "The module with the given moduleId can not be attributed to the course with the given courseId.")
-                }
-
-                matriculationService.getMatriculationData(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-                  data =>
-                    examregService.getExaminationRegulations(Some(data.matriculationStatus.map(_.fieldOfStudy).mkString(",")), Some(true))
-                      .handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-                        regulations =>
-                          if (!regulations.flatMap(_.modules).map(_.id).contains(courseAdmissionFinalized.moduleId) && !validationList.map(_.name).contains("moduleId")) {
-                            validationList :+= SimpleError("moduleId", "The given moduleId can not be attributed to an active exam regulation.")
-                          }
-
-                          if (validationList.nonEmpty) {
-                            throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
-                          }
-                          else {
-                            certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-                              certificate =>
-                                entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalForAddCourseAdmission(certificate.certificate, courseAdmissionFinalized, replyTo)).map {
-                                  proposalWrapper =>
-                                    operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
-                                      .recover {
-                                        case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
-                                        case throwable: Throwable =>
-                                          log.error("Exception in addToWatchlist addAdmission", throwable)
-                                      }
-                                    (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
-                                }.recover(handleException("Creation of add courseAdmission proposal failed"))
-                            }
-                          }
-                      }
-                }
-            }
+              admissionTrimmed match {
+                case courseAdmission: CourseAdmission => getProposalAddCourseAdmission(authUser, header, validationList, courseAdmission)
+                case examAdmission: ExamAdmission     => getProposalAddExamAdmission(authUser, header, validationList, examAdmission)
+              }
           }
         }
       }
   }
 
-  /** Returns exam admissions */
-  override def getExamAdmissions(username: Option[String], admissionIDs: Option[String], examIDs: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]] =
-    identifiedAuthenticated(AuthenticationRole.All: _*) { (authUser, role) =>
-      ServerServiceCall { (header, _) =>
-        throw UC4Exception.NotImplemented
+  private def getProposalAddCourseAdmission(authUser: String, header: RequestHeader, validationOnCreateList: Seq[SimpleError], courseAdmission: CourseAdmission): Future[(ResponseHeader, UnsignedProposal)] = {
+
+    var validationList = validationOnCreateList
+
+    certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonId =>
+
+      val courseAdmissionFinalized = courseAdmission.copy(enrollmentId = jsonId.id, timestamp = LocalDateTime.now.format(DateTimeFormatter.ISO_DATE_TIME))
+
+      courseService.findCourseByCourseId(courseAdmissionFinalized.courseId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+        course =>
+          if (!course.moduleIds.contains(courseAdmissionFinalized.moduleId)) {
+            validationList :+= SimpleError("moduleId", "CourseId can not be attributed to module with the given moduleId.")
+            validationList :+= SimpleError("courseId", "The module with the given moduleId can not be attributed to the course with the given courseId.")
+          }
+
+          matriculationService.getMatriculationData(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+            data =>
+              examregService.getExaminationRegulations(Some(data.matriculationStatus.map(_.fieldOfStudy).mkString(",")), Some(true))
+                .handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+                  regulations =>
+                    if (!regulations.flatMap(_.modules).map(_.id).contains(courseAdmissionFinalized.moduleId) && !validationList.map(_.name).contains("moduleId")) {
+                      validationList :+= SimpleError("moduleId", "The given moduleId can not be attributed to an active exam regulation.")
+                    }
+
+                    if (validationList.nonEmpty) {
+                      throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
+                    }
+                    else {
+                      certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+                        certificate =>
+                          entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalForAddAdmission(certificate.certificate, courseAdmissionFinalized, replyTo)).map {
+                            proposalWrapper =>
+                              operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
+                                .recover {
+                                  case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
+                                  case throwable: Throwable =>
+                                    log.error("Exception in addToWatchlist addCourseAdmission", throwable)
+                                }
+                              (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+                          }.recover(handleException("Creation of add courseAdmission proposal failed"))
+                      }
+                    }
+                }
+          }
       }
     }
+  }
 
-  /** Gets a proposal for adding a exam admission */
-  override def getProposalAddExamAdmission: ServiceCall[ExamAdmission, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Student) {
-    (authUser, _) =>
-      {
-        ServerServiceCall { (header, examAdmissionRaw) =>
+  private def getProposalAddExamAdmission(authUser: String, header: RequestHeader, validationList: Seq[SimpleError], examAdmission: ExamAdmission): Future[(ResponseHeader, UnsignedProposal)] = {
 
-          val examAdmissionTrimmed = examAdmissionRaw.trim
-
-          var validationList = try {
-            Await.result(examAdmissionTrimmed.validateOnCreation, validationTimeout)
-          }
-          catch {
-            case _: TimeoutException => throw UC4Exception.ValidationTimeout
-            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
-          }
-
-          certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonId =>
-
-            val examAdmissionFinalized = examAdmissionTrimmed.copy(enrollmentId = jsonId.id, timestamp = LocalDateTime.now.format(DateTimeFormatter.ISO_DATE_TIME))
-
-            throw UC4Exception.NotImplemented
-          }
-        }
+    if (validationList.nonEmpty) {
+      throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
+    }
+    else {
+      certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+        certificate =>
+          entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalForAddAdmission(certificate.certificate, examAdmission, replyTo)).map {
+            proposalWrapper =>
+              operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
+                .recover {
+                  case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
+                  case throwable: Throwable =>
+                    log.error("Exception in addToWatchlist addExamAdmission", throwable)
+                }
+              (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+          }.recover(handleException("Creation of add examAdmission proposal failed"))
       }
+    }
   }
 
   /** Gets a proposal for dropping a admission */

@@ -3,8 +3,8 @@ package de.upb.cs.uc4.admission.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import com.typesafe.config.Config
-import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetProposalForAddCourseAdmission, GetProposalForAddExamAdmission, GetProposalForDropAdmission }
-import de.upb.cs.uc4.admission.model.CourseAdmission
+import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetExamAdmissions, GetProposalForAddAdmission, GetProposalForDropAdmission }
+import de.upb.cs.uc4.admission.model.{ CourseAdmission, ExamAdmission }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionAdmission
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
 import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
@@ -31,10 +31,13 @@ class AdmissionBehaviour(val config: Config) extends HyperledgerActor[Connection
         connection.getAdmissions(enrollmentId.getOrElse(""), courseId.getOrElse(""), moduleId.getOrElse("")).fromJson[Seq[CourseAdmission]]
       ))
 
-    case GetProposalForAddCourseAdmission(certificate, courseAdmission, replyTo) =>
-      replyTo ! StatusReply.success(ProposalWrapper(connection.getProposalAddAdmission(certificate, admission = courseAdmission.toJson)))
+    case GetExamAdmissions(enrollmentId, admissionIds, examIds, replyTo) =>
+      replyTo ! StatusReply.success(AdmissionsWrapper(
+        connection.getExamAdmissions(admissionIds.getOrElse(Seq()).toList, enrollmentId.getOrElse(""), examIds.getOrElse(Seq()).toList).fromJson[Seq[ExamAdmission]]
+      ))
 
-    case GetProposalForAddExamAdmission(certificate, examAdmission, replyTo) =>
+    case GetProposalForAddAdmission(certificate, admission, replyTo) =>
+      replyTo ! StatusReply.success(ProposalWrapper(connection.getProposalAddAdmission(certificate, admission = admission.toJson)))
 
     case GetProposalForDropAdmission(certificate, dropAdmission, replyTo) =>
       replyTo ! StatusReply.success(ProposalWrapper(connection.getProposalDropAdmission(certificate, admissionId = dropAdmission.admissionId)))
