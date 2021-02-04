@@ -5,15 +5,15 @@ import akka.util.Timeout
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil.ToJsonUtil
-import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationsTrait
+import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
+import de.upb.cs.uc4.hyperledger.api.model._
+import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationTrait
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.{ OperationHyperledgerBehaviour, OperationState, WatchlistWrapper }
 import de.upb.cs.uc4.operation.impl.commands.{ AddToWatchlist, GetWatchlist, OperationCommand, RemoveFromWatchlist }
 import de.upb.cs.uc4.operation.model._
-import de.upb.cs.uc4.shared.client._
-import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, GenericError, UC4Exception }
-import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
+import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -43,7 +43,7 @@ class OperationServiceSpec extends AsyncWordSpec
 
         var operationList: Seq[OperationData] = List()
 
-        override def createActorFactory: OperationHyperledgerBehaviour = new OperationHyperledgerBehaviour(config) {
+        override def createHyperledgerActor: OperationHyperledgerBehaviour = new OperationHyperledgerBehaviour(config) {
 
           override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
           override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
@@ -56,13 +56,23 @@ class OperationServiceSpec extends AsyncWordSpec
           override val adminUsername: String = "cli"
           override val adminPassword: String = ""
 
-          override protected def createConnection: ConnectionOperationsTrait = new ConnectionOperationsTrait() {
+          override protected def createConnection: ConnectionOperationTrait = new ConnectionOperationTrait() {
 
             override def getChaincodeVersion: String = "testVersion"
 
-            override def approveTransaction(initiator: String, contractName: String, transactionName: String, params: String*): String = "APPROVED"
+            override def approveOperation(operationId: String): String = {
+              operationList = operationList.map { operation =>
+                if (operation.operationId == operationId) {
+                  operation.copy(state = OperationDataState.PENDING, missingApprovals = ApprovalList(Seq(), Seq()))
+                }
+                else {
+                  operation
+                }
+              }
+              operationList.find(op => op.operationId == operationId).get.toJson
+            }
 
-            override def rejectTransaction(operationId: String, rejectMessage: String): String = {
+            override def rejectOperation(operationId: String, rejectMessage: String): String = {
               operationList = operationList.map { operation =>
                 if (operation.operationId == operationId) {
                   operation.copy(state = OperationDataState.REJECTED, reason = rejectMessage)
@@ -71,22 +81,35 @@ class OperationServiceSpec extends AsyncWordSpec
                   operation
                 }
               }
-              "REJECTED"
+              operationList.find(op => op.operationId == operationId).get.toJson
             }
 
-            override def getOperations(existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, state: String): String = {
+            override def getOperations(operationIds: List[String], existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, involvedEnrollmentId: String, states: List[String]): String = {
               operationList
-                .filter(op => state.isEmpty || op.state.toString == state)
+                .filter(op => operationIds.isEmpty || operationIds.contains(op.operationId))
+                .filter(op => states.isEmpty || states.contains(op.state.toString))
                 .filter(op => initiatorEnrollmentId.isEmpty || op.initiator == initiatorEnrollmentId)
                 .filter(op => missingEnrollmentId.isEmpty || op.missingApprovals.users.contains(missingEnrollmentId) || op.missingApprovals.groups.contains(groups(missingEnrollmentId)))
                 .filter(op => existingEnrollmentId.isEmpty || op.existingApprovals.users.contains(existingEnrollmentId))
+                .filter(op => involvedEnrollmentId.isEmpty || op.isInvolved(involvedEnrollmentId, groups(involvedEnrollmentId)))
                 .toJson
             }
 
-            override def getOperationData(operationId: String): String = {
-              operationList.find(_.operationId == operationId) match {
-                case Some(value) => value.toJson
-                case None        => throw UC4Exception(404, GenericError(ErrorType.HLNotFound, ""))
+            override def submitSignedTransaction(transactionBytes: Array[Byte], signature: Array[Byte]): String = {
+              new String(transactionBytes) match {
+                case s"t:$operationId#$rejectMessage" =>
+                  rejectOperation(operationId, rejectMessage)
+
+                case s"t:$operationId" => approveOperation(operationId)
+              }
+            }
+
+            override def executeTransaction(jsonOperationData: String, timeoutMilliseconds: Int = 5000, timeoutAttempts: Int = 5): String = "SUBMITTED"
+
+            override def getUnsignedTransaction(proposalBytes: Array[Byte], signatureBytes: Array[Byte]): Array[Byte] = {
+              new String(proposalBytes) match {
+                case s"$operationId#$rejectMessage" => s"t:$operationId#$rejectMessage".getBytes()
+                case s"$operationId"                => s"t:$operationId".getBytes()
               }
             }
 
@@ -97,6 +120,15 @@ class OperationServiceSpec extends AsyncWordSpec
             override val chaincode: String = ""
             override val walletPath: Path = null
             override val networkDescriptionPath: Path = null
+
+            override def initiateOperation(initiator: String, contractName: String, transactionName: String, params: String*): String = "not needed"
+
+            override def getProposalInitiateOperation(certificate: String, affiliation: String, initiator: String, contractName: String, transactionName: String, params: Array[String]): Array[Byte] = Array.emptyByteArray
+
+            override def getProposalApproveOperation(certificate: String, affiliation: String, operationId: String): Array[Byte] = operationId.getBytes()
+
+            override def getProposalRejectOperation(certificate: String, affiliation: String, operationId: String, rejectMessage: String): Array[Byte] =
+              (operationId + "#" + rejectMessage).getBytes()
           }
         }
       }
@@ -114,6 +146,7 @@ class OperationServiceSpec extends AsyncWordSpec
   var operation1: OperationData = _
   var operation2: OperationData = _
   var operation3: OperationData = _
+  var operations: Seq[OperationData] = Seq()
 
   override protected def beforeAll(): Unit = {
     certificate.setup(student0, student1, student2, admin0)
@@ -122,18 +155,19 @@ class OperationServiceSpec extends AsyncWordSpec
     groups += certificate.get(student2).enrollmentId -> "Student"
     groups += certificate.get(admin0).enrollmentId -> "Admin"
 
-    operation1 = OperationData("op1", TransactionInfo("contract", "transaction", ""),
+    operation1 = operation.OperationData("op1", TransactionInfo("contract", "transaction", ""),
       OperationDataState.PENDING, "", certificate.get(student0).enrollmentId, "", "",
       ApprovalList(Seq(), Seq("Admin")),
       ApprovalList(Seq(certificate.get(student1).enrollmentId), Seq()))
-    operation2 = OperationData("op2", TransactionInfo("contract", "transaction", ""),
+    operation2 = operation.OperationData("op2", TransactionInfo("contract", "transaction", ""),
       OperationDataState.PENDING, "", certificate.get(student1).enrollmentId, "", "",
       ApprovalList(Seq(certificate.get(student2).enrollmentId), Seq()),
       ApprovalList(Seq(), Seq("Admin")))
-    operation3 = OperationData("op3", TransactionInfo("contract", "transaction", ""),
+    operation3 = operation.OperationData("op3", TransactionInfo("contract", "transaction", ""),
       OperationDataState.REJECTED, "", certificate.get(student1).enrollmentId, "", "",
       ApprovalList(Seq(certificate.get(student2).enrollmentId), Seq()),
       ApprovalList(Seq(), Seq("Admin")))
+    operations = Seq(operation1, operation2, operation3)
   }
 
   override protected def afterAll(): Unit = server.stop()
@@ -259,13 +293,42 @@ class OperationServiceSpec extends AsyncWordSpec
       }
     }
 
-    "reject an operation" in {
+    "get rejectionProposal" in {
       prepare(Seq(operation1, operation2, operation3))
       val reason = "Reasons"
-      client.getProposalRejectOperation("op1").handleRequestHeader(addAuthorizationHeader(admin0)).invoke(JsonRejectMessage(reason))
-        .map { _ =>
-          val rejected = server.application.operationList.find(op => op.operationId == "op1").get
-          (rejected.state, rejected.reason) should ===(OperationDataState.REJECTED, reason)
+      client.getProposalRejectOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke(JsonRejectMessage(reason))
+        .map { proposal =>
+          proposal should ===(UnsignedProposal((operation1.operationId + "#" + reason).getBytes()))
+        }
+    }
+
+    "reject operation" in {
+      prepare(Seq(operation1, operation2, operation3))
+      val reason = "Reasons"
+      client.getProposalRejectOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke(JsonRejectMessage(reason))
+        .flatMap { proposal =>
+          client.submitProposal().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposal, "")).flatMap {
+            unsignedTransaction =>
+              unsignedTransaction should ===(UnsignedTransaction(s"t:${operation1.operationId}#$reason".getBytes()))
+              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransaction, "")).map { _ =>
+                server.application.operationList.find(op => op.operationId == operation1.operationId).get.state should ===(OperationDataState.REJECTED)
+              }
+          }
+        }
+    }
+
+    "approve operation" in {
+      prepare(Seq(operation1, operation2, operation3))
+      client.getProposalApproveOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke()
+        .flatMap { proposal =>
+          client.submitProposal().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposal, "")).flatMap {
+            unsignedTransaction =>
+              unsignedTransaction should ===(UnsignedTransaction(s"t:${operation1.operationId}".getBytes()))
+              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransaction, "")).map { _ =>
+                val op = server.application.operationList.find(op => op.operationId == operation1.operationId).get
+                (op.state, op.missingApprovals) should ===(OperationDataState.PENDING, ApprovalList(Seq(), Seq()))
+              }
+          }
         }
     }
 

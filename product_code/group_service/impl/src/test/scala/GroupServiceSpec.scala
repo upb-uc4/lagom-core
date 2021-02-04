@@ -7,8 +7,8 @@ import de.upb.cs.uc4.certificate.model.EnrollmentUser
 import de.upb.cs.uc4.group.api.GroupService
 import de.upb.cs.uc4.group.impl.GroupApplication
 import de.upb.cs.uc4.group.impl.actor.GroupBehaviour
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionGroupTrait
-import de.upb.cs.uc4.shared.client.JsonHyperledgerVersion
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import org.scalatest.BeforeAndAfterAll
@@ -41,7 +41,7 @@ class GroupServiceSpec extends AsyncWordSpec
         // Create a userService with ProducerStub as topic
         override lazy val certificateService: CertificateServiceStubWithTopic = new CertificateServiceStubWithTopic(internRegistrationStub)
 
-        override def createActorFactory: GroupBehaviour = new GroupBehaviour(config) {
+        override def createHyperledgerActor: GroupBehaviour = new GroupBehaviour(config) {
 
           override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
           override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")

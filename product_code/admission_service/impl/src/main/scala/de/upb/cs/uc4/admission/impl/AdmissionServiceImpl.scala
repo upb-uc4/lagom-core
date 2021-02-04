@@ -16,15 +16,14 @@ import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.examreg.api.ExamregService
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
+import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
+import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
-import de.upb.cs.uc4.hyperledger.{ HyperledgerUtils, ProposalWrapper }
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
-import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
@@ -192,27 +191,6 @@ class AdmissionServiceImpl(
               }.recover(handleException("Creation of drop courseAdmission proposal failed"))
             }
           }
-      }
-  }
-
-  /** Submits a proposal */
-  override def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction] = ServiceCall {
-    signedProposal =>
-      {
-        entityRef.askWithStatus[Array[Byte]](replyTo => SubmitProposal(signedProposal, replyTo)).map {
-          array => UnsignedTransaction(array)
-        }.recover(handleException("Submit proposal failed"))
-      }
-  }
-
-  /** Submits a transaction */
-  def submitTransaction(): ServiceCall[SignedTransaction, Done] = ServiceCall {
-    signedTransaction =>
-      {
-        entityRef.askWithStatus[Confirmation](replyTo => SubmitTransaction(signedTransaction, replyTo)).map {
-          case Accepted(_)                  => Done
-          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
-        }.recover(handleException("Submit transaction failed"))
       }
   }
 

@@ -12,7 +12,6 @@ import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
 class AuthenticationDatabase(database: Database, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext, timeout: Timeout) {

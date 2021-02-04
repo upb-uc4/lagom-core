@@ -3,8 +3,8 @@ package de.upb.cs.uc4.configuration.api
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
-import de.upb.cs.uc4.configuration.model.{ Configuration, JsonSemester, ValidationConfiguration }
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerNetworkVersion, UC4Service }
+import de.upb.cs.uc4.configuration.model.{ Configuration, JsonHyperledgerNetworkVersion, JsonSemester, ValidationConfiguration }
+import de.upb.cs.uc4.shared.client.UC4Service
 
 object ConfigurationService {
   val TOPIC_NAME = "Configuration"

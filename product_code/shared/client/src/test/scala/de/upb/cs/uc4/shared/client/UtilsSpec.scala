@@ -3,7 +3,6 @@ package de.upb.cs.uc4.shared.client
 import de.upb.cs.uc4.shared.client.Utils._
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
 import org.scalatest.PrivateMethodTester
-import org.scalatest.enablers.Emptiness
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

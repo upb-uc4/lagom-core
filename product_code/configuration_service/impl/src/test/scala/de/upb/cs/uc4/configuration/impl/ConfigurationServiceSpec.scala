@@ -3,8 +3,7 @@ package de.upb.cs.uc4.configuration.impl
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.configuration.api.ConfigurationService
-import de.upb.cs.uc4.configuration.model.{ Configuration, ValidationConfiguration }
-import de.upb.cs.uc4.shared.client.JsonHyperledgerNetworkVersion
+import de.upb.cs.uc4.configuration.model.{ Configuration, JsonHyperledgerNetworkVersion, ValidationConfiguration }
 import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, CourseLanguage, CourseType }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, SimpleError, UC4Exception }
 import org.scalatest.matchers.should.Matchers

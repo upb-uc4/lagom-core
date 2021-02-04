@@ -5,7 +5,8 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, JsonUsername }
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
+import de.upb.cs.uc4.shared.client.JsonUsername
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 

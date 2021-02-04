@@ -4,10 +4,11 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
+import de.upb.cs.uc4.hyperledger.api.UC4HyperledgerService
+import de.upb.cs.uc4.hyperledger.api.model.operation.OperationData
+import de.upb.cs.uc4.hyperledger.api.model.{ SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
 import de.upb.cs.uc4.operation.model.{ JsonOperationId, JsonRejectMessage }
-import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
-import de.upb.cs.uc4.shared.client.operation.OperationData
 
 /** The OperationService interface.
   *
@@ -29,6 +30,9 @@ trait OperationService extends UC4HyperledgerService {
   /** Remove an Operation from watchlist */
   def removeOperation(operationId: String): ServiceCall[NotUsed, Done]
 
+  /** Approve the operation with the given operationId */
+  def getProposalApproveOperation(operationId: String): ServiceCall[NotUsed, UnsignedProposal]
+
   /** Reject the operation with the given operationId*/
   def getProposalRejectOperation(operationId: String): ServiceCall[JsonRejectMessage, UnsignedProposal]
 
@@ -36,10 +40,10 @@ trait OperationService extends UC4HyperledgerService {
   def addToWatchList(username: String): ServiceCall[JsonOperationId, Done]
 
   /** Submit a signed Proposal */
-  def submitProposal(operationId: String): ServiceCall[SignedProposal, UnsignedTransaction]
+  def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction]
 
   /** Submit a signed Proposal */
-  def submitTransaction(operationId: String): ServiceCall[SignedTransaction, Done]
+  def submitTransaction(): ServiceCall[SignedTransaction, Done]
 
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
@@ -61,12 +65,14 @@ trait OperationService extends UC4HyperledgerService {
         restCall(Method.DELETE, pathPrefix + "/operations/:operationId", removeOperation _),
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId", allowedGetDelete _),
 
+        restCall(Method.POST, pathPrefix + "/operations/:operationId/unsigned_proposal_approve", getProposalApproveOperation _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/operations/:operationId/unsigned_proposal_reject", getProposalRejectOperation _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/operations/:operationId/signed_proposal", submitProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/operations/:operationId/signed_transaction", submitTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/operations/signed_proposal", submitProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.POST, pathPrefix + "/operations/signed_transaction", submitTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
+        restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/unsigned_proposal_approve", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/unsigned_proposal_reject", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/signed_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/operations/:operationId/signed_transaction", allowedPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/operations/signed_proposal", allowedPost _),
+        restCall(Method.OPTIONS, pathPrefix + "/operations/signed_transaction", allowedPost _),
 
         restCall(Method.POST, pathPrefix + "/watchlist/:username", addToWatchList _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
         restCall(Method.OPTIONS, pathPrefix + "/watchlist/:username", allowedPost _)

@@ -2,10 +2,10 @@ package de.upb.cs.uc4.operation
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import de.upb.cs.uc4.hyperledger.api.model._
+import de.upb.cs.uc4.hyperledger.api.model.operation.OperationData
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.{ JsonOperationId, JsonRejectMessage }
-import de.upb.cs.uc4.shared.client.operation.OperationData
-import de.upb.cs.uc4.shared.client._
 
 import scala.concurrent.Future
 
@@ -19,6 +19,9 @@ class OperationServiceStub extends OperationService {
   /** Remove an Operation from watchlist */
   override def removeOperation(operationId: String): ServiceCall[NotUsed, Done] = _ => Future.successful(Done)
 
+  /** Approve the operation with the given operationId */
+  override def getProposalApproveOperation(operationId: String): ServiceCall[NotUsed, UnsignedProposal] = _ => Future.successful(UnsignedProposal(""))
+
   /** Reject the operation with the given operationId */
   override def getProposalRejectOperation(operationId: String): ServiceCall[JsonRejectMessage, UnsignedProposal] = _ => Future.successful(UnsignedProposal(""))
 
@@ -26,10 +29,10 @@ class OperationServiceStub extends OperationService {
   override def addToWatchList(username: String): ServiceCall[JsonOperationId, Done] = _ => Future.successful(Done)
 
   /** Submit a signed Proposal */
-  override def submitProposal(operationId: String): ServiceCall[SignedProposal, UnsignedTransaction] = _ => Future.successful(UnsignedTransaction(""))
+  override def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction] = _ => Future.successful(UnsignedTransaction(""))
 
   /** Submit a signed Proposal */
-  override def submitTransaction(operationId: String): ServiceCall[SignedTransaction, Done] = _ => Future.successful(Done)
+  override def submitTransaction(): ServiceCall[SignedTransaction, Done] = _ => Future.successful(Done)
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = _ => Future.successful(Done)

@@ -1,16 +1,14 @@
 package de.upb.cs.uc4.shared.server
 
-import java.security.InvalidKeyException
-import de.upb.cs.uc4.shared.client.{ JsonServiceVersion, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
+import de.upb.cs.uc4.shared.client.{ JsonServiceVersion, JsonUsername }
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
-
-import javax.crypto.AEADBadTagException
 import org.scalatest.PrivateMethodTester
-import org.scalatest.compatible.Assertion
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 
+import java.security.InvalidKeyException
+import javax.crypto.AEADBadTagException
 import scala.util.{ Failure, Success, Try }
 
 class KafkaEncryptionUtilitySpec extends AsyncWordSpec with Matchers with PrivateMethodTester {

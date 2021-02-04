@@ -5,7 +5,7 @@ import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServe
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.hyperledger.HyperledgerComponent
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerComponent
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.operation.api.OperationService
@@ -16,7 +16,7 @@ abstract class MatriculationApplication(context: LagomApplicationContext)
   extends UC4Application(context)
   with HyperledgerComponent {
 
-  override def createActorFactory: MatriculationBehaviour = wire[MatriculationBehaviour]
+  override def createHyperledgerActor: MatriculationBehaviour = wire[MatriculationBehaviour]
 
   // Bind UserService
   lazy val userService: UserService = serviceClient.implement[UserService]
