@@ -3,6 +3,7 @@ package de.upb.cs.uc4.examresult.impl
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
+import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.examresult.api.ExamResultService
 import de.upb.cs.uc4.examresult.impl.actor.ExamResultBehaviour
@@ -17,6 +18,7 @@ abstract class ExamResultApplication(context: LagomApplicationContext)
   override def createHyperledgerActor: ExamResultBehaviour = wire[ExamResultBehaviour]
 
   lazy val examService: ExamService = serviceClient.implement[ExamService]
+  lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
   lazy val operationService: OperationService = serviceClient.implement[OperationService]
 
   // Register the JSON serializer registry
