@@ -145,11 +145,9 @@ class AdmissionServiceImpl(
           certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
             jsonId =>
 
-              if (jsonId.id != admissionTrimmed.enrollmentId) {
-                throw UC4Exception.OwnerMismatch
-              }
+              val admission = admissionTrimmed.copyAdmission(enrollmentId = jsonId.id)
 
-              admissionTrimmed match {
+              admission match {
                 case courseAdmission: CourseAdmission => getProposalAddCourseAdmission(authUser, header, validationList, courseAdmission)
                 case examAdmission: ExamAdmission     => getProposalAddExamAdmission(authUser, header, validationList, examAdmission)
               }

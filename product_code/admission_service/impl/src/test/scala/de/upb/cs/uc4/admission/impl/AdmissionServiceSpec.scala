@@ -6,7 +6,10 @@ import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.admission.impl.actor.AdmissionBehaviour
 import de.upb.cs.uc4.admission.model.{ AdmissionType, CourseAdmission, DropAdmission, ExamAdmission }
 import de.upb.cs.uc4.certificate.CertificateServiceStub
+import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.course.{ CourseServiceStub, DefaultTestCourses }
+import de.upb.cs.uc4.exam.DefaultTestExams
+import de.upb.cs.uc4.exam.model.Exam
 import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
 import de.upb.cs.uc4.hyperledger.api.model
 import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
@@ -30,7 +33,7 @@ import scala.language.reflectiveCalls
 
 /** Tests for the AdmissionService */
 class AdmissionServiceSpec extends AsyncWordSpec
-  with UC4SpecUtils with Matchers with BeforeAndAfterAll with DefaultTestUsers with DefaultTestCourses with DefaultTestExamRegs with BeforeAndAfterEach {
+  with UC4SpecUtils with Matchers with BeforeAndAfterAll with DefaultTestUsers with DefaultTestCourses with DefaultTestExams with DefaultTestExamRegs with BeforeAndAfterEach {
 
   private val server = ServiceTest.startServer(
     ServiceTest.defaultSetup.withCluster()
@@ -67,12 +70,20 @@ class AdmissionServiceSpec extends AsyncWordSpec
 
             override def getProposalGetAdmissions(certificate: String, affiliation: String = AFFILIATION, enrollmentId: String = "", courseId: String = "", moduleId: String = ""): (String, Array[Byte]) = ("", Array.empty)
 
-            override def getAdmissions(enrollmentId: String, courseId: String, moduleId: String): String = {
+            override def getCourseAdmissions(enrollmentId: String, courseId: String, moduleId: String): String = {
               Json.stringify(Json.toJson(
                 courseAdmissionList
                   .filter(admission => enrollmentId == "" || admission.enrollmentId == enrollmentId)
                   .filter(admission => courseId == "" || admission.courseId == courseId)
                   .filter(admission => moduleId == "" || admission.moduleId == moduleId)
+              ))
+            }
+
+            override def getExamAdmissions(admissionIds: List[String], enrollmentId: String, examIds: List[String]): String = {
+              Json.stringify(Json.toJson(
+                examAdmissionList
+                  .filter(admission => enrollmentId == "" || admission.enrollmentId == enrollmentId)
+                  .filter(admission => examIds.isEmpty || examIds.contains(admission.examId))
               ))
             }
 
@@ -100,30 +111,41 @@ class AdmissionServiceSpec extends AsyncWordSpec
             override val walletPath: Path = null
             override val networkDescriptionPath: Path = null
 
-            override def getProposalGetCourseAdmissions(certificate: String, affiliation: String, enrollmentId: String, courseId: String, moduleId: String): (String, Array[Byte]) = ???
+            override def getProposalGetCourseAdmissions(certificate: String, affiliation: String, enrollmentId: String, courseId: String, moduleId: String): (String, Array[Byte]) = ("", Array.emptyByteArray)
 
-            override def getProposalGetExamAdmissions(certificate: String, affiliation: String, admissionIds: List[String], enrollmentId: String, examIds: List[String]): (String, Array[Byte]) = ???
+            override def getProposalGetExamAdmissions(certificate: String, affiliation: String, admissionIds: List[String], enrollmentId: String, examIds: List[String]): (String, Array[Byte]) = ("", Array.emptyByteArray)
 
-            override def getCourseAdmissions(enrollmentId: String, courseId: String, moduleId: String): String = ???
-
-            override def getExamAdmissions(admissionIds: List[String], enrollmentId: String, examIds: List[String]): String = ???
+            override def getAdmissions(enrollmentId: String, courseId: String, moduleId: String): String = ""
           }
         }
       }
     }
 
-  val client: AdmissionService = server.serviceClient.implement[AdmissionService]
-  val certificate: CertificateServiceStub = server.application.certificateService
-  private var defaultCourse = course0.copy(moduleIds = examReg0.modules.map(_.id))
-  defaultCourse = server.application.courseService.addCourse(defaultCourse)
-  private val defaultCourseAdmission = CourseAdmission("", "", "", AdmissionType.Course.toString, defaultCourse.courseId, defaultCourse.moduleIds.head)
+  var client: AdmissionService = _
+  var certificate: CertificateServiceStub = _
+  private var defaultCourse: Course = _
+  private var defaultCourseAdmission: CourseAdmission = _
+  private var defaultExam: Exam = _
+  private var defaultExamAdmission: ExamAdmission = _
+
+  override protected def beforeAll(): Unit = {
+    client = server.serviceClient.implement[AdmissionService]
+    certificate = server.application.certificateService
+    defaultCourse = course0.copy(moduleIds = examReg0.modules.map(_.id))
+    defaultCourse = server.application.courseService.addCourse(defaultCourse)
+    defaultCourseAdmission = CourseAdmission("", "", "", AdmissionType.Course.toString, defaultCourse.courseId, defaultCourse.moduleIds.head)
+
+    defaultExam = exam0.copy(moduleId = defaultCourse.moduleIds.head)
+    defaultExamAdmission = ExamAdmission("", "", "", AdmissionType.Exam.toString, defaultExam.examId)
+  }
 
   override protected def afterAll(): Unit = server.stop()
 
   override protected def afterEach(): Unit = cleanup()
 
-  def prepare(admissions: CourseAdmission*): Unit = {
-    server.application.courseAdmissionList ++= admissions
+  def prepare(courseAdmissions: CourseAdmission*)(examAdmissions: ExamAdmission*): Unit = {
+    server.application.courseAdmissionList ++= courseAdmissions
+    server.application.examAdmissionList ++= examAdmissions
   }
 
   def cleanup(): Unit = {
@@ -141,9 +163,16 @@ class AdmissionServiceSpec extends AsyncWordSpec
     }
 
     "get course admission" in {
-      prepare(defaultCourseAdmission)
+      prepare(defaultCourseAdmission)()
       client.getCourseAdmissions(None, None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-        admissions => admissions should contain theSameElementsAs Seq(defaultCourseAdmission)
+        courseAdmissions => courseAdmissions should contain theSameElementsAs Seq(defaultCourseAdmission)
+      }
+    }
+
+    "get exam admissions" in {
+      prepare()(defaultExamAdmission)
+      client.getExamAdmissions(None, None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+        examAdmissions => examAdmissions should contain theSameElementsAs Seq(defaultExamAdmission)
       }
     }
 
@@ -155,11 +184,20 @@ class AdmissionServiceSpec extends AsyncWordSpec
       }
     }
 
+    "get proposal add exam admission" in {
+      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultExamAdmission).map {
+        unsignedProposalJson =>
+          asString(unsignedProposalJson.unsignedProposal).fromJson[ExamAdmission]
+            .copy(timestamp = "") should ===(defaultExamAdmission.copy(enrollmentId = certificate.get(student0.username).enrollmentId))
+      }
+    }
+
     "get proposal drop course admission" in {
       client.getProposalDropAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(DropAdmission("id")).map {
         unsignedProposalJson =>
           asString(unsignedProposalJson.unsignedProposal) should ===("id#id")
       }
     }
+
   }
 }

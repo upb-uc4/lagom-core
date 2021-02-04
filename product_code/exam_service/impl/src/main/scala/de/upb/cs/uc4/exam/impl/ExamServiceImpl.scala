@@ -60,7 +60,7 @@ class ExamServiceImpl(
   override def getExams(examIds: Option[String], courseIds: Option[String], lecturerIds: Option[String], moduleIds: Option[String], types: Option[String], admittableAt: Option[String], droppableAt: Option[String]): ServiceCall[NotUsed, Seq[Exam]] = authenticated(AuthenticationRole.All: _*) {
     ServerServiceCall { (_, _) =>
       entityRef.askWithStatus[ExamsWrapper](replyTo => GetExams(splitOption(examIds), splitOption(courseIds), splitOption(lecturerIds),
-        splitOption(moduleIds), splitOption(types), admittableAt, droppableAt, replyTo)).map{ wrapper =>
+        splitOption(moduleIds), splitOption(types), admittableAt, droppableAt, replyTo)).map { wrapper =>
         (ResponseHeader(200, MessageProtocol.empty, List()), wrapper.exams)
       }.recover(handleException("getExams failed"))
     }
@@ -82,7 +82,6 @@ class ExamServiceImpl(
           case _: TimeoutException => throw UC4Exception.ValidationTimeout
           case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
-
 
         certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonCertificate =>
           if (validationList.nonEmpty) {

@@ -187,11 +187,11 @@ lazy val admission_service = (project in file("admission_service/impl"))
     libraryDependencies ++= Dependencies.implDefaultDependencies,
     libraryDependencies += Dependencies.hyperledgerApi
   )
-  .settings(Settings.implSettings("examreg_service"))
+  .settings(Settings.implSettings("admission_service"))
   .dependsOn(admission_service_api % withTests, shared_client % withTests, shared_server % withTests,
     hyperledger_component_impl, matriculation_service_api % withTests, examreg_service_api % withTests,
     course_service_api % withTests, certificate_service_api % withTests, operation_service_api % withTests,
-    user_service_api % onlyTests)
+    user_service_api % onlyTests, exam_service_api % onlyTests)
 
 lazy val operation_service_api =  (project in file("operation_service/api"))
   .settings(Settings.apiSettings("operation_service"))
@@ -222,7 +222,7 @@ lazy val group_service = (project in file("group_service/impl"))
 
 lazy val exam_service_api =  (project in file("exam_service/api"))
   .settings(Settings.apiSettings("exam_service_api"))
-  .dependsOn(shared_client, hyperledger_component_api)
+  .dependsOn(shared_client, hyperledger_component_api, course_service_api % onlyTests)
 
 lazy val exam_service = (project in file("exam_service/impl"))
   .enablePlugins(LagomScala)
@@ -231,7 +231,7 @@ lazy val exam_service = (project in file("exam_service/impl"))
   )
   .settings(Settings.implSettings("exam_service"))
   .dependsOn(operation_service_api % withTests, course_service_api % withTests, exam_service_api % withTests, certificate_service_api % withTests,
-    shared_client % withTests, shared_server % withTests, hyperledger_component_impl)
+    shared_client % withTests, shared_server % withTests, hyperledger_component_impl, user_service_api % onlyTests)
 
 lazy val exam_result_service_api =  (project in file("exam_result_service/api"))
   .settings(Settings.apiSettings("exam_result_service_api"))

@@ -29,11 +29,11 @@ import scala.concurrent.duration._
 
 /** Implementation of the ExamService */
 class ExamResultServiceImpl(
-                             clusterSharding: ClusterSharding,
-                             certificateService: CertificateService,
-                             operationService: OperationService,
-                             override val environment: Environment
-                           )(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
+    clusterSharding: ClusterSharding,
+    certificateService: CertificateService,
+    operationService: OperationService,
+    override val environment: Environment
+)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
   extends ExamResultService {
 
   /** Looks up the entity for the given ID */
@@ -57,59 +57,62 @@ class ExamResultServiceImpl(
   /** Returns ExamResultEntries, optionally filtered */
   override def getExamResults(username: Option[String], examIds: Option[String]): ServiceCall[NotUsed, Seq[ExamResultEntry]] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUser, role) =>
-      ServerServiceCall { (header, _) => {
+      ServerServiceCall { (header, _) =>
+        {
 
-        val optEnrollmentId = username match {
-          case Some(id) =>
-            certificateService.getEnrollmentId(id).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
-          case None =>
-            Future.successful(None)
-        }
+          val optEnrollmentId = username match {
+            case Some(id) =>
+              certificateService.getEnrollmentId(id).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
+            case None =>
+              Future.successful(None)
+          }
 
-        optEnrollmentId.flatMap { id =>
-          entityRef.askWithStatus[ExamResultWrapper](replyTo => GetExamResultEntries(id, examIds.map(_.trim.split(",")), replyTo)).map {
-            examResultEntries =>
-              (ResponseHeader(200, MessageProtocol.empty, List()), examResultEntries.examResults)
-          }.recover(handleException("getExamResults failed"))
+          optEnrollmentId.flatMap { id =>
+            entityRef.askWithStatus[ExamResultWrapper](replyTo => GetExamResultEntries(id, examIds.map(_.trim.split(",")), replyTo)).map {
+              examResultEntries =>
+                (ResponseHeader(200, MessageProtocol.empty, List()), examResultEntries.examResults)
+            }.recover(handleException("getExamResults failed"))
+          }
         }
-      }}
+      }
   }
 
   /** Get a proposals for adding the result of an exam */
   override def getProposalAddExamResult: ServiceCall[ExamResult, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Lecturer) {
     (authUser, _) =>
-      ServerServiceCall { (header, examResultRaw) => {
+      ServerServiceCall { (header, examResultRaw) =>
+        {
 
-        val examResult = examResultRaw.trim
+          val examResult = examResultRaw.trim
 
-        val validationList = try {
-          Await.result(examResult.validate, validationTimeout)
-        }
-        catch {
-          case _: TimeoutException => throw UC4Exception.ValidationTimeout
-          case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
-        }
-
-
-        certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonCertificate =>
-          if (validationList.nonEmpty) {
-            throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
+          val validationList = try {
+            Await.result(examResult.validate, validationTimeout)
           }
-          else {
-            entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalAddExamResult(jsonCertificate.certificate, examResult, replyTo)).map {
-              proposalWrapper =>
-                operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
-                  .recover {
-                    case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
-                    case throwable: Throwable =>
-                      log.error("Exception in addToWatchlist getProposalAddExamResult", throwable)
-                  }
-                (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
-            }.recover(handleException("getExamResults failed"))
+          catch {
+            case _: TimeoutException => throw UC4Exception.ValidationTimeout
+            case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
           }
-        }
 
-      }}
+          certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonCertificate =>
+            if (validationList.nonEmpty) {
+              throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
+            }
+            else {
+              entityRef.askWithStatus[ProposalWrapper](replyTo => GetProposalAddExamResult(jsonCertificate.certificate, examResult, replyTo)).map {
+                proposalWrapper =>
+                  operationService.addToWatchList(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke(JsonOperationId(proposalWrapper.operationId))
+                    .recover {
+                      case ex: UC4Exception if ex.possibleErrorResponse.`type` == ErrorType.OwnerMismatch =>
+                      case throwable: Throwable =>
+                        log.error("Exception in addToWatchlist getProposalAddExamResult", throwable)
+                    }
+                  (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+              }.recover(handleException("getExamResults failed"))
+            }
+          }
+
+        }
+      }
   }
 
   /** Allows GET */
