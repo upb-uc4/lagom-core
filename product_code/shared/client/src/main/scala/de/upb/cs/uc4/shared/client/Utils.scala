@@ -72,6 +72,20 @@ object Utils {
     }
   }
 
+  def semesterToStartDate(semester: String): String = {
+    semester match {
+      case s"SS$year"     => s"$year-04-01"
+      case s"WS$start/$_" => s"$start-10-01"
+    }
+  }
+
+  def semesterToEndDate(semester: String): String = {
+    semester match {
+      case s"SS$year"     => s"$year-09-30"
+      case s"WS$start/$_" => s"${start.toInt + 1}-03-31"
+    }
+  }
+
   private def semesterToNumber(semester: String): Double = {
     if (semester.trim.isEmpty) {
       Double.MinValue

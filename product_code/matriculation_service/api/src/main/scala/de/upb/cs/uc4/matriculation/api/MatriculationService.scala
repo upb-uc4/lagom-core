@@ -27,7 +27,7 @@ trait MatriculationService extends UC4HyperledgerService {
   def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData]
 
   /** Returns a pdf with the certificate of enrollment */
-  def getCertificateOfEnrollment(username: String): ServiceCall[NotUsed, ByteString]
+  def getCertificateOfEnrollment(username: String, semester: String): ServiceCall[NotUsed, ByteString]
 
   /** Allows POST */
   def allowedPost: ServiceCall[NotUsed, Done]
@@ -41,7 +41,7 @@ trait MatriculationService extends UC4HyperledgerService {
       .addCalls(
         restCall(Method.POST, pathPrefix + "/matriculation/:username/unsigned_proposal", getMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/matriculation/:username", getMatriculationData _),
-        restCall(Method.GET, pathPrefix + "/pdf/:username", getCertificateOfEnrollment _),
+        restCall(Method.GET, pathPrefix + "/matriculation/:username/certificate/:semester", getCertificateOfEnrollment _),
 
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/unsigned_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username", allowedGet _),

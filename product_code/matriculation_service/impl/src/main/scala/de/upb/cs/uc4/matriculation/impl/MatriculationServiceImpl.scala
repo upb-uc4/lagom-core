@@ -19,10 +19,10 @@ import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.impl.signature.SigningService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
-import de.upb.cs.uc4.pdf.api.PdfProcessingService
-import de.upb.cs.uc4.pdf.model.PdfProcessor
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
+import de.upb.cs.uc4.pdf.api.PdfProcessingService
+import de.upb.cs.uc4.pdf.model.PdfProcessor
 import de.upb.cs.uc4.shared.client.Utils
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
@@ -64,7 +64,8 @@ class MatriculationServiceImpl(
     Using(Source.fromFile(absoluteCertificateEnrollmentHtml)) { source =>
       source.getLines().mkString("\n")
     }.getOrElse("")
-  } else {
+  }
+  else {
     Source.fromResource("certificateEnrollment.html").getLines().mkString("\n")
   }
 
@@ -197,24 +198,36 @@ class MatriculationServiceImpl(
     }
 
   /** Returns a pdf with the certificate of enrollment */
-  override def getCertificateOfEnrollment(username: String): ServiceCall[NotUsed, ByteString] =
+  override def getCertificateOfEnrollment(username: String, semester: String): ServiceCall[NotUsed, ByteString] =
     identifiedAuthenticated(AuthenticationRole.Student) {
       (authUsername, _) =>
         ServerServiceCall { (header, _) =>
           if (authUsername != username) {
             throw UC4Exception.OwnerMismatch
           }
+          var pdf = certificateEnrollmentHtml
 
-          getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { data =>
-            val latestSemester = Utils.findLatestSemester(data.matriculationStatus.flatMap(_.semesters.toSeq))
-            val fieldOfStudy = data.matriculationStatus.filter(sub => sub.semesters.contains(latestSemester)).head
+          userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { user =>
+            getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { data =>
 
-            val pdf = certificateEnrollmentHtml.format(fieldOfStudy, latestSemester)
+              pdf = pdf.replace("{studentName}", s"${user.firstName}  ${user.lastName}")
+              pdf = pdf.replace("{matriculationId}", user.asInstanceOf[Student].matriculationId)
+              pdf = pdf.replace("{enrollmentId}", data.enrollmentId)
+              pdf = pdf.replace("{semester}", semester)
+              pdf = pdf.replace("{startDate}", Utils.semesterToStartDate(semester))
+              pdf = pdf.replace("{endDate}", Utils.semesterToEndDate(semester))
+              pdf = pdf.replace("{address}", config.getString("uc4.pdf.address").replace("\n", "<br>"))
+              pdf = pdf.replace("{organization}", config.getString("uc4.pf.organization"))
+              pdf = pdf.replace("{semesterCount}", data.matriculationStatus.flatMap(_.semesters).distinct.size.toString)
 
-            pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
-              val output = signatureService.signPdf(pdfBytes.toArray)
+              pdf = pdf.replace("{subjectList}", data.matriculationStatus.filter(_.semesters.contains(semester))
+                .map(subj => s"<li>${subj.fieldOfStudy} (${subj.semesters.size})</li>").mkString("\n"))
 
-              (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
+              pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
+                val output = signatureService.signPdf(pdfBytes.toArray)
+
+                (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
+              }
             }
           }
         }
