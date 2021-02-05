@@ -3,16 +3,15 @@ package de.upb.cs.uc4.matriculation.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import com.typesafe.config.Config
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils.JsonUtil._
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionMatriculation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionMatriculationTrait
-import de.upb.cs.uc4.hyperledger.{ HyperledgerActorObject, HyperledgerDefaultActorFactory }
+import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, HyperledgerCommand, HyperledgerReadCommand, HyperledgerWriteCommand }
+import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerActor, HyperledgerActorObject, ProposalWrapper }
 import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
-import de.upb.cs.uc4.shared.server.messages.Accepted
+import de.upb.cs.uc4.shared.client.JsonUtility._
 
-class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActorFactory[ConnectionMatriculationTrait] {
+class MatriculationBehaviour(val config: Config) extends HyperledgerActor[ConnectionMatriculationTrait] {
 
   /** Creates the connection to the chaincode */
   override protected def createConnection: ConnectionMatriculationTrait =
@@ -27,19 +26,12 @@ class MatriculationBehaviour(val config: Config) extends HyperledgerDefaultActor
     * @param command which should get executed
     */
   override protected def applyCommand(connection: ConnectionMatriculationTrait, command: HyperledgerCommand[_]): Unit = command match {
-    case AddEntriesToMatriculationData(matriculationId, matriculation, replyTo) =>
-      connection.addEntriesToMatriculationData(matriculationId, matriculation.toJson)
-      replyTo ! StatusReply.success(Accepted.default)
-
-    case AddMatriculationData(data, replyTo) =>
-      connection.addMatriculationData(data.toJson)
-      replyTo ! StatusReply.success(Accepted.default)
 
     case GetProposalForAddEntriesToMatriculationData(certificate, enrollmentId, matriculation, replyTo) =>
-      replyTo ! StatusReply.success(connection.getProposalAddEntriesToMatriculationData(certificate, enrollmentId = enrollmentId, subjectMatriculationList = matriculation.toJson)._2)
+      replyTo ! StatusReply.success(ProposalWrapper(connection.getProposalAddEntriesToMatriculationData(certificate, enrollmentId = enrollmentId, subjectMatriculationList = matriculation.toJson)))
 
     case GetProposalForAddMatriculationData(certificate, data, replyTo) =>
-      replyTo ! StatusReply.success(connection.getProposalAddMatriculationData(certificate, jSonMatriculationData = data.toJson)._2)
+      replyTo ! StatusReply.success(ProposalWrapper(connection.getProposalAddMatriculationData(certificate, jSonMatriculationData = data.toJson)))
 
     case GetMatriculationData(matriculationId, replyTo) =>
       replyTo ! StatusReply.success(connection.getMatriculationData(matriculationId).fromJson[ImmatriculationData])

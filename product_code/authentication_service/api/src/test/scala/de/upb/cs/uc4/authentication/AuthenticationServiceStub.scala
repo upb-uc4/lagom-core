@@ -3,7 +3,8 @@ package de.upb.cs.uc4.authentication
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.authentication.api.AuthenticationService
-import de.upb.cs.uc4.authentication.model.{ AuthenticationUser, JsonUsername, RefreshToken, Tokens }
+import de.upb.cs.uc4.authentication.model.{ AuthenticationUser, RefreshToken, Tokens }
+import de.upb.cs.uc4.shared.client.JsonUsername
 
 import scala.concurrent.Future
 

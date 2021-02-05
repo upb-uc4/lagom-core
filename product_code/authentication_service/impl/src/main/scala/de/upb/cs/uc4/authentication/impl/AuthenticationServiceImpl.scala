@@ -1,8 +1,5 @@
 package de.upb.cs.uc4.authentication.impl
 
-import java.text.SimpleDateFormat
-import java.util.{ Base64, Calendar, Locale, TimeZone }
-
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
@@ -15,13 +12,15 @@ import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationEntry, Authentica
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, GetAuthentication, SetAuthentication }
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.authentication.model._
-import de.upb.cs.uc4.shared.client.Hashing
 import de.upb.cs.uc4.shared.client.exceptions._
+import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import io.jsonwebtoken._
 import play.api.Environment
 
+import java.text.SimpleDateFormat
+import java.util.{ Base64, Calendar, Locale, TimeZone }
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 

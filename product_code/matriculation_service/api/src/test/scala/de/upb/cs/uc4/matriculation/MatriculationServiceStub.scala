@@ -2,11 +2,11 @@ package de.upb.cs.uc4.matriculation
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
 import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
-import de.upb.cs.uc4.shared.client.{ JsonHyperledgerVersion, SignedProposal, SignedTransaction, UnsignedProposal, UnsignedTransaction }
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -33,15 +33,6 @@ class MatriculationServiceStub extends MatriculationService {
     matriculationData.clear()
   }
 
-  /** Submits a proposal to matriculate a student */
-  override def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction] =
-    proposal => Future.successful(UnsignedTransaction("t:".getBytes() ++ proposal.unsignedProposalAsByteArray))
-
-  /** Submits a transaction to matriculate a student */
-  override def submitMatriculationTransaction(username: String): ServiceCall[SignedTransaction, Done] = {
-    _ => Future.successful(Done)
-  }
-
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
     putMessageMatriculation => Future.successful(UnsignedProposal(putMessageMatriculation.toJson.getBytes))
@@ -59,12 +50,6 @@ class MatriculationServiceStub extends MatriculationService {
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = { _ => Future.successful(Done) }
-
-  /** Immatriculates a student */
-  override def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done] = { _ => Future.successful(Done) }
-
-  /** Allows PUT */
-  override def allowedPut: ServiceCall[NotUsed, Done] = { _ => Future.successful(Done) }
 
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = { _ =>

@@ -2,11 +2,11 @@ package de.upb.cs.uc4.matriculation.api
 
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
-import com.lightbend.lagom.scaladsl.api.deser.MessageSerializer
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
+import de.upb.cs.uc4.hyperledger.api.UC4HyperledgerService
+import de.upb.cs.uc4.hyperledger.api.model.UnsignedProposal
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
-import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
 /** The MatriculationService interface.
@@ -19,12 +19,6 @@ trait MatriculationService extends UC4HyperledgerService {
   override val pathPrefix: String = "/matriculation-management"
   /** The name of the service */
   override val name: String = "matriculation"
-
-  /** Submits a proposal to matriculate a student */
-  def submitMatriculationProposal(username: String): ServiceCall[SignedProposal, UnsignedTransaction]
-
-  /** Submits a transaction to matriculate a student */
-  def submitMatriculationTransaction(username: String): ServiceCall[SignedTransaction, Done]
 
   /** Get proposal to matriculate a student */
   def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal]
@@ -41,33 +35,17 @@ trait MatriculationService extends UC4HyperledgerService {
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 
-  /** Immatriculates a student */
-  @deprecated
-  def addMatriculationData(username: String): ServiceCall[PutMessageMatriculation, Done]
-
-  /** Allows PUT */
-  @deprecated
-  def allowedPut: ServiceCall[NotUsed, Done]
-
   final override def descriptor: Descriptor = {
     import Service._
     super.descriptor
       .addCalls(
-        restCall(Method.POST, pathPrefix + "/matriculation/:username/signed_proposal", submitMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/matriculation/:username/unsigned_proposal", getMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.POST, pathPrefix + "/matriculation/:username/signed_transaction", submitMatriculationTransaction _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
-        restCall(Method.GET, pathPrefix + "/history/:username", getMatriculationData _),
+        restCall(Method.GET, pathPrefix + "/matriculation/:username", getMatriculationData _),
         restCall(Method.GET, pathPrefix + "/pdf/:username", getCertificateOfEnrollment _),
 
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/signed_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/unsigned_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/signed_transaction", allowedPost),
-        restCall(Method.OPTIONS, pathPrefix + "/history/:username", allowedGet _),
-        restCall(Method.OPTIONS, pathPrefix + "/pdf/:username", allowedGet _),
-
-        //DEPRECATED
-        restCall(Method.PUT, pathPrefix + "/:username", addMatriculationData _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
-        restCall(Method.OPTIONS, pathPrefix + "/:username", allowedPut _),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/pdf/:username", allowedGet _)
       )
   }
 }

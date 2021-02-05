@@ -3,12 +3,12 @@ package de.upb.cs.uc4.shared.client
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{ RequestHeader, ResponseHeader }
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import play.api.libs.json.Writes
 import de.upb.cs.uc4.shared.client.Hashing.sha256
 import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
 import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import play.api.libs.json.Writes
 
 import scala.concurrent.Future
 

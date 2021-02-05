@@ -14,12 +14,11 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationBehaviour, AuthenticationState }
 import de.upb.cs.uc4.authentication.impl.commands.DeleteAuthentication
 import de.upb.cs.uc4.authentication.impl.readside.{ AuthenticationDatabase, AuthenticationEventProcessor }
-import de.upb.cs.uc4.authentication.model.JsonUsername
-import de.upb.cs.uc4.shared.client.Hashing
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
+import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
-import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.user.api.UserService
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents

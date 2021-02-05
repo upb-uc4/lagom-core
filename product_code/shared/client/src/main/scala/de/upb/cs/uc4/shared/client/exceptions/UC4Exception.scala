@@ -47,6 +47,7 @@ object UC4Exception {
   //409
   val Duplicate = new UC4NonCriticalException(409, GenericError(ErrorType.KeyDuplicate))
   val AlreadyEnrolled = new UC4NonCriticalException(409, GenericError(ErrorType.AlreadyEnrolled))
+  val RemovalNotAllowed = new UC4NonCriticalException(409, GenericError(ErrorType.RemovalNotAllowed))
   //415
   val UnsupportedMediaType = new UC4NonCriticalException(415, GenericError(ErrorType.UnsupportedMediaType))
   //422
