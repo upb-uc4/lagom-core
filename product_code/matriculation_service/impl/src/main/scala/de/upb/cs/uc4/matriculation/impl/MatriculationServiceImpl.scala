@@ -28,10 +28,13 @@ import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.Student
+import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
 import java.io.File
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
 import scala.io.Source
@@ -198,7 +201,7 @@ class MatriculationServiceImpl(
     }
 
   /** Returns a pdf with the certificate of enrollment */
-  override def getCertificateOfEnrollment(username: String, semester: String): ServiceCall[NotUsed, ByteString] =
+  override def getCertificateOfEnrollment(username: String, semesterBase64: Option[String]): ServiceCall[NotUsed, ByteString] =
     identifiedAuthenticated(AuthenticationRole.Student) {
       (authUsername, _) =>
         ServerServiceCall { (header, _) =>
@@ -209,6 +212,19 @@ class MatriculationServiceImpl(
 
           userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { user =>
             getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { data =>
+
+              val semester = if (semesterBase64.isDefined) {
+                new String(Base64.getUrlDecoder.decode(semesterBase64.get), StandardCharsets.UTF_8)
+              }
+              else {
+                Utils.findLatestSemester(data.matriculationStatus.flatMap(_.semesters))
+              }
+
+              val validationList = semester.validateSemester
+
+              if (validationList.nonEmpty) {
+                throw UC4Exception(422, DetailedError(ErrorType.Validation, validationList))
+              }
 
               pdf = pdf.replace("{studentName}", s"${user.firstName}  ${user.lastName}")
               pdf = pdf.replace("{matriculationId}", user.asInstanceOf[Student].matriculationId)
