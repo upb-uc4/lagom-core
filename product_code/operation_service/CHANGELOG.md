@@ -1,3 +1,10 @@
+# [WIP - v0.17.2](https://github.com/upb-uc4/University-Credits-4.0/compare/operation-v0.17.1...operation-v0.17.2) (2021-XX-XX)
+## Feature
+- Added call to get a user's watchlist
+- Added functionality to clear a users watchlist on user deletion
+## Refactor
+## Bugfix
+
 # [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/operation-v0.16.1...operation-v0.17.1) (2021-02-04)
 ## Feature
 - Adapted Operation Service to implement Operations 1.1 API

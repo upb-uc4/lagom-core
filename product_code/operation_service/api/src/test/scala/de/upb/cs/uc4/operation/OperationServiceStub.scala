@@ -25,6 +25,9 @@ class OperationServiceStub extends OperationService {
   /** Reject the operation with the given operationId */
   override def getProposalRejectOperation(operationId: String): ServiceCall[JsonRejectMessage, UnsignedProposal] = _ => Future.successful(UnsignedProposal(""))
 
+  /** Gets the watchlist of a user */
+  override def getWatchlist(username: String): ServiceCall[NotUsed, Seq[String]] = _ => Future.successful(Seq())
+
   /** Adds a operationId to the watchlist */
   override def addToWatchList(username: String): ServiceCall[JsonOperationId, Done] = _ => Future.successful(Done)
 
@@ -43,9 +46,13 @@ class OperationServiceStub extends OperationService {
   /** Allows POST */
   override def allowedPost: ServiceCall[NotUsed, Done] = _ => Future.successful(Done)
 
+  /** Allows POST */
+  override def allowedGetPost: ServiceCall[NotUsed, Done] = _ => Future.successful(Done)
+
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = _ => Future.successful(JsonHyperledgerVersion("invalid", "invalid"))
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = _ => Future.successful(Done)
+
 }
