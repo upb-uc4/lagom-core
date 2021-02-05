@@ -1,9 +1,10 @@
 package de.upb.cs.uc4.examresult.model
 
+import de.upb.cs.uc4.shared.client.configuration.ConfigurationCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
-import play.api.libs.json.{ Format, Json }
+import play.api.libs.json.{Format, Json}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 case class ExamResultEntry(enrollmentId: String, examId: String, grade: String) {
   def trim: ExamResultEntry = {
@@ -24,8 +25,8 @@ case class ExamResultEntry(enrollmentId: String, examId: String, grade: String) 
     if (examId.isEmpty) {
       errors :+= SimpleError("examId", "ExamId must not be empty.")
     }
-    if (grade.isEmpty) {
-      errors :+= SimpleError("grade", "Grade must not be empty.")
+    if (!ConfigurationCollection.grades.contains(grade)) {
+      errors :+= SimpleError("grade", "Grade must be one of " + ConfigurationCollection.grades.reduce((a, b) => a + ", " + b) + ".")
     }
     errors
   }

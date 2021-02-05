@@ -23,7 +23,7 @@ trait AdmissionService extends UC4HyperledgerService {
   def getCourseAdmissions(username: Option[String], courseId: Option[String], moduleId: Option[String]): ServiceCall[NotUsed, Seq[CourseAdmission]]
 
   /** Returns exam admissions */
-  def getExamAdmissions(username: Option[String], admissionIDs: Option[String], examIDs: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]]
+  def getExamAdmissions(username: Option[String], admissionIds: Option[String], examIds: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]]
 
   /** Gets a proposal for adding a exam admission */
   def getProposalAddAdmission: ServiceCall[AbstractAdmission, UnsignedProposal]
@@ -41,13 +41,13 @@ trait AdmissionService extends UC4HyperledgerService {
     super.descriptor
       .addCalls(
         restCall(Method.GET, pathPrefix + "/admissions/courses?username&courseId&moduleId", getCourseAdmissions _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.GET, pathPrefix + "/admissions/exam?username&courseIds&examIds", getExamAdmissions _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.GET, pathPrefix + "/admissions/exam?username&admissionsIds&examIds", getExamAdmissions _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
 
         restCall(Method.POST, pathPrefix + "/admissions/unsigned_add_proposal", getProposalAddAdmission _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/admissions/unsigned_drop_proposal", getProposalDropAdmission _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
 
         restCall(Method.OPTIONS, pathPrefix + "/admissions/courses?username&courseId&moduleId", allowedGet _),
-        restCall(Method.OPTIONS, pathPrefix + "/admissions/exam?username&courseIds&examIds", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/admissions/exam?username&admissionsIds&examIds", allowedGet _),
 
         restCall(Method.OPTIONS, pathPrefix + "/admissions/unsigned_add_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/admissions/unsigned_drop_proposal", allowedPost _)

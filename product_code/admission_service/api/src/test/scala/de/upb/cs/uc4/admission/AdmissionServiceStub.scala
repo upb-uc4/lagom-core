@@ -32,7 +32,7 @@ class AdmissionServiceStub extends AdmissionService {
   }
 
   /** Returns exam admissions */
-  override def getExamAdmissions(username: Option[String], admissionIDs: Option[String], examIDs: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]] = ServiceCall {
+  override def getExamAdmissions(username: Option[String], admissionIds: Option[String], examIds: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]] = ServiceCall {
     _ => Future.successful(examAdmissions)
   }
 

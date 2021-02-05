@@ -1,36 +1,37 @@
 package de.upb.cs.uc4.admission.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
 import akka.stream.Materializer
 import akka.util.Timeout
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, RequestHeader, ResponseHeader }
+import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, RequestHeader, ResponseHeader}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.admission.api.AdmissionService
-import de.upb.cs.uc4.admission.impl.actor.{ AdmissionBehaviour, AdmissionsWrapper }
-import de.upb.cs.uc4.admission.impl.commands.{ GetCourseAdmissions, GetExamAdmissions, GetProposalForAddAdmission, GetProposalForDropAdmission }
-import de.upb.cs.uc4.admission.model.{ AbstractAdmission, CourseAdmission, DropAdmission, ExamAdmission }
+import de.upb.cs.uc4.admission.impl.actor.{AdmissionBehaviour, AdmissionsWrapper}
+import de.upb.cs.uc4.admission.impl.commands.{GetCourseAdmissions, GetExamAdmissions, GetProposalForAddAdmission, GetProposalForDropAdmission}
+import de.upb.cs.uc4.admission.model.{AbstractAdmission, CourseAdmission, DropAdmission, ExamAdmission}
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
+import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
+import de.upb.cs.uc4.hyperledger.api.model.{JsonHyperledgerVersion, UnsignedProposal}
 import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
-import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
+import de.upb.cs.uc4.hyperledger.impl.{HyperledgerUtils, ProposalWrapper}
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import org.slf4j.{ Logger, LoggerFactory }
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.Environment
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
+import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 
 /** Implementation of the MatriculationService */
 class AdmissionServiceImpl(
@@ -40,6 +41,7 @@ class AdmissionServiceImpl(
     courseService: CourseService,
     certificateService: CertificateService,
     operationService: OperationService,
+    examService: ExamService,
     override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
   extends AdmissionService {
@@ -103,7 +105,7 @@ class AdmissionServiceImpl(
     }
 
   /** Returns exam admissions */
-  override def getExamAdmissions(username: Option[String], admissionIDs: Option[String], examIDs: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]] =
+  override def getExamAdmissions(username: Option[String], admissionIds: Option[String], examIds: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]] =
     identifiedAuthenticated(AuthenticationRole.All: _*) { (authUser, role) =>
       ServerServiceCall { (header, _) =>
 
@@ -111,18 +113,47 @@ class AdmissionServiceImpl(
           throw UC4Exception.OwnerMismatch
         }
 
-        val optEnrollmentId = username match {
-          case Some(id) =>
-            certificateService.getEnrollmentId(id).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
-          case None =>
-            Future.successful(None)
-        }
 
-        optEnrollmentId.flatMap { id =>
-          entityRef.askWithStatus[AdmissionsWrapper](replyTo => GetExamAdmissions(id, admissionIDs.map(_.trim.split(",")), examIDs.map(_.trim.split(",")), replyTo)).map {
-            admissions =>
-              (ResponseHeader(200, MessageProtocol.empty, List()), admissions.admissions.map(_.asInstanceOf[ExamAdmission]))
-          }.recover(handleException("getExamAdmission proposal failed"))
+
+            val authErrorFuture = role match {
+              case AuthenticationRole.Admin =>
+                Future.successful(Done)
+              case AuthenticationRole.Lecturer =>
+                if (examIds.isEmpty) {
+                  throw UC4Exception.OwnerMismatch
+                } else {
+                  certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+                    authEnrollmentId =>
+                      examService.getExams(examIds, None, None, None, None, None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
+                        exams =>
+                          if (exams.forall(exam => exam.lecturerEnrollmentId == authEnrollmentId.id)) {
+                            Done
+                          } else {
+                            throw UC4Exception.OwnerMismatch
+                          }
+                      }
+                  }
+                }
+              case AuthenticationRole.Student if username.isEmpty || username.get.trim != authUser =>
+                throw UC4Exception.OwnerMismatch
+            }
+            authErrorFuture.flatMap {
+              _ =>
+
+                val optEnrollmentId = username match {
+                  case Some(id) =>
+                    certificateService.getEnrollmentId(id).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
+                  case None =>
+                    Future.successful(None)
+                }
+
+                optEnrollmentId.flatMap { id =>
+                  entityRef.askWithStatus[AdmissionsWrapper](replyTo => GetExamAdmissions(id, admissionIds.map(_.trim.split(",")), examIds.map(_.trim.split(",")), replyTo)).map {
+                    admissions =>
+                      (ResponseHeader(200, MessageProtocol.empty, List()), admissions.admissions.map(_.asInstanceOf[ExamAdmission]))
+                  }.recover(handleException("getExamAdmission proposal failed"))
+                }
+            }
         }
       }
     }
