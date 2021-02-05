@@ -24,10 +24,6 @@ case class Exam(examId: String, courseId: String, moduleId: String, lecturerEnro
 
     var errors = List[SimpleError]()
 
-    //TODO inquiry if examId must be empty for hyperledger to set it, or if it should be set by the frontend
-    //if (!nonEmptyRegex.matches(examId)){
-    //  errors :+= SimpleError("examId", nonEmptyMessage)
-    //}
     if (!nonEmptyRegex.matches(courseId)) {
       errors :+= SimpleError("courseId", nonEmptyMessage)
     }

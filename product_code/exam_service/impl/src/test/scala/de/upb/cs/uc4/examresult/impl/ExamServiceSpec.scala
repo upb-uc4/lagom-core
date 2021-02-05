@@ -84,6 +84,8 @@ class ExamServiceSpec extends AsyncWordSpec
 
   val client: ExamService = server.serviceClient.implement[ExamService]
   val operation: OperationServiceStub = server.application.operationService
+  val certificate: CertificateServiceStub = server.application.certificateService
+  val course: CourseServiceStub = server.application.courseService
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -106,9 +108,12 @@ class ExamServiceSpec extends AsyncWordSpec
     }
 
     "get proposal add exam" in {
-      client.getProposalAddExam.handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke(exam0).map {
+      val moduleId = "mockModuleId"
+      val createdCourse = course.addCourse(course0.copy(moduleIds = Seq(moduleId)))
+      val examModified = exam0.copy(courseId = createdCourse.courseId, moduleId = moduleId, lecturerEnrollmentId = certificate.get(lecturer0.username).enrollmentId)
+      client.getProposalAddExam.handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke(examModified).map {
         unsignedProposalJson: UnsignedProposal =>
-          asString(unsignedProposalJson.unsignedProposal).fromJson[Exam] should ===(exam0)
+          asString(unsignedProposalJson.unsignedProposal).fromJson[Exam] should ===(examModified)
       }
     }
 
