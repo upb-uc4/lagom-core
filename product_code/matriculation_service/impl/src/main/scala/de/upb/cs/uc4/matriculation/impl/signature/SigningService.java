@@ -74,6 +74,7 @@ public class SigningService {
         if (absolutPath.exists()) {
             key = absolutPath;
         } else {
+            log.warn("Use built-in key store");
             key = new File(getClass().getResource(keyStorePath).getPath());
         }
         keyStore.load(new FileInputStream(key), keyStorePassword.toCharArray());
