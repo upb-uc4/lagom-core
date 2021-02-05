@@ -1,5 +1,6 @@
 package de.upb.cs.uc4.matriculation
 
+import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
@@ -43,6 +44,11 @@ class MatriculationServiceStub extends MatriculationService {
       case Some(data) => Future.successful(data)
       case None       => Future.failed(UC4Exception.NotFound)
     }
+  }
+
+  /** Returns a pdf with the certificate of enrollment */
+  override def getCertificateOfEnrollment(username: String, semester: String): ServiceCall[NotUsed, ByteString] = {
+    _ => Future.successful(ByteString(""))
   }
 
   /** Allows POST */
