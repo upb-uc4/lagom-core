@@ -4,6 +4,7 @@ import akka.Done
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.stream.scaladsl.Flow
 import akka.util.Timeout
+import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaClientComponents
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
@@ -34,6 +35,7 @@ abstract class OperationApplication(context: LagomApplicationContext)
   with JdbcPersistenceComponents
   with HikariCPComponents
   with HyperledgerComponent
+  with LagomKafkaClientComponents
   with KafkaEncryptionComponent {
 
   private final val log: Logger = LoggerFactory.getLogger(classOf[OperationApplication])
