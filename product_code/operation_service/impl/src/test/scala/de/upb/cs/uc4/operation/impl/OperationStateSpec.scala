@@ -104,7 +104,7 @@ class OperationStateSpec extends ScalaTestWithActorTestKit(s"""
 
     "clear the watchlist" in {
       val opId = "operation1"
-      val ref = spawn(OperationDatabaseBehaviour.create(PersistenceId("fake-type-hint", "fake-id-2")))
+      val ref = spawn(OperationDatabaseBehaviour.create(PersistenceId("fake-type-hint", "fake-id-6")))
       val probe1 = createTestProbe[Confirmation]()
       ref ! AddToWatchlist(opId, probe1.ref)
       probe1.expectMessageType[Accepted]

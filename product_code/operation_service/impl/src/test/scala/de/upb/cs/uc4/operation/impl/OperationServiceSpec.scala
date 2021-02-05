@@ -333,8 +333,7 @@ class OperationServiceSpec extends AsyncWordSpec
     }
 
     //WATCHLIST
-
-    "get a user's watchlist" in {
+    "get the watchlist of a user" in {
       prepare(Seq(operation1, operation2))
       client.addToWatchList(student0).handleRequestHeader(addAuthorizationHeader(student0)).invoke(JsonOperationId(operation1.operationId)).flatMap {
         _ =>
@@ -346,7 +345,7 @@ class OperationServiceSpec extends AsyncWordSpec
       }.flatMap(cleanupOnSuccess(_, student0)).recoverWith(cleanupOnFailure(student0))
     }
 
-    "fail on trying to get another user's watchlist" in {
+    "fail on trying to get the watchlist of another user" in {
       client.getWatchlist(student0).handleRequestHeader(addAuthorizationHeader(student1)).invoke().failed.map {
         exception => exception.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
       }.flatMap(cleanupOnSuccess(_, student0)).recoverWith(cleanupOnFailure(student0))
