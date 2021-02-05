@@ -50,8 +50,8 @@ class AdmissionServiceSpec extends AsyncWordSpec
           certificateService.get(student0.username).enrollmentId, examReg0.name, "SS2020"
         ))
 
-        var courseAdmissionList: Seq[CourseAdmission] = List()
-        var examAdmissionList: Seq[ExamAdmission] = List()
+        var courseAdmissionList: Seq[CourseAdmission] = Seq()
+        var examAdmissionList: Seq[ExamAdmission] = Seq()
 
         override def createHyperledgerActor: AdmissionBehaviour = new AdmissionBehaviour(config) {
 
@@ -149,7 +149,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
   }
 
   def cleanup(): Unit = {
-    server.application.courseAdmissionList = List()
+    server.application.courseAdmissionList = Seq()
   }
 
   private def asString(unsignedProposal: String) = new String(Base64.getDecoder.decode(unsignedProposal), StandardCharsets.UTF_8)
