@@ -1,31 +1,31 @@
 package de.upb.cs.uc4.examresult.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.stream.Materializer
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.examresult.api.ExamResultService
-import de.upb.cs.uc4.examresult.impl.actor.{ExamResultBehaviour, ExamResultWrapper}
-import de.upb.cs.uc4.examresult.impl.commands.{GetExamResultEntries, GetProposalAddExamResult}
-import de.upb.cs.uc4.examresult.model.{ExamResult, ExamResultEntry}
-import de.upb.cs.uc4.hyperledger.api.model.{JsonHyperledgerVersion, UnsignedProposal}
-import de.upb.cs.uc4.hyperledger.impl.{HyperledgerUtils, ProposalWrapper}
+import de.upb.cs.uc4.examresult.impl.actor.{ ExamResultBehaviour, ExamResultWrapper }
+import de.upb.cs.uc4.examresult.impl.commands.{ GetExamResultEntries, GetProposalAddExamResult }
+import de.upb.cs.uc4.examresult.model.{ ExamResult, ExamResultEntry }
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
+import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
-import de.upb.cs.uc4.shared.client.exceptions.{DetailedError, ErrorType, UC4Exception, UC4NonCriticalException}
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
-import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 import scala.concurrent.duration._
 
 /** Implementation of the ExamService */
@@ -59,48 +59,51 @@ class ExamResultServiceImpl(
   /** Returns ExamResultEntries, optionally filtered */
   override def getExamResults(username: Option[String], examIds: Option[String]): ServiceCall[NotUsed, Seq[ExamResultEntry]] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUser, role) =>
-      ServerServiceCall { (header, _) => {
+      ServerServiceCall { (header, _) =>
+        {
 
-        val authErrorFuture = role match {
-          case AuthenticationRole.Admin =>
-            Future.successful(Done)
-          case AuthenticationRole.Lecturer =>
-            if (examIds.isEmpty) {
-              throw UC4Exception.OwnerMismatch
-            } else {
-              certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-                authEnrollmentId =>
-                  examService.getExams(examIds, None, None, None, None, None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
-                    exams =>
-                      if (exams.forall(exam => exam.lecturerEnrollmentId == authEnrollmentId.id)) {
-                        Done
-                      } else {
-                        throw UC4Exception.OwnerMismatch
-                      }
-                  }
+          val authErrorFuture = role match {
+            case AuthenticationRole.Admin =>
+              Future.successful(Done)
+            case AuthenticationRole.Lecturer =>
+              if (examIds.isEmpty) {
+                throw UC4Exception.OwnerMismatch
               }
-            }
-          case AuthenticationRole.Student if username.isEmpty || username.get.trim != authUser =>
-            throw UC4Exception.OwnerMismatch
-        }
-        authErrorFuture.flatMap {
-          _ =>
+              else {
+                certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+                  authEnrollmentId =>
+                    examService.getExams(examIds, None, None, None, None, None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
+                      exams =>
+                        if (exams.forall(exam => exam.lecturerEnrollmentId == authEnrollmentId.id)) {
+                          Done
+                        }
+                        else {
+                          throw UC4Exception.OwnerMismatch
+                        }
+                    }
+                }
+              }
+            case AuthenticationRole.Student if username.isEmpty || username.get.trim != authUser =>
+              throw UC4Exception.OwnerMismatch
+          }
+          authErrorFuture.flatMap {
+            _ =>
 
-            val optEnrollmentId = username match {
-              case Some(id) =>
-                certificateService.getEnrollmentId(id).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
-              case None =>
-                Future.successful(None)
-            }
+              val optEnrollmentId = username match {
+                case Some(id) =>
+                  certificateService.getEnrollmentId(id).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
+                case None =>
+                  Future.successful(None)
+              }
 
-            optEnrollmentId.flatMap { id =>
-              entityRef.askWithStatus[ExamResultWrapper](replyTo => GetExamResultEntries(id, examIds.map(_.trim.split(",")), replyTo)).map {
-                examResultEntries =>
-                  (ResponseHeader(200, MessageProtocol.empty, List()), examResultEntries.examResults)
-              }.recover(handleException("getExamResults failed"))
-            }
+              optEnrollmentId.flatMap { id =>
+                entityRef.askWithStatus[ExamResultWrapper](replyTo => GetExamResultEntries(id, examIds.map(_.trim.split(",")), replyTo)).map {
+                  examResultEntries =>
+                    (ResponseHeader(200, MessageProtocol.empty, List()), examResultEntries.examResults)
+                }.recover(handleException("getExamResults failed"))
+              }
+          }
         }
-      }
       }
   }
 

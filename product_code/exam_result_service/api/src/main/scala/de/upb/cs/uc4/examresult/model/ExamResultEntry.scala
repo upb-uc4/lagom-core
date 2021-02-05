@@ -2,9 +2,9 @@ package de.upb.cs.uc4.examresult.model
 
 import de.upb.cs.uc4.shared.client.configuration.ConfigurationCollection
 import de.upb.cs.uc4.shared.client.exceptions.SimpleError
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 case class ExamResultEntry(enrollmentId: String, examId: String, grade: String) {
   def trim: ExamResultEntry = {
