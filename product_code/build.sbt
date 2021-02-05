@@ -235,7 +235,7 @@ lazy val exam_service = (project in file("exam_service/impl"))
 
 lazy val exam_result_service_api =  (project in file("exam_result_service/api"))
   .settings(Settings.apiSettings("exam_result_service_api"))
-  .dependsOn(shared_client, hyperledger_component_api)
+  .dependsOn(shared_client, hyperledger_component_api, exam_service_api % onlyTests)
 
 lazy val exam_result_service = (project in file("exam_result_service/impl"))
   .enablePlugins(LagomScala)
@@ -244,7 +244,7 @@ lazy val exam_result_service = (project in file("exam_result_service/impl"))
   )
   .settings(Settings.implSettings("exam_result_service"))
   .dependsOn(operation_service_api % withTests, exam_service_api % withTests, exam_result_service_api % withTests, certificate_service_api % withTests,
-    shared_client % withTests, shared_server % withTests, hyperledger_component_impl)
+    shared_client % withTests, shared_server % withTests, hyperledger_component_impl, user_service_api % onlyTests)
 
 lazy val report_service_api =  (project in file("report_service/api"))
   .settings(Settings.apiSettings("report_service_api"))

@@ -28,7 +28,7 @@ class AdmissionBehaviour(val config: Config) extends HyperledgerActor[Connection
   override protected def applyCommand(connection: ConnectionAdmissionTrait, command: HyperledgerCommand[_]): Unit = command match {
     case GetCourseAdmissions(enrollmentId, courseId, moduleId, replyTo) =>
       replyTo ! StatusReply.success(AdmissionsWrapper(
-        connection.getAdmissions(enrollmentId.getOrElse(""), courseId.getOrElse(""), moduleId.getOrElse("")).fromJson[Seq[CourseAdmission]]
+        connection.getCourseAdmissions(enrollmentId.getOrElse(""), courseId.getOrElse(""), moduleId.getOrElse("")).fromJson[Seq[CourseAdmission]]
       ))
 
     case GetExamAdmissions(enrollmentId, admissionIds, examIds, replyTo) =>
