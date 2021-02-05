@@ -16,6 +16,7 @@ import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
+import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.report.api.ReportService
 import de.upb.cs.uc4.report.impl.actor.{ ReportState, ReportStateEnum, ReportWrapper, TextReport }
 import de.upb.cs.uc4.report.impl.commands._
@@ -45,6 +46,7 @@ class ReportServiceImpl(
     matriculationService: MatriculationService,
     certificateService: CertificateService,
     admissionService: AdmissionService,
+    operationService: OperationService,
     override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ReportService {
 
@@ -112,6 +114,20 @@ class ReportServiceImpl(
         }
     }
 
+    val operationFuture = operationService.getOperations(Some(false), Some(false), Some(""), Some(false))
+      .handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+        case exception: Exception =>
+          log.error(s"Prepare of $username at $timestamp ; operationFuture failed", exception)
+          throw exception
+      }
+
+    val watchlistFuture = operationService.getWatchlist(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+      .recover {
+        case exception: Exception =>
+          log.error(s"Prepare of $username at $timestamp ; operationFuture failed", exception)
+          throw exception
+      }
+
     for {
       user <- userFuture
       profilePicture <- profilePictureFuture
@@ -122,8 +138,11 @@ class ReportServiceImpl(
       immatriculationData <- matriculationFuture
       courses <- coursesFuture
       admissions <- admissionFuture
+      operations <- operationFuture
+      watchlist <- watchlistFuture
     } yield {
-      val report = TextReport(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey, immatriculationData, courses, admissions, timestamp)
+      val report = TextReport(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey,
+        immatriculationData, courses, admissions, operations, watchlist, timestamp)
       entityRef(username).ask[Confirmation](replyTo => SetReport(report, profilePicture.toArray, thumbnail.toArray, timestamp, replyTo)).map {
         case Accepted(_) =>
         case Rejected(statusCode, reason) =>

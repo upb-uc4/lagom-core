@@ -11,6 +11,8 @@ import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.course.CourseServiceStub
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
+import de.upb.cs.uc4.operation.OperationServiceStub
+import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.report.api.ReportService
 import de.upb.cs.uc4.report.impl.actor.ReportState
 import de.upb.cs.uc4.report.impl.commands.ReportCommand
@@ -48,6 +50,7 @@ class ReportServiceSpec extends AsyncWordSpec
         override lazy val matriculationService: MatriculationServiceStub = new MatriculationServiceStub
         override lazy val userService: UserServiceStub = new UserServiceStubWithTopic(internDeletionStub)
         override lazy val admissionService: AdmissionService = new AdmissionServiceStub
+        override lazy val operationService: OperationServiceStub = new OperationServiceStub
       }
     }
 
@@ -56,6 +59,7 @@ class ReportServiceSpec extends AsyncWordSpec
   val user: UserServiceStub = server.application.userService
   val course: CourseServiceStub = server.application.courseService
   val matriculation: MatriculationServiceStub = server.application.matriculationService
+  val operation: OperationServiceStub = server.application.operationService
 
   override protected def afterAll(): Unit = server.stop()
 

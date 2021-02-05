@@ -14,6 +14,7 @@ import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.matriculation.api.MatriculationService
+import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.report.api.ReportService
 import de.upb.cs.uc4.report.impl.actor.{ ReportBehaviour, ReportState }
 import de.upb.cs.uc4.report.impl.commands.DeleteReport
@@ -50,6 +51,7 @@ abstract class ReportApplication(context: LagomApplicationContext)
   lazy val matriculationService: MatriculationService = serviceClient.implement[MatriculationService]
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
   lazy val admissionService: AdmissionService = serviceClient.implement[AdmissionService]
+  lazy val operationService: OperationService = serviceClient.implement[OperationService]
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
   // a given sharding entity typeKey.
