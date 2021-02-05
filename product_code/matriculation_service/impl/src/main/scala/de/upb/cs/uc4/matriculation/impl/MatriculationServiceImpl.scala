@@ -217,7 +217,7 @@ class MatriculationServiceImpl(
               pdf = pdf.replace("{startDate}", Utils.semesterToStartDate(semester))
               pdf = pdf.replace("{endDate}", Utils.semesterToEndDate(semester))
               pdf = pdf.replace("{address}", config.getString("uc4.pdf.address").replace("\n", "<br>"))
-              pdf = pdf.replace("{organization}", config.getString("uc4.pf.organization"))
+              pdf = pdf.replace("{organization}", config.getString("uc4.pdf.organization"))
               pdf = pdf.replace("{semesterCount}", data.matriculationStatus.flatMap(_.semesters).distinct.size.toString)
 
               pdf = pdf.replace("{subjectList}", data.matriculationStatus.filter(_.semesters.contains(semester))
