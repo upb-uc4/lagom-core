@@ -10,6 +10,12 @@ import de.upb.cs.uc4.admission.AdmissionServiceStub
 import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.course.CourseServiceStub
+import de.upb.cs.uc4.exam.ExamServiceStub
+import de.upb.cs.uc4.exam.api.ExamService
+import de.upb.cs.uc4.exam.model.Exam
+import de.upb.cs.uc4.examresult.ExamResultServiceStub
+import de.upb.cs.uc4.examresult.api.ExamResultService
+import de.upb.cs.uc4.examresult.model.ExamResultEntry
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
 import de.upb.cs.uc4.report.api.ReportService
 import de.upb.cs.uc4.report.impl.actor.ReportState
@@ -48,6 +54,8 @@ class ReportServiceSpec extends AsyncWordSpec
         override lazy val matriculationService: MatriculationServiceStub = new MatriculationServiceStub
         override lazy val userService: UserServiceStub = new UserServiceStubWithTopic(internDeletionStub)
         override lazy val admissionService: AdmissionService = new AdmissionServiceStub
+        override lazy val examService: ExamServiceStub = new ExamServiceStub
+        override lazy val examResultService: ExamResultServiceStub = new ExamResultServiceStub
       }
     }
 
@@ -56,6 +64,8 @@ class ReportServiceSpec extends AsyncWordSpec
   val user: UserServiceStub = server.application.userService
   val course: CourseServiceStub = server.application.courseService
   val matriculation: MatriculationServiceStub = server.application.matriculationService
+  val exam: ExamServiceStub = server.application.examService
+  val examResult: ExamResultServiceStub = server.application.examResultService
 
   override protected def afterAll(): Unit = server.stop()
 
@@ -67,6 +77,8 @@ class ReportServiceSpec extends AsyncWordSpec
       student0.username,
       matriculation.createSingleImmatriculationData(certificate.get(student0.username).enrollmentId, "Bachelor Computer Science v3", "SS2020")
     )
+    exam.addExam(Exam("", "", "", lecturer0.username, "", "", 5, "", ""))
+    examResult.setup(ExamResultEntry(student0.username, "", "1.0"))
   }
 
   private def entityRef(id: String): EntityRef[ReportCommand] =
