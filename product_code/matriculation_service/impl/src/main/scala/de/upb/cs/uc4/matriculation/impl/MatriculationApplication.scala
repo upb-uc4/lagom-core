@@ -8,7 +8,6 @@ import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerComponent
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
-import de.upb.cs.uc4.pdf.api.PdfProcessingService
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.user.api.UserService

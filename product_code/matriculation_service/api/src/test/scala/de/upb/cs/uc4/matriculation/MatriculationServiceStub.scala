@@ -46,11 +46,6 @@ class MatriculationServiceStub extends MatriculationService {
     }
   }
 
-  /** Returns a pdf with the certificate of enrollment */
-  override def getCertificateOfEnrollment(username: String, semesterBase64: Option[String]): ServiceCall[NotUsed, ByteString] = {
-    _ => Future.successful(ByteString(""))
-  }
-
   /** Allows POST */
   override def allowedPost: ServiceCall[NotUsed, Done] = { _ => Future.successful(Done) }
 

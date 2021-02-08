@@ -26,9 +26,6 @@ trait MatriculationService extends UC4HyperledgerService {
   /** Returns the ImmatriculationData of a student with the given username */
   def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData]
 
-  /** Returns a pdf with the certificate of enrollment */
-  def getCertificateOfEnrollment(username: String, semesterBase64: Option[String]): ServiceCall[NotUsed, ByteString]
-
   /** Allows POST */
   def allowedPost: ServiceCall[NotUsed, Done]
 
