@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.matriculation.impl.signature;
+package de.upb.cs.uc4.report.impl.signature;
 
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.cms.Attribute;

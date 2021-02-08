@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.matriculation.impl.signature;
+package de.upb.cs.uc4.report.impl.signature;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;

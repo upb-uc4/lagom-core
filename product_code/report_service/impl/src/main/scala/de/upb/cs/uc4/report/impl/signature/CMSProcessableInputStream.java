@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.matriculation.impl.signature;
+package de.upb.cs.uc4.report.impl.signature;
 
 import org.apache.pdfbox.io.IOUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;

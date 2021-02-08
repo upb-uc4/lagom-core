@@ -1,3 +1,9 @@
+# [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.16.1...report-v0.17.1) (2021-01-28)
+## Feature
+ - Added endpoint for fetching a pdf with the certificate of enrollment
+## Refactor
+## Bugfix
+
 # [v0.16.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.16.0...report-v0.16.1) (2021-01-28)
 ## Feature
 ## Refactor

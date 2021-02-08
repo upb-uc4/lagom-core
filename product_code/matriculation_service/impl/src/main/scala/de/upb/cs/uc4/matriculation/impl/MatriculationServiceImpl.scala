@@ -17,18 +17,15 @@ import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands._
-import de.upb.cs.uc4.matriculation.impl.signature.SigningService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
-import de.upb.cs.uc4.pdf.api.PdfProcessingService
-import de.upb.cs.uc4.pdf.model.PdfProcessor
 import de.upb.cs.uc4.shared.client.Utils
+import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.Student
-import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
@@ -43,7 +40,6 @@ import scala.util.Using
 /** Implementation of the MatriculationService */
 class MatriculationServiceImpl(
     clusterSharding: ClusterSharding,
-    pdfService: PdfProcessingService,
     userService: UserService,
     examregService: ExamregService,
     certificateService: CertificateService,
@@ -61,23 +57,6 @@ class MatriculationServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   private final val log: Logger = LoggerFactory.getLogger(classOf[MatriculationServiceImpl])
-
-  private lazy val absoluteCertificateEnrollmentHtml = new File(config.getString("uc4.pdf.certificateEnrollmentHtml"))
-  lazy val certificateEnrollmentHtml: String = if (absoluteCertificateEnrollmentHtml.exists()) {
-    Using(Source.fromFile(absoluteCertificateEnrollmentHtml)) { source =>
-      source.getLines().mkString("\n")
-    }.getOrElse("")
-  }
-  else {
-    Source.fromResource("certificateEnrollment.html").getLines().mkString("\n")
-  }
-
-  lazy val signatureService = new SigningService(
-    config.getString("uc4.pdf.keyStorePath"),
-    config.getString("uc4.pdf.keyStorePassword"),
-    config.getString("uc4.pdf.certificateAlias"),
-    config.getString("uc4.pdf.tsaURL")
-  )
 
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
@@ -196,55 +175,6 @@ class MatriculationServiceImpl(
                   data => createETagHeader(header, data)
                 }.recover(handleException("get matriculation data failed"))
               }
-          }
-        }
-    }
-
-  /** Returns a pdf with the certificate of enrollment */
-  override def getCertificateOfEnrollment(username: String, semesterBase64: Option[String]): ServiceCall[NotUsed, ByteString] =
-    identifiedAuthenticated(AuthenticationRole.Student) {
-      (authUsername, _) =>
-        ServerServiceCall { (header, _) =>
-          if (authUsername != username) {
-            throw UC4Exception.OwnerMismatch
-          }
-          var pdf = certificateEnrollmentHtml
-
-          userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { user =>
-            getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { data =>
-
-              val semester = if (semesterBase64.isDefined) {
-                new String(Base64.getUrlDecoder.decode(semesterBase64.get), StandardCharsets.UTF_8)
-              }
-              else {
-                Utils.findLatestSemester(data.matriculationStatus.flatMap(_.semesters))
-              }
-
-              val validationList = semester.validateSemester
-
-              if (validationList.nonEmpty) {
-                throw UC4Exception(422, DetailedError(ErrorType.Validation, validationList))
-              }
-
-              pdf = pdf.replace("{studentName}", s"${user.firstName}  ${user.lastName}")
-              pdf = pdf.replace("{matriculationId}", user.asInstanceOf[Student].matriculationId)
-              pdf = pdf.replace("{enrollmentId}", data.enrollmentId)
-              pdf = pdf.replace("{semester}", semester)
-              pdf = pdf.replace("{startDate}", Utils.semesterToStartDate(semester))
-              pdf = pdf.replace("{endDate}", Utils.semesterToEndDate(semester))
-              pdf = pdf.replace("{address}", config.getString("uc4.pdf.address").replace("\n", "<br>"))
-              pdf = pdf.replace("{organization}", config.getString("uc4.pdf.organization"))
-              pdf = pdf.replace("{semesterCount}", data.matriculationStatus.flatMap(_.semesters).distinct.size.toString)
-
-              pdf = pdf.replace("{subjectList}", data.matriculationStatus.filter(_.semesters.contains(semester))
-                .map(subj => s"<li>${subj.fieldOfStudy} (${subj.semesters.size})</li>").mkString("\n"))
-
-              pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
-                val output = signatureService.signPdf(pdfBytes.toArray)
-
-                (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
-              }
-            }
           }
         }
     }

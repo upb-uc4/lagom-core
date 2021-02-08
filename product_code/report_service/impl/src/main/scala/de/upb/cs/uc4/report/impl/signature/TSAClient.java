@@ -1,4 +1,4 @@
-package de.upb.cs.uc4.matriculation.impl.signature;
+package de.upb.cs.uc4.report.impl.signature;
 
 import org.apache.logging.log4j.util.Strings;
 import org.apache.pdfbox.io.IOUtils;

@@ -22,7 +22,6 @@ abstract class MatriculationApplication(context: LagomApplicationContext)
   // Bind Services
   lazy val userService: UserService = serviceClient.implement[UserService]
   lazy val examregService: ExamregService = serviceClient.implement[ExamregService]
-  lazy val pdfService: PdfProcessingService = serviceClient.implement[PdfProcessingService]
   lazy val operationService: OperationService = serviceClient.implement[OperationService]
 
   //Bind CertificateService

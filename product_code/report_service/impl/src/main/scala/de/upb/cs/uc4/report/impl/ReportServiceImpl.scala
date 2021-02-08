@@ -15,25 +15,33 @@ import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.matriculation.model.ImmatriculationData
+import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, SubjectMatriculation }
+import de.upb.cs.uc4.pdf.api.PdfProcessingService
+import de.upb.cs.uc4.pdf.model.PdfProcessor
 import de.upb.cs.uc4.report.api.ReportService
 import de.upb.cs.uc4.report.impl.actor.{ ReportState, ReportStateEnum, ReportWrapper, TextReport }
 import de.upb.cs.uc4.report.impl.commands._
+import de.upb.cs.uc4.report.impl.signature.SigningService
+import de.upb.cs.uc4.shared.client.Utils
+import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, _ }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
+import de.upb.cs.uc4.user.model.user.Student
 import net.lingala.zip4j.ZipFile
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 import play.api.libs.json.Json
 
-import java.io.{ ByteArrayInputStream, FileWriter }
+import java.io.{ ByteArrayInputStream, File, FileWriter }
+import java.nio.charset.StandardCharsets
 import java.nio.file.{ Files, Paths }
-import java.util.Calendar
+import java.util.{ Base64, Calendar }
 import javax.imageio.ImageIO
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.io.Source
 import scala.reflect.io.Directory
 import scala.util.Using
 
@@ -45,6 +53,7 @@ class ReportServiceImpl(
     matriculationService: MatriculationService,
     certificateService: CertificateService,
     admissionService: AdmissionService,
+    pdfService: PdfProcessingService,
     override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ReportService {
 
@@ -55,6 +64,23 @@ class ReportServiceImpl(
     clusterSharding.entityRefFor(ReportState.typeKey, id)
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
+
+  private lazy val absoluteCertificateEnrollmentHtml = new File(config.getString("uc4.pdf.certificateEnrollmentHtml"))
+  lazy val certificateEnrollmentHtml: String = if (absoluteCertificateEnrollmentHtml.exists()) {
+    Using(Source.fromFile(absoluteCertificateEnrollmentHtml)) { source =>
+      source.getLines().mkString("\n")
+    }.getOrElse("")
+  }
+  else {
+    Source.fromResource("certificateEnrollment.html").getLines().mkString("\n")
+  }
+
+  lazy val signatureService = new SigningService(
+    config.getString("uc4.pdf.keyStorePath"),
+    config.getString("uc4.pdf.keyStorePassword"),
+    config.getString("uc4.pdf.certificateAlias"),
+    config.getString("uc4.pdf.tsaURL")
+  )
 
   /** Request collection of all data for the given user */
   def prepareUserData(username: String, role: AuthenticationRole, header: RequestHeader, timestamp: String): Future[Done] = Future {
@@ -243,9 +269,65 @@ class ReportServiceImpl(
       }
   }
 
+  /** Returns a pdf with the certificate of enrollment */
+  override def getCertificateOfEnrollment(username: String, semesterBase64: Option[String]): ServiceCall[NotUsed, ByteString] =
+    identifiedAuthenticated(AuthenticationRole.Student) {
+      (authUsername, _) =>
+        ServerServiceCall { (header, _) =>
+          if (authUsername != username) {
+            throw UC4Exception.OwnerMismatch
+          }
+          var pdf = certificateEnrollmentHtml
+
+          userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { user =>
+            matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { data: ImmatriculationData =>
+
+              val semester = if (semesterBase64.isDefined) {
+                new String(Base64.getUrlDecoder.decode(semesterBase64.get), StandardCharsets.UTF_8)
+              }
+              else {
+                Utils.findLatestSemester(data.matriculationStatus.flatMap(_.semesters))
+              }
+
+              val validationList = semester.validateSemester
+
+              if (validationList.nonEmpty) {
+                throw UC4Exception(422, DetailedError(ErrorType.Validation, validationList))
+              }
+
+              val enrollmentExists = data.matriculationStatus.map(subjectMatriculation => subjectMatriculation.semesters.contains(semester)).reduce(_ || _)
+              if (!enrollmentExists) {
+                throw UC4Exception.NotFound
+              }
+
+              pdf = pdf.replace("{studentName}", s"${user.firstName}  ${user.lastName}")
+              pdf = pdf.replace("{matriculationId}", user.asInstanceOf[Student].matriculationId)
+              pdf = pdf.replace("{enrollmentId}", data.enrollmentId)
+              pdf = pdf.replace("{semester}", semester)
+              pdf = pdf.replace("{startDate}", Utils.semesterToStartDate(semester))
+              pdf = pdf.replace("{endDate}", Utils.semesterToEndDate(semester))
+              pdf = pdf.replace("{address}", config.getString("uc4.pdf.address").replace("\n", "<br>"))
+              pdf = pdf.replace("{organization}", config.getString("uc4.pdf.organization"))
+              pdf = pdf.replace("{semesterCount}", data.matriculationStatus.flatMap(_.semesters).distinct.size.toString)
+
+              pdf = pdf.replace("{subjectList}", data.matriculationStatus.filter(_.semesters.contains(semester))
+                .map(subj => s"<li>${subj.fieldOfStudy} (${subj.semesters.size})</li>").mkString("\n"))
+
+              pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
+                val output = signatureService.signPdf(pdfBytes.toArray)
+
+                (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
+              }
+            }
+          }
+        }
+    }
+
   /** Allows GET */
   override def allowedMethodsGETDELETE: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, DELETE")
 
-  override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
+  /** Allows GET */
+  override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
 }

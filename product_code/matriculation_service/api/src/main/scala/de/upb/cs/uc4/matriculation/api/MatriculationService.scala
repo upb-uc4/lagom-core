@@ -41,11 +41,9 @@ trait MatriculationService extends UC4HyperledgerService {
       .addCalls(
         restCall(Method.POST, pathPrefix + "/matriculation/:username/unsigned_proposal", getMatriculationProposal _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/matriculation/:username", getMatriculationData _),
-        restCall(Method.GET, pathPrefix + "/matriculation/:username/certificate?semester", getCertificateOfEnrollment _),
 
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/unsigned_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username", allowedGet _),
-        restCall(Method.OPTIONS, pathPrefix + "/pdf/:username", allowedGet _)
       )
   }
 }
