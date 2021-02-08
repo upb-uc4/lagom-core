@@ -33,8 +33,7 @@ class ExamResultServiceStub extends ExamResultService {
     _ =>
       Future.successful(examResults
         .filter(entry => username.isEmpty || entry.enrollmentId == username.get)
-        .filter(entry => examIds.isEmpty || examIds.get.split(",").toSeq.contains(entry.examId))
-      )
+        .filter(entry => examIds.isEmpty || examIds.get.split(",").toSeq.contains(entry.examId)))
   }
 
   /** Get a proposals for adding the result of an exam */
@@ -50,9 +49,9 @@ class ExamResultServiceStub extends ExamResultService {
 
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   override def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion] = {
-    _ => Future.successful(JsonHyperledgerVersion("",""))
+    _ => Future.successful(JsonHyperledgerVersion("", ""))
   }
 
   /** This Methods needs to allow a GET-Method */
-  override def allowVersionNumber: ServiceCall[NotUsed, Done] =  _ => Future.successful(Done)
+  override def allowVersionNumber: ServiceCall[NotUsed, Done] = _ => Future.successful(Done)
 }
