@@ -21,10 +21,13 @@ import de.upb.cs.uc4.user.DefaultTestUsers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
-
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.util.Base64
+
+import de.upb.cs.uc4.course.model.Course
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
+
 import scala.language.reflectiveCalls
 
 /** Tests for the ExamService */
@@ -39,7 +42,7 @@ class ExamServiceSpec extends AsyncWordSpec
         override lazy val operationService: OperationServiceStub = new OperationServiceStub
         override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
 
-        certificateService.setup(lecturer0.username)
+        certificateService.setup(lecturer0.username, lecturer1.username)
         courseService.resetToDefaults()
 
         var exams: Seq[Exam] = Seq()
@@ -87,6 +90,10 @@ class ExamServiceSpec extends AsyncWordSpec
   val certificate: CertificateServiceStub = server.application.certificateService
   val course: CourseServiceStub = server.application.courseService
 
+  val moduleId = "mockModuleId"
+  val createdCourse: Course = course.addCourse(course0.copy(moduleIds = Seq(moduleId)))
+  val examOfLecturer0Modified: Exam = exam0.copy(courseId = createdCourse.courseId, moduleId = moduleId, lecturerEnrollmentId = certificate.get(lecturer0.username).enrollmentId)
+
   override protected def afterAll(): Unit = server.stop()
 
   def prepare(exam: Exam*): Unit = {
@@ -108,12 +115,34 @@ class ExamServiceSpec extends AsyncWordSpec
     }
 
     "get proposal add exam" in {
-      val moduleId = "mockModuleId"
-      val createdCourse = course.addCourse(course0.copy(moduleIds = Seq(moduleId)))
-      val examModified = exam0.copy(courseId = createdCourse.courseId, moduleId = moduleId, lecturerEnrollmentId = certificate.get(lecturer0.username).enrollmentId)
-      client.getProposalAddExam.handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke(examModified).map {
+      client.getProposalAddExam.handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke(examOfLecturer0Modified).map {
         unsignedProposalJson: UnsignedProposal =>
-          asString(unsignedProposalJson.unsignedProposal).fromJson[Exam] should ===(examModified)
+          asString(unsignedProposalJson.unsignedProposal).fromJson[Exam] should ===(examOfLecturer0Modified)
+      }
+    }
+
+    "not get proposal add exam for another lecturer" in {
+      client.getProposalAddExam.handleRequestHeader(addAuthorizationHeader(lecturer1.username)).invoke(examOfLecturer0Modified).failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
+    }
+
+    "not get proposal add exam with an invalid moduleId" in {
+      val invalidExamModified = examOfLecturer0Modified.copy(moduleId = "NonExistingmoduleId")
+      client.getProposalAddExam.handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke(invalidExamModified).failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
+            contain theSameElementsAs Seq("moduleId")
+      }
+    }
+    "not get proposal add exam for a non existing course" in {
+
+      val invalidExamModified = examOfLecturer0Modified.copy(courseId = "NonExistingCourseId")
+      client.getProposalAddExam.handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke(invalidExamModified).failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
+            contain theSameElementsAs Seq("courseId")
       }
     }
 
