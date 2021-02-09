@@ -19,7 +19,7 @@ object Dependencies {
   val bouncycastlePKIX = "org.bouncycastle" % "bcpkix-jdk15on" % "1.62"
   val log4jAPI = "org.apache.logging.log4j" %% "log4j-api-scala" % "12.0"
   val log4jCore = "org.apache.logging.log4j" % "log4j-core" % "2.13.3" % Runtime
-  val ApacheCommonsIO = "commons-io" % "commons-io" % "2.8.0"
+  val apacheCommonsIO = "commons-io" % "commons-io" % "2.8.0"
 
   val apiDefaultDependencies = Seq(
     lagomScaladslApi,
