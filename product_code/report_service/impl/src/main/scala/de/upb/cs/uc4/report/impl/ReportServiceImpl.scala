@@ -1,5 +1,10 @@
 package de.upb.cs.uc4.report.impl
 
+import java.io.{ ByteArrayInputStream, File, FileWriter }
+import java.nio.charset.StandardCharsets
+import java.nio.file.{ Files, Paths }
+import java.util.{ Base64, Calendar }
+
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
@@ -15,7 +20,7 @@ import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.matriculation.api.MatriculationService
-import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, SubjectMatriculation }
+import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.pdf.api.PdfProcessingService
 import de.upb.cs.uc4.pdf.model.PdfProcessor
 import de.upb.cs.uc4.report.api.ReportService
@@ -29,21 +34,17 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.Student
+import javax.imageio.ImageIO
 import net.lingala.zip4j.ZipFile
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 import play.api.libs.json.Json
 
-import java.io.{ ByteArrayInputStream, File, FileWriter }
-import java.nio.charset.StandardCharsets
-import java.nio.file.{ Files, Paths }
-import java.util.{ Base64, Calendar }
-import javax.imageio.ImageIO
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.io.Source
 import scala.reflect.io.Directory
-import scala.util.Using
+import scala.util.{ Failure, Success, Try, Using }
 
 /** Implementation of the ReportService */
 class ReportServiceImpl(
@@ -65,14 +66,29 @@ class ReportServiceImpl(
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
-  private lazy val absoluteCertificateEnrollmentHtml = new File(config.getString("uc4.pdf.certificateEnrollmentHtml"))
-  lazy val certificateEnrollmentHtml: String = if (absoluteCertificateEnrollmentHtml.exists()) {
-    Using(Source.fromFile(absoluteCertificateEnrollmentHtml)) { source =>
-      source.getLines().mkString("\n")
-    }.getOrElse("")
-  }
-  else {
-    Source.fromResource("certificateEnrollment.html").getLines().mkString("\n")
+  private lazy val absoluteCertificateEnrollmentHtml = new File(
+    Try { config.getString("uc4.pdf.certificateEnrollmentHtml") } match {
+      case Success(path) => path
+      case Failure(ex) =>
+        log.error("Absolut path to certificateEnrollmentHtml invalid or not defined", ex)
+        ""
+    }
+  )
+
+  lazy val certificateEnrollmentHtml: String = Try {
+    if (absoluteCertificateEnrollmentHtml.exists()) {
+      Using(Source.fromFile(absoluteCertificateEnrollmentHtml)) { source =>
+        source.getLines().mkString("\n")
+      }.getOrElse("")
+    }
+    else {
+      Source.fromResource("certificateEnrollment.html").getLines().mkString("\n")
+    }
+  } match {
+    case Success(html) => html
+    case Failure(ex) =>
+      log.error("Error when trying to load certificateEnrollmentHtml", ex)
+      ""
   }
 
   lazy val signatureService = new SigningService(
