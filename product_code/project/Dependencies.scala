@@ -51,6 +51,6 @@ object Dependencies {
     bouncycastlePKIX,
     log4jAPI,
     log4jCore,
-    ApacheCommonsIO
+    apacheCommonsIO
   )
 }
