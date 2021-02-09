@@ -40,7 +40,7 @@ trait MatriculationService extends UC4HyperledgerService {
         restCall(Method.GET, pathPrefix + "/matriculation/:username", getMatriculationData _),
 
         restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username/unsigned_proposal", allowedPost _),
-        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/matriculation/:username", allowedGet _)
       )
   }
 }
