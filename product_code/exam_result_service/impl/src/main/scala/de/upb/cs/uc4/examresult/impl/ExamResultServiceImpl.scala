@@ -20,7 +20,7 @@ import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
@@ -85,6 +85,9 @@ class ExamResultServiceImpl(
               }
             case AuthenticationRole.Student if username.isEmpty || username.get.trim != authUser =>
               throw UC4Exception.OwnerMismatch
+            case AuthenticationRole.Student =>
+              Future.successful(Done)
+            case _ => throw UC4Exception.InternalServerError("Error checking authRole", s"Role is not one of Student,Lecturer or Admin but instead ${role}")
           }
           authErrorFuture.flatMap {
             _ =>

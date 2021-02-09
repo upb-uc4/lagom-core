@@ -9,7 +9,7 @@ import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
 
 import scala.concurrent.Future
 
-class ExamServiceStub() extends ExamService {
+class ExamServiceStub() extends ExamService with DefaultTestExams {
 
   protected var exams: Seq[Exam] = Seq()
 
@@ -22,9 +22,14 @@ class ExamServiceStub() extends ExamService {
     exams :+= exam
   }
 
+  def setup(): Unit = {
+    exams ++= Seq(exam0, exam1, exam2, exam3)
+
+  }
+
   /** Returns Exams, optionally filtered */
   override def getExams(examIds: Option[String], courseIds: Option[String], lecturerIds: Option[String], moduleIds: Option[String], types: Option[String], admittableAt: Option[String], droppableAt: Option[String]): ServiceCall[NotUsed, Seq[Exam]] = {
-    _ => Future.successful(exams)
+    _ => Future.successful(exams.filter(exam => examIds.isEmpty || examIds.get.contains(exam.examId)))
   }
 
   /** Get a proposal for adding an Exam */
