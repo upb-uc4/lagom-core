@@ -1,10 +1,5 @@
 package de.upb.cs.uc4.report.impl
 
-import java.io.{ ByteArrayInputStream, File, FileWriter }
-import java.nio.charset.StandardCharsets
-import java.nio.file.{ Files, Paths }
-import java.util.{ Base64, Calendar }
-
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.util.{ ByteString, Timeout }
 import akka.{ Done, NotUsed }
@@ -34,12 +29,16 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.Student
-import javax.imageio.ImageIO
 import net.lingala.zip4j.ZipFile
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 import play.api.libs.json.Json
 
+import java.io.{ ByteArrayInputStream, File, FileWriter }
+import java.nio.charset.StandardCharsets
+import java.nio.file.{ Files, Paths }
+import java.util.{ Base64, Calendar }
+import javax.imageio.ImageIO
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.io.Source

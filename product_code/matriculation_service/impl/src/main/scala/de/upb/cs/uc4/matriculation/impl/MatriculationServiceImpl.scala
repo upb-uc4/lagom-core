@@ -2,7 +2,7 @@ package de.upb.cs.uc4.matriculation.impl
 
 import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.stream.Materializer
-import akka.util.{ ByteString, Timeout }
+import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, ResponseHeader }
@@ -20,8 +20,6 @@ import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
-import de.upb.cs.uc4.shared.client.Utils
-import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.user.api.UserService
@@ -29,13 +27,8 @@ import de.upb.cs.uc4.user.model.user.Student
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
-import java.io.File
-import java.nio.charset.StandardCharsets
-import java.util.Base64
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, TimeoutException }
-import scala.io.Source
-import scala.util.Using
 
 /** Implementation of the MatriculationService */
 class MatriculationServiceImpl(

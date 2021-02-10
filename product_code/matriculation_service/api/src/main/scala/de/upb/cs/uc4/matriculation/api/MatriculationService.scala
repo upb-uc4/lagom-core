@@ -1,6 +1,5 @@
 package de.upb.cs.uc4.matriculation.api
 
-import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
