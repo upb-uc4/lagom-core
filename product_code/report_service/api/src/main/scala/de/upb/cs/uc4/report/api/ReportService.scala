@@ -40,10 +40,10 @@ trait ReportService extends UC4Service {
       .addCalls(
         restCall(Method.GET, pathPrefix + "/reports/:username/archive", getUserReport _),
         restCall(Method.DELETE, pathPrefix + "/reports/:username/archive", deleteUserReport _),
-        restCall(Method.GET, pathPrefix + "/reports/:username/certificate?semester", getCertificateOfEnrollment _),
+        restCall(Method.GET, pathPrefix + "/certificates/:username/enrollment?semester", getCertificateOfEnrollment _),
 
         restCall(Method.OPTIONS, pathPrefix + "/reports/:username/archive", allowedMethodsGETDELETE _),
-        restCall(Method.OPTIONS, pathPrefix + "/reports/:username/certificate?semester", allowedGet _)
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/enrollment?semester", allowedGet _)
       )
   }
 }
