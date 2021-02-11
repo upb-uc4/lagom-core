@@ -13,7 +13,7 @@ object Version {
     "matriculation_service" -> "v0.17.1",
     "operation_service" -> "v0.17.1",
     "user_service" -> "v0.17.1",
-    "report_service" -> "v0.17.1"
+    "report_service" -> "v0.17.2"
   )
 
   /** Returns the version of a project
