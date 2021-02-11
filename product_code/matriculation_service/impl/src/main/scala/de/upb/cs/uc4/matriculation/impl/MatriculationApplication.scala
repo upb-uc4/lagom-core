@@ -18,7 +18,7 @@ abstract class MatriculationApplication(context: LagomApplicationContext)
 
   override def createHyperledgerActor: MatriculationBehaviour = wire[MatriculationBehaviour]
 
-  // Bind UserService
+  // Bind Services
   lazy val userService: UserService = serviceClient.implement[UserService]
   lazy val examregService: ExamregService = serviceClient.implement[ExamregService]
   lazy val operationService: OperationService = serviceClient.implement[OperationService]
