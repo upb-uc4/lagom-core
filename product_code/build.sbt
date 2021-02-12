@@ -241,7 +241,7 @@ lazy val exam_service = (project in file("exam_service/impl"))
     shared_client % withTests, shared_server % withTests, hyperledger_component_impl, user_service_api % onlyTests)
 
 lazy val exam_result_service_api =  (project in file("exam_result_service/api"))
-  .settings(Settings.apiSettings("exam_result_service_api"))
+  .settings(Settings.apiSettings("examresult_service_api"))
   .dependsOn(shared_client, hyperledger_component_api, exam_service_api % onlyTests,user_service_api %onlyTests)
 
 lazy val exam_result_service = (project in file("exam_result_service/impl"))
@@ -249,7 +249,7 @@ lazy val exam_result_service = (project in file("exam_result_service/impl"))
   .settings(
     libraryDependencies ++= Dependencies.implDefaultDependencies
   )
-  .settings(Settings.implSettings("exam_result_service"))
+  .settings(Settings.implSettings("examresult_service"))
   .dependsOn(operation_service_api % withTests, exam_service_api % withTests, exam_result_service_api % withTests, certificate_service_api % withTests,
     shared_client % withTests, shared_server % withTests, hyperledger_component_impl, user_service_api % onlyTests)
 
