@@ -25,6 +25,12 @@ trait ReportService extends UC4Service {
   /** Delete a user's report */
   def deleteUserReport(username: String): ServiceCall[NotUsed, Done]
 
+  /** Returns a pdf with the certificate of enrollment */
+  def getCertificateOfEnrollment(username: String, semesterBase64: Option[String]): ServiceCall[NotUsed, ByteString]
+
+  /** Allows GET */
+  def allowedGet: ServiceCall[NotUsed, Done]
+
   /** Allows GET */
   def allowedMethodsGETDELETE: ServiceCall[NotUsed, Done]
 
@@ -34,7 +40,10 @@ trait ReportService extends UC4Service {
       .addCalls(
         restCall(Method.GET, pathPrefix + "/reports/:username/archive", getUserReport _),
         restCall(Method.DELETE, pathPrefix + "/reports/:username/archive", deleteUserReport _),
-        restCall(Method.OPTIONS, pathPrefix + "/reports/:username/archive", allowedMethodsGETDELETE _)
+        restCall(Method.GET, pathPrefix + "/certificates/:username/enrollment?semester", getCertificateOfEnrollment _),
+
+        restCall(Method.OPTIONS, pathPrefix + "/reports/:username/archive", allowedMethodsGETDELETE _),
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/enrollment?semester", allowedGet _)
       )
   }
 }

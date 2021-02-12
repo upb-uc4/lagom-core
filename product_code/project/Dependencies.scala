@@ -13,7 +13,13 @@ object Dependencies {
   val uuid = "com.fasterxml.uuid" % "java-uuid-generator" % "3.1.0"
   val janino = "org.codehaus.janino" % "janino" % "2.5.16"
   val zip = "net.lingala.zip4j" % "zip4j" % "2.6.4"
+  val pdf = "org.apache.pdfbox" % "pdfbox" % "2.0.22"
   val hyperledgerApi = "de.upb.cs.uc4" % "hlf-api" % Version("hyperledger_api")
+  val bouncycastleProvider = "org.bouncycastle" % "bcprov-jdk15on" % "1.62"
+  val bouncycastlePKIX = "org.bouncycastle" % "bcpkix-jdk15on" % "1.62"
+  val log4jAPI = "org.apache.logging.log4j" %% "log4j-api-scala" % "12.0"
+  val log4jCore = "org.apache.logging.log4j" % "log4j-core" % "2.13.3" % Runtime
+  val apacheCommonsIO = "commons-io" % "commons-io" % "2.8.0"
 
   val apiDefaultDependencies = Seq(
     lagomScaladslApi,
@@ -37,5 +43,14 @@ object Dependencies {
     lagomScaladslPersistenceJdbc,
     postgresDriver,
     lagomScaladslKafkaBroker
+  )
+
+  val pdfSigning = Seq(
+    pdf,
+    bouncycastleProvider,
+    bouncycastlePKIX,
+    log4jAPI,
+    log4jCore,
+    apacheCommonsIO
   )
 }

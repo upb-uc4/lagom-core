@@ -20,4 +20,9 @@ services:
     command: -cors -disable-endpoints form
     ports:
       - "9020:9000"
-      
+
+  pdf:
+    image: kurzdigital/html-to-pdf:latest
+    container_name: pdf
+    ports:
+      - "9030:8080"
