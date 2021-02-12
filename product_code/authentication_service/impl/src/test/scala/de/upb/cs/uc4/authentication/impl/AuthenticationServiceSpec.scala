@@ -142,7 +142,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   "AuthenticationService service" should {
 
     "has the default login data" in {
-      client.login.handleRequestHeader(addLoginHeader("admin", "admin")).invoke().map{
+      client.login.handleRequestHeader(addLoginHeader("admin", "admin")).invoke().map {
         answer => answer should ===(Done)
       }
     }
