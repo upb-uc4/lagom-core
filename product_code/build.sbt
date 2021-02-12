@@ -24,7 +24,7 @@ lazy val lagom = (project in file("."))
     user_service_api, user_service,
     matriculation_service_api, matriculation_service,
     operation_service_api, operation_service,
-    exam_result_service_api, exam_result_service,
+    examresult_service_api, examresult_service,
     exam_service_api, exam_service,
     examreg_service_api, examreg_service,
     admission_service_api, admission_service,
@@ -240,17 +240,17 @@ lazy val exam_service = (project in file("exam_service/impl"))
   .dependsOn(operation_service_api % withTests, course_service_api % withTests, exam_service_api % withTests, certificate_service_api % withTests,
     shared_client % withTests, shared_server % withTests, hyperledger_component_impl, user_service_api % onlyTests)
 
-lazy val exam_result_service_api =  (project in file("exam_result_service/api"))
+lazy val examresult_service_api =  (project in file("exam_result_service/api"))
   .settings(Settings.apiSettings("examresult_service_api"))
   .dependsOn(shared_client, hyperledger_component_api, exam_service_api % onlyTests,user_service_api %onlyTests)
 
-lazy val exam_result_service = (project in file("exam_result_service/impl"))
+lazy val examresult_service = (project in file("exam_result_service/impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= Dependencies.implDefaultDependencies
   )
   .settings(Settings.implSettings("examresult_service"))
-  .dependsOn(operation_service_api % withTests, exam_service_api % withTests, exam_result_service_api % withTests, certificate_service_api % withTests,
+  .dependsOn(operation_service_api % withTests, exam_service_api % withTests, examresult_service_api % withTests, certificate_service_api % withTests,
     shared_client % withTests, shared_server % withTests, hyperledger_component_impl, user_service_api % onlyTests)
 
 lazy val report_service_api =  (project in file("report_service/api"))
@@ -268,5 +268,5 @@ lazy val report_service = (project in file("report_service/impl"))
   .settings(Settings.implSettings("report_service"))
   .dependsOn(report_service_api % withTests, admission_service_api % withTests,
     user_service_api % withTests, certificate_service_api % withTests, matriculation_service_api % withTests, course_service_api % withTests,
-    exam_service_api % withTests, exam_result_service_api % withTests,
+    exam_service_api % withTests, examresult_service_api % withTests,
     shared_client % withTests, shared_server % withTests, pdf_processing_api)
