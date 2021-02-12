@@ -94,7 +94,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   private def entityRef(id: String): EntityRef[AuthenticationCommand] =
     server.application.clusterSharding.entityRefFor(AuthenticationState.typeKey, id)
 
-  private val hashedDefaultUsernames = Seq(Hashing.sha256("student"), Hashing.sha256("lecturer"), Hashing.sha256("admin"))
+  private val hashedDefaultUsernames = Seq(Hashing.sha256("admin"))
 
   def prepare(userToBeAdded: String): Future[Assertion] = {
     client.setAuthentication().invoke(AuthenticationUser(userToBeAdded, userToBeAdded, AuthenticationRole.Student)).flatMap {
