@@ -6,7 +6,7 @@ object Version {
     "authentication_service" -> "v0.14.1",
     "certificate_service" -> "v0.16.2",
     "configuration_service" -> "v0.17.1",
-    "course_service" -> "v0.16.1",
+    "course_service" -> "v0.17.1",
     "exam_service" -> "v0.17.1",
     "examreg_service" -> "v0.16.1",
     "examresult_service" -> "v0.17.1",

@@ -1,3 +1,9 @@
+# [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.16.1...course-v0.17.1) (2021-02-12)
+## Feature
+## Refactor
+ - changed validation timeout from 500ms to 5000ms
+## Bugfix
+
 # [v0.16.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.14.1...course-v0.16.1) (2021-01-28)
 ## Feature
  - Added an examregName filter to the query parameters in getCourses call, filtering over the modules of examination regulations with the given names
