@@ -1,9 +1,15 @@
-# [WIP - v0.17.2](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.1...report-v0.17.2) (2021-XX-XX)
+# [WIP - v0.17.3](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.2...report-v0.17.3) (2021-XX-XX)
 ## Feature
  - Added exams to lecturer report
  - Added exam results and exam admission to student report
 ## Refactor
 ## Bugfix
+
+# [v0.17.2](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.1...report-v0.17.2) (2021-02-11)
+## Feature
+## Refactor
+## Bugfix
+ - Fixed endpoint name to conform to the API definition
 
 # [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.16.1...report-v0.17.1) (2021-02-08)
 ## Feature
