@@ -1,5 +1,6 @@
 # [WIP - v0.17.3](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.2...report-v0.17.3) (2021-XX-XX)
 ## Feature
+ - Added watchlist and operations to user data report
 ## Refactor
 ## Bugfix
 
