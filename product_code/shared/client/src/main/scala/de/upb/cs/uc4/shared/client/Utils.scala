@@ -40,7 +40,7 @@ object Utils {
       *         1  if this semester is after the other
       */
     def compareSemester(other: String): Int = {
-      if ((semester.validateSemester.nonEmpty && !semester.isEmpty) || other.validateSemester.nonEmpty && !other.isEmpty) {
+      if ((semester.validateSemester.nonEmpty && semester.nonEmpty) || other.validateSemester.nonEmpty && other.nonEmpty) {
         throw UC4Exception.InternalServerError("Semester validation error", "The semester string was compared without being validated")
       }
       else {
@@ -69,6 +69,20 @@ object Utils {
         case _ => s"WS$y/${(y.toInt + 1).toString.substring(2)}"
       }
       case _ => throw UC4Exception.InternalServerError("date", "Received invalid date while trying to convert to semester.")
+    }
+  }
+
+  def semesterToStartDate(semester: String): String = {
+    semester match {
+      case s"SS$year"     => s"$year-04-01"
+      case s"WS$start/$_" => s"$start-10-01"
+    }
+  }
+
+  def semesterToEndDate(semester: String): String = {
+    semester match {
+      case s"SS$year"     => s"$year-09-30"
+      case s"WS$start/$_" => s"${start.toInt + 1}-03-31"
     }
   }
 

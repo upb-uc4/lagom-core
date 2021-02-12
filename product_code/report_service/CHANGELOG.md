@@ -1,7 +1,13 @@
-# [WIP - v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.16.1...report-v0.17.1) (2021-XX-XX)
+# [WIP - v0.17.2](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.1...report-v0.17.2) (2021-XX-XX)
 ## Feature
  - Added exams to lecturer report
  - Added exam results and exam admission to student report
+## Refactor
+## Bugfix
+
+# [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.16.1...report-v0.17.1) (2021-02-08)
+## Feature
+ - Added endpoint for fetching a pdf with the certificate of enrollment
 ## Refactor
 ## Bugfix
 

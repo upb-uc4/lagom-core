@@ -5,7 +5,10 @@ lagomServiceEnableSsl in ThisBuild := true
 lagomCassandraEnabled in ThisBuild := false
 scalaVersion in ThisBuild := "2.13.0"
 scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature")
-lagomUnmanagedServices in ThisBuild := Map("imageprocessing" -> sys.env.getOrElse("IMAGE_PROCESSING", "http://localhost:9020"))
+lagomUnmanagedServices in ThisBuild := Map(
+  "imageprocessing" -> sys.env.getOrElse("IMAGE_PROCESSING", "http://localhost:9020"),
+  "pdfprocessing" -> sys.env.getOrElse("PDF_PROCESSING", "http://localhost:9030")
+)
 
 val withTests = "compile->compile;test->test"
 val onlyTests = "test->test"
@@ -13,7 +16,7 @@ val onlyTests = "test->test"
 // Projects
 lazy val lagom = (project in file("."))
   .settings(commands ++= Commands.all)
-  .aggregate(shared_client, shared_server, hyperledger_component_impl,
+  .aggregate(shared_client, shared_server, hyperledger_component_impl, pdf_processing_api,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
     configuration_service_api, configuration_service,
@@ -27,7 +30,7 @@ lazy val lagom = (project in file("."))
     admission_service_api, admission_service,
     group_service_api, group_service,
     report_service_api, report_service)
-  .dependsOn(shared_client, shared_server, hyperledger_component_impl,
+  .dependsOn(shared_client, shared_server, hyperledger_component_impl, pdf_processing_api,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
     configuration_service_api, configuration_service,
@@ -164,6 +167,10 @@ lazy val image_processing_api = (project in file("image_processing/api"))
   .settings(libraryDependencies ++= Dependencies.apiDefaultDependencies)
   .dependsOn(shared_client)
 
+lazy val pdf_processing_api = (project in file("pdf_processing/api"))
+  .settings(libraryDependencies ++= Dependencies.apiDefaultDependencies)
+  .dependsOn(shared_client)
+
 lazy val examreg_service_api =  (project in file("examreg_service/api"))
   .settings(Settings.apiSettings("examreg_service_api"))
   .dependsOn(shared_client, hyperledger_component_api)
@@ -255,10 +262,11 @@ lazy val report_service = (project in file("report_service/impl"))
   .settings(
     libraryDependencies ++= Dependencies.implDefaultDependencies,
     libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies,
-    libraryDependencies += Dependencies.zip
+    libraryDependencies += Dependencies.zip,
+    libraryDependencies ++= Dependencies.pdfSigning
   )
   .settings(Settings.implSettings("report_service"))
   .dependsOn(report_service_api % withTests, admission_service_api % withTests,
     user_service_api % withTests, certificate_service_api % withTests, matriculation_service_api % withTests, course_service_api % withTests,
     exam_service_api % withTests, exam_result_service_api % withTests,
-    shared_client % withTests, shared_server % withTests)
+    shared_client % withTests, shared_server % withTests, pdf_processing_api)
