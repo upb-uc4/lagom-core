@@ -1,3 +1,9 @@
+# [v0.16.2](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.16.1...certificate-v0.16.2) (2021-01-28)
+## Feature
+- Changed enrollmentId fetching and username fetching to take multiple parameters, and renamed endpoint
+## Refactor
+## Bugfix
+
 # [v0.16.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.14.1...certificate-v0.16.1) (2021-01-28)
 ## Feature
  - Added endpoint for fetching username given an enrollmentId

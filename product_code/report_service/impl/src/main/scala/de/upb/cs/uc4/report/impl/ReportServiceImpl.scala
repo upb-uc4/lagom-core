@@ -123,7 +123,7 @@ class ReportServiceImpl(
     }
     val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
       .map(cert => Some(cert.certificate)).recover { case _ => None }
-    val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+    val enrollmentIdFuture = certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
       case exception: Exception =>
         log.error(s"Prepare of $username at $timestamp ; enrollmentIdFuture failed", exception)
         throw exception
@@ -187,7 +187,7 @@ class ReportServiceImpl(
       profilePicture <- profilePictureFuture
       thumbnail <- thumbnailFuture
       certificate <- certificateFuture
-      jsonEnrollmentId <- enrollmentIdFuture
+      usernameEnrollmentIdPair <- enrollmentIdFuture
       encryptedPrivateKey <- encryptedPrivateKeyFuture
       immatriculationData <- matriculationFuture
       courses <- coursesFuture
@@ -196,7 +196,7 @@ class ReportServiceImpl(
       exams <- examFuture
       examResults <- examResultFuture
     } yield {
-      val report = TextReport(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey, immatriculationData,
+      val report = TextReport(user, certificate, usernameEnrollmentIdPair.head.enrollmentId, encryptedPrivateKey, immatriculationData,
         courses, courseAdmissions, examAdmissions, exams, examResults, timestamp)
       entityRef(username).ask[Confirmation](replyTo => SetReport(report, profilePicture.toArray, thumbnail.toArray, timestamp, replyTo)).map {
         case Accepted(_) =>
@@ -269,7 +269,7 @@ class ReportServiceImpl(
               val timestamp = Calendar.getInstance().getTime.toString
               ref.ask[Confirmation](replyTo => PrepareReport(timestamp, replyTo)).map {
                 case Accepted(_) =>
-                  prepareUserData(username, authRole, header, timestamp)
+                  prepareUserData(authUser, authRole, header, timestamp)
                   (
                     ResponseHeader(202, MessageProtocol.empty, List())
                     .addHeader("X-UC4-Timestamp", timestamp),

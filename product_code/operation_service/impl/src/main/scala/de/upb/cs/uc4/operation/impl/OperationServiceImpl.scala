@@ -51,9 +51,10 @@ class OperationServiceImpl(
           .recover(handleException("Get operation"))
           .flatMap {
             operationData =>
-              certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
-                jsonEnrollmentId =>
-                  if (role != AuthenticationRole.Admin && !operationData.isInvolved(jsonEnrollmentId.id, role.toString)) {
+              certificateService.getEnrollmentIds(Some(authUser)).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
+                usernameEnrollmentIdPairSeq =>
+                  val enrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
+                  if (role != AuthenticationRole.Admin && !operationData.isInvolved(enrollmentId, role.toString)) {
                     throw UC4Exception.OwnerMismatch
                   }
                   createETagHeader(header, operationData)
@@ -66,17 +67,18 @@ class OperationServiceImpl(
   override def getOperations(selfInitiated: Option[Boolean], selfActionRequired: Option[Boolean], states: Option[String], watchlistOnly: Option[Boolean]): ServiceCall[NotUsed, Seq[OperationData]] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUser, role) =>
       ServerServiceCall { (header, _) =>
-        certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonId =>
+        certificateService.getEnrollmentIds(Some(authUser)).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { usernameEnrollmentIdPairSeq =>
+          val enrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
 
           val missingEnrollmentId = if (selfActionRequired.isDefined && selfActionRequired.get) {
-            jsonId.id
+            enrollmentId
           }
           else {
             ""
           }
 
           val initiatorEnrollmentId = if (selfInitiated.isDefined && selfInitiated.get) {
-            jsonId.id
+            enrollmentId
           }
           else {
             ""
@@ -86,7 +88,7 @@ class OperationServiceImpl(
             ""
           }
           else {
-            jsonId.id
+            enrollmentId
           }
 
           val stateSeq = if (states.isDefined) {
@@ -136,9 +138,10 @@ class OperationServiceImpl(
       ServerServiceCall { (header, _) =>
         getOperation(operationId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
           operationData =>
-            certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-              jsonEnrollmentId =>
-                if (operationData.initiator == jsonEnrollmentId.id && operationData.state == OperationDataState.PENDING) {
+            certificateService.getEnrollmentIds(Some(authUser)).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+              usernameEnrollmentIdPairSeq =>
+                val enrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
+                if (operationData.initiator == enrollmentId && operationData.state == OperationDataState.PENDING) {
                   throw UC4Exception.RemovalNotAllowed
                 }
                 entityRef(authUser).ask(replyTo => RemoveFromWatchlist(operationId, replyTo)).map {

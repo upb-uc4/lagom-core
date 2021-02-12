@@ -82,7 +82,11 @@ class AdmissionServiceImpl(
         }
 
         val enrollmentFuture = if (username.isDefined) {
-          certificateService.getEnrollmentId(username.get).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
+          certificateService.getEnrollmentIds(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+            .map(pairSeq => pairSeq.find(pair => pair.username == username.get)).map {
+              case Some(pair) => Some(pair.enrollmentId)
+              case None       => throw UC4Exception.NotFound
+            }
         }
         else {
           Future.successful(None)
@@ -121,11 +125,12 @@ class AdmissionServiceImpl(
               throw UC4Exception.OwnerMismatch
             }
             else {
-              certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-                authEnrollmentId =>
+              certificateService.getEnrollmentIds(Some(authUser)).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+                usernameEnrollmentIdPairSeq =>
+                  val authEnrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
                   examService.getExams(examIds, None, None, None, None, None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
                     exams =>
-                      if (exams.forall(exam => exam.lecturerEnrollmentId == authEnrollmentId.id)) {
+                      if (exams.forall(exam => exam.lecturerEnrollmentId == authEnrollmentId)) {
                         Done
                       }
                       else {
@@ -141,8 +146,12 @@ class AdmissionServiceImpl(
           _ =>
 
             val optEnrollmentId = username match {
-              case Some(id) =>
-                certificateService.getEnrollmentId(id).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
+              case Some(username) =>
+                certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+                  .map(pairSeq => pairSeq.find(pair => pair.username == username)).map {
+                    case Some(pair) => Some(pair.enrollmentId)
+                    case None       => throw UC4Exception.NotFound
+                  }
               case None =>
                 Future.successful(None)
             }
@@ -172,10 +181,10 @@ class AdmissionServiceImpl(
             case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
           }
 
-          certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-            jsonId =>
+          certificateService.getEnrollmentIds(Some(authUser)).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+            usernameEnrollmentIdPairSeq =>
 
-              val admission = admissionTrimmed.copyAdmission(enrollmentId = jsonId.id)
+              val admission = admissionTrimmed.copyAdmission(enrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId)
 
               admission match {
                 case courseAdmission: CourseAdmission => getProposalAddCourseAdmission(authUser, header, validationList, courseAdmission)
@@ -190,9 +199,10 @@ class AdmissionServiceImpl(
 
     var validationList = validationOnCreateList
 
-    certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonId =>
+    certificateService.getEnrollmentIds(Some(authUser)).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { usernameEnrollmentIdPairSeq =>
+      val authEnrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
 
-      val courseAdmissionFinalized = courseAdmission.copy(enrollmentId = jsonId.id, timestamp = LocalDateTime.now.format(DateTimeFormatter.ISO_DATE_TIME))
+      val courseAdmissionFinalized = courseAdmission.copy(enrollmentId = authEnrollmentId, timestamp = LocalDateTime.now.format(DateTimeFormatter.ISO_DATE_TIME))
 
       courseService.findCourseByCourseId(courseAdmissionFinalized.courseId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
         course =>

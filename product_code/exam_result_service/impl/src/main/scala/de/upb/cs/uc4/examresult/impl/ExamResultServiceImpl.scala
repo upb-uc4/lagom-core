@@ -70,11 +70,13 @@ class ExamResultServiceImpl(
                 throw UC4Exception.OwnerMismatch
               }
               else {
-                certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-                  authEnrollmentId =>
+                certificateService.getEnrollmentIds(Some(authUser)).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+                  usernameEnrollmentIdPairSeq =>
+                    val authEnrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
+
                     examService.getExams(examIds, None, None, None, None, None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map {
                       exams =>
-                        if (exams.forall(exam => exam.lecturerEnrollmentId == authEnrollmentId.id)) {
+                        if (exams.forall(exam => exam.lecturerEnrollmentId == authEnrollmentId)) {
                           Done
                         }
                         else {
@@ -93,8 +95,15 @@ class ExamResultServiceImpl(
             _ =>
 
               val optEnrollmentId = username match {
-                case Some(id) =>
-                  certificateService.getEnrollmentId(id).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(jsonId => Some(jsonId.id))
+                case Some(username) =>
+                  certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+                    .map {
+                      usernameEnrollmentIdPairSeq =>
+                        usernameEnrollmentIdPairSeq.find(pair => pair.username == username) match {
+                          case Some(pair) => Some(pair.enrollmentId)
+                          case None       => throw UC4Exception.NotFound
+                        }
+                    }
                 case None =>
                   Future.successful(None)
               }

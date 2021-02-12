@@ -2,6 +2,7 @@ package de.upb.cs.uc4.certificate.impl.readside
 
 import akka.Done
 import akka.util.Timeout
+import de.upb.cs.uc4.certificate.model.UsernameEnrollmentIdPair
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
@@ -30,6 +31,9 @@ class CertificateDatabase(database: Database)(implicit ec: ExecutionContext, tim
   def get(enrollmentId: String): Future[Option[String]] =
     database.run(find(enrollmentId))
 
+  def getUsernameEnrollmentIdPairs(enrollmentIds: Seq[String]): Future[Seq[UsernameEnrollmentIdPair]] =
+    database.run(find(enrollmentIds))
+
   def set(username: String, enrollmentId: String): Future[Done] =
     database.run(setEnrollmentId(username, enrollmentId))
 
@@ -39,6 +43,18 @@ class CertificateDatabase(database: Database)(implicit ec: ExecutionContext, tim
       .map(_.username)
       .result
       .headOption
+
+  private def find(enrollmentIds: Seq[String]): DBIO[Seq[UsernameEnrollmentIdPair]] =
+    table
+      .filter(table => table.enrollmentId inSet enrollmentIds)
+      .map(x => (x.username, x.enrollmentId))
+      .result
+      .map { seq =>
+        seq.map {
+          case (username, enrollmentId) =>
+            UsernameEnrollmentIdPair(username, enrollmentId)
+        }
+      }
 
   def setEnrollmentId(username: String, enrollmentId: String): DBIO[Done] =
     table

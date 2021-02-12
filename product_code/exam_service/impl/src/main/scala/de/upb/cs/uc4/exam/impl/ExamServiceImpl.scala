@@ -83,9 +83,10 @@ class ExamServiceImpl(
           case e: Exception        => throw UC4Exception.InternalServerError("Validation Error", e.getMessage)
         }
 
-        certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
-          authEnrollmentId =>
-            if (exam.lecturerEnrollmentId != authEnrollmentId.id) {
+        certificateService.getEnrollmentIds(Some(authUser)).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+          usernameEnrollmentIdPairSeq =>
+            val authEnrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
+            if (exam.lecturerEnrollmentId != authEnrollmentId) {
               throw UC4Exception.OwnerMismatch
             }
             courseService.findCourseByCourseId(exam.courseId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
