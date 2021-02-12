@@ -142,14 +142,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   "AuthenticationService service" should {
 
     "has the default login data" in {
-      eventually(timeout(Span(20, Seconds))) {
-        val futureAnswers = for {
-          answer1 <- client.login.handleRequestHeader(addLoginHeader("student", "student")).invoke()
-          answer2 <- client.login.handleRequestHeader(addLoginHeader("lecturer", "lecturer")).invoke()
-          answer3 <- client.login.handleRequestHeader(addLoginHeader("admin", "admin")).invoke()
-        } yield Seq(answer1, answer2, answer3)
-
-        futureAnswers.map(answers => answers should have size 3)
+      client.login.handleRequestHeader(addLoginHeader("admin", "admin")).invoke().map{
+        answer => answer should ===(Done)
       }
     }
 
