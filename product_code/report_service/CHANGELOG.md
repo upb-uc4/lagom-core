@@ -2,6 +2,7 @@
 ## Feature
  - Added exams to lecturer report
  - Added exam results and exam admission to student report
+ - Adapted Service to new Certificate API
 ## Refactor
 ## Bugfix
 
