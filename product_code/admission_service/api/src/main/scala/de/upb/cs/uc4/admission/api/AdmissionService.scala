@@ -41,13 +41,13 @@ trait AdmissionService extends UC4HyperledgerService {
     super.descriptor
       .addCalls(
         restCall(Method.GET, pathPrefix + "/admissions/courses?username&courseId&moduleId", getCourseAdmissions _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
-        restCall(Method.GET, pathPrefix + "/admissions/exam?username&admissionsIds&examIds", getExamAdmissions _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
+        restCall(Method.GET, pathPrefix + "/admissions/exams?username&admissionsIds&examIds", getExamAdmissions _)(MessageSerializer.NotUsedMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
 
         restCall(Method.POST, pathPrefix + "/admissions/unsigned_add_proposal", getProposalAddAdmission _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.POST, pathPrefix + "/admissions/unsigned_drop_proposal", getProposalDropAdmission _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
 
         restCall(Method.OPTIONS, pathPrefix + "/admissions/courses?username&courseId&moduleId", allowedGet _),
-        restCall(Method.OPTIONS, pathPrefix + "/admissions/exam?username&admissionsIds&examIds", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/admissions/exams?username&admissionsIds&examIds", allowedGet _),
 
         restCall(Method.OPTIONS, pathPrefix + "/admissions/unsigned_add_proposal", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/admissions/unsigned_drop_proposal", allowedPost _)
