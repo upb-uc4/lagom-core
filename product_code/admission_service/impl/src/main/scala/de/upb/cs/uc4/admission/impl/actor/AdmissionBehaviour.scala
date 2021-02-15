@@ -33,7 +33,7 @@ class AdmissionBehaviour(val config: Config) extends HyperledgerActor[Connection
 
     case GetExamAdmissions(enrollmentId, admissionIds, examIds, replyTo) =>
       replyTo ! StatusReply.success(AdmissionsWrapper(
-        connection.getExamAdmissions(admissionIds.getOrElse(Seq()).toList, enrollmentId.getOrElse(""), examIds.getOrElse(Seq()).toList).fromJson[Seq[ExamAdmission]]
+        connection.getExamAdmissions(admissionIds.getOrElse(Seq()).toList, enrollmentId.getOrElse(""), examIds.getOrElse(Seq())).fromJson[Seq[ExamAdmission]]
       ))
 
     case GetProposalForAddAdmission(certificate, admission, replyTo) =>

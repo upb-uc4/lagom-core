@@ -79,7 +79,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
               ))
             }
 
-            override def getExamAdmissions(admissionIds: List[String], enrollmentId: String, examIds: List[String]): String = {
+            override def getExamAdmissions(admissionIds: Seq[String], enrollmentId: String, examIds: Seq[String]): String = {
               Json.stringify(Json.toJson(
                 examAdmissionList
                   .filter(admission => enrollmentId == "" || admission.enrollmentId == enrollmentId)
@@ -113,7 +113,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
 
             override def getProposalGetCourseAdmissions(certificate: String, affiliation: String, enrollmentId: String, courseId: String, moduleId: String): (String, Array[Byte]) = ("", Array.emptyByteArray)
 
-            override def getProposalGetExamAdmissions(certificate: String, affiliation: String, admissionIds: List[String], enrollmentId: String, examIds: List[String]): (String, Array[Byte]) = ("", Array.emptyByteArray)
+            override def getProposalGetExamAdmissions(certificate: String, affiliation: String, admissionIds: Seq[String], enrollmentId: String, examIds: Seq[String]): (String, Array[Byte]) = ("", Array.emptyByteArray)
 
             override def getAdmissions(enrollmentId: String, courseId: String, moduleId: String): String = ""
           }

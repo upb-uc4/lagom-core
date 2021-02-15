@@ -3,8 +3,8 @@ package de.upb.cs.uc4.examresult.impl
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
-import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.CourseServiceStub
+import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.exam.DefaultTestExams
 import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.exam.impl.ExamApplication
@@ -16,18 +16,16 @@ import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedPro
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExamTrait
 import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.util.Base64
-
-import de.upb.cs.uc4.course.model.Course
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
-
 import scala.language.reflectiveCalls
 
 /** Tests for the ExamService */
@@ -64,14 +62,14 @@ class ExamServiceSpec extends AsyncWordSpec
             override def getProposalAddExam(certificate: String, affiliation: String, examJson: String): (String, Array[Byte]) =
               (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, examJson.getBytes())
 
-            override def getProposalGetExams(certificate: String, affiliation: String, examIds: List[String], courseIds: List[String], lecturerIds: List[String], moduleIds: List[String], types: List[String], admittableAt: String, droppableAt: String): (String, Array[Byte]) = ("", Array.empty)
+            override def getProposalGetExams(certificate: String, affiliation: String, examIds: Seq[String], courseIds: Seq[String], lecturerIds: Seq[String], moduleIds: Seq[String], types: Seq[String], admittableAt: String, droppableAt: String): (String, Array[Byte]) = ("", Array.empty)
 
             override def addExam(examJson: String): String = {
               exams :+= examJson.fromJson[Exam]
               examJson
             }
 
-            override def getExams(examIds: List[String], courseIds: List[String], lecturerIds: List[String], moduleIds: List[String], types: List[String], admittableAt: String, droppableAt: String): String = exams.toJson
+            override def getExams(examIds: Seq[String], courseIds: Seq[String], lecturerIds: Seq[String], moduleIds: Seq[String], types: Seq[String], admittableAt: String, droppableAt: String): String = exams.toJson
 
             override def getChaincodeVersion: String = "testVersion"
 

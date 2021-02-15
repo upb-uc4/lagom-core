@@ -3,29 +3,26 @@ package de.upb.cs.uc4.examresult.impl
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.certificate.CertificateServiceStub
-import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.exam.ExamServiceStub
-import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.examresult.DefaultTestExamResultEntries
 import de.upb.cs.uc4.examresult.api.ExamResultService
 import de.upb.cs.uc4.examresult.impl.actor.ExamResultBehaviour
 import de.upb.cs.uc4.examresult.model.{ ExamResult, ExamResultEntry }
 import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
-import de.upb.cs.uc4.hyperledger.connections.traits.{ ConnectionExamResultTrait, ConnectionExamTrait }
+import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionExamResultTrait
 import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.util.Base64
-
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception }
-
 import scala.language.reflectiveCalls
 
 /** Tests for the ExamResultService */
@@ -61,14 +58,14 @@ class ExamResultServiceSpec extends AsyncWordSpec
             override def getProposalAddExamResult(certificate: String, affiliation: String, examResultJson: String): (String, Array[Byte]) =
               (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, examResultJson.getBytes())
 
-            override def getProposalGetExamResultEntries(certificate: String, affiliation: String, enrollmentId: String, examIds: List[String]): (String, Array[Byte]) = ("", Array.empty)
+            override def getProposalGetExamResultEntries(certificate: String, affiliation: String, enrollmentId: String, examIds: Seq[String]): (String, Array[Byte]) = ("", Array.empty)
 
             override def addExamResult(examJson: String): String = {
               examResults :+= examJson.fromJson[ExamResultEntry]
               examJson
             }
 
-            override def getExamResultEntries(enrollmentId: String, examIds: List[String]): String = examResults
+            override def getExamResultEntries(enrollmentId: String, examIds: Seq[String]): String = examResults
               .filter(exam => examIds.isEmpty || examIds.contains(exam.examId))
               .filter(exam => enrollmentId.isEmpty || enrollmentId == exam.enrollmentId).toJson
 

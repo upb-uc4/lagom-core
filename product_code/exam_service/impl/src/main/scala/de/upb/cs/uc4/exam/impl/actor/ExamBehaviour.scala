@@ -20,7 +20,7 @@ class ExamBehaviour(val config: Config) extends HyperledgerActor[ConnectionExamT
   override protected def applyCommand(connection: ConnectionExamTrait, command: HyperledgerCommand[_]): Unit = command match {
     case GetExams(examIds, courseIds, lecturerIds, moduleIds, types, admittableAt, droppableAt, replyTo) =>
       replyTo ! StatusReply.success(ExamsWrapper(
-        connection.getExams(examIds.toList, courseIds.toList, lecturerIds.toList, moduleIds.toList, types.toList, admittableAt.getOrElse(""), droppableAt.getOrElse("")).fromJson[Seq[Exam]]
+        connection.getExams(examIds, courseIds, lecturerIds, moduleIds, types, admittableAt.getOrElse(""), droppableAt.getOrElse("")).fromJson[Seq[Exam]]
       ))
 
     case GetProposalAddExam(certificate, exam, replyTo) =>
