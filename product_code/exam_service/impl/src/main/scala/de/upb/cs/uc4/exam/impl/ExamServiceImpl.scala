@@ -66,7 +66,7 @@ class ExamServiceImpl(
     }
   }
 
-  private def splitOption(option: Option[String]): Seq[String] = option.getOrElse("").trim.split(",")
+  private def splitOption(option: Option[String]): Seq[String] = option.getOrElse("").trim.split(",").filter(str => str.trim.nonEmpty)
 
   /** Get a proposal for adding an Exam */
   override def getProposalAddExam: ServiceCall[Exam, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.Lecturer) {
