@@ -1,4 +1,4 @@
-# [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.14.1...authentication-v0.17.1) (2021-XX-XX)
+# [v0.18.0](https://github.com/upb-uc4/University-Credits-4.0/compare/authentication-v0.14.1...authentication-v0.18.0) (2021-02-15)
 ## Feature
 ## Refactor
 ## Bugfix
