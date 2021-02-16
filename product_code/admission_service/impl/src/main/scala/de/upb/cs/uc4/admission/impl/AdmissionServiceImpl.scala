@@ -118,8 +118,6 @@ class AdmissionServiceImpl(
         }
 
         val authErrorFuture = role match {
-          case AuthenticationRole.Admin =>
-            Future.successful(Done)
           case AuthenticationRole.Lecturer =>
             if (examIds.isEmpty) {
               throw UC4Exception.OwnerMismatch
@@ -141,6 +139,8 @@ class AdmissionServiceImpl(
             }
           case AuthenticationRole.Student if username.isEmpty || username.get.trim != authUser =>
             throw UC4Exception.OwnerMismatch
+          case _ =>
+            Future.successful(Done)
         }
         authErrorFuture.flatMap {
           _ =>
