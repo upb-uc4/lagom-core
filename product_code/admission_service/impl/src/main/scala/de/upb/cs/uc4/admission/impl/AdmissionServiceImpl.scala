@@ -28,8 +28,6 @@ import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
@@ -202,7 +200,7 @@ class AdmissionServiceImpl(
     certificateService.getEnrollmentIds(Some(authUser)).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { usernameEnrollmentIdPairSeq =>
       val authEnrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
 
-      val courseAdmissionFinalized = courseAdmission.copy(enrollmentId = authEnrollmentId, timestamp = LocalDateTime.now.format(DateTimeFormatter.ISO_DATE_TIME))
+      val courseAdmissionFinalized = courseAdmission.copy(enrollmentId = authEnrollmentId)
 
       courseService.findCourseByCourseId(courseAdmissionFinalized.courseId).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
         course =>
