@@ -14,9 +14,9 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.image.api.ImageProcessingService
-import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
@@ -351,7 +351,7 @@ class UserServiceImpl(
   /** Helper method for getting all Users */
   private def getAll(usernames: Option[String], role: Role): Future[Seq[User]] = {
     val fetchedUsernames = usernames match {
-      case Some(value) => Future.successful(value.split(",").toSeq)
+      case Some(value) => Future.successful(value.split(",").toSeq.filter(_.trim.nonEmpty))
       case None        => database.getAll(role)
     }
 

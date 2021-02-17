@@ -1,6 +1,5 @@
 package de.upb.cs.uc4.authentication.impl
 
-import java.util.{ Base64, Calendar, Date }
 import akka.Done
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.util.Timeout
@@ -13,9 +12,9 @@ import de.upb.cs.uc4.authentication.api.AuthenticationService
 import de.upb.cs.uc4.authentication.impl.actor.AuthenticationState
 import de.upb.cs.uc4.authentication.impl.commands.{ AuthenticationCommand, DeleteAuthentication }
 import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUser, Tokens }
-import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
+import de.upb.cs.uc4.shared.client.{ Hashing, JsonUsername }
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.UserServiceStub
 import de.upb.cs.uc4.user.api.UserService
@@ -24,8 +23,9 @@ import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Seconds, Span }
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.{ Assertion, BeforeAndAfterAll, PrivateMethodTester }
+import org.scalatest.{ Assertion, BeforeAndAfterAll }
 
+import java.util.{ Base64, Calendar, Date }
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -94,7 +94,7 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   private def entityRef(id: String): EntityRef[AuthenticationCommand] =
     server.application.clusterSharding.entityRefFor(AuthenticationState.typeKey, id)
 
-  private val hashedDefaultUsernames = Seq(Hashing.sha256("student"), Hashing.sha256("lecturer"), Hashing.sha256("admin"))
+  private val hashedDefaultUsernames = Seq(Hashing.sha256("admin"))
 
   def prepare(userToBeAdded: String): Future[Assertion] = {
     client.setAuthentication().invoke(AuthenticationUser(userToBeAdded, userToBeAdded, AuthenticationRole.Student)).flatMap {
@@ -142,14 +142,8 @@ class AuthenticationServiceSpec extends AsyncWordSpec
   "AuthenticationService service" should {
 
     "has the default login data" in {
-      eventually(timeout(Span(20, Seconds))) {
-        val futureAnswers = for {
-          answer1 <- client.login.handleRequestHeader(addLoginHeader("student", "student")).invoke()
-          answer2 <- client.login.handleRequestHeader(addLoginHeader("lecturer", "lecturer")).invoke()
-          answer3 <- client.login.handleRequestHeader(addLoginHeader("admin", "admin")).invoke()
-        } yield Seq(answer1, answer2, answer3)
-
-        futureAnswers.map(answers => answers should have size 3)
+      client.login.handleRequestHeader(addLoginHeader("admin", "admin")).invoke().map {
+        answer => answer should ===(Done)
       }
     }
 

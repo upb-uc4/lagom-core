@@ -1,6 +1,5 @@
 package de.upb.cs.uc4.admission.impl
 
-import akka.Done
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.admission.api.AdmissionService
@@ -9,12 +8,13 @@ import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.course.{ CourseServiceStub, DefaultTestCourses }
 import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
+import de.upb.cs.uc4.hyperledger.api.model
+import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
+import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
 import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._
-import de.upb.cs.uc4.shared.client._
-import de.upb.cs.uc4.shared.client.operation.{ ApprovalList, OperationData, OperationDataState, TransactionInfo }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -49,7 +49,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
 
         var admissionList: Seq[CourseAdmission] = List()
 
-        override def createActorFactory: AdmissionBehaviour = new AdmissionBehaviour(config) {
+        override def createHyperledgerActor: AdmissionBehaviour = new AdmissionBehaviour(config) {
 
           override val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
           override val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
@@ -79,21 +79,10 @@ class AdmissionServiceSpec extends AsyncWordSpec
               (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, courseAdmission.getBytes())
 
             override def getProposalDropAdmission(certificate: String, AFFILITATION: String = AFFILIATION, admissionId: String): (String, Array[Byte]) =
-              (OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, ("id#" + admissionId).getBytes())
+              (model.operation.OperationData("mock", TransactionInfo("", "", ""), OperationDataState.PENDING, "", "", "", "", ApprovalList(Seq(), Seq()), ApprovalList(Seq(), Seq())).toJson, ("id#" + admissionId).getBytes())
 
             override def getUnsignedTransaction(proposalBytes: Array[Byte], signature: Array[Byte]): Array[Byte] = {
               "t:".getBytes() ++ proposalBytes
-            }
-
-            override def submitSignedTransaction(transactionBytes: Array[Byte], signature: Array[Byte]): (String, String) = {
-              new String(transactionBytes, StandardCharsets.UTF_8) match {
-                case s"t:id#$admissionId" =>
-                  admissionList = admissionList.filter(admission => admission.admissionId != admissionId)
-                  ("", "")
-                case s"t:$courseAdmission" =>
-                  admissionList :+= courseAdmission.fromJson[CourseAdmission]
-                  ("", "")
-              }
             }
 
             override def getChaincodeVersion: String = "testVersion"
@@ -161,54 +150,6 @@ class AdmissionServiceSpec extends AsyncWordSpec
       client.getProposalDropCourseAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(DropAdmission("id")).map {
         unsignedProposalJson =>
           asString(unsignedProposalJson.unsignedProposal) should ===("id#id")
-      }
-    }
-
-    "submit proposal add course admission" in {
-      client.getProposalAddCourseAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultAdmission).flatMap {
-        unsignedProposalJson =>
-          client.submitProposal().handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(SignedProposal(unsignedProposalJson.unsignedProposal, "")).map {
-            unsignedTransactionJson =>
-              asString(unsignedTransactionJson.unsignedTransaction) match {
-                case s"t:$admission" => admission.fromJson[CourseAdmission].copy(timestamp = "") should ===(
-                  defaultAdmission.copy(enrollmentId = certificate.get(student0.username).enrollmentId)
-                )
-              }
-          }
-      }
-    }
-
-    "submit proposal drop course admission" in {
-      client.getProposalDropCourseAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(DropAdmission("id")).flatMap {
-        unsignedProposalJson =>
-          client.submitProposal().handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(SignedProposal(unsignedProposalJson.unsignedProposal, "")).map {
-            unsignedTransactionJson =>
-              asString(unsignedTransactionJson.unsignedTransaction) should ===("t:id#id")
-          }
-      }
-    }
-
-    "submit transaction add course admission" in {
-      client.getProposalAddCourseAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultAdmission).flatMap {
-        unsignedProposalJson =>
-          client.submitProposal().handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(SignedProposal(unsignedProposalJson.unsignedProposal, "")).flatMap {
-            unsignedTransactionJson =>
-              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(SignedTransaction(unsignedTransactionJson.unsignedTransaction, "")).map {
-                answer => answer should ===(Done)
-              }
-          }
-      }
-    }
-
-    "submit transaction drop course admission" in {
-      client.getProposalDropCourseAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(DropAdmission("id")).flatMap {
-        unsignedProposalJson =>
-          client.submitProposal().handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(SignedProposal(unsignedProposalJson.unsignedProposal, "")).flatMap {
-            unsignedTransactionJson =>
-              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(SignedTransaction(unsignedTransactionJson.unsignedTransaction, "")).map {
-                answer => answer should ===(Done)
-              }
-          }
       }
     }
   }

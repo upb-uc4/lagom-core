@@ -1,7 +1,5 @@
 package de.upb.cs.uc4.authentication.impl
 
-import java.util.UUID
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import de.upb.cs.uc4.authentication.impl.actor.{ AuthenticationBehaviour, AuthenticationEntry }
@@ -10,6 +8,8 @@ import de.upb.cs.uc4.authentication.model.{ AuthenticationRole, AuthenticationUs
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.UUID
 
 /** Tests for the CourseState */
 class AuthenticationStateSpec extends ScalaTestWithActorTestKit(s"""

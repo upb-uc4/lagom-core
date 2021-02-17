@@ -12,7 +12,6 @@ import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 
 class AuthenticationDatabase(database: Database, clusterSharding: ClusterSharding)(implicit ec: ExecutionContext, timeout: Timeout) {
@@ -36,12 +35,7 @@ class AuthenticationDatabase(database: Database, clusterSharding: ClusterShardin
     authenticationUsers.schema.createIfNotExists.andFinally(DBIO.successful {
       getAll.map { result =>
         if (result.isEmpty) {
-          val student = AuthenticationUser("student", "student", AuthenticationRole.Student)
-          val lecturer = AuthenticationUser("lecturer", "lecturer", AuthenticationRole.Lecturer)
           val admin = AuthenticationUser("admin", "admin", AuthenticationRole.Admin)
-
-          entityRef(Hashing.sha256(student.username)).ask[Confirmation](replyTo => SetAuthentication(student, replyTo))
-          entityRef(Hashing.sha256(lecturer.username)).ask[Confirmation](replyTo => SetAuthentication(lecturer, replyTo))
           entityRef(Hashing.sha256(admin.username)).ask[Confirmation](replyTo => SetAuthentication(admin, replyTo))
         }
       }

@@ -7,7 +7,7 @@ import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.hyperledger.HyperledgerComponent
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerComponent
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.{ OperationDatabaseBehaviour, OperationHyperledgerBehaviour, OperationState }
 import de.upb.cs.uc4.operation.impl.readside.OperationEventProcessor
@@ -24,7 +24,7 @@ abstract class OperationApplication(context: LagomApplicationContext)
   lazy val processor: OperationEventProcessor = wire[OperationEventProcessor]
   readSide.register(processor)
 
-  override def createActorFactory: OperationHyperledgerBehaviour = wire[OperationHyperledgerBehaviour]
+  override def createHyperledgerActor: OperationHyperledgerBehaviour = wire[OperationHyperledgerBehaviour]
 
   //Bind CertificateService
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]

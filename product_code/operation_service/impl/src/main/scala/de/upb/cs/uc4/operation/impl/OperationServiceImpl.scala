@@ -10,15 +10,15 @@ import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.hyperledger.HyperledgerUtils
-import de.upb.cs.uc4.hyperledger.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.hyperledger.api.model._
+import de.upb.cs.uc4.hyperledger.api.model.operation.{ OperationData, OperationDataState }
+import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils
+import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.impl.actor.{ OperationHyperledgerBehaviour, OperationState }
 import de.upb.cs.uc4.operation.impl.commands._
 import de.upb.cs.uc4.operation.model.{ JsonOperationId, JsonRejectMessage }
-import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
-import de.upb.cs.uc4.shared.client.operation.{ OperationData, OperationDataState }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import play.api.Environment
@@ -82,47 +82,50 @@ class OperationServiceImpl(
             ""
           }
 
-          entityRef.askWithStatus(replyTo =>
-            GetOperationsHyperledger(
-              "", // Unused filter
-              missingEnrollmentId,
-              initiatorEnrollmentId,
-              "", // Unused filter
-              replyTo
-            )).recover(handleException("Get operations"))
-            //Involved filter
-            .map { operations =>
-              if (role == AuthenticationRole.Admin) {
-                operations.operationDataList
-              }
-              else {
-                operations.operationDataList.filter(_.isInvolved(jsonId.id, role.toString))
-              }
+          val involvedEnrollmentId = if (role == AuthenticationRole.Admin) {
+            ""
+          }
+          else {
+            jsonId.id
+          }
+
+          val stateSeq = if (states.isDefined) {
+            states.get.split(",").toSeq
+          }
+          else {
+            Seq()
+          }
+
+          val watchlistFuture = if (watchlistOnly.isDefined && watchlistOnly.get) {
+            entityRef(authUser).ask(replyTo => GetWatchlist(replyTo)).map(_.watchlist)
+          }
+          else {
+            Future.successful(Seq())
+          }
+          watchlistFuture.flatMap { watchlistFilter =>
+            // Check, that if the query parameter watchlistOnly is set, but list is empty, return empty without querying hyperledger
+            if (watchlistOnly.isDefined && watchlistOnly.get && watchlistFilter.isEmpty) {
+              Future.successful(createETagHeader(header, Seq[OperationData]()))
             }
-            //State filter
-            .map { operations =>
-              operations.filter { op =>
-                states match {
-                  case Some(stateString) => stateString.split(",").map(_.trim).contains(op.state.toString)
-                  case None              => true
+            else {
+              entityRef.askWithStatus(replyTo =>
+                GetOperationsHyperledger(
+                  watchlistFilter,
+                  "", // Unused filter
+                  missingEnrollmentId,
+                  initiatorEnrollmentId,
+                  involvedEnrollmentId,
+                  stateSeq,
+                  replyTo
+                )).recover(handleException("Get operations"))
+                //Involved filter
+                .map(_.operationDataList)
+                //Finish
+                .map {
+                  operations => createETagHeader(header, operations)
                 }
-              }
             }
-            //Watchlist filter
-            .flatMap { operations =>
-              if (watchlistOnly.isDefined && watchlistOnly.get) {
-                entityRef(authUser).ask(replyTo => GetWatchlist(replyTo)).map(_.watchlist).map { ids =>
-                  operations.filter(op => ids.contains(op.operationId))
-                }
-              }
-              else {
-                Future.successful(operations)
-              }
-            }
-            //Finish
-            .map {
-              operations => createETagHeader(header, operations)
-            }
+          }
         }
       }
   }
@@ -135,9 +138,6 @@ class OperationServiceImpl(
           operationData =>
             certificateService.getEnrollmentId(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
               jsonEnrollmentId =>
-                if (operationData.initiator != jsonEnrollmentId.id) {
-                  throw UC4Exception.OwnerMismatch
-                }
                 if (operationData.initiator == jsonEnrollmentId.id && operationData.state == OperationDataState.PENDING) {
                   throw UC4Exception.RemovalNotAllowed
                 }
@@ -150,19 +150,37 @@ class OperationServiceImpl(
       }
   }
 
-  // TODO: For now just rejects, without returning a proposal. Change into proper frontend signing
+  /** Approve the operation with the given operationId */
+  override def getProposalApproveOperation(operationId: String): ServiceCall[NotUsed, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+    (authUser, _) =>
+      ServerServiceCall { (header, _) =>
+        certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonCertificate =>
+          entityRef.askWithStatus(replyTo =>
+            GetProposalApproveOperationHyperledger(
+              jsonCertificate.certificate,
+              operationId,
+              replyTo
+            )).recover(handleException("Approve operation")).map { unsignedProposal =>
+            (ResponseHeader(200, MessageProtocol.empty, List()), unsignedProposal)
+          }
+        }
+      }
+  }
+
   /** Returns a proposal for rejecting the operation with the given operationId */
   override def getProposalRejectOperation(operationId: String): ServiceCall[JsonRejectMessage, UnsignedProposal] = identifiedAuthenticated(AuthenticationRole.All: _*) {
-    (_, _) =>
-      ServerServiceCall { (_, jsonRejectMessage) =>
-        entityRef.askWithStatus(replyTo =>
-          RejectOperationHyperledger(
-            operationId,
-            jsonRejectMessage.rejectMessage,
-            replyTo
-          )).recover(handleException("Get operations")).map {
-          case Accepted(_)                  => (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(""))
-          case Rejected(statusCode, reason) => throw UC4Exception(statusCode, reason)
+    (authUser, _) =>
+      ServerServiceCall { (header, jsonRejectMessage) =>
+        certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { jsonCertificate =>
+          entityRef.askWithStatus(replyTo =>
+            GetProposalRejectOperationHyperledger(
+              jsonCertificate.certificate,
+              operationId,
+              jsonRejectMessage.rejectMessage,
+              replyTo
+            )).recover(handleException("Reject operation")).map { unsignedProposal =>
+            (ResponseHeader(200, MessageProtocol.empty, List()), unsignedProposal)
+          }
         }
       }
   }
@@ -182,14 +200,27 @@ class OperationServiceImpl(
   }
 
   /** Submit a signed Proposal */
-  override def submitProposal(operationId: String): ServiceCall[SignedProposal, UnsignedTransaction] = ServiceCall {
-    _ => throw UC4Exception.NotImplemented
-  }
+  override def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction] =
+    authenticated[SignedProposal, UnsignedTransaction](AuthenticationRole.All: _*) {
+      ServerServiceCall { (_, signedProposal) =>
+        entityRef.askWithStatus[Array[Byte]](replyTo => SubmitProposal(signedProposal, replyTo)).map { array =>
+          (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedTransaction(array))
+        }.recover(handleException("Submit proposal failed"))
+      }
+    }
 
-  /** Submit a signed Proposal */
-  override def submitTransaction(operationId: String): ServiceCall[SignedTransaction, Done] = ServiceCall {
-    _ => throw UC4Exception.NotImplemented
-  }
+  /** Submit a signed Transaction */
+  override def submitTransaction(): ServiceCall[SignedTransaction, Done] =
+    authenticated[SignedTransaction, Done](AuthenticationRole.All: _*) {
+      ServerServiceCall { (_, signedTransaction) =>
+        entityRef.askWithStatus[Confirmation](replyTo => SubmitTransaction(signedTransaction, replyTo)).map {
+          case Accepted(_) =>
+            (ResponseHeader(202, MessageProtocol.empty, List()), Done)
+          case Rejected(statusCode, reason) =>
+            throw UC4Exception(statusCode, reason)
+        }.recover(handleException("Submit transaction failed"))
+      }
+    }
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")

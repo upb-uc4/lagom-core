@@ -11,18 +11,17 @@ import com.typesafe.config.Config
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.examreg.api.ExamregService
-import de.upb.cs.uc4.hyperledger.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
-import de.upb.cs.uc4.hyperledger.{ HyperledgerUtils, ProposalWrapper }
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
+import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.impl.actor.MatriculationBehaviour
 import de.upb.cs.uc4.matriculation.impl.commands._
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation }
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
-import de.upb.cs.uc4.shared.client._
 import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.Student
 import org.slf4j.{ Logger, LoggerFactory }
@@ -51,29 +50,6 @@ class MatriculationServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   private final val log: Logger = LoggerFactory.getLogger(classOf[MatriculationServiceImpl])
-
-  /** Submits a proposal to matriculate a student */
-  override def submitMatriculationProposal(): ServiceCall[SignedProposal, UnsignedTransaction] =
-    authenticated[SignedProposal, UnsignedTransaction](AuthenticationRole.Student, AuthenticationRole.Admin) {
-      ServerServiceCall { (_, signedProposal) =>
-        entityRef.askWithStatus[Array[Byte]](replyTo => SubmitProposal(signedProposal, replyTo)).map { array =>
-          (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedTransaction(array))
-        }.recover(handleException("Submit proposal failed"))
-      }
-    }
-
-  /** Submits a transaction to matriculate a student */
-  override def submitMatriculationTransaction(): ServiceCall[SignedTransaction, Done] =
-    authenticated[SignedTransaction, Done](AuthenticationRole.Student, AuthenticationRole.Admin) {
-      ServerServiceCall { (_, signedTransaction) =>
-        entityRef.askWithStatus[Confirmation](replyTo => SubmitTransaction(signedTransaction, replyTo)).map {
-          case Accepted(_) =>
-            (ResponseHeader(202, MessageProtocol.empty, List()), Done)
-          case Rejected(statusCode, reason) =>
-            throw UC4Exception(statusCode, reason)
-        }.recover(handleException("Submit transaction failed"))
-      }
-    }
 
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
