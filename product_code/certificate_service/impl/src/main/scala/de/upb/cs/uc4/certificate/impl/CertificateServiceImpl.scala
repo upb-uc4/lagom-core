@@ -152,17 +152,29 @@ class CertificateServiceImpl(
   }
 
   /** Returns the username that matches the given enrollmentId */
-  override def getUsernames(enrollmentIds: Option[String]): ServiceCall[NotUsed, Seq[UsernameEnrollmentIdPair]] = authenticated(AuthenticationRole.Admin, AuthenticationRole.Lecturer) {
-    ServerServiceCall {
-      (header, _) =>
-        if (enrollmentIds.isEmpty) {
-          throw UC4Exception.QueryParameterError(SimpleError("enrollmentIds", "Query parameter must be set"))
-        }
-        val enrollmentIdList = enrollmentIds.get.split(",").filter(_.trim.nonEmpty).toSeq
+  override def getUsernames(enrollmentIds: Option[String]): ServiceCall[NotUsed, Seq[UsernameEnrollmentIdPair]] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+    (authUser, role) =>
+      ServerServiceCall {
+        (header, _) =>
+          if (enrollmentIds.isEmpty) {
+            throw UC4Exception.QueryParameterError(SimpleError("enrollmentIds", "Query parameter must be set"))
+          }
+          val enrollmentIdList = enrollmentIds.get.split(",").filter(_.trim.nonEmpty).toSeq.distinct
 
-        database.getUsernameEnrollmentIdPairs(enrollmentIdList)
-          .map(usernameEnrollmentIdPairs => createETagHeader(header, usernameEnrollmentIdPairs))
-    }
+          if (role == AuthenticationRole.Student && enrollmentIdList.size != 1) {
+            throw UC4Exception.OwnerMismatch
+          }
+
+          database.getUsernameEnrollmentIdPairs(enrollmentIdList)
+            .map { usernameEnrollmentIdPairs =>
+
+              if (usernameEnrollmentIdPairs.size != 1 || usernameEnrollmentIdPairs.head.username != authUser) {
+                throw UC4Exception.OwnerMismatch
+              }
+              createETagHeader(header, usernameEnrollmentIdPairs)
+            }
+
+      }
   }
 
   /** Publishes every user that is registered at hyperledger */
