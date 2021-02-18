@@ -111,10 +111,6 @@ class AdmissionServiceImpl(
     identifiedAuthenticated(AuthenticationRole.All: _*) { (authUser, role) =>
       ServerServiceCall { (header, _) =>
 
-        if (role != AuthenticationRole.Admin && (username.isEmpty || username.get.trim != authUser)) {
-          throw UC4Exception.OwnerMismatch
-        }
-
         val authErrorFuture = role match {
           case AuthenticationRole.Lecturer =>
             if (examIds.isEmpty) {
