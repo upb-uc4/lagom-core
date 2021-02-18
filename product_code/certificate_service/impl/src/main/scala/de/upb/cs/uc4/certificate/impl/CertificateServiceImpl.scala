@@ -161,16 +161,17 @@ class CertificateServiceImpl(
           }
           val enrollmentIdList = enrollmentIds.get.split(",").filter(_.trim.nonEmpty).toSeq.distinct
 
-          if (role == AuthenticationRole.Student && enrollmentIdList.size != 1) {
-            throw UC4Exception.OwnerMismatch
-          }
-
           database.getUsernameEnrollmentIdPairs(enrollmentIdList)
             .map { usernameEnrollmentIdPairs =>
 
-              if (usernameEnrollmentIdPairs.size != 1 || usernameEnrollmentIdPairs.head.username != authUser) {
-                throw UC4Exception.OwnerMismatch
+              if (role == AuthenticationRole.Student) {
+                usernameEnrollmentIdPairs.find(_.username != authUser) match {
+                  case Some(_) =>
+                    throw UC4Exception.OwnerMismatch
+                  case None =>
+                }
               }
+
               createETagHeader(header, usernameEnrollmentIdPairs)
             }
 
