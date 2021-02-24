@@ -3,7 +3,6 @@ package de.upb.cs.uc4.operation.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import com.typesafe.config.Config
-import de.upb.cs.uc4.hyperledger.api.model.UnsignedProposal
 import de.upb.cs.uc4.hyperledger.api.model.operation.{ OperationData, OperationDataState }
 import de.upb.cs.uc4.hyperledger.connections.cases.ConnectionOperation
 import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionOperationTrait
@@ -58,10 +57,10 @@ class OperationHyperledgerBehaviour(val config: Config) extends HyperledgerActor
       ))
 
     case GetProposalApproveOperationHyperledger(certificate, id, replyTo) =>
-      replyTo ! StatusReply.success(UnsignedProposal(connection.getProposalApproveOperation(certificate = certificate, operationId = id)))
+      replyTo ! StatusReply.success(RawUnsignedProposal(connection.getProposalApproveOperation(certificate = certificate, operationId = id)))
 
     case GetProposalRejectOperationHyperledger(certificate, id, message, replyTo) =>
-      replyTo ! StatusReply.success(UnsignedProposal(connection.getProposalRejectOperation(certificate = certificate, operationId = id, rejectMessage = message)))
+      replyTo ! StatusReply.success(RawUnsignedProposal(connection.getProposalRejectOperation(certificate = certificate, operationId = id, rejectMessage = message)))
   }
 
   /** The companion object */

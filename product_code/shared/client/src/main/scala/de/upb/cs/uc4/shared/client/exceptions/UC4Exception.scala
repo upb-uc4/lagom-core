@@ -29,6 +29,7 @@ object UC4Exception {
   val AlreadyDeleted = new UC4NonCriticalException(400, GenericError(ErrorType.AlreadyDeleted))
   val MalformedRefreshToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedRefreshToken))
   val MalformedLoginToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedLoginToken))
+  val MalformedFrontendSigningToken = new UC4NonCriticalException(400, GenericError(ErrorType.MalformedFrontendSigningToken))
   val MultipleAuthorizationError = new UC4NonCriticalException(400, GenericError(ErrorType.MultipleAuthorization))
   def QueryParameterError(invalidParams: SimpleError*) =
     new UC4NonCriticalException(400, DetailedError(ErrorType.QueryParameter, invalidParams))
@@ -38,6 +39,7 @@ object UC4Exception {
   val BasicAuthorizationError = new UC4NonCriticalException(401, GenericError(ErrorType.BasicAuthorization))
   val RefreshTokenExpired = new UC4NonCriticalException(401, GenericError(ErrorType.RefreshTokenExpired))
   val LoginTokenExpired = new UC4NonCriticalException(401, GenericError(ErrorType.LoginTokenExpired))
+  val FrontendSigningTokenExpired = new UC4NonCriticalException(401, GenericError(ErrorType.FrontendSigningTokenExpired))
   //403
   val NotEnoughPrivileges = new UC4NonCriticalException(403, GenericError(ErrorType.NotEnoughPrivileges))
   val OwnerMismatch = new UC4NonCriticalException(403, GenericError(ErrorType.OwnerMismatch))
@@ -55,6 +57,7 @@ object UC4Exception {
   val PathParameterMismatch = new UC4NonCriticalException(422, GenericError(ErrorType.PathParameterMismatch))
   val RefreshTokenSignatureError = new UC4NonCriticalException(422, GenericError(ErrorType.RefreshTokenSignatureInvalid))
   val LoginTokenSignatureError = new UC4NonCriticalException(422, GenericError(ErrorType.LoginTokenSignatureInvalid))
+  val InvalidUnsignedProposal = new UC4NonCriticalException(422, GenericError(ErrorType.InvalidUnsignedProposal))
   //428
   val PreconditionRequired = new UC4NonCriticalException(428, GenericError(ErrorType.PreconditionRequired))
   //500

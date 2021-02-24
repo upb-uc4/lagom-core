@@ -25,7 +25,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the ExamregService */
-class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregDatabase)(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ExamregService {
+class ExamregServiceImpl(clusterSharding: ClusterSharding, database: ExamregDatabase)(implicit ec: ExecutionContext, override val config: Config, timeout: Timeout) extends ExamregService {
 
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 

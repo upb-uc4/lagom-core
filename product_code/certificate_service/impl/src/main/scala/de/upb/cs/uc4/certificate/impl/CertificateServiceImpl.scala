@@ -42,7 +42,7 @@ class CertificateServiceImpl(
     kafkaEncryptionUtility: KafkaEncryptionUtility,
     database: CertificateDatabase,
     override val environment: Environment
-)(implicit ec: ExecutionContext, timeout: Timeout, val config: Config)
+)(implicit ec: ExecutionContext, timeout: Timeout, override val config: Config)
   extends CertificateService with HyperledgerAdminParts {
 
   protected final val log: Logger = LoggerFactory.getLogger(getClass)

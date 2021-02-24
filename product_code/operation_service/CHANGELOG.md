@@ -1,3 +1,12 @@
+# [WIP - v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/operation-v0.17.1...operation-v0.19.1) (2021-XX-XX)
+## Feature
+- Added token with expiration date to every getProposal
+- Added token with expiration date to every getTransaction
+- Added check with expiration date to submitProposal
+- Added token with expiration date to submitTransaction
+## Refactor
+## Bugfix
+
 # [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/operation-v0.16.1...operation-v0.17.1) (2021-02-04)
 ## Feature
 - Adapted Operation Service to implement Operations 1.1 API

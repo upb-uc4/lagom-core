@@ -5,16 +5,16 @@ import play.api.libs.json.{ Format, Json }
 object ErrorType extends Enumeration {
   type ErrorType = Value
   val NotModified, //304
-  Deserialization, KafkaDeserialization, JsonValidation, AlreadyDeleted, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, //400
+  Deserialization, KafkaDeserialization, JsonValidation, AlreadyDeleted, MalformedRefreshToken, MalformedLoginToken, UnexpectedEntity, MultipleAuthorization, MalformedFrontendSigningToken, //400
   MissingHeader, QueryParameter, //In an DetailedError
-  BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, //401
+  BasicAuthorization, JwtAuthorization, RefreshTokenExpired, LoginTokenExpired, RefreshTokenMissing, FrontendSigningTokenExpired, //401
   NotEnoughPrivileges, OwnerMismatch, //403
   KeyNotFound, NotEnrolled, //404
   AlreadyEnrolled, KeyDuplicate, RemovalNotAllowed, //409
   EntityTooLarge, //413
   UnsupportedMediaType, //415
   Teapot, //418
-  PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, //422
+  PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, InvalidUnsignedProposal, //422
   Validation, UneditableFields, //422 In a DetailedError
   PreconditionRequired, //428
   InternalServer, UndeserializableException, //500
@@ -46,12 +46,14 @@ object ErrorType extends Enumeration {
       case MultipleAuthorization => "Multiple authorization given"
       case MissingHeader => "Missing required header" //In a DetailedError
       case QueryParameter => "QueryParameter(s) invalid" //In a DetailedError
+      case MalformedFrontendSigningToken => "The frontend signing token is malformed"
       //401
       case BasicAuthorization => "Username and password combination does not exist"
       case JwtAuthorization => "Authorization token missing"
       case RefreshTokenMissing => "Refresh token missing"
       case RefreshTokenExpired => "Your long term session expired"
       case LoginTokenExpired => "Your session expired"
+      case FrontendSigningTokenExpired => "Your frontend signing token expired"
       //403
       case NotEnoughPrivileges => "Insufficient privileges for this action"
       case OwnerMismatch => "You are not allowed to modify the resource"
@@ -75,6 +77,7 @@ object ErrorType extends Enumeration {
       case UneditableFields => "Attempted to change uneditable fields" //In a DetailedError
       case RefreshTokenSignatureInvalid => "The long term token has a wrong signature"
       case LoginTokenSignatureInvalid => "The login term token has a wrong signature"
+      case InvalidUnsignedProposal => "The unsigned proposal does not match the hash"
       //428
       case PreconditionRequired => "A required precondition for this call is not fulfilled"
       //500
