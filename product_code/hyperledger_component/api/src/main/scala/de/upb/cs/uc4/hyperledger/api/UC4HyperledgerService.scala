@@ -14,7 +14,7 @@ trait UC4HyperledgerService extends UC4Service {
 
   val config: Config = null
 
-  protected val jwtKey: String = config.getString("uc4.hyperledger.jwtKey")
+  protected lazy val jwtKey: String = config.getString("uc4.hyperledger.jwtKey")
 
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion]
