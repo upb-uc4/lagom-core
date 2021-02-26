@@ -41,7 +41,7 @@ class AdmissionServiceStub extends AdmissionService {
     _ => Future.successful(UnsignedProposal(""))
   }
 
-  /** Gets a proposal for dropping a course admission */
+  /** Gets a proposal for dropping an admission */
   override def getProposalDropAdmission: ServiceCall[DropAdmission, UnsignedProposal] = ServiceCall {
     _ => Future.successful(UnsignedProposal(""))
   }
