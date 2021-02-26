@@ -57,7 +57,7 @@ object UC4Exception {
   val PathParameterMismatch = new UC4NonCriticalException(422, GenericError(ErrorType.PathParameterMismatch))
   val RefreshTokenSignatureError = new UC4NonCriticalException(422, GenericError(ErrorType.RefreshTokenSignatureInvalid))
   val LoginTokenSignatureError = new UC4NonCriticalException(422, GenericError(ErrorType.LoginTokenSignatureInvalid))
-  val InvalidUnsignedProposal = new UC4NonCriticalException(422, GenericError(ErrorType.InvalidUnsignedProposal))
+  val FrontendSigningTokenSignatureError = new UC4NonCriticalException(422, GenericError(ErrorType.FrontendSigningTokenSignatureInvalid))
   //428
   val PreconditionRequired = new UC4NonCriticalException(428, GenericError(ErrorType.PreconditionRequired))
   //500

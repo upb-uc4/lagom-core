@@ -14,7 +14,7 @@ object ErrorType extends Enumeration {
   EntityTooLarge, //413
   UnsupportedMediaType, //415
   Teapot, //418
-  PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, InvalidUnsignedProposal, //422
+  PathParameterMismatch, RefreshTokenSignatureInvalid, LoginTokenSignatureInvalid, ValidationTimeout, FrontendSigningTokenSignatureInvalid, //422
   Validation, UneditableFields, //422 In a DetailedError
   PreconditionRequired, //428
   InternalServer, UndeserializableException, //500
@@ -77,7 +77,7 @@ object ErrorType extends Enumeration {
       case UneditableFields => "Attempted to change uneditable fields" //In a DetailedError
       case RefreshTokenSignatureInvalid => "The long term token has a wrong signature"
       case LoginTokenSignatureInvalid => "The login term token has a wrong signature"
-      case InvalidUnsignedProposal => "The unsigned proposal does not match the hash"
+      case FrontendSigningTokenSignatureInvalid => "The frontend signing token has a wrong signature"
       //428
       case PreconditionRequired => "A required precondition for this call is not fulfilled"
       //500

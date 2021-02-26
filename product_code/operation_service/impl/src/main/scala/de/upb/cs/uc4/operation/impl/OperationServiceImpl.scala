@@ -242,7 +242,7 @@ class OperationServiceImpl(
       case _: ExpiredJwtException      => throw UC4Exception.FrontendSigningTokenExpired
       case _: UnsupportedJwtException  => throw UC4Exception.MalformedFrontendSigningToken
       case _: MalformedJwtException    => throw UC4Exception.MalformedFrontendSigningToken
-      case _: SignatureException       => throw UC4Exception.MalformedFrontendSigningToken
+      case _: SignatureException       => throw UC4Exception.FrontendSigningTokenSignatureError
       case _: IllegalArgumentException => throw UC4Exception.MalformedFrontendSigningToken
       case ue: UC4Exception            => throw ue
       case ex: Throwable               => throw UC4Exception.InternalServerError("Failed to verify FrontendSigningToken", ex.getMessage, ex)

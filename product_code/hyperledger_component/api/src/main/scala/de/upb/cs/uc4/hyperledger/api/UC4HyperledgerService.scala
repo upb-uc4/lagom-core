@@ -15,6 +15,7 @@ trait UC4HyperledgerService extends UC4Service {
   val config: Config = null
 
   protected lazy val jwtKey: String = config.getString("uc4.hyperledger.jwtKey")
+  protected lazy val processingTime: Int = config.getInt("uc4.hyperledger.processingTime")
 
   /** Get the version of the Hyperledger API and the version of the chaincode the service uses */
   def getHlfVersions: ServiceCall[NotUsed, JsonHyperledgerVersion]
@@ -37,9 +38,9 @@ trait UC4HyperledgerService extends UC4Service {
   protected def createTimedUnsignedTransaction(unsignedTransaction: Array[Byte]): UnsignedTransaction =
     UnsignedTransaction(createTimedToken(unsignedTransaction))
 
-  private def createTimedToken(bytes: Array[Byte]): String = {
+  private[api] def createTimedToken(bytes: Array[Byte]): String = {
     val now = Calendar.getInstance()
-    now.add(Calendar.MINUTE, config.getInt("uc4.hyperledger.processingTime"))
+    now.add(Calendar.MINUTE, processingTime)
 
     Jwts.builder()
       .setSubject("timed")
