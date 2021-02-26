@@ -25,7 +25,7 @@ trait AdmissionService extends UC4HyperledgerService {
   /** Returns exam admissions */
   def getExamAdmissions(username: Option[String], admissionIds: Option[String], examIds: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]]
 
-  /** Gets a proposal for adding a exam admission */
+  /** Gets a proposal for adding an admission */
   def getProposalAddAdmission: ServiceCall[AbstractAdmission, UnsignedProposal]
 
   /** Gets a proposal for dropping an admission */
