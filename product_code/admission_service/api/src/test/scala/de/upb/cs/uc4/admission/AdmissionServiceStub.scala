@@ -36,7 +36,7 @@ class AdmissionServiceStub extends AdmissionService {
     _ => Future.successful(examAdmissions)
   }
 
-  /** Gets a proposal for adding a exam admission */
+  /** Gets a proposal for adding an admission */
   override def getProposalAddAdmission: ServiceCall[AbstractAdmission, UnsignedProposal] = ServiceCall {
     _ => Future.successful(UnsignedProposal(""))
   }
