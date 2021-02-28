@@ -8,7 +8,7 @@ import de.upb.cs.uc4.admission.model.{ AdmissionType, CourseAdmission, DropAdmis
 import de.upb.cs.uc4.certificate.CertificateServiceStub
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.course.{ CourseServiceStub, DefaultTestCourses }
-import de.upb.cs.uc4.exam.DefaultTestExams
+import de.upb.cs.uc4.exam.{ DefaultTestExams, ExamServiceStub }
 import de.upb.cs.uc4.exam.model.Exam
 import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
 import de.upb.cs.uc4.hyperledger.api.model
@@ -25,10 +25,12 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import play.api.libs.json.Json
-
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.util.Base64
+
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Exception }
+
 import scala.language.reflectiveCalls
 
 /** Tests for the AdmissionService */
@@ -42,12 +44,21 @@ class AdmissionServiceSpec extends AsyncWordSpec
         override lazy val certificateService: CertificateServiceStub = new CertificateServiceStub
         override lazy val matriculationService: MatriculationServiceStub = new MatriculationServiceStub
         override lazy val examRegService: ExamregServiceStub = new ExamregServiceStub
+        override lazy val examService: ExamServiceStub = new ExamServiceStub
         override lazy val courseService: CourseServiceStub = new CourseServiceStub
         override lazy val operationService: OperationServiceStub = new OperationServiceStub
 
-        certificateService.setup(student0.username)
+        certificateService.setup(student0.username, student1.username, student2.username, lecturer0.username)
+        examService.setup()
+
         matriculationService.addImmatriculationData(student0.username, matriculationService.createSingleImmatriculationData(
           certificateService.get(student0.username).enrollmentId, examReg0.name, "SS2020"
+        ))
+        matriculationService.addImmatriculationData(student1.username, matriculationService.createSingleImmatriculationData(
+          certificateService.get(student1.username).enrollmentId, examReg1.name, "SS2020"
+        ))
+        matriculationService.addImmatriculationData(student2.username, matriculationService.createSingleImmatriculationData(
+          certificateService.get(student2.username).enrollmentId, examReg2.name, "SS2020"
         ))
 
         var courseAdmissionList: Seq[CourseAdmission] = Seq()
@@ -84,6 +95,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
                 examAdmissionList
                   .filter(admission => enrollmentId == "" || admission.enrollmentId == enrollmentId)
                   .filter(admission => examIds.isEmpty || examIds.contains(admission.examId))
+                  .filter(admission => admissionIds.isEmpty || admissionIds.contains((admission.admissionId)))
               ))
             }
 
@@ -123,20 +135,49 @@ class AdmissionServiceSpec extends AsyncWordSpec
 
   var client: AdmissionService = _
   var certificate: CertificateServiceStub = _
-  private var defaultCourse: Course = _
-  private var defaultCourseAdmission: CourseAdmission = _
-  private var defaultExam: Exam = _
-  private var defaultExamAdmission: ExamAdmission = _
+
+  private var defaultExam0: Exam = _
+  private var defaultExam1: Exam = _
+  private var defaultExam2: Exam = _
+  private var defaultExam3: Exam = _
+  private var defaultExamAdmission0, defaultExamAdmission2, defaultExamAdmission1, defaultExamAdmission4, defaultExamAdmission3: ExamAdmission = _
+  private var allExamAdmissions: Seq[ExamAdmission] = _
+
+  private var defaultCourse0 = course0.copy(moduleIds = examReg0.modules.map(_.id))
+  private var defaultCourse1 = course1.copy(moduleIds = examReg0.modules.map(_.id))
+  private var defaultCourse2 = course2.copy(moduleIds = examReg1.modules.map(_.id))
+  private var defaultCourse3 = course3.copy(moduleIds = examReg2.modules.map(_.id))
+  private var defaultCourseAdmission0, defaultCourseAdmission1, defaultCourseAdmission2, defaultCourseAdmission3: CourseAdmission = _
+  private var allCourseAdmissions: Seq[CourseAdmission] = _
 
   override protected def beforeAll(): Unit = {
     client = server.serviceClient.implement[AdmissionService]
     certificate = server.application.certificateService
-    defaultCourse = course0.copy(moduleIds = examReg0.modules.map(_.id))
-    defaultCourse = server.application.courseService.addCourse(defaultCourse)
-    defaultCourseAdmission = CourseAdmission("", "", "", AdmissionType.Course.toString, defaultCourse.courseId, defaultCourse.moduleIds.head)
 
-    defaultExam = exam0.copy(moduleId = defaultCourse.moduleIds.head)
-    defaultExamAdmission = ExamAdmission("", "", "", AdmissionType.Exam.toString, defaultExam.examId)
+    //Base Course stuff
+    defaultCourse0 = server.application.courseService.addCourse(defaultCourse0)
+    defaultCourse1 = server.application.courseService.addCourse(defaultCourse1)
+    defaultCourse2 = server.application.courseService.addCourse(defaultCourse2)
+    defaultCourse3 = server.application.courseService.addCourse(defaultCourse3)
+    defaultCourseAdmission0 = CourseAdmission("courseAd0", student0.username + "enrollmentId", "", AdmissionType.Course.toString, defaultCourse0.courseId, defaultCourse0.moduleIds.head)
+    defaultCourseAdmission1 = CourseAdmission("courseAd1", student0.username + "enrollmentId", "", AdmissionType.Course.toString, defaultCourse1.courseId, defaultCourse1.moduleIds.apply(1))
+    defaultCourseAdmission2 = CourseAdmission("courseAd2", student1.username + "enrollmentId", "", AdmissionType.Course.toString, defaultCourse2.courseId, defaultCourse2.moduleIds.head)
+    defaultCourseAdmission3 = CourseAdmission("courseAd3", student1.username + "enrollmentId", "", AdmissionType.Course.toString, defaultCourse3.courseId, defaultCourse3.moduleIds.head)
+    allCourseAdmissions = Seq(defaultCourseAdmission0, defaultCourseAdmission1, defaultCourseAdmission2, defaultCourseAdmission3)
+
+    //Base Exam stuff
+    defaultExam0 = exam0.copy(moduleId = defaultCourse0.moduleIds.head)
+    defaultExam1 = exam1.copy(moduleId = defaultCourse1.moduleIds.head)
+    defaultExam2 = exam2.copy(moduleId = defaultCourse2.moduleIds.head)
+    defaultExam3 = exam3.copy(moduleId = defaultCourse3.moduleIds.head)
+    defaultExamAdmission0 = ExamAdmission("examAd0", student0.username + "enrollmentId", "", AdmissionType.Exam.toString, defaultExam0.examId)
+    defaultExamAdmission1 = ExamAdmission("examAd1", student1.username + "enrollmentId", "", AdmissionType.Exam.toString, defaultExam0.examId)
+    defaultExamAdmission2 = ExamAdmission("examAd2", student0.username + "enrollmentId", "", AdmissionType.Exam.toString, defaultExam1.examId)
+    defaultExamAdmission3 = ExamAdmission("examAd3", student2.username + "enrollmentId", "", AdmissionType.Exam.toString, defaultExam2.examId)
+    defaultExamAdmission4 = ExamAdmission("examAd4", student2.username + "enrollmentId", "", AdmissionType.Exam.toString, defaultExam3.examId)
+
+    allExamAdmissions = Seq(defaultExamAdmission0, defaultExamAdmission1, defaultExamAdmission2, defaultExamAdmission3, defaultExamAdmission4)
+
   }
 
   override protected def afterAll(): Unit = server.stop()
@@ -147,9 +188,14 @@ class AdmissionServiceSpec extends AsyncWordSpec
     server.application.courseAdmissionList ++= courseAdmissions
     server.application.examAdmissionList ++= examAdmissions
   }
+  def prepareSeq(courseAdmissions: Seq[CourseAdmission])(examAdmissions: Seq[ExamAdmission]): Unit = {
+    server.application.courseAdmissionList ++= courseAdmissions
+    server.application.examAdmissionList ++= examAdmissions
+  }
 
   def cleanup(): Unit = {
     server.application.courseAdmissionList = Seq()
+    server.application.examAdmissionList = Seq()
   }
 
   private def asString(unsignedProposal: String) = new String(Base64.getDecoder.decode(unsignedProposal), StandardCharsets.UTF_8)
@@ -162,42 +208,219 @@ class AdmissionServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get course admission" in {
-      prepare(defaultCourseAdmission)()
+    //GET - Course
+    "get all course admissions as an admin" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
       client.getCourseAdmissions(None, None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-        courseAdmissions => courseAdmissions should contain theSameElementsAs Seq(defaultCourseAdmission)
+        courseAdmissions => courseAdmissions should contain theSameElementsAs allCourseAdmissions
       }
     }
 
-    "get exam admissions" in {
-      prepare()(defaultExamAdmission)
+    " get all own course admissions as a student" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getCourseAdmissions(Some(student0.username), None, None).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
+        courseAdmissions => courseAdmissions should contain theSameElementsAs Seq(defaultCourseAdmission0, defaultCourseAdmission1)
+      }
+    }
+
+    "not get all course admissions as a student" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getCourseAdmissions(None, None, None).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
+    }
+
+    "not get a course admission from another student" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getCourseAdmissions(Some(student1.username), None, None).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
+    }
+
+    "not get a course admission from another lecturer" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getCourseAdmissions(None, Some(defaultCourse2.courseId), None).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
+    }
+
+    "not get a course admission if you are not enrolled" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getCourseAdmissions(Some(student0.username + "NotEnrolledYet"), None, None).handleRequestHeader(addAuthorizationHeader(student0.username + "NotEnrolledYet")).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+      }
+    }
+
+    "not get a course admission with an non-existent course id" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getCourseAdmissions(None, Some("NotFound"), None).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+      }
+    }
+
+    "get all course admissions with specified moduleId as an admin" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getCourseAdmissions(None, None, Some(defaultCourse0.moduleIds.head)).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+        courseAdmissions => courseAdmissions should contain theSameElementsAs Seq(defaultCourseAdmission0, defaultCourseAdmission2)
+      }
+    }
+
+    "get all course admissions with specified username,moduleId and courseID as an student" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getCourseAdmissions(Some(student0.username), Some(defaultCourse0.courseId), Some(defaultCourse0.moduleIds.head)).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
+        courseAdmissions => courseAdmissions should contain theSameElementsAs Seq(defaultCourseAdmission0)
+      }
+    }
+
+    //GET - Exam
+    "get all exam admissions as an admin" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
       client.getExamAdmissions(None, None, None).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-        examAdmissions => examAdmissions should contain theSameElementsAs Seq(defaultExamAdmission)
+        examAdmissions => examAdmissions should contain theSameElementsAs allExamAdmissions
       }
     }
 
+    " get all own exam admissions as a student" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(Some(student0.username), None, None).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
+        examAdmissions => examAdmissions should contain theSameElementsAs Seq(defaultExamAdmission0, defaultExamAdmission2)
+      }
+    }
+
+    "not get all exam admissions as a student" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(None, None, None).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
+    }
+
+    "not get all exam admissions as a lecturer" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(None, None, None).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
+    }
+
+    "not get exam admissions as another student" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(Some(student1.username), None, Some("RandomExamId")).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
+    }
+
+    " get all exam admissions from an exam as the lecturer which holds the exam" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(None, None, Some(defaultExam0.examId)).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().map {
+        examAdmissions => examAdmissions should contain theSameElementsAs Seq(defaultExamAdmission0, defaultExamAdmission1)
+      }
+    }
+
+    "not get a exam admission from an exam of another lecturer" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(None, None, Some(defaultExam3.examId)).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)
+      }
+    }
+
+    "not get an exam admission if you are not enrolled" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(Some(student0.username + "NotEnrolledYet"), None, None).handleRequestHeader(addAuthorizationHeader(student0.username + "NotEnrolledYet")).invoke().failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+      }
+    }
+
+    "not get a exam admission with an non-existent exam id" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(None, None, Some("NotFound")).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().map {
+        examAdmissions => examAdmissions should contain theSameElementsAs Seq()
+      }
+    }
+
+    "get the examAdmission with specified admissionId as an admin" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(None, Some(defaultExamAdmission0.admissionId + "," + defaultExamAdmission2.admissionId), None).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+        examAdmissions => examAdmissions should contain theSameElementsAs Seq(defaultExamAdmission0, defaultExamAdmission2)
+      }
+    }
+    "get the examAdmission with specified username, admissionIds, and examIds as a student" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getExamAdmissions(Some(student0.username), Some(defaultExamAdmission0.admissionId + "," + defaultExamAdmission2.admissionId), Some(defaultExam0.examId)).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
+        examAdmissions => examAdmissions should contain theSameElementsAs Seq(defaultExamAdmission0)
+      }
+    }
+
+    //POST - negative generalAdd
+    "not get a proposal admission with non empty enrollmentId,admissionId or timestamp" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      // here all three fields are non empty but in return we also get three validation errors
+      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission0.copy(enrollmentId = "nonEmpty", admissionId = "nonEmpty", timestamp = "nonEmpty")).failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
+            contain theSameElementsAs Seq("admissionId", "enrollmentId", "timestamp")
+      }
+    }
+
+    //POST - addCourse
     "get proposal add course admission" in {
-      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission).map {
+      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission0.copy(enrollmentId = "", admissionId = "")).map {
         unsignedProposalJson =>
           asString(unsignedProposalJson.unsignedProposal).fromJson[CourseAdmission]
-            .copy(timestamp = "") should ===(defaultCourseAdmission.copy(enrollmentId = certificate.get(student0.username).enrollmentId))
+            .copy(timestamp = "") should ===(defaultCourseAdmission0.copy(admissionId = "", enrollmentId = certificate.get(student0.username).enrollmentId))
       }
     }
 
+    "not get proposal add course admission " in {
+      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission0.copy(enrollmentId = "", admissionId = "", moduleId = "moduleNotFound")).failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+            contain theSameElementsAs Seq(
+              SimpleError("moduleId", "CourseId can not be attributed to module with the given moduleId."),
+              SimpleError("courseId", "The module with the given moduleId can not be attributed to the course with the given courseId.")
+            )
+      }
+    }
+
+    //TODO how do we get this error (line 214 AdmissionService)  validationList :+= SimpleError("moduleId", "The given moduleId can not be attributed to an active exam regulation.")
+    "noot get proposal add course admission" in {
+      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission0.copy(enrollmentId = "", admissionId = "")).map {
+        unsignedProposalJson =>
+          asString(unsignedProposalJson.unsignedProposal).fromJson[CourseAdmission]
+            .copy(timestamp = "") should ===(defaultCourseAdmission0.copy(admissionId = "", enrollmentId = certificate.get(student0.username).enrollmentId))
+      }
+    }
+
+    //POST - addExam
     "get proposal add exam admission" in {
-      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultExamAdmission).map {
+      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultExamAdmission0.copy(enrollmentId = "", admissionId = "")).map {
         unsignedProposalJson =>
           asString(unsignedProposalJson.unsignedProposal).fromJson[ExamAdmission]
-            .copy(timestamp = "") should ===(defaultExamAdmission.copy(enrollmentId = certificate.get(student0.username).enrollmentId))
+            .copy(timestamp = "") should ===(defaultExamAdmission0.copy(admissionId = "", enrollmentId = certificate.get(student0.username).enrollmentId))
       }
     }
 
+    //DELETE- dropCourse
     "get proposal drop course admission" in {
       client.getProposalDropAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(DropAdmission("id")).map {
         unsignedProposalJson =>
           asString(unsignedProposalJson.unsignedProposal) should ===("id#id")
       }
     }
-
+    "not get proposal drop course admission with an empty admissionId" in {
+      client.getProposalDropAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(DropAdmission("")).failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
+            contain theSameElementsAs Seq("admissionId")
+      }
+    }
   }
 }

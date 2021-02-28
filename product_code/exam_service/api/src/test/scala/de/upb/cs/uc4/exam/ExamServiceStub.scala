@@ -23,8 +23,8 @@ class ExamServiceStub() extends ExamService with DefaultTestExams {
   }
 
   def setup(): Unit = {
+    reset()
     exams ++= Seq(exam0, exam1, exam2, exam3)
-
   }
 
   /** Returns Exams, optionally filtered */
