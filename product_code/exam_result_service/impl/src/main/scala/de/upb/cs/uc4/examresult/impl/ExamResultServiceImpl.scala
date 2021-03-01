@@ -28,7 +28,7 @@ import play.api.Environment
 import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 import scala.concurrent.duration._
 
-/** Implementation of the ExamService */
+/** Implementation of the ExamResultService */
 class ExamResultServiceImpl(
     clusterSharding: ClusterSharding,
     examService: ExamService,
