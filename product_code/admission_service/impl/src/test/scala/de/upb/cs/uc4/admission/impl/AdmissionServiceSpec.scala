@@ -147,7 +147,8 @@ class AdmissionServiceSpec extends AsyncWordSpec
   private var defaultCourse1 = course1.copy(moduleIds = examReg0.modules.map(_.id))
   private var defaultCourse2 = course2.copy(moduleIds = examReg1.modules.map(_.id))
   private var defaultCourse3 = course3.copy(moduleIds = examReg2.modules.map(_.id))
-  private var defaultCourseAdmission0, defaultCourseAdmission1, defaultCourseAdmission2, defaultCourseAdmission3: CourseAdmission = _
+  private var defaultCourse4 = course3.copy(moduleIds = Seq("NotAnActiveModule"))
+  private var defaultCourseAdmission0, defaultCourseAdmission1, defaultCourseAdmission2, defaultCourseAdmission3, defaultCourseAdmission4: CourseAdmission = _
   private var allCourseAdmissions: Seq[CourseAdmission] = _
 
   override protected def beforeAll(): Unit = {
@@ -159,10 +160,14 @@ class AdmissionServiceSpec extends AsyncWordSpec
     defaultCourse1 = server.application.courseService.addCourse(defaultCourse1)
     defaultCourse2 = server.application.courseService.addCourse(defaultCourse2)
     defaultCourse3 = server.application.courseService.addCourse(defaultCourse3)
+    defaultCourse4 = server.application.courseService.addCourse(defaultCourse4)
+
     defaultCourseAdmission0 = CourseAdmission("courseAd0", student0.username + "enrollmentId", "", AdmissionType.Course.toString, defaultCourse0.courseId, defaultCourse0.moduleIds.head)
     defaultCourseAdmission1 = CourseAdmission("courseAd1", student0.username + "enrollmentId", "", AdmissionType.Course.toString, defaultCourse1.courseId, defaultCourse1.moduleIds.apply(1))
     defaultCourseAdmission2 = CourseAdmission("courseAd2", student1.username + "enrollmentId", "", AdmissionType.Course.toString, defaultCourse2.courseId, defaultCourse2.moduleIds.head)
     defaultCourseAdmission3 = CourseAdmission("courseAd3", student1.username + "enrollmentId", "", AdmissionType.Course.toString, defaultCourse3.courseId, defaultCourse3.moduleIds.head)
+    defaultCourseAdmission4 = CourseAdmission("courseAd4", student1.username + "enrollmentId", "", AdmissionType.Course.toString, defaultCourse4.courseId, "NotAnActiveModule")
+
     allCourseAdmissions = Seq(defaultCourseAdmission0, defaultCourseAdmission1, defaultCourseAdmission2, defaultCourseAdmission3)
 
     //Base Exam stuff
@@ -220,6 +225,12 @@ class AdmissionServiceSpec extends AsyncWordSpec
       prepareSeq(allCourseAdmissions)(allExamAdmissions)
       client.getCourseAdmissions(Some(student0.username), None, None).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
         courseAdmissions => courseAdmissions should contain theSameElementsAs Seq(defaultCourseAdmission0, defaultCourseAdmission1)
+      }
+    }
+    "get a course admissions from an own course as lecturer" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      client.getCourseAdmissions(None, Some(defaultCourse0.courseId), None).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().map {
+        courseAdmissions => courseAdmissions should contain theSameElementsAs Seq(defaultCourseAdmission0)
       }
     }
 
@@ -360,10 +371,19 @@ class AdmissionServiceSpec extends AsyncWordSpec
     }
 
     //POST - negative generalAdd
-    "not get a proposal admission with non empty enrollmentId,admissionId or timestamp" in {
+    "not get a proposal course admission with non empty enrollmentId,admissionId or timestamp" in {
       prepareSeq(allCourseAdmissions)(allExamAdmissions)
       // here all three fields are non empty but in return we also get three validation errors
       client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission0.copy(enrollmentId = "nonEmpty", admissionId = "nonEmpty", timestamp = "nonEmpty")).failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
+            contain theSameElementsAs Seq("admissionId", "enrollmentId", "timestamp")
+      }
+    }
+    "not get a proposal exam admission with non empty enrollmentId,admissionId or timestamp" in {
+      prepareSeq(allCourseAdmissions)(allExamAdmissions)
+      // here all three fields are non empty but in return we also get three validation errors
+      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultExamAdmission0.copy(enrollmentId = "nonEmpty", admissionId = "nonEmpty", timestamp = "nonEmpty")).failed.map {
         answer =>
           answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams.map(_.name) should
             contain theSameElementsAs Seq("admissionId", "enrollmentId", "timestamp")
@@ -390,12 +410,13 @@ class AdmissionServiceSpec extends AsyncWordSpec
       }
     }
 
-    //TODO how do we get this error (line 214 AdmissionService)  validationList :+= SimpleError("moduleId", "The given moduleId can not be attributed to an active exam regulation.")
-    "noot get proposal add course admission" in {
-      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission0.copy(enrollmentId = "", admissionId = "")).map {
-        unsignedProposalJson =>
-          asString(unsignedProposalJson.unsignedProposal).fromJson[CourseAdmission]
-            .copy(timestamp = "") should ===(defaultCourseAdmission0.copy(admissionId = "", enrollmentId = certificate.get(student0.username).enrollmentId))
+    "not get proposal add course admission with an inactive moduleId" in {
+      client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission4.copy(enrollmentId = "", admissionId = "", moduleId = "NotAnActiveModule")).failed.map {
+        answer =>
+          answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
+            contain theSameElementsAs Seq(
+              SimpleError("moduleId", "The given moduleId can not be attributed to an active exam regulation.")
+            )
       }
     }
 
