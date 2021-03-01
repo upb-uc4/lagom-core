@@ -12,7 +12,7 @@ import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 /** The ExamService interface.
   *
   * This describes everything that Lagom needs to know about how to serve and
-  * consume the MatriculationService.
+  * consume the ExamService.
   */
 trait ExamService extends UC4HyperledgerService {
   /** Prefix for the path for the endpoints, a name/identifier for the service*/
