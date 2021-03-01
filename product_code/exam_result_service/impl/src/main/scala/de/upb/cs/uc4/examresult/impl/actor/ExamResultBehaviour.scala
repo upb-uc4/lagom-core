@@ -35,5 +35,5 @@ class ExamResultBehaviour(val config: Config) extends HyperledgerActor[Connectio
 
 object ExamResultBehaviour extends HyperledgerActorObject {
   /** The EntityTypeKey of this actor */
-  override val typeKey: EntityTypeKey[HyperledgerBaseCommand] = EntityTypeKey[HyperledgerBaseCommand]("uc4exam")
+  override val typeKey: EntityTypeKey[HyperledgerBaseCommand] = EntityTypeKey[HyperledgerBaseCommand]("uc4examresult")
 }
