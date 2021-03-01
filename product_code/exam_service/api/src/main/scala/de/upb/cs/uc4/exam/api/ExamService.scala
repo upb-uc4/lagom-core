@@ -9,7 +9,7 @@ import de.upb.cs.uc4.hyperledger.api.UC4HyperledgerService
 import de.upb.cs.uc4.hyperledger.api.model.UnsignedProposal
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
-/** The MatriculationService interface.
+/** The ExamService interface.
   *
   * This describes everything that Lagom needs to know about how to serve and
   * consume the MatriculationService.
