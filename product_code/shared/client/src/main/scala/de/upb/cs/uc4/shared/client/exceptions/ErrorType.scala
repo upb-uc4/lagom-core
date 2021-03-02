@@ -22,6 +22,7 @@ object ErrorType extends Enumeration {
   HLInternal, //In an InformativeError
   HLUnknownTransactionId, HLInsufficientApprovals, HLNotFound, HLConflict, HLUnprocessableLedgerState, //In a GenericError
   HLParameterNumberError, HLApprovalDenied, HLRejectionDenied, HLApprovalImpossible, HLRejectionImpossible, //In a GenericError
+  HLAccessDenied, HLExecutionImpossible, //In a GenericError
   HLUnprocessableEntity, HLInvalidEntity, //In a DetailedError
   HLInvalidTransactionCall //In a TransactionError
   = Value
