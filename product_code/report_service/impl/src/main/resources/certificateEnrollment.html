@@ -16,20 +16,20 @@
             {address}
         </p>
     </div>
-    <img style="margin-left: auto; margin-right: auto;" src="https://raw.githubusercontent.com/upb-uc4/ui-web/main/src/assets/logo/logo.svg" alt="NO LOGO" width="20%">
+    <img style="margin-left: auto; margin-right: auto;" src="https://raw.githubusercontent.com/upb-uc4/ui-web/main/src/assets/logo/logo.svg" alt="NO LOGO" width="25%">
 
-    <div style="display: -webkit-box; -webkit-box-pack: center;" class="mt-16">
-        <div></div>
-        <div class="w-2/3">
-            <h1 style="display: -webkit-box; -webkit-box-pack: center;" class="mt-8 text-4xl font-semibold">
+    <div class="mt-24">
+        <div class="ml-4">
+            <h1 class="mt-8 text-3xl font-semibold">
                 Certificate of Enrollment
             </h1>
-            <p class="mt-10">
+        
+            <p class="mt-10" style="display: -webkit-box">
                 The student <strong class="color-label">{studentName}</strong> with matriculation id <strong class="color-label">{matriculationId}</strong> and
                 enrollment id <strong class="color-label">{enrollmentId}</strong>
             </p>
 
-            <p class="mt-2">
+            <p class="mt-4">
                 is enrolled in the examination regulation(s):
             </p>
             <ul class="ml-8 mt-4 list-disc">
@@ -44,16 +44,15 @@
                 Total semesters enrolled: <strong class="color-label">{semesterCount}</strong>.
             </p>
 
-            <p class="mt-10">
+            <p class="mt-20">
                 The <strong class="color-label">{semester}</strong> begins on <strong class="color-label">{startDate}</strong> and ends on
                 <strong class="color-label">{endDate}</strong>.
             </p>
         </div>
-        <div></div>
     </div>
 </div>
+<div style="position: fixed; bottom: 0; display: -webkit-box" class="w-full">
+    <p class="text-xs">This document is only valid if cryptographically signed by {organization}.</p>
+</div>
 </body>
-<footer>
-    <small>This document is only valid if cryptographically signed by {organization}.</small>
-</footer>
 </html>
