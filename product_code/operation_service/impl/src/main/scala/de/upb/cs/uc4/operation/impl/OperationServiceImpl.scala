@@ -128,7 +128,7 @@ class OperationServiceImpl(
                 }
             }
           }
-        }
+        }.recoverWith(handleException("Get of enrollmentId username pair failed"))
       }
   }
 
