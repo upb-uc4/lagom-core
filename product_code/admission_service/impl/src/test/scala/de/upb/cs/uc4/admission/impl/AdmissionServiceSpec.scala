@@ -349,7 +349,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
       }
     }
 
-    "not get a exam admission with an non-existent exam id" in {
+    "not get an exam admission with an non-existent exam id" in {
       prepareSeq(allCourseAdmissions)(allExamAdmissions)
       client.getExamAdmissions(None, None, Some("NotFound")).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().map {
         examAdmissions => examAdmissions should contain theSameElementsAs Seq()
