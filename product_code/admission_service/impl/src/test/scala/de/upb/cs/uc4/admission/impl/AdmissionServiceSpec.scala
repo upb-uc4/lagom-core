@@ -370,7 +370,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
     }
 
     //POST - negative generalAdd
-    "not get a proposal course admission with non empty enrollmentId,admissionId or timestamp" in {
+    "not get a proposal course admission with non empty enrollmentId, admissionId or timestamp" in {
       prepareSeq(allCourseAdmissions)(allExamAdmissions)
       // here all three fields are non empty but in return we also get three validation errors
       client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission0.copy(enrollmentId = "nonEmpty", admissionId = "nonEmpty", timestamp = "nonEmpty")).failed.map {
