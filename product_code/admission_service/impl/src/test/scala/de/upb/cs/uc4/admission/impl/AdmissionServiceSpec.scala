@@ -333,7 +333,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
       }
     }
 
-    "not get a exam admission from an exam of another lecturer" in {
+    "not get an exam admission from an exam of another lecturer" in {
       prepareSeq(allCourseAdmissions)(allExamAdmissions)
       client.getExamAdmissions(None, None, Some(defaultExam3.examId)).handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke().failed.map {
         answer =>
