@@ -14,7 +14,10 @@ case class ValidationConfiguration(
     examinationRegulation: ExaminationRegulationRegex,
     module: ModuleRegex,
     courseAdmission: CourseAdmissionRegex,
-    dropAdmission: DropAdmissionRegex
+    examAdmission: ExamAdmissionRegex,
+    dropAdmission: DropAdmissionRegex,
+    exam: ExamRegex,
+    examResultEntry: ExamResultEntryRegex
 )
 
 case class ValidationPair(regex: String, message: String)
@@ -33,12 +36,14 @@ object ValidationConfiguration {
     implicit val format: Format[PostMessageCSRRegex] = Json.format
   }
 
-  case class CourseRegex(courseName: ValidationPair, startDate: ValidationPair, endDate: ValidationPair, ects: ValidationPair, lecturerId: ValidationPair, maxParticipants: ValidationPair, courseDescription: ValidationPair)
+  case class CourseRegex(courseName: ValidationPair, startDate: ValidationPair, endDate: ValidationPair, ects: ValidationPair,
+      lecturerId: ValidationPair, maxParticipants: ValidationPair, courseDescription: ValidationPair)
   object CourseRegex {
     implicit val format: Format[CourseRegex] = Json.format
   }
 
-  case class UserRegex(username: ValidationPair, firstName: ValidationPair, lastName: ValidationPair, email: ValidationPair, phoneNumber: ValidationPair, birthDate: ValidationPair)
+  case class UserRegex(username: ValidationPair, firstName: ValidationPair, lastName: ValidationPair,
+      email: ValidationPair, phoneNumber: ValidationPair, birthDate: ValidationPair)
   object UserRegex {
     implicit val format: Format[UserRegex] = Json.format
   }
@@ -62,13 +67,31 @@ object ValidationConfiguration {
   object ModuleRegex {
     implicit val format: Format[ModuleRegex] = Json.format
   }
+
   case class CourseAdmissionRegex(courseId: ValidationPair, moduleId: ValidationPair)
   object CourseAdmissionRegex {
     implicit val format: Format[CourseAdmissionRegex] = Json.format
   }
+
+  case class ExamAdmissionRegex(examId: ValidationPair)
+  object ExamAdmissionRegex {
+    implicit val format: Format[ExamAdmissionRegex] = Json.format
+  }
+
   case class DropAdmissionRegex(admissionId: ValidationPair)
   object DropAdmissionRegex {
     implicit val format: Format[DropAdmissionRegex] = Json.format
+  }
+
+  case class ExamRegex(courseId: ValidationPair, moduleId: ValidationPair, lecturerEnrollmentId: ValidationPair,
+      date: ValidationPair, admittableUntil: ValidationPair, droppableUntil: ValidationPair)
+  object ExamRegex {
+    implicit val format: Format[ExamRegex] = Json.format
+  }
+
+  case class ExamResultEntryRegex(enrollmentId: ValidationPair, examId: ValidationPair)
+  object ExamResultEntryRegex {
+    implicit val format: Format[ExamResultEntryRegex] = Json.format
   }
 
   def build: ValidationConfiguration = {
@@ -117,7 +140,22 @@ object ValidationConfiguration {
         ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex),
         ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex)
       ),
+      ExamAdmissionRegex(
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex)
+      ),
       DropAdmissionRegex(
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex)
+      ),
+      ExamRegex(
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex),
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex),
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex),
+        ValidationPair(RegexCollection.Commons.nonEmpty100CharRegex.regex, ErrorMessageCollection.Commons.nonEmpty100CharRegex),
+        ValidationPair(RegexCollection.Commons.nonEmpty100CharRegex.regex, ErrorMessageCollection.Commons.nonEmpty100CharRegex),
+        ValidationPair(RegexCollection.Commons.nonEmpty100CharRegex.regex, ErrorMessageCollection.Commons.nonEmpty100CharRegex)
+      ),
+      ExamResultEntryRegex(
+        ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex),
         ValidationPair(RegexCollection.Commons.nonEmptyCharRegex.regex, ErrorMessageCollection.Commons.nonEmptyCharRegex)
       )
     )

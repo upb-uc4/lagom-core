@@ -1,3 +1,10 @@
+# [WIP - v0.18.1](https://github.com/upb-uc4/University-Credits-4.0/compare/admission-v0.17.1...admission-v0.18.1) (2021-XX-XX)
+## Feature
+ - Added Exam Admissions
+ - Adapted Service to new HLF API
+## Refactor
+## Bugfix
+
 # [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/admission-v0.16.1...admission-v0.17.1) (2021-02-04)
 ## Feature
 - Adapted Admission service to Operation 1.1 API
