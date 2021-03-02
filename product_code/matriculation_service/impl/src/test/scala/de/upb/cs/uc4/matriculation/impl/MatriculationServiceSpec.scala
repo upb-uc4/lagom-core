@@ -205,8 +205,9 @@ class MatriculationServiceSpec extends AsyncWordSpec
     "get a proposal for adding matriculation data for a student" in {
       val message = createSingleMatriculation(examReg0.name, "SS2020")
       certificate.setup(student0.username)
-      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
-        val data = ImmatriculationData(jsonId.id, message.matriculation)
+      certificate.getEnrollmentIds(Some(student0.username)).invoke().flatMap { usernameEnrollmentIdPairSeq =>
+        val enrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
+        val data = ImmatriculationData(enrollmentId, message.matriculation)
 
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username))
           .invoke(message).map { proposal =>
@@ -220,7 +221,7 @@ class MatriculationServiceSpec extends AsyncWordSpec
     "fail getting a proposal for adding matriculation data for a student as another student" in {
       val message = createSingleMatriculation(examReg0.name, "SS2020")
       certificate.setup(student0.username)
-      certificate.getEnrollmentId(student0.username).invoke().flatMap { jsonId =>
+      certificate.getEnrollmentIds(Some(student0.username)).invoke().flatMap { _ =>
         client.getMatriculationProposal(student0.username).handleRequestHeader(addAuthorizationHeader(student0.username + "thisShouldFail"))
           .invoke(message).failed.map { answer =>
             answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.OwnerMismatch)

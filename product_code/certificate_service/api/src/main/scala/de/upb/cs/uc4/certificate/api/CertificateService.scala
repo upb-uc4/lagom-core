@@ -4,9 +4,8 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{ Descriptor, Service, ServiceCall }
-import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
+import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, PostMessageCSR, UsernameEnrollmentIdPair }
 import de.upb.cs.uc4.hyperledger.api.UC4HyperledgerService
-import de.upb.cs.uc4.shared.client.JsonUsername
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.client.message_serialization.CustomMessageSerializer
 
@@ -27,14 +26,14 @@ trait CertificateService extends UC4HyperledgerService {
   /** Returns the certificate of the given user */
   def getCertificate(username: String): ServiceCall[NotUsed, JsonCertificate]
 
-  /** Returns the enrollment id of the given user */
-  def getEnrollmentId(username: String): ServiceCall[NotUsed, JsonEnrollmentId]
-
   /** Returns the encrypted private key of the given user */
   def getPrivateKey(username: String): ServiceCall[NotUsed, EncryptedPrivateKey]
 
+  /** Returns the enrollment ids of the given users */
+  def getEnrollmentIds(usernames: Option[String]): ServiceCall[NotUsed, Seq[UsernameEnrollmentIdPair]]
+
   /** Returns the username that matches the given enrollmentId */
-  def getUsername(enrollmentId: String): ServiceCall[NotUsed, JsonUsername]
+  def getUsernames(enrollmentIds: Option[String]): ServiceCall[NotUsed, Seq[UsernameEnrollmentIdPair]]
 
   // OPTIONS
   /** Allows POST */
@@ -54,14 +53,14 @@ trait CertificateService extends UC4HyperledgerService {
       .addCalls(
         restCall(Method.POST, pathPrefix + "/certificates/:username", setCertificate _)(CustomMessageSerializer.jsValueFormatMessageSerializer, CustomMessageSerializer.jsValueFormatMessageSerializer),
         restCall(Method.GET, pathPrefix + "/certificates/:username/certificate", getCertificate _),
-        restCall(Method.GET, pathPrefix + "/certificates/:username/enrollmentId", getEnrollmentId _),
         restCall(Method.GET, pathPrefix + "/certificates/:username/privateKey", getPrivateKey _),
-        restCall(Method.GET, pathPrefix + "/certificates/:enrollmentId/username", getUsername _),
+        restCall(Method.GET, pathPrefix + "/certificates/enrollmentId?usernames", getEnrollmentIds _),
+        restCall(Method.GET, pathPrefix + "/certificates/username?enrollmentIds", getUsernames _),
         restCall(Method.OPTIONS, pathPrefix + "/certificates/:username", allowedPost _),
         restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/certificate", allowedGet _),
-        restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/enrollmentId", allowedGet _),
         restCall(Method.OPTIONS, pathPrefix + "/certificates/:username/privateKey", allowedGet _),
-        restCall(Method.OPTIONS, pathPrefix + "/certificates/:enrollmentId/username", allowedGet _)
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/enrollmentId?usernames", allowedGet _),
+        restCall(Method.OPTIONS, pathPrefix + "/certificates/username?enrollmentIds", allowedGet _)
       )
       .addTopics(
         topic(CertificateService.REGISTRATION_TOPIC_NAME, userEnrollmentTopic _)

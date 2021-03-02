@@ -46,6 +46,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-3")))
 
       val timestamp = "2020-12-14"
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, None, None, None, timestamp)
       val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, Seq(), Seq(), timestamp)
 
       // Prepare report
@@ -68,6 +69,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
       val ref = spawn(ReportBehaviour.create(PersistenceId("fake-type-hint", "fake-id-4")))
 
       val timestamp = "2020-12-14"
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, None, None, None, timestamp)
       val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, Seq(), Seq(), timestamp)
 
       // Prepare
@@ -126,6 +128,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       val timestamp = "2020-12-14"
       val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, Seq(), Seq(), timestamp)
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, None, None, None, timestamp)
 
       // Prepare report
       val probe1 = createTestProbe[Confirmation]()
@@ -169,6 +172,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       val timestamp = "2020-12-14"
       val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, Seq(), Seq(), timestamp)
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, None, None, None, timestamp)
 
       // Prepare
       val probe1 = createTestProbe[Confirmation]()
@@ -197,6 +201,7 @@ case class ReportStateSpec() extends ScalaTestWithActorTestKit(
 
       val timestampOld = "2020-12-14"
       val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, Seq(), Seq(), timestampOld)
+      val testReport = TextReport(student0, None, student0.username + "enrollmentID", None, None, None, None, None, None, None, timestampOld)
       val timestampNew = "2020-12-15"
 
       // Prepare

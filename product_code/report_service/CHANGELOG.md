@@ -1,5 +1,8 @@
-# [WIP - v0.18.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.2...report-v0.18.1) (2021-XX-XX)
+# [WIP - v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.2...report-v0.19.1) (2021-XX-XX)
 ## Feature
+ - Added exams to lecturer report
+ - Added exam results and exam admission to student report
+ - Adapted Service to new Certificate API
  - Added watchlist and operations to user data report
 ## Refactor
 ## Bugfix

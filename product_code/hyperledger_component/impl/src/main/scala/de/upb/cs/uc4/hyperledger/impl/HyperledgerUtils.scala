@@ -67,8 +67,14 @@ object HyperledgerUtils {
         case ErrorType.HLUnprocessableLedgerState => new UC4CriticalException(500, genericError, null)
         case ErrorType.HLInsufficientApprovals => new UC4NonCriticalException(422, genericError)
         case ErrorType.HLParameterNumberError => new UC4CriticalException(500, genericError)
+        case ErrorType.HLAccessDenied => new UC4NonCriticalException(403, genericError)
+        case ErrorType.HLExecutionImpossible => new UC4NonCriticalException(422, genericError)
+
+        //DEPRECATED
         case ErrorType.HLApprovalDenied => new UC4NonCriticalException(403, genericError)
         case ErrorType.HLRejectionDenied => new UC4NonCriticalException(403, genericError)
+        case ErrorType.HLApprovalImpossible => new UC4NonCriticalException(422, genericError)
+        case ErrorType.HLRejectionImpossible => new UC4NonCriticalException(422, genericError)
         case _ => UC4Exception.InternalServerError("Unknown GenericError", s"Hyperledger uses a new ErrorType ${genericError.`type`}")
       }
       case detailedError: DetailedError => detailedError.`type` match {
@@ -86,9 +92,9 @@ object HyperledgerUtils {
   object VersionUtil {
     /** Create a response for a Hyperledger Version call
       *
-      * @param ref The reference to the Akka actor that should be asked for the version (Must be a Hyperledger Akka actor)
+      * @param ref     The reference to the Akka actor that should be asked for the version (Must be a Hyperledger Akka actor)
       * @param timeout for the actor
-      * @param ec the execution context
+      * @param ec      the execution context
       * @return Hyperledger versions as a JSON object
       */
     def createHyperledgerVersionResponse(ref: EntityRef[HyperledgerBaseCommand])(implicit timeout: Timeout, ec: ExecutionContext): Future[JsonHyperledgerVersion] = {
@@ -112,4 +118,5 @@ object HyperledgerUtils {
       Future.successful(JsonHyperledgerVersion(BuildInfo.version, chaincodeVersionMessage))
     }
   }
+
 }

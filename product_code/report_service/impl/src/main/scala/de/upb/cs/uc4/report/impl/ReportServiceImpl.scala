@@ -8,12 +8,16 @@ import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, RequestHead
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.admission.api.AdmissionService
-import de.upb.cs.uc4.admission.model.CourseAdmission
+import de.upb.cs.uc4.admission.model.{ CourseAdmission, ExamAdmission }
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
+import de.upb.cs.uc4.exam.api.ExamService
+import de.upb.cs.uc4.exam.model.Exam
+import de.upb.cs.uc4.examresult.api.ExamResultService
+import de.upb.cs.uc4.examresult.model.{ ExamResult, ExamResultEntry }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.operation.api.OperationService
@@ -55,6 +59,8 @@ class ReportServiceImpl(
     certificateService: CertificateService,
     admissionService: AdmissionService,
     operationService: OperationService,
+    examService: ExamService,
+    examResultService: ExamResultService,
     pdfService: PdfProcessingService,
     override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ReportService {
@@ -119,7 +125,7 @@ class ReportServiceImpl(
     }
     val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
       .map(cert => Some(cert.certificate)).recover { case _ => None }
-    val enrollmentIdFuture = certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+    val enrollmentIdFuture = certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
       case exception: Exception =>
         log.error(s"Prepare of $username at $timestamp ; enrollmentIdFuture failed", exception)
         throw exception
@@ -128,10 +134,14 @@ class ReportServiceImpl(
       .map(Some(_)).recover { case _ => None }
     var matriculationFuture: Future[Option[ImmatriculationData]] = Future.successful(None)
     var coursesFuture: Future[Option[Seq[Course]]] = Future.successful(None)
-    var admissionFuture: Future[Option[Seq[CourseAdmission]]] = Future.successful(None)
+    var courseAdmissionFuture: Future[Option[Seq[CourseAdmission]]] = Future.successful(None)
+    var examAdmissionFuture: Future[Option[Seq[ExamAdmission]]] = Future.successful(None)
+    var examFuture: Future[Option[Seq[Exam]]] = Future.successful(None)
+    var examResultFuture: Future[Option[Seq[ExamResultEntry]]] = Future.successful(None)
 
     role match {
       case AuthenticationRole.Admin =>
+
       case AuthenticationRole.Student =>
         matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
           case ue: UC4Exception if ue.possibleErrorResponse.`type` == ErrorType.HLNotFound || ue.possibleErrorResponse.`type` == ErrorType.KeyNotFound =>
@@ -140,19 +150,38 @@ class ReportServiceImpl(
             log.error(s"Prepare of $username at $timestamp ; matriculationFuture failed", exception)
             throw exception
         }
-        admissionFuture = admissionService.getCourseAdmissions(Some(username), None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+        courseAdmissionFuture = admissionService.getCourseAdmissions(Some(username), None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
           case ue: UC4Exception if ue.possibleErrorResponse.`type` == ErrorType.HLNotFound || ue.possibleErrorResponse.`type` == ErrorType.KeyNotFound =>
             None
           case exception: Exception =>
-            log.error(s"Prepare of $username at $timestamp ; admissionFuture failed", exception)
+            log.error(s"Prepare of $username at $timestamp ; courseAdmissionFuture failed", exception)
             throw exception
         }
+        examAdmissionFuture = admissionService.getExamAdmissions(Some(username), None, None)
+          .handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+            case exception: Exception =>
+              log.error(s"Prepare of $username at $timestamp ; examAdmissionFuture failed", exception)
+              throw exception
+          }
+        examResultFuture = examResultService.getExamResults(Some(username), None)
+          .handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+            case exception: Exception =>
+              log.error(s"Prepare of $username at $timestamp ; examResultFuture failed", exception)
+              throw exception
+          }
+
       case AuthenticationRole.Lecturer =>
         coursesFuture = courseService.getAllCourses(None, Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
           case exception: Exception =>
             log.error(s"Prepare of $username at $timestamp ; coursesFuture failed", exception)
             throw exception
         }
+        examFuture = examService.getExams(None, None, Some(username), None, None, None, None)
+          .handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+            case exception: Exception =>
+              log.error(s"Prepare of $username at $timestamp ; examFuture failed", exception)
+              throw exception
+          }
     }
 
     val operationFuture = operationService.getOperations(Some(false), Some(false), Some(""), Some(false))
@@ -174,16 +203,20 @@ class ReportServiceImpl(
       profilePicture <- profilePictureFuture
       thumbnail <- thumbnailFuture
       certificate <- certificateFuture
-      jsonEnrollmentId <- enrollmentIdFuture
+      usernameEnrollmentIdPair <- enrollmentIdFuture
       encryptedPrivateKey <- encryptedPrivateKeyFuture
       immatriculationData <- matriculationFuture
       courses <- coursesFuture
-      admissions <- admissionFuture
       operations <- operationFuture
       watchlist <- watchlistFuture
+      courseAdmissions <- courseAdmissionFuture
+      examAdmissions <- examAdmissionFuture
+      exams <- examFuture
+      examResults <- examResultFuture
     } yield {
-      val report = TextReport(user, certificate, jsonEnrollmentId.id, encryptedPrivateKey,
-        immatriculationData, courses, admissions, operations, watchlist, timestamp)
+      val report = TextReport(user, certificate, usernameEnrollmentIdPair.head.enrollmentId, encryptedPrivateKey,
+        immatriculationData,
+        courses, courseAdmissions, examAdmissions, exams, examResults, operations, watchlist, timestamp)
       entityRef(username).ask[Confirmation](replyTo => SetReport(report, profilePicture.toArray, thumbnail.toArray, timestamp, replyTo)).map {
         case Accepted(_) =>
         case Rejected(statusCode, reason) =>
@@ -255,7 +288,7 @@ class ReportServiceImpl(
               val timestamp = Calendar.getInstance().getTime.toString
               ref.ask[Confirmation](replyTo => PrepareReport(timestamp, replyTo)).map {
                 case Accepted(_) =>
-                  prepareUserData(username, authRole, header, timestamp)
+                  prepareUserData(authUser, authRole, header, timestamp)
                   (
                     ResponseHeader(202, MessageProtocol.empty, List())
                     .addHeader("X-UC4-Timestamp", timestamp),

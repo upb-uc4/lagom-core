@@ -43,7 +43,7 @@ class OperationHyperledgerBehaviour(val config: Config) extends HyperledgerActor
       replyTo ! StatusReply.success(Accepted.default)
 
     case GetOperationHyperledger(id, replyTo) =>
-      val ops = connection.getOperations(List(id), "", "", "", "", List()).fromJson[Seq[OperationData]]
+      val ops = connection.getOperations(Seq(id), "", "", "", "", Seq()).fromJson[Seq[OperationData]]
 
       if (ops.isEmpty) {
         throw UC4Exception(404, GenericError(ErrorType.HLNotFound, "Operation with the given id not found"))
@@ -54,7 +54,7 @@ class OperationHyperledgerBehaviour(val config: Config) extends HyperledgerActor
 
     case GetOperationsHyperledger(operationIds, existingEnrollmentId, missingEnrollmentId, initiatorEnrollmentId, involvedEnrollmentId, states, replyTo) =>
       replyTo ! StatusReply.success(OperationDataList(
-        connection.getOperations(operationIds.toList, existingEnrollmentId, missingEnrollmentId, initiatorEnrollmentId, involvedEnrollmentId, states.toList).fromJson[Seq[OperationData]]
+        connection.getOperations(operationIds, existingEnrollmentId, missingEnrollmentId, initiatorEnrollmentId, involvedEnrollmentId, states).fromJson[Seq[OperationData]]
       ))
 
     case GetProposalApproveOperationHyperledger(certificate, id, replyTo) =>

@@ -7,6 +7,7 @@ import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.admission.impl.actor.AdmissionBehaviour
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
+import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerComponent
 import de.upb.cs.uc4.matriculation.api.MatriculationService
@@ -25,7 +26,7 @@ abstract class AdmissionApplication(context: LagomApplicationContext)
   lazy val examRegService: ExamregService = serviceClient.implement[ExamregService]
   lazy val courseService: CourseService = serviceClient.implement[CourseService]
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
-  lazy val admissionService: AdmissionService = serviceClient.implement[AdmissionService]
+  lazy val examService: ExamService = serviceClient.implement[ExamService]
 
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry: JsonSerializerRegistry = AdmissionSerializerRegistry

@@ -1,12 +1,12 @@
 package de.upb.cs.uc4.admission
 
-import de.upb.cs.uc4.admission.model.CourseAdmission
+import de.upb.cs.uc4.admission.model.{ AdmissionType, CourseAdmission }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 
 class CourseAdmissionSpec extends AsyncWordSpecLike with Matchers {
 
-  val courseAdmissionValid: CourseAdmission = CourseAdmission("", "exampleCourseId", "exampleModuleId", "", "")
+  val courseAdmissionValid: CourseAdmission = CourseAdmission("", "", "", AdmissionType.Course.toString, "exampleCourseId", "exampleModuleId")
 
   "A CourseAdmission" should {
     "be validated" in {

@@ -84,7 +84,7 @@ class OperationServiceSpec extends AsyncWordSpec
               operationList.find(op => op.operationId == operationId).get.toJson
             }
 
-            override def getOperations(operationIds: List[String], existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, involvedEnrollmentId: String, states: List[String]): String = {
+            override def getOperations(operationIds: Seq[String], existingEnrollmentId: String, missingEnrollmentId: String, initiatorEnrollmentId: String, involvedEnrollmentId: String, states: Seq[String]): String = {
               operationList
                 .filter(op => operationIds.isEmpty || operationIds.contains(op.operationId))
                 .filter(op => states.isEmpty || states.contains(op.state.toString))

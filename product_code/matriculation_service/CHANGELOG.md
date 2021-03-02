@@ -1,8 +1,9 @@
 # [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.15.1...matriculation-v0.17.1) (2021-02-04)
 ## Feature
-- Adapted Matriculation service to Operation 1.1 API
+ - Adapted Matriculation service to Operation 1.1 API
     - Removed POST endpoint for signed_proposal
     - Removed POST endpoint for signed_transaction
+ - Adapted Service to new Certificate API
 ## Refactor
 ## Bugfix
 
