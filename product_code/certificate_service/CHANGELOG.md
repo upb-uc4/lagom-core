@@ -1,4 +1,4 @@
-# [v0.18.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.16.2...certificate-v0.18.2) (2021-02-18)
+# [v0.18.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.16.2...certificate-v0.18.1) (2021-02-18)
 ## Feature
 ## Refactor
 - Allowed students to fetch their own username, given the enrollmentId
