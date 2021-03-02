@@ -1,15 +1,18 @@
 package de.upb.cs.uc4.admission.impl
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.Path
+import java.util.Base64
+
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.admission.impl.actor.AdmissionBehaviour
 import de.upb.cs.uc4.admission.model.{ AdmissionType, CourseAdmission, DropAdmission, ExamAdmission }
 import de.upb.cs.uc4.certificate.CertificateServiceStub
-import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.course.{ CourseServiceStub, DefaultTestCourses }
-import de.upb.cs.uc4.exam.{ DefaultTestExams, ExamServiceStub }
 import de.upb.cs.uc4.exam.model.Exam
+import de.upb.cs.uc4.exam.{ DefaultTestExams, ExamServiceStub }
 import de.upb.cs.uc4.examreg.{ DefaultTestExamRegs, ExamregServiceStub }
 import de.upb.cs.uc4.hyperledger.api.model
 import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
@@ -18,6 +21,7 @@ import de.upb.cs.uc4.hyperledger.connections.traits.ConnectionAdmissionTrait
 import de.upb.cs.uc4.matriculation.MatriculationServiceStub
 import de.upb.cs.uc4.operation.OperationServiceStub
 import de.upb.cs.uc4.shared.client.JsonUtility._
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Exception }
 import de.upb.cs.uc4.shared.server.UC4SpecUtils
 import de.upb.cs.uc4.user.DefaultTestUsers
 import org.hyperledger.fabric.gateway.impl.{ ContractImpl, GatewayImpl }
@@ -25,11 +29,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import play.api.libs.json.Json
-import java.nio.charset.StandardCharsets
-import java.nio.file.Path
-import java.util.Base64
-
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Exception }
 
 import scala.language.reflectiveCalls
 
