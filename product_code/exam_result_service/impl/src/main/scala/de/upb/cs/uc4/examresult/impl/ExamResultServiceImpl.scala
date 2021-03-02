@@ -89,7 +89,7 @@ class ExamResultServiceImpl(
               throw UC4Exception.OwnerMismatch
             case AuthenticationRole.Student =>
               Future.successful(Done)
-            case _ => throw UC4Exception.InternalServerError("Error checking authRole", s"Role is not one of Student,Lecturer or Admin but instead ${role}")
+            case _ => throw UC4Exception.InternalServerError("Error checking authRole", s"Role is not one of Student, Lecturer or Admin, but instead ${role}")
           }
           authErrorFuture.flatMap {
             _ =>
