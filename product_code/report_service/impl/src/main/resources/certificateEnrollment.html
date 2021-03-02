@@ -1,55 +1,59 @@
 <html lang="en">
+<link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet" type="text/css">
+<style>
+    .color-label {
+        color: rgba(43, 108, 176, 1);
+    }
+</style>
 <head>
-    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
     <meta charset="UTF-8"/>
     <title></title>
 </head>
 <body>
-<div class="w-full">
-    <div class="flex justify-end">
-        <div class="flex justify-end mt-4 mr-4">
-            <img src="https://raw.githubusercontent.com/upb-uc4/ui-web/main/src/assets/logo/logo.svg" alt="NO LOGO" width="25%">
-        </div>
-    </div>
-    <div class="flex justify-end">
-        <div class="mr-16 mt-8">
+<div class="w-full h-full">
+    <div style="display: -webkit-box; -webkit-box-pack: end;">
+        <p style="color: rgb(175, 173, 173)" class="mr-16 mt-8">
             {address}
-        </div>
+        </p>
     </div>
+    <img style="margin-left: auto; margin-right: auto;" src="https://raw.githubusercontent.com/upb-uc4/ui-web/main/src/assets/logo/logo.svg" alt="NO LOGO" width="20%">
 
-    <div class="ml-4">
-        <h1 class="mt-8 text-3xl font-semibold">
-            Certificate of enrollment
-        </h1>
-        <p class="mt-4">
-            The student <strong>{studentName}</strong> with matriculation id <strong>{matriculationId}</strong> and
-            enrollment id <strong>{enrollmentId}</strong>
-        </p>
+    <div style="display: -webkit-box; -webkit-box-pack: center;" class="mt-16">
+        <div></div>
+        <div class="w-2/3">
+            <h1 style="display: -webkit-box; -webkit-box-pack: center;" class="mt-8 text-4xl font-semibold">
+                Certificate of Enrollment
+            </h1>
+            <p class="mt-10">
+                The student <strong class="color-label">{studentName}</strong> with matriculation id <strong class="color-label">{matriculationId}</strong> and
+                enrollment id <strong class="color-label">{enrollmentId}</strong>
+            </p>
 
-        <p class="mt-2">
-            is enrolled in the examination regulation(s):
-        </p>
-        <ul class="ml-8 mt-4 list-disc">
-            {subjectList}
-        </ul>
+            <p class="mt-2">
+                is enrolled in the examination regulation(s):
+            </p>
+            <ul class="ml-8 mt-4 list-disc">
+                {subjectList}
+            </ul>
 
-        <p class="mt-4">
-            for the <strong>{semester}</strong>.
-        </p>
+            <p class="mt-4">
+                for the <strong class="color-label">{semester}</strong>.
+            </p>
 
-        <p class="mt-4">
-            Total semesters enrolled: <strong>{semesterCount}</strong>.
-        </p>
+            <p class="mt-4">
+                Total semesters enrolled: <strong class="color-label">{semesterCount}</strong>.
+            </p>
 
-        <p class="mt-4">
-            The <strong>{semester}</strong> begins on <strong>{startDate}</strong> and ends on
-            <strong>{endDate}</strong>.
-        </p>
-
-        <p class="mt-40">
-            <small>This document is only valid if cryptographically signed by {organization}.</small>
-        </p>
+            <p class="mt-10">
+                The <strong class="color-label">{semester}</strong> begins on <strong class="color-label">{startDate}</strong> and ends on
+                <strong class="color-label">{endDate}</strong>.
+            </p>
+        </div>
+        <div></div>
     </div>
 </div>
 </body>
+<footer>
+    <small>This document is only valid if cryptographically signed by {organization}.</small>
+</footer>
 </html>
