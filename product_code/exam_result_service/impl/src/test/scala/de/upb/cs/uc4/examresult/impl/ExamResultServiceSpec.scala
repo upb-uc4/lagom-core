@@ -150,7 +150,7 @@ class ExamResultServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get all exam results from an exam hold by the lecture himself" in {
+    "get all exam results from an exam held by the lecturer themself" in {
       prepareSeq(allExamResults)
       client.getExamResults(None, Some(exam3ResultEntry0.examId)).handleRequestHeader(addAuthorizationHeader(lecturer1.username)).invoke().map {
         examResultsEntries => examResultsEntries should contain theSameElementsAs allExam3Results
