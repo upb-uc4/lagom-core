@@ -398,7 +398,7 @@ class AdmissionServiceSpec extends AsyncWordSpec
       }
     }
 
-    "not get proposal add course admission " in {
+    "not get proposal add course admission" in {
       client.getProposalAddAdmission.handleRequestHeader(addAuthorizationHeader(student0.username)).invoke(defaultCourseAdmission0.copy(enrollmentId = "", admissionId = "", moduleId = "moduleNotFound")).failed.map {
         answer =>
           answer.asInstanceOf[UC4Exception].possibleErrorResponse.asInstanceOf[DetailedError].invalidParams should
