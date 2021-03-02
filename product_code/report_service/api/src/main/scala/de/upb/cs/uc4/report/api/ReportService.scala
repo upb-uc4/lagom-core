@@ -28,7 +28,6 @@ trait ReportService extends UC4Service {
   /** Returns a pdf with the certificate of enrollment */
   def getCertificateOfEnrollment(username: String, semesterBase64: Option[String]): ServiceCall[NotUsed, ByteString]
 
-
   /** Returns a pdf with the transcript of records */
   def getTranscriptOfRecords(username: String, examRegName: Option[String]): ServiceCall[NotUsed, ByteString]
 

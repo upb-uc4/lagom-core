@@ -1,14 +1,14 @@
 package de.upb.cs.uc4.report.impl
 
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, EntityRef}
-import akka.util.{ByteString, Timeout}
-import akka.{Done, NotUsed}
+import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
+import akka.util.{ ByteString, Timeout }
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{MessageProtocol, RequestHeader, ResponseHeader}
+import com.lightbend.lagom.scaladsl.api.transport.{ MessageProtocol, RequestHeader, ResponseHeader }
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.config.Config
 import de.upb.cs.uc4.admission.api.AdmissionService
-import de.upb.cs.uc4.admission.model.{CourseAdmission, ExamAdmission}
+import de.upb.cs.uc4.admission.model.{ CourseAdmission, ExamAdmission }
 import de.upb.cs.uc4.authentication.model.AuthenticationRole
 import de.upb.cs.uc4.authentication.model.AuthenticationRole.AuthenticationRole
 import de.upb.cs.uc4.certificate.api.CertificateService
@@ -18,37 +18,37 @@ import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.exam.model.Exam
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examresult.api.ExamResultService
-import de.upb.cs.uc4.examresult.model.{ExamResult, ExamResultEntry}
+import de.upb.cs.uc4.examresult.model.ExamResultEntry
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
 import de.upb.cs.uc4.pdf.api.PdfProcessingService
 import de.upb.cs.uc4.pdf.model.PdfProcessor
 import de.upb.cs.uc4.report.api.ReportService
-import de.upb.cs.uc4.report.impl.actor.{ReportState, ReportStateEnum, ReportWrapper, TextReport}
+import de.upb.cs.uc4.report.impl.actor.{ ReportState, ReportStateEnum, ReportWrapper, TextReport }
 import de.upb.cs.uc4.report.impl.commands._
 import de.upb.cs.uc4.report.impl.signature.SigningService
 import de.upb.cs.uc4.shared.client.Utils
 import de.upb.cs.uc4.shared.client.Utils.SemesterUtils
-import de.upb.cs.uc4.shared.client.exceptions.{UC4Exception, _}
+import de.upb.cs.uc4.shared.client.exceptions.{ UC4Exception, _ }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
-import de.upb.cs.uc4.shared.server.messages.{Accepted, Confirmation, Rejected}
+import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
 import de.upb.cs.uc4.user.api.UserService
 import de.upb.cs.uc4.user.model.user.Student
 import net.lingala.zip4j.ZipFile
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 import play.api.libs.json.Json
 
-import java.io.{ByteArrayInputStream, File, FileWriter}
+import java.io.{ ByteArrayInputStream, File, FileWriter }
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
-import java.util.{Base64, Calendar}
+import java.nio.file.{ Files, Paths }
+import java.util.{ Base64, Calendar }
 import javax.imageio.ImageIO
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.io.Source
 import scala.reflect.io.Directory
-import scala.util.{Failure, Success, Try, Using}
+import scala.util.{ Failure, Success, Try, Using }
 
 /** Implementation of the ReportService */
 class ReportServiceImpl(
@@ -74,7 +74,9 @@ class ReportServiceImpl(
   lazy val validationTimeout: FiniteDuration = config.getInt("uc4.timeouts.validation").milliseconds
 
   private lazy val absoluteCertificateEnrollmentHtml = new File(
-    Try { config.getString("uc4.pdf.certificateEnrollmentHtml") } match {
+    Try {
+      config.getString("uc4.pdf.certificateEnrollmentHtml")
+    } match {
       case Success(path) => path
       case Failure(ex) =>
         log.error("Absolut path to certificateEnrollmentHtml invalid or not defined", ex)
@@ -99,7 +101,9 @@ class ReportServiceImpl(
   }
 
   private lazy val absoluteTranscriptOfRecordsHtml = new File(
-    Try { config.getString("uc4.pdf.transcriptOfRecordsHtml") } match {
+    Try {
+      config.getString("uc4.pdf.transcriptOfRecordsHtml")
+    } match {
       case Success(path) => path
       case Failure(ex) =>
         log.error("Absolut path to transcriptOfRecordsHtml invalid or not defined", ex)
@@ -411,28 +415,72 @@ class ReportServiceImpl(
           }
           var pdf = transcriptOfRecordsHtml
 
-          for {
+          val futureFuture = for {
+            user <- userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
             examRegs <- examregService.getExaminationRegulations(examRegName, None).handleRequestHeader(addAuthenticationHeader(header)).invoke()
             examResults <- examResultService.getExamResults(Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+            matriculationData <- matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
           } yield {
             val examIdsToEntry = examResults.groupBy(_.examId).map {
               case (id, results) => (id, results.head)
             }
+            val examReg = examRegs.filter(_.name == examRegName.get).head
 
             examService.getExams(Some(examResults.map(_.examId).mkString(",")), None, None, None, None, None, None)
-              .handleRequestHeader(addAuthenticationHeader(header)).invoke().map { exams =>
+              .handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { exams =>
 
-              val modulesToEntries = exams.groupBy(_.moduleId).map {
-                case (moduleId, exams) => (moduleId, exams.map(exam => examIdsToEntry(exam.examId)))
+                val examIdToExam = exams.groupBy(_.examId).map {
+                  case (moduleId, exams) => (moduleId, exams.head)
+                }
+                val moduleIdToEntries = exams.groupBy(_.moduleId).map {
+                  case (moduleId, exams) => (moduleId, exams.map(exam => examIdsToEntry(exam.examId)))
+                }
+
+                courseService.getAllCourses(None, None, Some(exams.map(_.examId).mkString(",")), examRegName)
+                  .handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { courses =>
+
+                    val examIdToCourse = examIdToExam.map {
+                      case (id, exam) => (id, courses.filter(_.courseId == exam.courseId).head)
+                    }
+
+                    examregService.getModules(Some(moduleIdToEntries.keySet.mkString(",")), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+                      modules =>
+
+                        val moduleIdToName = modules.groupBy(_.id).map {
+                          case (id, modules) => (id, modules.head.name)
+                        }
+
+                        val tableContent = examReg.modules.map(_.id).map { id =>
+                          s"""<tr class="border border-black bg-tr">
+                         |  <td class="pl-4">$id: ${moduleIdToName(id)}</td>
+                         |  <td></td>
+                         |  <td></td>
+                         |</tr>""".stripMargin +
+                            moduleIdToEntries(id).map { entry =>
+                              s"""<tr>
+                             |  <td class="border border-black pl-8">${examIdToCourse(entry.examId).courseName}</td>
+                             |  <td class="text-center border border-black">${examIdToExam(entry.examId).ects}</td>
+                             |  <td class="text-center border border-black">${entry.grade}</td>
+                             |</tr>""".stripMargin
+                            }.mkString("\n")
+                        }.mkString("\n")
+
+                        pdf = pdf.replace("{studentName}", s"${user.firstName} ${user.lastName}")
+                        pdf = pdf.replace("{matriculationId}", user.asInstanceOf[Student].matriculationId)
+                        pdf = pdf.replace("{examReg}", examRegName.get)
+                        pdf = pdf.replace("{semesters}", matriculationData.matriculationStatus.filter(_.fieldOfStudy == examRegName.get).mkString(", "))
+                        pdf = pdf.replace("{tableContent}", tableContent)
+
+                        pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
+                          val output = signatureService.signPdf(pdfBytes.toArray)
+
+                          (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
+                        }
+                    }
+                  }
               }
-
-              pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
-                val output = signatureService.signPdf(pdfBytes.toArray)
-
-                (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
-              }
-            }
           }
+          futureFuture.flatMap(future => future)
         }
     }
 

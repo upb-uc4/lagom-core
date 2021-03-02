@@ -8,7 +8,7 @@ import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.lightbend.lagom.scaladsl.persistence.jdbc.JdbcPersistenceComponents
 import com.lightbend.lagom.scaladsl.persistence.slick.SlickPersistenceComponents
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.server.{LagomApplicationContext, LagomServer}
+import com.lightbend.lagom.scaladsl.server.{ LagomApplicationContext, LagomServer }
 import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.certificate.api.CertificateService
@@ -19,7 +19,7 @@ import de.upb.cs.uc4.examresult.api.ExamResultService
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.pdf.api.PdfProcessingService
 import de.upb.cs.uc4.report.api.ReportService
-import de.upb.cs.uc4.report.impl.actor.{ReportBehaviour, ReportState}
+import de.upb.cs.uc4.report.impl.actor.{ ReportBehaviour, ReportState }
 import de.upb.cs.uc4.report.impl.commands.DeleteReport
 import de.upb.cs.uc4.shared.client.JsonUsername
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
@@ -27,7 +27,7 @@ import de.upb.cs.uc4.shared.server.UC4Application
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionComponent
 import de.upb.cs.uc4.shared.server.messages.Confirmation
 import de.upb.cs.uc4.user.api.UserService
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 import play.api.db.HikariCPComponents
 
 import scala.concurrent.Future
