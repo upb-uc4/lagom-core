@@ -136,7 +136,7 @@ class ExamResultServiceSpec extends AsyncWordSpec
       }
     }
 
-    "get a students exam results as the student himself" in {
+    "get a students exam results as the student themself" in {
       prepareSeq(allExamResults)
       client.getExamResults(Some(student0.username), None).handleRequestHeader(addAuthorizationHeader(student0.username)).invoke().map {
         examResultsEntries => examResultsEntries should contain theSameElementsAs allExamResults.filter(_.enrollmentId == student0.username + "enrollmentId")
