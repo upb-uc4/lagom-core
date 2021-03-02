@@ -43,12 +43,6 @@ abstract class ReportApplication(context: LagomApplicationContext)
 
   protected final val log: Logger = LoggerFactory.getLogger(classOf[ReportApplication])
 
-  // Bind the service that this server provides
-  override lazy val lagomServer: LagomServer = serverFor[ReportService](wire[ReportServiceImpl])
-
-  // Register the JSON serializer registry
-  override lazy val jsonSerializerRegistry: JsonSerializerRegistry = ReportSerializerRegistry
-
   lazy val userService: UserService = serviceClient.implement[UserService]
   lazy val courseService: CourseService = serviceClient.implement[CourseService]
   lazy val matriculationService: MatriculationService = serviceClient.implement[MatriculationService]
@@ -58,6 +52,12 @@ abstract class ReportApplication(context: LagomApplicationContext)
   lazy val examService: ExamService = serviceClient.implement[ExamService]
   lazy val examResultService: ExamResultService = serviceClient.implement[ExamResultService]
   lazy val pdfService: PdfProcessingService = serviceClient.implement[PdfProcessingService]
+
+  // Bind the service that this server provides
+  override lazy val lagomServer: LagomServer = serverFor[ReportService](wire[ReportServiceImpl])
+
+  // Register the JSON serializer registry
+  override lazy val jsonSerializerRegistry: JsonSerializerRegistry = ReportSerializerRegistry
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
   // a given sharding entity typeKey.
