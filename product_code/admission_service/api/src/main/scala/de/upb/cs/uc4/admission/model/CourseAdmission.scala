@@ -7,37 +7,37 @@ import play.api.libs.json.{ Format, Json }
 import scala.concurrent.{ ExecutionContext, Future }
 
 case class CourseAdmission(
-    enrollmentId: String,
-    courseId: String,
-    moduleId: String,
     admissionId: String,
-    timestamp: String
-) {
+    enrollmentId: String,
+    timestamp: String,
+    `type`: String,
+    courseId: String,
+    moduleId: String
+) extends AbstractAdmission {
 
-  def trim: CourseAdmission = copy(enrollmentId.trim, courseId.trim, moduleId.trim, admissionId.trim, timestamp.trim)
+  override def copyAdmission(admissionId: String, enrollmentId: String, timestamp: String, `type`: String): CourseAdmission =
+    copy(admissionId, enrollmentId, timestamp, `type`)
 
-  def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = Future {
-    var errors = List[SimpleError]()
-    val nonEmptyRegex = RegexCollection.Commons.nonEmptyCharRegex
-    val nonEmptyMessage = ErrorMessageCollection.Commons.nonEmptyCharRegex
+  override def trim: CourseAdmission =
+    super.trim.asInstanceOf[CourseAdmission].copy(courseId = courseId.trim, moduleId = moduleId.trim)
 
-    if (enrollmentId.nonEmpty) {
-      errors :+= SimpleError("enrollmentId", "EnrollmentId must be empty.")
-    }
-    if (!nonEmptyRegex.matches(courseId)) {
-      errors :+= SimpleError("courseId", nonEmptyMessage)
-    }
-    if (!nonEmptyRegex.matches(moduleId)) {
-      errors :+= SimpleError("moduleId", nonEmptyMessage)
-    }
-    if (admissionId.nonEmpty) {
-      errors :+= SimpleError("admissionId", "AdmissionId must be empty.")
-    }
-    if (timestamp.nonEmpty) {
-      errors :+= SimpleError("timestamp", "Timestamp must be empty.")
-    }
+  override def validateOnCreation(implicit ec: ExecutionContext): Future[Seq[SimpleError]] = {
+    val errorsFuture = super.validateOnCreation
+    errorsFuture.map { errors: Seq[SimpleError] =>
 
-    errors
+      val nonEmptyRegex = RegexCollection.Commons.nonEmptyCharRegex
+      val nonEmptyMessage = ErrorMessageCollection.Commons.nonEmptyCharRegex
+      var extendedErrors = errors
+
+      if (!nonEmptyRegex.matches(courseId)) {
+        extendedErrors :+= SimpleError("courseId", nonEmptyMessage)
+      }
+      if (!nonEmptyRegex.matches(moduleId)) {
+        extendedErrors :+= SimpleError("moduleId", nonEmptyMessage)
+      }
+
+      extendedErrors
+    }
   }
 }
 

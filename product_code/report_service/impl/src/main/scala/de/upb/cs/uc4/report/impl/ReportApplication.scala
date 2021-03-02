@@ -13,6 +13,8 @@ import com.softwaremill.macwire.wire
 import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
+import de.upb.cs.uc4.exam.api.ExamService
+import de.upb.cs.uc4.examresult.api.ExamResultService
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.pdf.api.PdfProcessingService
 import de.upb.cs.uc4.report.api.ReportService
@@ -51,6 +53,8 @@ abstract class ReportApplication(context: LagomApplicationContext)
   lazy val matriculationService: MatriculationService = serviceClient.implement[MatriculationService]
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
   lazy val admissionService: AdmissionService = serviceClient.implement[AdmissionService]
+  lazy val examService: ExamService = serviceClient.implement[ExamService]
+  lazy val examResultService: ExamResultService = serviceClient.implement[ExamResultService]
   lazy val pdfService: PdfProcessingService = serviceClient.implement[PdfProcessingService]
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under

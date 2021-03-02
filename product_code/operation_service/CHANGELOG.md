@@ -7,10 +7,17 @@
 ## Refactor
 ## Bugfix
 
+# [v0.18.1](https://github.com/upb-uc4/University-Credits-4.0/compare/operation-v0.17.1...operation-v0.18.1) (2021-02-15)
+## Feature
+ - Adapted Service to new HLF API
+## Refactor
+## Bugfix
+
 # [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/operation-v0.16.1...operation-v0.17.1) (2021-02-04)
 ## Feature
-- Adapted Operation Service to implement Operations 1.1 API
-   - Added POST endpoint for unsigned_proposal_approve
+ - Adapted Operation Service to implement Operations 1.1 API
+    - Added POST endpoint for unsigned_proposal_approve
+ - Adapted Service to new Certificate API
 ## Refactor
 ## Bugfix
 

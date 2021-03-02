@@ -21,8 +21,7 @@ import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils.ExceptionUtils
 import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerAdminParts, HyperledgerUtils }
 import de.upb.cs.uc4.hyperledger.utilities.traits.EnrollmentManagerTrait
-import de.upb.cs.uc4.shared.client.JsonUsername
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.exceptions._
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.kafka.KafkaEncryptionUtility
@@ -113,18 +112,6 @@ class CertificateServiceImpl(
     }
   }
 
-  /** Returns the enrollment id of the given user */
-  override def getEnrollmentId(username: String): ServiceCall[NotUsed, JsonEnrollmentId] = authenticated(AuthenticationRole.All: _*) {
-    ServerServiceCall { (header, _) =>
-      getCertificateUser(username).map {
-        case CertificateUser(Some(id), _, _, _) =>
-          createETagHeader(header, JsonEnrollmentId(id))
-        case _ =>
-          throw UC4Exception.NotFound
-      }
-    }
-  }
-
   /** Returns the encrypted private key of the given user */
   override def getPrivateKey(username: String): ServiceCall[NotUsed, EncryptedPrivateKey] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUsername, _) =>
@@ -143,16 +130,52 @@ class CertificateServiceImpl(
       }
   }
 
-  /** Returns the username that matches the given enrollmentId */
-  override def getUsername(enrollmentId: String): ServiceCall[NotUsed, JsonUsername] = authenticated(AuthenticationRole.Admin) {
-    ServerServiceCall {
-      (header, _) =>
-        database.get(enrollmentId).map {
-          case Some(username) => createETagHeader(header, JsonUsername(username))
-          case None           => throw UC4Exception.NotFound
-        }
+  /** Returns the enrollment id of the given user */
+  override def getEnrollmentIds(usernames: Option[String]): ServiceCall[NotUsed, Seq[UsernameEnrollmentIdPair]] = authenticated(AuthenticationRole.All: _*) {
+    ServerServiceCall { (header, _) =>
+      if (usernames.isEmpty) {
+        throw UC4Exception.QueryParameterError(SimpleError("usernames", "Query parameter must be set"))
+      }
+      val usernameList = usernames.get.split(",").filter(_.trim.nonEmpty).toSeq
 
+      Future.sequence(usernameList.map {
+        username =>
+          getCertificateUser(username).map {
+            case CertificateUser(Some(id), _, _, _) =>
+              UsernameEnrollmentIdPair(username, id)
+            case _ =>
+              UsernameEnrollmentIdPair("", "")
+          }
+      }).map(_.filter(_.username.trim.nonEmpty))
+        .map(response => createETagHeader(header, response))
     }
+  }
+
+  /** Returns the username that matches the given enrollmentId */
+  override def getUsernames(enrollmentIds: Option[String]): ServiceCall[NotUsed, Seq[UsernameEnrollmentIdPair]] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+    (authUser, role) =>
+      ServerServiceCall {
+        (header, _) =>
+          if (enrollmentIds.isEmpty) {
+            throw UC4Exception.QueryParameterError(SimpleError("enrollmentIds", "Query parameter must be set"))
+          }
+          val enrollmentIdList = enrollmentIds.get.split(",").filter(_.trim.nonEmpty).toSeq.distinct
+
+          database.getUsernameEnrollmentIdPairs(enrollmentIdList)
+            .map { usernameEnrollmentIdPairs =>
+
+              if (role == AuthenticationRole.Student) {
+                usernameEnrollmentIdPairs.find(_.username != authUser) match {
+                  case Some(_) =>
+                    throw UC4Exception.OwnerMismatch
+                  case None =>
+                }
+              }
+
+              createETagHeader(header, usernameEnrollmentIdPairs)
+            }
+
+      }
   }
 
   /** Publishes every user that is registered at hyperledger */

@@ -91,9 +91,10 @@ class MatriculationServiceImpl(
               throw new UC4NonCriticalException(422, DetailedError(ErrorType.Validation, validationList))
             }
 
-            certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-              .flatMap { jsonEnrollmentId =>
-                val enrollmentId = jsonEnrollmentId.id
+            certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+              .flatMap { usernameEnrollmentIdPairSeq =>
+
+                val enrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
 
                 certificateService.getCertificate(authUser).handleRequestHeader(addAuthenticationHeader(header)).invoke()
                   .flatMap { certificateJson =>
@@ -143,7 +144,7 @@ class MatriculationServiceImpl(
                           throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
                       }
                   }
-              }
+              }.recoverWith(handleException("Get of enrollmentId username pair failed"))
         }
       }
     }
@@ -161,9 +162,9 @@ class MatriculationServiceImpl(
               //We found a user, but it is not a Student. Therefore, a student with the username does not exist: NotFound
               throw UC4Exception.NotFound
             }
-            certificateService.getEnrollmentId(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-              .flatMap { jsonEnrollmentId =>
-                val enrollmentId = jsonEnrollmentId.id
+            certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+              .flatMap { usernameEnrollmentIdPairSeq =>
+                val enrollmentId = usernameEnrollmentIdPairSeq.head.enrollmentId
                 entityRef.askWithStatus[ImmatriculationData](replyTo => GetMatriculationData(enrollmentId, replyTo)).map {
                   data => createETagHeader(header, data)
                 }.recover(handleException("get matriculation data failed"))

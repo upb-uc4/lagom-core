@@ -4,10 +4,9 @@ import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, JsonEnrollmentId, PostMessageCSR }
+import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, JsonCertificate, PostMessageCSR, UsernameEnrollmentIdPair }
 import de.upb.cs.uc4.hyperledger.api.model.JsonHyperledgerVersion
-import de.upb.cs.uc4.shared.client.JsonUsername
-import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
+import de.upb.cs.uc4.shared.client.exceptions.{ ErrorType, UC4Exception }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
 
 import scala.collection.mutable
@@ -59,12 +58,23 @@ class CertificateServiceStub extends CertificateService {
   }
 
   /** Returns the enrollment id of the given user */
-  override def getEnrollmentId(username: String): ServiceCall[NotUsed, JsonEnrollmentId] = ServiceCall {
+  override def getEnrollmentIds(usernames: Option[String]): ServiceCall[NotUsed, Seq[UsernameEnrollmentIdPair]] = ServiceCall {
     _ =>
-      certificateUsers.get(username) match {
-        case Some(certificateUserEntry) => Future.successful(JsonEnrollmentId(certificateUserEntry.enrollmentId))
-        case None => Future.failed(UC4Exception.NotFound)
-      }
+      val usernameList = usernames.get.split(",").filter(_.trim.nonEmpty).toSeq
+
+      Future.successful(
+        usernameList.map {
+          username =>
+            val enrollmentId = try {
+              get(username).enrollmentId
+            }
+            catch {
+              case uc4ex: UC4Exception if uc4ex.possibleErrorResponse.`type` == ErrorType.KeyNotFound => ""
+              case ex: Exception => throw ex
+            }
+            UsernameEnrollmentIdPair(username, enrollmentId)
+        }.filter(pair => pair.enrollmentId != "")
+      )
   }
 
   /** Returns the encrypted private key of the given user */
@@ -77,15 +87,19 @@ class CertificateServiceStub extends CertificateService {
   }
 
   /** Returns the username that matches the given enrollmentId */
-  override def getUsername(enrollmentId: String): ServiceCall[NotUsed, JsonUsername] = ServiceCall {
+  override def getUsernames(enrollmentIds: Option[String]): ServiceCall[NotUsed, Seq[UsernameEnrollmentIdPair]] = ServiceCall {
     _ =>
-      Future.successful(JsonUsername(
-        certificateUsers.filter {
-          case (_, entry) => entry.enrollmentId == enrollmentId.trim
-        }.map {
-          case (username, _) => username
-        }.head
-      ))
+      val enrollmentIdList = enrollmentIds.get.split(",").filter(_.trim.nonEmpty).toSeq
+
+      Future.successful(
+        certificateUsers
+          .filter(entry => enrollmentIdList.contains(entry._2.enrollmentId)).toSeq
+          .map {
+            case (username, certificateUserEntry) =>
+              UsernameEnrollmentIdPair(username, certificateUserEntry.enrollmentId)
+          }
+      )
+
   }
 
   /** Publishes every user that is registered at hyperledger */

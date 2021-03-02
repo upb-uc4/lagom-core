@@ -4,7 +4,7 @@ import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.{ ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents }
 import de.upb.cs.uc4.certificate.api.CertificateService
-import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR }
+import de.upb.cs.uc4.certificate.model.{ EncryptedPrivateKey, PostMessageCSR, UsernameEnrollmentIdPair }
 import de.upb.cs.uc4.hyperledger.utilities.traits.{ EnrollmentManagerTrait, RegistrationManagerTrait }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, GenericError, UC4Exception }
 import de.upb.cs.uc4.shared.client.kafka.EncryptionContainer
@@ -70,8 +70,8 @@ class CertificateServiceSpec extends AsyncWordSpec
       creationStub.send(container)
 
       eventually(timeout(Span(30, Seconds))) {
-        client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-          answer => answer.id should ===(username + "enroll")
+        client.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+          answer => answer should contain theSameElementsAs Seq(UsernameEnrollmentIdPair(username, username + "enroll"))
         }
       }
     }
@@ -83,23 +83,23 @@ class CertificateServiceSpec extends AsyncWordSpec
       creationStub.send(container)
 
       eventually(timeout(Span(30, Seconds))) {
-        client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().map {
-          answer => answer.id should ===(username + "enroll")
+        client.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+          answer => answer should contain theSameElementsAs Seq(UsernameEnrollmentIdPair(username, username + "enroll"))
         }
       }.flatMap { _ =>
         deletionStub.send(deletionContainer)
         eventually(timeout(Span(30, Seconds))) {
-          client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
-            answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+          client.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+            pairSeq => pairSeq shouldBe empty
           }
         }
       }
     }
 
-    "return an error when fetching the enrollmentId of a non-existing user" in {
+    "return an empty list when fetching the enrollmentId of a non-existing user" in {
       val username = "student01"
-      client.getEnrollmentId(username).handleRequestHeader(addAuthorizationHeader()).invoke().failed.map {
-        answer => answer.asInstanceOf[UC4Exception].possibleErrorResponse.`type` should ===(ErrorType.KeyNotFound)
+      client.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthorizationHeader()).invoke().map {
+        pairSeq => pairSeq shouldBe empty
       }
     }
 

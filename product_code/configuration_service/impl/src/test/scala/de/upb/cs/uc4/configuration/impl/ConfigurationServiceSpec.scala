@@ -4,7 +4,7 @@ import com.lightbend.lagom.scaladsl.server.LocalServiceLocator
 import com.lightbend.lagom.scaladsl.testkit.ServiceTest
 import de.upb.cs.uc4.configuration.api.ConfigurationService
 import de.upb.cs.uc4.configuration.model.{ Configuration, JsonHyperledgerNetworkVersion, ValidationConfiguration }
-import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, CourseLanguage, CourseType }
+import de.upb.cs.uc4.shared.client.configuration.{ ConfigurationCollection, CourseLanguage, CourseType, ExamType }
 import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, SimpleError, UC4Exception }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -52,7 +52,9 @@ class ConfigurationServiceSpec extends AsyncWordSpec with Matchers {
       val configuration = Configuration(
         ConfigurationCollection.countries,
         CourseLanguage.All.map(_.toString),
-        CourseType.All.map(_.toString)
+        CourseType.All.map(_.toString),
+        ExamType.All.map(_.toString),
+        ConfigurationCollection.grades
       )
       client.getConfiguration.invoke().map {
         answer =>

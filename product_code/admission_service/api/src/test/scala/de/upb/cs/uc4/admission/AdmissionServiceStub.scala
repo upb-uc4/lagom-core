@@ -3,35 +3,46 @@ package de.upb.cs.uc4.admission
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import de.upb.cs.uc4.admission.api.AdmissionService
-import de.upb.cs.uc4.admission.model.{ CourseAdmission, DropAdmission }
+import de.upb.cs.uc4.admission.model.{ AbstractAdmission, CourseAdmission, DropAdmission, ExamAdmission }
 import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
 
 import scala.concurrent.Future
 
 class AdmissionServiceStub extends AdmissionService {
 
-  protected var admissions: Seq[CourseAdmission] = Seq()
+  protected var courseAdmissions: Seq[CourseAdmission] = Seq()
+  protected var examAdmissions: Seq[ExamAdmission] = Seq()
 
   def reset(): Unit = {
-    admissions = Seq()
+    courseAdmissions = Seq()
+    examAdmissions = Seq()
   }
 
-  def add(courseAdmission: CourseAdmission): Unit = {
-    admissions :+= courseAdmission
+  def addCourseAdmission(courseAdmission: CourseAdmission): Unit = {
+    courseAdmissions :+= courseAdmission
+  }
+
+  def addExamAdmission(examAdmission: ExamAdmission): Unit = {
+    examAdmissions :+= examAdmission
   }
 
   /** Returns course admissions */
   override def getCourseAdmissions(username: Option[String], courseId: Option[String], moduleId: Option[String]): ServiceCall[NotUsed, Seq[CourseAdmission]] = ServiceCall {
-    _ => Future.successful(admissions)
+    _ => Future.successful(courseAdmissions)
   }
 
-  /** Gets a proposal for adding a course admission */
-  override def getProposalAddCourseAdmission: ServiceCall[CourseAdmission, UnsignedProposal] = ServiceCall {
+  /** Returns exam admissions */
+  override def getExamAdmissions(username: Option[String], admissionIds: Option[String], examIds: Option[String]): ServiceCall[NotUsed, Seq[ExamAdmission]] = ServiceCall {
+    _ => Future.successful(examAdmissions)
+  }
+
+  /** Gets a proposal for adding an admission */
+  override def getProposalAddAdmission: ServiceCall[AbstractAdmission, UnsignedProposal] = ServiceCall {
     _ => Future.successful(UnsignedProposal(""))
   }
 
-  /** Gets a proposal for dropping a course admission */
-  override def getProposalDropCourseAdmission: ServiceCall[DropAdmission, UnsignedProposal] = ServiceCall {
+  /** Gets a proposal for dropping an admission */
+  override def getProposalDropAdmission: ServiceCall[DropAdmission, UnsignedProposal] = ServiceCall {
     _ => Future.successful(UnsignedProposal(""))
   }
 
