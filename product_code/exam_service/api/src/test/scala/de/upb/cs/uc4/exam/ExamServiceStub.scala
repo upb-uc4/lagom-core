@@ -9,7 +9,7 @@ import de.upb.cs.uc4.shared.client.JsonUtility.ToJsonUtil
 
 import scala.concurrent.Future
 
-class ExamServiceStub() extends ExamService with DefaultTestExams {
+class ExamServiceStub extends ExamService with DefaultTestExams {
 
   protected var exams: Seq[Exam] = Seq()
 
