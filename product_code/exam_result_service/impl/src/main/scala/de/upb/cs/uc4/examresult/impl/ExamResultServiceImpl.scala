@@ -16,17 +16,17 @@ import de.upb.cs.uc4.examresult.impl.actor.{ ExamResultBehaviour, ExamResultWrap
 import de.upb.cs.uc4.examresult.impl.commands.{ GetExamResultEntries, GetProposalAddExamResult }
 import de.upb.cs.uc4.examresult.model.{ ExamResult, ExamResultEntry }
 import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
-import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.hyperledger.impl.commands.HyperledgerBaseCommand
+import de.upb.cs.uc4.hyperledger.impl.{ HyperledgerUtils, ProposalWrapper }
 import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.operation.model.JsonOperationId
-import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, SimpleError, UC4Exception, UC4NonCriticalException }
+import de.upb.cs.uc4.shared.client.exceptions.{ DetailedError, ErrorType, UC4Exception, UC4NonCriticalException }
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import org.slf4j.{ Logger, LoggerFactory }
 import play.api.Environment
 
-import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 /** Implementation of the ExamResultService */
 class ExamResultServiceImpl(
@@ -35,7 +35,7 @@ class ExamResultServiceImpl(
     certificateService: CertificateService,
     operationService: OperationService,
     override val environment: Environment
-)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
+)(implicit ec: ExecutionContext, override val config: Config, materializer: Materializer)
   extends ExamResultService {
 
   /** Looks up the entity for the given ID */
@@ -89,7 +89,7 @@ class ExamResultServiceImpl(
               throw UC4Exception.OwnerMismatch
             case AuthenticationRole.Student =>
               Future.successful(Done)
-            case _ => throw UC4Exception.InternalServerError("Error checking authRole", s"Role is not one of Student, Lecturer or Admin, but instead ${role}")
+            case _ => throw UC4Exception.InternalServerError("Error checking authRole", s"Role is not one of Student, Lecturer or Admin, but instead $role")
           }
           authErrorFuture.flatMap {
             _ =>
@@ -148,7 +148,7 @@ class ExamResultServiceImpl(
                       case throwable: Throwable =>
                         log.error("Exception in addToWatchlist getProposalAddExamResult", throwable)
                     }
-                  (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+                  (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedProposal(proposalWrapper.proposal))
               }.recover(handleException("getExamResults failed"))
             }
           }

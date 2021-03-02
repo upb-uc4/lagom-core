@@ -254,7 +254,7 @@ class AdmissionServiceImpl(
                   case throwable: Throwable =>
                     log.error("Exception in addToWatchlist addExamAdmission", throwable)
                 }
-              (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+              (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedProposal(proposalWrapper.proposal))
           }.recover(handleException("Creation of add examAdmission proposal failed"))
       }
     }
