@@ -144,7 +144,7 @@ class MatriculationServiceImpl(
                           throw UC4Exception.InternalServerError("Failure at addition of new matriculation data", ex.getMessage, ex)
                       }
                   }
-              }
+              }.recoverWith(handleException("Get of enrollmentId username pair failed"))
         }
       }
     }
