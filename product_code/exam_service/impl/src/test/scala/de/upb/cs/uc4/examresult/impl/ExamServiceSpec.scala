@@ -134,7 +134,7 @@ class ExamServiceSpec extends AsyncWordSpec
             contain theSameElementsAs Seq("moduleId")
       }
     }
-    "not get proposal add exam for a non existing course" in {
+    "not get proposal add exam for a non-existing course" in {
 
       val invalidExamModified = examOfLecturer0Modified.copy(courseId = "NonExistingCourseId")
       client.getProposalAddExam.handleRequestHeader(addAuthorizationHeader(lecturer0.username)).invoke(invalidExamModified).failed.map {
