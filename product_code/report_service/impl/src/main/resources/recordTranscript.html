@@ -19,7 +19,11 @@
 <div class="w-full h-full">
     <div style="display: -webkit-box; -webkit-box-pack: end;">
         <p style="color: rgb(175, 173, 173)" class="mr-16 mt-8">
-            {address}
+            University Credits 4.0<br>
+            Paderborn University<br>
+            Warburger Straße 100<br>
+            33098 Paderborn<br>
+            Germany<br>
         </p>
     </div>
     <img style="margin-left: auto; margin-right: auto;" src="https://raw.githubusercontent.com/upb-uc4/ui-web/main/src/assets/logo/logo.svg" alt="NO LOGO" width="25%">
@@ -50,19 +54,10 @@
                   <th class="border border-black text-center">ECTS</th>
                   <th class="border border-black text-center">Grade</th>
                 </tr>
-                <tr class="border border-black bg-tr">
-                  <td class="pl-4">Module</td>
-                  <td></td>
-                  <td></td>
-                </tr>
-                <tr>
-                  <td class="border border-black pl-8">Test Course 3</td>
-                  <td class="text-center border border-black">6</td>
-                  <td class="text-center border border-black">1.0</td>
-                </tr>
+                {tableContent}
                 <tr class="bg-th">
                     <th class="border border-black text-left">Sum</th>
-                    <th class="border border-black text-center"> 6</th>
+                    <th class="border border-black text-center">{ectsSum}</th>
                     <td class="text-center border border-black"></td>
                   </tr>
               </table>
