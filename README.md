@@ -37,7 +37,11 @@ Should look like this:
 ```
 
 ## Running in development mode
-First start Postgres and Imagenary with the default settings:
+### Prerequisites
+Have a running [hlf network](https://github.com/upb-uc4/hlf-network) in the background.
+
+### Actions in the [product code](product_code) folder
+First start Postgres, Imagenary and HTML-TO-PDF with the default settings:
 ```shell script
 docker-compose up
 ```

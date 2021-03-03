@@ -10,7 +10,7 @@ trait HyperledgerDefaultParts {
   implicit def config: Config
 
   protected val walletPath: Path = retrieveFolderPathWithCreation("uc4.hyperledger.walletPath", "/hyperledger_assets/wallet/")
-  protected val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", "/hyperledger_assets/connection_profile_kubernetes_local.yaml")
+  protected val networkDescriptionPath: Path = retrievePath("uc4.hyperledger.networkConfig", sys.env.getOrElse("UC4_CONNECTION_PROFILE", "/hyperledger_assets/connection_profile_kubernetes_local.yaml"))
   protected val tlsCert: Path = retrieveExternalPath("uc4.hyperledger.tlsCert", "/tmp/hyperledger/org1/msp/cacerts/org1-ca-cert.pem")
 
   protected val channel: String = retrieveString("uc4.hyperledger.channel", "mychannel")
