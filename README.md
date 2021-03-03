@@ -74,7 +74,7 @@ sbt <name>_service/docker:publish
 ## Change settings of postgres
 The configuration file used by the local docker image
 are defined in the [postgres.conf](product_code/docker/postgres.conf).
-This file will be load when postgres starts.
+This file will be loaded when postgres starts.
 
 ## Dependecies of the different services
 ![Dependency tree](documentation/dependency_tree.png)
