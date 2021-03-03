@@ -4,7 +4,7 @@ import com.lightbend.lagom.scaladsl.playjson.JsonSerializer
 import de.upb.cs.uc4.hyperledger.api.model.operation.OperationDataState.OperationDataState
 import de.upb.cs.uc4.hyperledger.api.model.operation.{ ApprovalList, OperationData, TransactionInfo }
 import de.upb.cs.uc4.operation.impl.actor.{ OperationDataList, OperationState, WatchlistWrapper }
-import de.upb.cs.uc4.operation.impl.events.{ OnAddToWatchlist, OnRemoveFromWatchlist }
+import de.upb.cs.uc4.operation.impl.events.{ OnAddToWatchlist, OnClearWatchlist, OnRemoveFromWatchlist }
 import de.upb.cs.uc4.operation.model.JsonRejectMessage
 import de.upb.cs.uc4.shared.server.SharedSerializerRegistry
 
@@ -31,6 +31,7 @@ object OperationSerializerRegistry extends SharedSerializerRegistry {
     JsonSerializer[JsonRejectMessage],
     JsonSerializer[TransactionInfo],
     //Event
+    JsonSerializer[OnClearWatchlist],
     JsonSerializer[OnAddToWatchlist],
     JsonSerializer[OnRemoveFromWatchlist]
   )
