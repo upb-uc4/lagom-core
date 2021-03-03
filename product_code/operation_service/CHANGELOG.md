@@ -1,4 +1,4 @@
-# [WIP - v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/operation-v0.18.1...operation-v0.19.1) (2021-XX-XX)
+# [v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/operation-v0.18.1...operation-v0.19.1) (2021-03-03)
 ## Feature
 - Added call to get a user's watchlist
 - Added functionality to clear a user's watchlist on user deletion

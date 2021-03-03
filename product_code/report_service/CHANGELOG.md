@@ -1,4 +1,4 @@
-# [WIP - v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.2...report-v0.19.1) (2021-XX-XX)
+# [v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.2...report-v0.19.1) (2021-03-03)
 ## Feature
  - Added exams to lecturer report
  - Added exam results and exam admission to student report
