@@ -10,7 +10,6 @@
   * [Versions in this project](#versions-in-this-project)
   * [Changes necessary on UNIX](#changes-necessary-on-unix)
   * [Running in development mode](#running-in-development-mode)
-    * [Errors](#errors)
   * [Change settings of postgres](#change-settings-of-postgres)
   * [Dependecies of the different services](#dependecies-of-the-different-services)
   * [Running tests in IntelliJ](#running-tests-in-intellij)
@@ -78,7 +77,7 @@ are defined in the [postgres.conf](product_code/docker/postgres.conf).
 This file will be load when postgres starts.
 
 ## Dependecies of the different services
-![Dependency tree](documentation/dependency_tree.jpg)
+![Dependency tree](documentation/dependency_tree.png)
 
 The figure gives an overview of the internal communciation between services and therefore their dependencies. Inter-service communcation is either realized through service calls or a publish-subscribe pattern using Apache Kafka as a message broker. Service calls are synchronous HTTP calls that use the defined REST-API and publishing messages to Kafka allows asynchronous decoupled communication between services. Messages are published to topics which multiple services can subscribe to. Some services communicate with the underlying Hyperledger Fabric Framework. These services are marked with a red tag.
 
