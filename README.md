@@ -40,7 +40,7 @@ Should look like this:
 Have a running [hlf network](https://github.com/upb-uc4/hlf-network#local-testing-from-outside-the-cluster) in the background with the test flag.
 
 ### Actions in the [product code](product_code) folder
-First start Postgres, Imagenary and HTML-TO-PDF with the default settings:
+First start Postgres, Imaginary and HTML-TO-PDF with the default settings:
 ```shell script
 docker-compose up
 ```
