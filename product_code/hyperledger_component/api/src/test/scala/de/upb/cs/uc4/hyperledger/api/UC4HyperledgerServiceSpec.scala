@@ -1,16 +1,16 @@
 package de.upb.cs.uc4.hyperledger.api
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.typesafe.config.{Config, ConfigFactory}
-import de.upb.cs.uc4.hyperledger.api.model.{JsonHyperledgerVersion, UnsignedProposal, UnsignedTransaction}
+import com.typesafe.config.{ Config, ConfigFactory }
+import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal, UnsignedTransaction }
 import io.jsonwebtoken.Jwts
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.io.File
-import java.util.{Base64, Calendar, Date}
+import java.util.{ Base64, Calendar, Date }
 import scala.concurrent.Future
 
 class UC4HyperledgerServiceSpec extends AnyWordSpec with Matchers {
