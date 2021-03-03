@@ -211,7 +211,7 @@ lazy val operation_service = (project in file("operation_service/impl"))
     libraryDependencies ++= Dependencies.defaultPersistenceKafkaDependencies
   )
   .settings(Settings.implSettings("operation_service"))
-  .dependsOn(operation_service_api % withTests, certificate_service_api % withTests,
+  .dependsOn(operation_service_api % withTests, certificate_service_api % withTests, user_service_api % withTests,
     shared_client % withTests, shared_server % withTests, hyperledger_component_impl)
 
 lazy val group_service_api =  (project in file("group_service/api"))
@@ -266,7 +266,7 @@ lazy val report_service = (project in file("report_service/impl"))
     libraryDependencies ++= Dependencies.pdfSigning
   )
   .settings(Settings.implSettings("report_service"))
-  .dependsOn(report_service_api % withTests, admission_service_api % withTests,
+  .dependsOn(report_service_api % withTests, admission_service_api % withTests, operation_service_api % withTests,
     user_service_api % withTests, certificate_service_api % withTests, matriculation_service_api % withTests, course_service_api % withTests,
     exam_service_api % withTests, examresult_service_api % withTests, examreg_service_api % withTests,
     shared_client % withTests, shared_server % withTests, pdf_processing_api)

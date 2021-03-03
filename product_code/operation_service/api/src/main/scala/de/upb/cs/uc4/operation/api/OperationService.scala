@@ -36,6 +36,9 @@ trait OperationService extends UC4HyperledgerService {
   /** Reject the operation with the given operationId*/
   def getProposalRejectOperation(operationId: String): ServiceCall[JsonRejectMessage, UnsignedProposal]
 
+  /** Gets the watchlist of a user */
+  def getWatchlist(username: String): ServiceCall[NotUsed, Seq[String]]
+
   /** Adds a operationId to the watchlist */
   def addToWatchList(username: String): ServiceCall[JsonOperationId, Done]
 
@@ -48,11 +51,14 @@ trait OperationService extends UC4HyperledgerService {
   /** Allows GET */
   def allowedGet: ServiceCall[NotUsed, Done]
 
-  /** Allows GET, DELETE*/
+  /** Allows GET, DELETE */
   def allowedGetDelete: ServiceCall[NotUsed, Done]
 
   /** Allows POST */
   def allowedPost: ServiceCall[NotUsed, Done]
+
+  /** Allows GET and POST */
+  def allowedGetPost: ServiceCall[NotUsed, Done]
 
   final override def descriptor: Descriptor = {
     import Service._
@@ -75,7 +81,8 @@ trait OperationService extends UC4HyperledgerService {
         restCall(Method.OPTIONS, pathPrefix + "/operations/signed_transaction", allowedPost _),
 
         restCall(Method.POST, pathPrefix + "/watchlist/:username", addToWatchList _)(CustomMessageSerializer.jsValueFormatMessageSerializer, MessageSerializer.DoneMessageSerializer),
-        restCall(Method.OPTIONS, pathPrefix + "/watchlist/:username", allowedPost _)
+        restCall(Method.GET, pathPrefix + "/watchlist/:username", getWatchlist _),
+        restCall(Method.OPTIONS, pathPrefix + "/watchlist/:username", allowedGetPost _)
       )
   }
 }

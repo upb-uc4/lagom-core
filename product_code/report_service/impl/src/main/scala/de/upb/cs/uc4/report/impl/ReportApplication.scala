@@ -17,6 +17,7 @@ import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examresult.api.ExamResultService
 import de.upb.cs.uc4.matriculation.api.MatriculationService
+import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.pdf.api.PdfProcessingService
 import de.upb.cs.uc4.report.api.ReportService
 import de.upb.cs.uc4.report.impl.actor.{ ReportBehaviour, ReportState }
@@ -43,21 +44,22 @@ abstract class ReportApplication(context: LagomApplicationContext)
 
   protected final val log: Logger = LoggerFactory.getLogger(classOf[ReportApplication])
 
-  // Bind the service that this server provides
-  override lazy val lagomServer: LagomServer = serverFor[ReportService](wire[ReportServiceImpl])
-
-  // Register the JSON serializer registry
-  override lazy val jsonSerializerRegistry: JsonSerializerRegistry = ReportSerializerRegistry
-
   lazy val userService: UserService = serviceClient.implement[UserService]
   lazy val courseService: CourseService = serviceClient.implement[CourseService]
   lazy val matriculationService: MatriculationService = serviceClient.implement[MatriculationService]
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
   lazy val admissionService: AdmissionService = serviceClient.implement[AdmissionService]
+  lazy val operationService: OperationService = serviceClient.implement[OperationService]
   lazy val examregService: ExamregService = serviceClient.implement[ExamregService]
   lazy val examService: ExamService = serviceClient.implement[ExamService]
   lazy val examResultService: ExamResultService = serviceClient.implement[ExamResultService]
   lazy val pdfService: PdfProcessingService = serviceClient.implement[PdfProcessingService]
+
+  // Bind the service that this server provides
+  override lazy val lagomServer: LagomServer = serverFor[ReportService](wire[ReportServiceImpl])
+
+  // Register the JSON serializer registry
+  override lazy val jsonSerializerRegistry: JsonSerializerRegistry = ReportSerializerRegistry
 
   // Initialize the sharding of the Aggregate. The following starts the aggregate Behavior under
   // a given sharding entity typeKey.

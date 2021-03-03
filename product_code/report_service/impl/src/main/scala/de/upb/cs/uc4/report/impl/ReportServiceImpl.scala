@@ -21,6 +21,7 @@ import de.upb.cs.uc4.examresult.api.ExamResultService
 import de.upb.cs.uc4.examresult.model.ExamResultEntry
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.ImmatriculationData
+import de.upb.cs.uc4.operation.api.OperationService
 import de.upb.cs.uc4.pdf.api.PdfProcessingService
 import de.upb.cs.uc4.pdf.model.PdfProcessor
 import de.upb.cs.uc4.report.api.ReportService
@@ -58,6 +59,7 @@ class ReportServiceImpl(
     matriculationService: MatriculationService,
     certificateService: CertificateService,
     admissionService: AdmissionService,
+    operationService: OperationService,
     examService: ExamService,
     examResultService: ExamResultService,
     examregService: ExamregService,
@@ -135,112 +137,134 @@ class ReportServiceImpl(
   )
 
   /** Request collection of all data for the given user */
-  def prepareUserData(username: String, role: AuthenticationRole, header: RequestHeader, timestamp: String): Future[Done] = Future {
+  def prepareUserData(username: String, role: AuthenticationRole, header: RequestHeader, timestamp: String): Future[Done] = {
 
-    val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-      case exception: Exception =>
-        log.error(s"Prepare of $username at $timestamp ; userFuture failed", exception)
-        throw exception
-    }
-    val profilePictureFuture = userService.getImage(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-      case exception: Exception =>
-        log.error(s"Prepare of $username at $timestamp ; profilePictureFuture failed", exception)
-        throw exception
-    }
-    val thumbnailFuture = userService.getThumbnail(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-      case exception: Exception =>
-        log.error(s"Prepare of $username at $timestamp ; thumbnailFuture failed", exception)
-        throw exception
-    }
-    val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-      .map(cert => Some(cert.certificate)).recover { case _ => None }
-    val enrollmentIdFuture = certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
-      case exception: Exception =>
-        log.error(s"Prepare of $username at $timestamp ; enrollmentIdFuture failed", exception)
-        throw exception
-    }
-    val encryptedPrivateKeyFuture = certificateService.getPrivateKey(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
-      .map(Some(_)).recover { case _ => None }
-    var matriculationFuture: Future[Option[ImmatriculationData]] = Future.successful(None)
-    var coursesFuture: Future[Option[Seq[Course]]] = Future.successful(None)
-    var courseAdmissionFuture: Future[Option[Seq[CourseAdmission]]] = Future.successful(None)
-    var examAdmissionFuture: Future[Option[Seq[ExamAdmission]]] = Future.successful(None)
-    var examFuture: Future[Option[Seq[Exam]]] = Future.successful(None)
-    var examResultFuture: Future[Option[Seq[ExamResultEntry]]] = Future.successful(None)
+    certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke().map { enrollmentIdPair =>
 
-    role match {
-      case AuthenticationRole.Admin =>
+      val enrollmentId = enrollmentIdPair.head.enrollmentId
 
-      case AuthenticationRole.Student =>
-        matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
-          case ue: UC4Exception if ue.possibleErrorResponse.`type` == ErrorType.HLNotFound || ue.possibleErrorResponse.`type` == ErrorType.KeyNotFound =>
-            None
-          case exception: Exception =>
-            log.error(s"Prepare of $username at $timestamp ; matriculationFuture failed", exception)
-            throw exception
-        }
-        courseAdmissionFuture = admissionService.getCourseAdmissions(Some(username), None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
-          case ue: UC4Exception if ue.possibleErrorResponse.`type` == ErrorType.HLNotFound || ue.possibleErrorResponse.`type` == ErrorType.KeyNotFound =>
-            None
-          case exception: Exception =>
-            log.error(s"Prepare of $username at $timestamp ; courseAdmissionFuture failed", exception)
-            throw exception
-        }
-        examAdmissionFuture = admissionService.getExamAdmissions(Some(username), None, None)
-          .handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
-            case exception: Exception =>
-              log.error(s"Prepare of $username at $timestamp ; examAdmissionFuture failed", exception)
-              throw exception
-          }
-        examResultFuture = examResultService.getExamResults(Some(username), None)
-          .handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
-            case exception: Exception =>
-              log.error(s"Prepare of $username at $timestamp ; examResultFuture failed", exception)
-              throw exception
-          }
-
-      case AuthenticationRole.Lecturer =>
-        coursesFuture = courseService.getAllCourses(None, Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
-          case exception: Exception =>
-            log.error(s"Prepare of $username at $timestamp ; coursesFuture failed", exception)
-            throw exception
-        }
-        examFuture = examService.getExams(None, None, Some(username), None, None, None, None)
-          .handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
-            case exception: Exception =>
-              log.error(s"Prepare of $username at $timestamp ; examFuture failed", exception)
-              throw exception
-          }
-    }
-
-    for {
-      user <- userFuture
-      profilePicture <- profilePictureFuture
-      thumbnail <- thumbnailFuture
-      certificate <- certificateFuture
-      usernameEnrollmentIdPair <- enrollmentIdFuture
-      encryptedPrivateKey <- encryptedPrivateKeyFuture
-      immatriculationData <- matriculationFuture
-      courses <- coursesFuture
-      courseAdmissions <- courseAdmissionFuture
-      examAdmissions <- examAdmissionFuture
-      exams <- examFuture
-      examResults <- examResultFuture
-    } yield {
-      val report = TextReport(user, certificate, usernameEnrollmentIdPair.head.enrollmentId, encryptedPrivateKey, immatriculationData,
-        courses, courseAdmissions, examAdmissions, exams, examResults, timestamp)
-      entityRef(username).ask[Confirmation](replyTo => SetReport(report, profilePicture.toArray, thumbnail.toArray, timestamp, replyTo)).map {
-        case Accepted(_) =>
-        case Rejected(statusCode, reason) =>
-          log.error(s"Report of $username can't be persisted.", UC4Exception(statusCode, reason))
-      }.recover {
-        case exception: Exception => log.error(s"Prepare of $username at $timestamp ; Actor communication failed", exception)
+      val userFuture = userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+        case exception: Exception =>
+          log.error(s"Prepare of $username at $timestamp ; userFuture failed", exception)
+          throw exception
       }
-    }.recover {
-      case exception: Exception => log.error(s"Report of $username can't be created.", exception)
-    }
+      val profilePictureFuture = userService.getImage(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+        case exception: Exception =>
+          log.error(s"Prepare of $username at $timestamp ; profilePictureFuture failed", exception)
+          throw exception
+      }
+      val thumbnailFuture = userService.getThumbnail(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+        case exception: Exception =>
+          log.error(s"Prepare of $username at $timestamp ; thumbnailFuture failed", exception)
+          throw exception
+      }
+      val certificateFuture = certificateService.getCertificate(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+        .map(cert => Some(cert.certificate)).recover { case _ => None }
 
-    Done
+      val encryptedPrivateKeyFuture = certificateService.getPrivateKey(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+        .map(Some(_)).recover { case _ => None }
+      var matriculationFuture: Future[Option[ImmatriculationData]] = Future.successful(None)
+      var coursesFuture: Future[Option[Seq[Course]]] = Future.successful(None)
+      var courseAdmissionFuture: Future[Option[Seq[CourseAdmission]]] = Future.successful(None)
+      var examAdmissionFuture: Future[Option[Seq[ExamAdmission]]] = Future.successful(None)
+      var examFuture: Future[Option[Seq[Exam]]] = Future.successful(None)
+      var examResultFuture: Future[Option[Seq[ExamResultEntry]]] = Future.successful(None)
+
+      role match {
+        case AuthenticationRole.Admin =>
+
+        case AuthenticationRole.Student =>
+          matriculationFuture = matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+            case ue: UC4Exception if ue.possibleErrorResponse.`type` == ErrorType.HLNotFound || ue.possibleErrorResponse.`type` == ErrorType.KeyNotFound =>
+              None
+            case exception: Exception =>
+              log.error(s"Prepare of $username at $timestamp ; matriculationFuture failed", exception)
+              throw exception
+          }
+          courseAdmissionFuture = admissionService.getCourseAdmissions(Some(username), None, None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+            case ue: UC4Exception if ue.possibleErrorResponse.`type` == ErrorType.HLNotFound || ue.possibleErrorResponse.`type` == ErrorType.KeyNotFound =>
+              None
+            case exception: Exception =>
+              log.error(s"Prepare of $username at $timestamp ; courseAdmissionFuture failed", exception)
+              throw exception
+          }
+          examAdmissionFuture = admissionService.getExamAdmissions(Some(username), None, None)
+            .handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+              case exception: Exception =>
+                log.error(s"Prepare of $username at $timestamp ; examAdmissionFuture failed", exception)
+                throw exception
+            }
+          examResultFuture = examResultService.getExamResults(Some(username), None)
+            .handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+              case exception: Exception =>
+                log.error(s"Prepare of $username at $timestamp ; examResultFuture failed", exception)
+                throw exception
+            }
+
+        case AuthenticationRole.Lecturer =>
+          coursesFuture = courseService.getAllCourses(None, Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+            case exception: Exception =>
+              log.error(s"Prepare of $username at $timestamp ; coursesFuture failed", exception)
+              throw exception
+          }
+          examFuture = examService.getExams(None, None, Some(enrollmentId), None, None, None, None)
+            .handleRequestHeader(addAuthenticationHeader(header)).invoke().map(Some(_)).recover {
+              case exception: Exception =>
+                log.error(s"Prepare of $username at $timestamp ; examFuture failed", exception)
+                throw exception
+            }
+      }
+
+      val operationFuture = operationService.getOperations(None, None, None, None)
+        .handleRequestHeader(addAuthenticationHeader(header)).invoke().recover {
+          case exception: Exception =>
+            log.error(s"Prepare of $username at $timestamp ; operationFuture failed", exception)
+            throw exception
+        }
+
+      val watchlistFuture = operationService.getWatchlist(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+        .recover {
+          case exception: Exception =>
+            log.error(s"Prepare of $username at $timestamp ; operationFuture failed", exception)
+            throw exception
+        }
+
+      for {
+        user <- userFuture
+        profilePicture <- profilePictureFuture
+        thumbnail <- thumbnailFuture
+        certificate <- certificateFuture
+        encryptedPrivateKey <- encryptedPrivateKeyFuture
+        immatriculationData <- matriculationFuture
+        courses <- coursesFuture
+        operations <- operationFuture
+        watchlist <- watchlistFuture
+        courseAdmissions <- courseAdmissionFuture
+        examAdmissions <- examAdmissionFuture
+        exams <- examFuture
+        examResults <- examResultFuture
+      } yield {
+        val report = TextReport(user, certificate, enrollmentId, encryptedPrivateKey,
+          immatriculationData,
+          courses, courseAdmissions, examAdmissions, exams, examResults, operations, watchlist, timestamp)
+        entityRef(username).ask[Confirmation](replyTo => SetReport(report, profilePicture.toArray, thumbnail.toArray, timestamp, replyTo)).map {
+          case Accepted(_) =>
+          case Rejected(statusCode, reason) =>
+            log.error(s"Report of $username can't be persisted.", UC4Exception(statusCode, reason))
+        }.recover {
+          case exception: Exception => log.error(s"Prepare of $username at $timestamp ; Actor communication failed", exception)
+        }
+      }.recover {
+        case exception: Exception => log.error(s"Report of $username can't be created.", exception)
+      }
+
+      Done
+    }
+      .recover {
+        case exception: Exception =>
+          log.error(s"Prepare of $username at $timestamp ; enrollmentIdFuture failed", exception)
+          throw exception
+      }
   }
 
   /** Get all data for the specified user */
