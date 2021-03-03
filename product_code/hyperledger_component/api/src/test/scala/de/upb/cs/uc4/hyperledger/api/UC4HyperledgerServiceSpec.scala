@@ -52,7 +52,7 @@ class UC4HyperledgerServiceSpec extends AnyWordSpec with Matchers {
     date.before(afterDate.getTime) && date.after(beforeDate.getTime) shouldBe true
   }
 
-  "A UC4HyperledgerService" should  {
+  "A UC4HyperledgerService" should {
 
     "create correct timed token, which" must {
 
