@@ -3,8 +3,8 @@ package de.upb.cs.uc4.operation.impl.actor
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.scaladsl.{ Effect, ReplyEffect }
 import de.upb.cs.uc4.operation.impl.OperationApplication
-import de.upb.cs.uc4.operation.impl.commands.{ AddToWatchlist, GetWatchlist, OperationCommand, RemoveFromWatchlist }
-import de.upb.cs.uc4.operation.impl.events.{ OnAddToWatchlist, OnRemoveFromWatchlist, OperationEvent }
+import de.upb.cs.uc4.operation.impl.commands.{ AddToWatchlist, ClearWatchlist, GetWatchlist, OperationCommand, RemoveFromWatchlist }
+import de.upb.cs.uc4.operation.impl.events.{ OnAddToWatchlist, OnClearWatchlist, OnRemoveFromWatchlist, OperationEvent }
 import de.upb.cs.uc4.shared.server.messages.Accepted
 import play.api.libs.json.{ Format, Json }
 
@@ -23,6 +23,8 @@ case class OperationState(watchlistWrapper: WatchlistWrapper) {
         Effect.persist(OnAddToWatchlist(operationId)).thenReply(replyTo) { _ => Accepted.default }
       case RemoveFromWatchlist(operationId, replyTo) =>
         Effect.persist(OnRemoveFromWatchlist(operationId)).thenReply(replyTo) { _ => Accepted.default }
+      case ClearWatchlist(username, replyTo) =>
+        Effect.persist(OnClearWatchlist(username)).thenReply(replyTo) { _ => Accepted.default }
       case _ =>
         println("Unknown Command")
         Effect.noReply
@@ -38,6 +40,8 @@ case class OperationState(watchlistWrapper: WatchlistWrapper) {
         copy(watchlistWrapper.addedToList(operationId))
       case OnRemoveFromWatchlist(operationId) =>
         copy(watchlistWrapper.removedFromList(operationId))
+      case OnClearWatchlist(_) =>
+        OperationState.initial
       case _ =>
         println("Unknown Event")
         this

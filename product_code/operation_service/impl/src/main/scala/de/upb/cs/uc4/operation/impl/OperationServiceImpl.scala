@@ -15,7 +15,7 @@ import de.upb.cs.uc4.hyperledger.api.model.operation.{ OperationData, OperationD
 import de.upb.cs.uc4.hyperledger.impl.HyperledgerUtils
 import de.upb.cs.uc4.hyperledger.impl.commands.{ HyperledgerBaseCommand, SubmitProposal, SubmitTransaction }
 import de.upb.cs.uc4.operation.api.OperationService
-import de.upb.cs.uc4.operation.impl.actor.{ OperationHyperledgerBehaviour, OperationState }
+import de.upb.cs.uc4.operation.impl.actor.{ OperationHyperledgerBehaviour, OperationState, WatchlistWrapper }
 import de.upb.cs.uc4.operation.impl.commands._
 import de.upb.cs.uc4.operation.model.{ JsonOperationId, JsonRejectMessage }
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
@@ -189,6 +189,19 @@ class OperationServiceImpl(
       }
   }
 
+  /** Gets the watchlist of a user */
+  override def getWatchlist(username: String): ServiceCall[NotUsed, Seq[String]] = identifiedAuthenticated(AuthenticationRole.All: _*) {
+    (authUser, _) =>
+      ServerServiceCall { (header, _) =>
+        if (authUser != username.trim) {
+          throw UC4Exception.OwnerMismatch
+        }
+        entityRef(authUser).ask[WatchlistWrapper](replyTo => GetWatchlist(replyTo)).map { watchListWrapper =>
+          createETagHeader(header, watchListWrapper.watchlist)
+        }
+      }
+  }
+
   /** Adds a operationId to the watchlist */
   def addToWatchList(username: String): ServiceCall[JsonOperationId, Done] = identifiedAuthenticated(AuthenticationRole.All: _*) {
     (authUser, _) =>
@@ -260,6 +273,9 @@ class OperationServiceImpl(
 
   /** Allows POST */
   override def allowedPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("POST")
+
+  /** Allows GET and POST */
+  override def allowedGetPost: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET, POST")
 
   /** This Methods needs to allow a GET-Method */
   override def allowVersionNumber: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")
