@@ -474,7 +474,11 @@ class ReportServiceImpl(
                           case (id, modules) => (id, modules.head.name)
                         }
 
+                        log.error(modules.mkString(", "))
+                        log.error(moduleIdToName.mkString(", "))
+
                         val tableContent = examReg.modules.map(_.id).map { id =>
+                          log.error("In map: " + id)
                           s"""<tr class="border border-black bg-tr">
                          |  <td class="pl-4">$id: ${moduleIdToName(id)}</td>
                          |  <td></td>
