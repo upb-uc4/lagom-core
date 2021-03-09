@@ -1,4 +1,4 @@
-# [WIP - v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.15.1...configuration-v0.17.1) (2021-XX-XX)
+# [v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/configuration-v0.15.1...configuration-v0.19.1) (2021-03-03)
 ## Feature
 - Added validation information of Exam related objects to ValidationConfiguration, like ExamAdmission etc.
 - Added grades and exam types to Configuration
