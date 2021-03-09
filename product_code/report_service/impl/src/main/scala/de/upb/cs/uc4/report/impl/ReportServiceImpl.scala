@@ -120,7 +120,7 @@ class ReportServiceImpl(
       }.getOrElse("")
     }
     else {
-      Source.fromResource("transcriptOfRecordsHtml.html").getLines().mkString("\n")
+      Source.fromResource("recordTranscript.html").getLines().mkString("\n")
     }
   } match {
     case Success(html) => html
