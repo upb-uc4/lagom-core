@@ -504,6 +504,7 @@ class ReportServiceImpl(
                     pdf = pdf.replace("{enrollmentId}", enrollmentIds.head.enrollmentId)
                     pdf = pdf.replace("{ectsSum}", exams.map(_.ects).sum.toString)
                     pdf = pdf.replace("{date}", ZonedDateTime.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
+                    pdf = pdf.replace("{organization}", config.getString("uc4.pdf.organization"))
 
                     pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
                       val output = signatureService.signPdf(pdfBytes.toArray)
