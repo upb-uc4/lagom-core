@@ -461,7 +461,7 @@ class ReportServiceImpl(
                 case (moduleId, exams) => (moduleId, exams.head)
               }
               val moduleIdToEntries = exams.groupBy(_.moduleId).map {
-                case (moduleId, exams) => (moduleId, exams.map(exam => examIdsToEntry(exam.examId)))
+                case (moduleId, exams) => (moduleId, exams.map(exam => examIdsToEntry.get(exam.examId)).filter(_.isDefined).map(_.get))
               }
 
               courseService.getAllCourses(None, None, Some(exams.map(_.examId).mkString(",")), examRegName)
