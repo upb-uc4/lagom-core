@@ -464,7 +464,7 @@ class ReportServiceImpl(
                 case (moduleId, exams) => (moduleId, exams.map(exam => examIdsToEntry.get(exam.examId)).filter(_.isDefined).map(_.get))
               }
 
-              courseService.getAllCourses(None, None, Some(examResults.map(_.examId).mkString(",")), examRegName)
+              courseService.getAllCourses(None, None, Some(exams.map(_.examId).mkString(",")), examRegName)
                 .handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { courses =>
 
                 log.error(examIdToExam.mkString(", "))
