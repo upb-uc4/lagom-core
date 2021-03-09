@@ -43,6 +43,8 @@ import play.api.libs.json.Json
 import java.io.{ByteArrayInputStream, File, FileWriter}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
+import java.time.ZonedDateTime
+import java.time.format.{DateTimeFormatter, FormatStyle}
 import java.util.{Base64, Calendar}
 import javax.imageio.ImageIO
 import scala.concurrent.duration._
@@ -412,6 +414,7 @@ class ReportServiceImpl(
               pdf = pdf.replace("{address}", config.getString("uc4.pdf.address").replace("\n", "<br>"))
               pdf = pdf.replace("{organization}", config.getString("uc4.pdf.organization"))
               pdf = pdf.replace("{semesterCount}", data.matriculationStatus.flatMap(_.semesters).distinct.size.toString)
+              pdf = pdf.replace("{date}", ZonedDateTime.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
 
               pdf = pdf.replace("{subjectList}", data.matriculationStatus.filter(_.semesters.contains(semester))
                 .map(subj => s"<li>${subj.fieldOfStudy} (${subj.semesters.size})</li>").mkString("\n"))
@@ -444,6 +447,7 @@ class ReportServiceImpl(
             examRegs <- examregService.getExaminationRegulations(examRegName, None).handleRequestHeader(addAuthenticationHeader(header)).invoke()
             examResults <- examResultService.getExamResults(Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke()
             matriculationData <- matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+            enrollmentIds <- certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke()
           } yield {
             val examIdsToEntry = examResults.groupBy(_.examId).map {
               case (id, results) => (id, results.head)
@@ -495,8 +499,11 @@ class ReportServiceImpl(
                     pdf = pdf.replace("{studentName}", s"${user.firstName} ${user.lastName}")
                     pdf = pdf.replace("{matriculationId}", user.asInstanceOf[Student].matriculationId)
                     pdf = pdf.replace("{examReg}", examRegName.get)
-                    pdf = pdf.replace("{semesters}", matriculationData.matriculationStatus.filter(_.fieldOfStudy == examRegName.get).mkString(", "))
+                    pdf = pdf.replace("{semesters}", matriculationData.matriculationStatus.filter(_.fieldOfStudy == examRegName.get).flatMap(_.semesters).distinct.size.toString)
                     pdf = pdf.replace("{tableContent}", tableContent)
+                    pdf = pdf.replace("{enrollmentId}", enrollmentIds.head.enrollmentId)
+                    pdf = pdf.replace("{ectsSum}", exams.map(_.ects).sum.toString)
+                    pdf = pdf.replace("{date}", ZonedDateTime.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
 
                     pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
                       val output = signatureService.signPdf(pdfBytes.toArray)
