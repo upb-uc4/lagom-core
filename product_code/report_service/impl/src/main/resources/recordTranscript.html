@@ -1,0 +1,73 @@
+<html lang="en">
+<link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet" type="text/css">
+<style>
+    .color-label {
+        color: rgba(43, 108, 176, 1);
+    }
+    .bg-th {
+        background-color: rgba(20, 25, 68, 0.35);
+    }
+    .bg-tr {
+        background-color: rgba(20, 25, 68, 0.2);
+    }
+</style>
+<head>
+    <meta charset="UTF-8"/>
+    <title></title>
+</head>
+<body>
+<div class="w-full h-full">
+    <div style="display: -webkit-box; -webkit-box-pack: end;">
+        <label style="display: block; color: rgb(175, 173, 173)" class="mr-16 mt-8">
+            University Credits 4.0<br>
+            Paderborn University<br>
+            Warburger Straße 100<br>
+            33098 Paderborn<br>
+            Germany<br>
+            <p class="mt-4">{date}</p>
+        </label>
+        
+    </div>
+    <img style="margin-left: auto; margin-right: auto;" src="https://raw.githubusercontent.com/upb-uc4/ui-web/main/src/assets/logo/logo.svg" alt="NO LOGO" width="25%">
+
+    <div class="mt-24 mx-4">
+        <h1 class="mt-8 text-3xl font-semibold">
+            Transcipt of Records
+        </h1>
+        <p class="mt-10 font-semibold text-xl" style="display: -webkit-box">
+            Examination Regulation: <strong class="color-label ">{examReg}</strong>
+        </p>
+        <p class="mt-4" style="display: -webkit-box">
+            Name: <strong class="color-label">{studentName}</strong>
+        </p>
+        <p class="mt-2" style="display: -webkit-box">
+            Matriculation-ID: <strong class="color-label">{matriculationId}</strong>
+        </p>
+        <p class="mt-2" style="display: -webkit-box">
+            Enrollment-ID: <strong class="color-label">{enrollmentId}</strong>
+        </p>
+        <p class="mt-2" style="display: -webkit-box">
+            Semesters: <strong class="color-label">{semesters}</strong>
+        </p>
+        <div class="mt-12 w-full">
+            <table class="border border-black w-full">
+                <tr class="bg-th">
+                  <th class="text-xl border border-black text-left w-3/4">{examReg}</th>
+                  <th class="border border-black text-center">ECTS</th>
+                  <th class="border border-black text-center">Grade</th>
+                </tr>
+                {tableContent}
+                <tr class="bg-th">
+                    <th class="border border-black text-left">Sum</th>
+                    <th class="border border-black text-center">{ectsSum}</th>
+                    <td class="text-center border border-black"></td>
+                  </tr>
+              </table>
+        </div>
+    </div>
+</div>
+<div style="position: fixed; bottom: 0; display: -webkit-box" class="w-full">
+    <p class="text-xs">This document is only valid if cryptographically signed by {organization}.</p>
+</div>
+</body>
+</html>

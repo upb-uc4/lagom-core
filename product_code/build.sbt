@@ -268,5 +268,5 @@ lazy val report_service = (project in file("report_service/impl"))
   .settings(Settings.implSettings("report_service"))
   .dependsOn(report_service_api % withTests, admission_service_api % withTests, operation_service_api % withTests,
     user_service_api % withTests, certificate_service_api % withTests, matriculation_service_api % withTests, course_service_api % withTests,
-    exam_service_api % withTests, examresult_service_api % withTests,
+    exam_service_api % withTests, examresult_service_api % withTests, examreg_service_api % withTests,
     shared_client % withTests, shared_server % withTests, pdf_processing_api)
