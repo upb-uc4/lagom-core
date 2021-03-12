@@ -1,23 +1,18 @@
 package de.upb.cs.uc4.hyperledger.api.model
 
+import de.upb.cs.uc4.hyperledger.api.JWTClaimParser
 import play.api.libs.json.{ Format, Json }
-
-import java.util.Base64
 
 /** The default response for a unsigned transaction
   *
-  * @param unsignedProposal the base64 encoded proposal
+  * @param unsignedProposalJwt the jwt that contains the unsignedProposal
   */
-case class UnsignedProposal(unsignedProposal: String)
+case class UnsignedProposal(unsignedProposalJwt: String) {
+
+  lazy val unsignedProposal: String =
+    JWTClaimParser.readClaim("unsignedBytes", unsignedProposalJwt)
+}
 
 object UnsignedProposal {
-
-  /** Creates a [[UnsignedProposal]] out of a byte array
-    *
-    * @param unsignedProposal byte array which gets base64 encoded
-    * @return base64 encoded proposal
-    */
-  def apply(unsignedProposal: Array[Byte]) = new UnsignedProposal(Base64.getEncoder.encodeToString(unsignedProposal))
-
   implicit val format: Format[UnsignedProposal] = Json.format
 }

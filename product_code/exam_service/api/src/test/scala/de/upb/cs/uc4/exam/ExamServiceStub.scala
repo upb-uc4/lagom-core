@@ -34,7 +34,7 @@ class ExamServiceStub extends ExamService with DefaultTestExams {
 
   /** Get a proposal for adding an Exam */
   override def getProposalAddExam: ServiceCall[Exam, UnsignedProposal] =
-    Exam => Future.successful(UnsignedProposal(Exam.toJson.getBytes))
+    Exam => Future.successful(createTimedUnsignedProposal(Exam.toJson.getBytes))
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = ServiceCall {

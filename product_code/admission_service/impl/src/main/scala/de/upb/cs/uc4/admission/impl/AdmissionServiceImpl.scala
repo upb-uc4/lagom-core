@@ -41,7 +41,7 @@ class AdmissionServiceImpl(
     operationService: OperationService,
     examService: ExamService,
     override val environment: Environment
-)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
+)(implicit ec: ExecutionContext, override val config: Config, materializer: Materializer)
   extends AdmissionService {
 
   /** Looks up the entity for the given ID */
@@ -228,7 +228,7 @@ class AdmissionServiceImpl(
                                   case throwable: Throwable =>
                                     log.error("Exception in addToWatchlist addCourseAdmission", throwable)
                                 }
-                              (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+                              (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedProposal(proposalWrapper.proposal))
                           }.recover(handleException("Creation of add courseAdmission proposal failed"))
                       }
                     }
@@ -254,7 +254,7 @@ class AdmissionServiceImpl(
                   case throwable: Throwable =>
                     log.error("Exception in addToWatchlist addExamAdmission", throwable)
                 }
-              (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+              (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedProposal(proposalWrapper.proposal))
           }.recover(handleException("Creation of add examAdmission proposal failed"))
       }
     }
@@ -288,7 +288,7 @@ class AdmissionServiceImpl(
                       case throwable: Throwable =>
                         log.error("Exception in addToWatchlist dropAdmission", throwable)
                     }
-                  (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+                  (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedProposal(proposalWrapper.proposal))
               }.recover(handleException("Creation of drop Admission proposal failed"))
             }
           }

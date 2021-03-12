@@ -2,6 +2,7 @@ package de.upb.cs.uc4.matriculation
 
 import akka.{ Done, NotUsed }
 import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.typesafe.config.Config
 import de.upb.cs.uc4.hyperledger.api.model.{ JsonHyperledgerVersion, UnsignedProposal }
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.matriculation.model.{ ImmatriculationData, PutMessageMatriculation, SubjectMatriculation }
@@ -11,7 +12,7 @@ import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import scala.collection.mutable
 import scala.concurrent.Future
 
-class MatriculationServiceStub extends MatriculationService {
+class MatriculationServiceStub(implicit override val config: Config) extends MatriculationService {
 
   private val matriculationData = mutable.HashMap[String, ImmatriculationData]()
 
@@ -35,7 +36,7 @@ class MatriculationServiceStub extends MatriculationService {
 
   /** Get proposal to matriculate a student */
   override def getMatriculationProposal(username: String): ServiceCall[PutMessageMatriculation, UnsignedProposal] =
-    putMessageMatriculation => Future.successful(UnsignedProposal(putMessageMatriculation.toJson.getBytes))
+    putMessageMatriculation => Future.successful(createTimedUnsignedProposal(putMessageMatriculation.toJson.getBytes))
 
   /** Returns the ImmatriculationData of a student with the given username */
   override def getMatriculationData(username: String): ServiceCall[NotUsed, ImmatriculationData] = { _ =>

@@ -25,6 +25,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{ Assertion, BeforeAndAfterAll, BeforeAndAfterEach }
 
 import java.nio.file.Path
+import java.util.Base64
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -298,7 +299,7 @@ class OperationServiceSpec extends AsyncWordSpec
       val reason = "Reasons"
       client.getProposalRejectOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke(JsonRejectMessage(reason))
         .map { proposal =>
-          proposal should ===(UnsignedProposal((operation1.operationId + "#" + reason).getBytes()))
+          proposal.unsignedProposal should ===(Base64.getEncoder.encodeToString((operation1.operationId + "#" + reason).getBytes()))
         }
     }
 
@@ -307,10 +308,10 @@ class OperationServiceSpec extends AsyncWordSpec
       val reason = "Reasons"
       client.getProposalRejectOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke(JsonRejectMessage(reason))
         .flatMap { proposal =>
-          client.submitProposal().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposal, "")).flatMap {
+          client.submitProposal().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposalJwt, "")).flatMap {
             unsignedTransaction =>
-              unsignedTransaction should ===(UnsignedTransaction(s"t:${operation1.operationId}#$reason".getBytes()))
-              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransaction, "")).map { _ =>
+              unsignedTransaction.unsignedTransaction should ===(Base64.getEncoder.encodeToString(s"t:${operation1.operationId}#$reason".getBytes()))
+              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransactionJwt, "")).map { _ =>
                 server.application.operationList.find(op => op.operationId == operation1.operationId).get.state should ===(OperationDataState.REJECTED)
               }
           }
@@ -321,10 +322,10 @@ class OperationServiceSpec extends AsyncWordSpec
       prepare(Seq(operation1, operation2, operation3))
       client.getProposalApproveOperation(operation1.operationId).handleRequestHeader(addAuthorizationHeader(admin0)).invoke()
         .flatMap { proposal =>
-          client.submitProposal().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposal, "")).flatMap {
+          client.submitProposal().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedProposal(proposal.unsignedProposalJwt, "")).flatMap {
             unsignedTransaction =>
-              unsignedTransaction should ===(UnsignedTransaction(s"t:${operation1.operationId}".getBytes()))
-              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransaction, "")).map { _ =>
+              unsignedTransaction.unsignedTransaction should ===(Base64.getEncoder.encodeToString(s"t:${operation1.operationId}".getBytes()))
+              client.submitTransaction().handleRequestHeader(addAuthorizationHeader(admin0)).invoke(SignedTransaction(unsignedTransaction.unsignedTransactionJwt, "")).map { _ =>
                 val op = server.application.operationList.find(op => op.operationId == operation1.operationId).get
                 (op.state, op.missingApprovals) should ===(OperationDataState.PENDING, ApprovalList(Seq(), Seq()))
               }

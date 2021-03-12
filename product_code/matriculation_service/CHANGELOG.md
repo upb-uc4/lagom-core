@@ -1,3 +1,9 @@
+# [WIP - v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.17.1...matriculation-v0.19.1) (2021-XX-XX)
+## Feature
+- Added token with expiration date to every getProposal
+## Refactor
+## Bugfix
+
 # [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.15.1...matriculation-v0.17.1) (2021-02-04)
 ## Feature
  - Adapted Matriculation service to Operation 1.1 API

@@ -38,7 +38,7 @@ class MatriculationServiceImpl(
     certificateService: CertificateService,
     operationService: OperationService,
     override val environment: Environment
-)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
+)(implicit ec: ExecutionContext, override val config: Config, materializer: Materializer)
   extends MatriculationService {
 
   /** Looks up the entity for the given ID */
@@ -116,7 +116,7 @@ class MatriculationServiceImpl(
                                   case throwable: Throwable =>
                                     log.error("Exception in addToWatchlist AddEntries", throwable)
                                 }
-                              (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+                              (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedProposal(proposalWrapper.proposal))
                           }.recover(handleException("Creation of add entry proposal failed"))
 
                       }.recoverWith {
@@ -135,7 +135,7 @@ class MatriculationServiceImpl(
                                   case throwable: Throwable =>
                                     log.error("Exception in addToWatchlist AddMatriculationData", throwable)
                                 }
-                              (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedProposal(proposalWrapper.proposal))
+                              (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedProposal(proposalWrapper.proposal))
                           }.recover(handleException("Creation of add matriculation data proposal failed"))
 
                         case uc4Exception: UC4Exception => throw uc4Exception

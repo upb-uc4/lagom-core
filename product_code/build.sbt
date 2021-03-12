@@ -16,7 +16,7 @@ val onlyTests = "test->test"
 // Projects
 lazy val lagom = (project in file("."))
   .settings(commands ++= Commands.all)
-  .aggregate(shared_client, shared_server, hyperledger_component_impl, pdf_processing_api,
+  .aggregate(shared_client, shared_server, hyperledger_component_api, hyperledger_component_impl, pdf_processing_api,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
     configuration_service_api, configuration_service,
@@ -30,7 +30,7 @@ lazy val lagom = (project in file("."))
     admission_service_api, admission_service,
     group_service_api, group_service,
     report_service_api, report_service)
-  .dependsOn(shared_client, shared_server, hyperledger_component_impl, pdf_processing_api,
+  .dependsOn(shared_client, shared_server, hyperledger_component_api, hyperledger_component_impl, pdf_processing_api,
     course_service_api, course_service,
     certificate_service_api, certificate_service,
     configuration_service_api, configuration_service,

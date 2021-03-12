@@ -21,6 +21,7 @@ import de.upb.cs.uc4.operation.model.{ JsonOperationId, JsonRejectMessage }
 import de.upb.cs.uc4.shared.client.exceptions.UC4Exception
 import de.upb.cs.uc4.shared.server.ServiceCallFactory._
 import de.upb.cs.uc4.shared.server.messages.{ Accepted, Confirmation, Rejected }
+import io.jsonwebtoken._
 import play.api.Environment
 
 import scala.concurrent.duration._
@@ -31,7 +32,7 @@ class OperationServiceImpl(
     clusterSharding: ClusterSharding,
     certificateService: CertificateService,
     override val environment: Environment
-)(implicit ec: ExecutionContext, config: Config, materializer: Materializer)
+)(implicit ec: ExecutionContext, override val config: Config, materializer: Materializer)
   extends OperationService {
 
   /** Looks up the entity for the given ID */
@@ -163,8 +164,8 @@ class OperationServiceImpl(
               jsonCertificate.certificate,
               operationId,
               replyTo
-            )).recover(handleException("Approve operation")).map { unsignedProposal =>
-            (ResponseHeader(200, MessageProtocol.empty, List()), unsignedProposal)
+            )).recover(handleException("Approve operation")).map { rawUnsignedProposal =>
+            (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedProposal(rawUnsignedProposal.unsignedProposalBytes))
           }
         }
       }
@@ -181,8 +182,8 @@ class OperationServiceImpl(
               operationId,
               jsonRejectMessage.rejectMessage,
               replyTo
-            )).recover(handleException("Reject operation")).map { unsignedProposal =>
-            (ResponseHeader(200, MessageProtocol.empty, List()), unsignedProposal)
+            )).recover(handleException("Reject operation")).map { rawUnsignedProposal =>
+            (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedProposal(rawUnsignedProposal.unsignedProposalBytes))
           }
         }
       }
@@ -219,8 +220,11 @@ class OperationServiceImpl(
   override def submitProposal(): ServiceCall[SignedProposal, UnsignedTransaction] =
     authenticated[SignedProposal, UnsignedTransaction](AuthenticationRole.All: _*) {
       ServerServiceCall { (_, signedProposal) =>
+
+        checkFrontendSigningToken(signedProposal.unsignedProposalJwt)
+
         entityRef.askWithStatus[Array[Byte]](replyTo => SubmitProposal(signedProposal, replyTo)).map { array =>
-          (ResponseHeader(200, MessageProtocol.empty, List()), UnsignedTransaction(array))
+          (ResponseHeader(200, MessageProtocol.empty, List()), createTimedUnsignedTransaction(array))
         }.recover(handleException("Submit proposal failed"))
       }
     }
@@ -229,6 +233,9 @@ class OperationServiceImpl(
   override def submitTransaction(): ServiceCall[SignedTransaction, Done] =
     authenticated[SignedTransaction, Done](AuthenticationRole.All: _*) {
       ServerServiceCall { (_, signedTransaction) =>
+
+        checkFrontendSigningToken(signedTransaction.unsignedTransactionJwt)
+
         entityRef.askWithStatus[Confirmation](replyTo => SubmitTransaction(signedTransaction, replyTo)).map {
           case Accepted(_) =>
             (ResponseHeader(202, MessageProtocol.empty, List()), Done)
@@ -237,6 +244,26 @@ class OperationServiceImpl(
         }.recover(handleException("Submit transaction failed"))
       }
     }
+
+  protected def checkFrontendSigningToken(token: String): Unit = {
+    try {
+      val claims = Jwts.parser().setSigningKey(jwtKey).parseClaimsJws(token).getBody
+      val subject = claims.getSubject
+
+      if (subject != "timed") {
+        throw UC4Exception.MalformedFrontendSigningToken
+      }
+    }
+    catch {
+      case _: ExpiredJwtException      => throw UC4Exception.FrontendSigningTokenExpired
+      case _: UnsupportedJwtException  => throw UC4Exception.MalformedFrontendSigningToken
+      case _: MalformedJwtException    => throw UC4Exception.MalformedFrontendSigningToken
+      case _: SignatureException       => throw UC4Exception.FrontendSigningTokenSignatureError
+      case _: IllegalArgumentException => throw UC4Exception.MalformedFrontendSigningToken
+      case ue: UC4Exception            => throw ue
+      case ex: Throwable               => throw UC4Exception.InternalServerError("Failed to verify FrontendSigningToken", ex.getMessage, ex)
+    }
+  }
 
   /** Allows GET */
   override def allowedGet: ServiceCall[NotUsed, Done] = allowedMethodsCustom("GET")

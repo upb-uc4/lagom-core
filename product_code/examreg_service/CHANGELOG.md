@@ -1,3 +1,9 @@
+# [WIP - v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.16.1...examreg-v0.19.1) (2021-XX-XX)
+## Feature
+- Update to HLF-API v0.18.0
+## Refactor
+## Bugfix
+
 # [v0.16.1](https://github.com/upb-uc4/University-Credits-4.0/compare/examreg-v0.16.0...examreg-v0.16.1) (2021-01-28)
 ## Feature
 ## Refactor
