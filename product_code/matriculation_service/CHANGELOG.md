@@ -1,4 +1,4 @@
-# [WIP v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.17.1...matriculation-v0.19.1) (2021-XX-XX)
+# [WIP - v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/matriculation-v0.17.1...matriculation-v0.19.1) (2021-XX-XX)
 ## Feature
 - Added token with expiration date to every getProposal
 ## Refactor
