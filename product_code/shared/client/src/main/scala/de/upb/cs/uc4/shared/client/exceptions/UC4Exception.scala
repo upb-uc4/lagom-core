@@ -39,7 +39,6 @@ object UC4Exception {
   val BasicAuthorizationError = new UC4NonCriticalException(401, GenericError(ErrorType.BasicAuthorization))
   val RefreshTokenExpired = new UC4NonCriticalException(401, GenericError(ErrorType.RefreshTokenExpired))
   val LoginTokenExpired = new UC4NonCriticalException(401, GenericError(ErrorType.LoginTokenExpired))
-  val FrontendSigningTokenExpired = new UC4NonCriticalException(401, GenericError(ErrorType.FrontendSigningTokenExpired))
   //403
   val NotEnoughPrivileges = new UC4NonCriticalException(403, GenericError(ErrorType.NotEnoughPrivileges))
   val OwnerMismatch = new UC4NonCriticalException(403, GenericError(ErrorType.OwnerMismatch))
@@ -58,6 +57,7 @@ object UC4Exception {
   val RefreshTokenSignatureError = new UC4NonCriticalException(422, GenericError(ErrorType.RefreshTokenSignatureInvalid))
   val LoginTokenSignatureError = new UC4NonCriticalException(422, GenericError(ErrorType.LoginTokenSignatureInvalid))
   val FrontendSigningTokenSignatureError = new UC4NonCriticalException(422, GenericError(ErrorType.FrontendSigningTokenSignatureInvalid))
+  val FrontendSigningTokenExpired = new UC4NonCriticalException(422, GenericError(ErrorType.FrontendSigningTokenExpired))
   //428
   val PreconditionRequired = new UC4NonCriticalException(428, GenericError(ErrorType.PreconditionRequired))
   //500
