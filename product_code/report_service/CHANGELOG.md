@@ -1,3 +1,9 @@
+# [WIP - v0.19.2](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.19.1...report-v0.19.2) (2021-XX-XX)
+## Feature
+- Added endpoint for fetching a pdf with the transcription of records
+## Refactor
+## Bugfix
+
 # [v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/report-v0.17.2...report-v0.19.1) (2021-03-03)
 ## Feature
  - Added exams to lecturer report

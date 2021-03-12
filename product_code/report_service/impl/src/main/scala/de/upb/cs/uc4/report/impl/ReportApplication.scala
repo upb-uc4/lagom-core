@@ -14,6 +14,7 @@ import de.upb.cs.uc4.admission.api.AdmissionService
 import de.upb.cs.uc4.certificate.api.CertificateService
 import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.exam.api.ExamService
+import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examresult.api.ExamResultService
 import de.upb.cs.uc4.matriculation.api.MatriculationService
 import de.upb.cs.uc4.operation.api.OperationService
@@ -49,6 +50,7 @@ abstract class ReportApplication(context: LagomApplicationContext)
   lazy val certificateService: CertificateService = serviceClient.implement[CertificateService]
   lazy val admissionService: AdmissionService = serviceClient.implement[AdmissionService]
   lazy val operationService: OperationService = serviceClient.implement[OperationService]
+  lazy val examregService: ExamregService = serviceClient.implement[ExamregService]
   lazy val examService: ExamService = serviceClient.implement[ExamService]
   lazy val examResultService: ExamResultService = serviceClient.implement[ExamResultService]
   lazy val pdfService: PdfProcessingService = serviceClient.implement[PdfProcessingService]

@@ -16,6 +16,7 @@ import de.upb.cs.uc4.course.api.CourseService
 import de.upb.cs.uc4.course.model.Course
 import de.upb.cs.uc4.exam.api.ExamService
 import de.upb.cs.uc4.exam.model.Exam
+import de.upb.cs.uc4.examreg.api.ExamregService
 import de.upb.cs.uc4.examresult.api.ExamResultService
 import de.upb.cs.uc4.examresult.model.ExamResultEntry
 import de.upb.cs.uc4.matriculation.api.MatriculationService
@@ -42,6 +43,8 @@ import play.api.libs.json.Json
 import java.io.{ ByteArrayInputStream, File, FileWriter }
 import java.nio.charset.StandardCharsets
 import java.nio.file.{ Files, Paths }
+import java.time.ZonedDateTime
+import java.time.format.{ DateTimeFormatter, FormatStyle }
 import java.util.{ Base64, Calendar }
 import javax.imageio.ImageIO
 import scala.concurrent.duration._
@@ -61,6 +64,7 @@ class ReportServiceImpl(
     operationService: OperationService,
     examService: ExamService,
     examResultService: ExamResultService,
+    examregService: ExamregService,
     pdfService: PdfProcessingService,
     override val environment: Environment
 )(implicit ec: ExecutionContext, config: Config, timeout: Timeout) extends ReportService {
@@ -97,6 +101,33 @@ class ReportServiceImpl(
     case Success(html) => html
     case Failure(ex) =>
       log.error("Error when trying to load certificateEnrollmentHtml", ex)
+      ""
+  }
+
+  private lazy val absoluteTranscriptOfRecordsHtml = new File(
+    Try {
+      config.getString("uc4.pdf.transcriptOfRecordsHtml")
+    } match {
+      case Success(path) => path
+      case Failure(ex) =>
+        log.error("Absolut path to transcriptOfRecordsHtml invalid or not defined", ex)
+        ""
+    }
+  )
+
+  lazy val transcriptOfRecordsHtml: String = Try {
+    if (absoluteTranscriptOfRecordsHtml.exists()) {
+      Using(Source.fromFile(absoluteTranscriptOfRecordsHtml)) { source =>
+        source.getLines().mkString("\n")
+      }.getOrElse("")
+    }
+    else {
+      Source.fromResource("recordTranscript.html").getLines().mkString("\n")
+    }
+  } match {
+    case Success(html) => html
+    case Failure(ex) =>
+      log.error("Error when trying to load transcriptOfRecordsHtml", ex)
       ""
   }
 
@@ -383,6 +414,7 @@ class ReportServiceImpl(
               pdf = pdf.replace("{address}", config.getString("uc4.pdf.address").replace("\n", "<br>"))
               pdf = pdf.replace("{organization}", config.getString("uc4.pdf.organization"))
               pdf = pdf.replace("{semesterCount}", data.matriculationStatus.flatMap(_.semesters).distinct.size.toString)
+              pdf = pdf.replace("{date}", ZonedDateTime.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
 
               pdf = pdf.replace("{subjectList}", data.matriculationStatus.filter(_.semesters.contains(semester))
                 .map(subj => s"<li>${subj.fieldOfStudy} (${subj.semesters.size})</li>").mkString("\n"))
@@ -394,6 +426,103 @@ class ReportServiceImpl(
               }
             }
           }
+        }
+    }
+
+  /** Returns a pdf with the transcript of records */
+  def getTranscriptOfRecords(username: String, examRegName: Option[String]): ServiceCall[NotUsed, ByteString] =
+    identifiedAuthenticated(AuthenticationRole.Student) {
+      (authUsername, _) =>
+        ServerServiceCall { (header, _) =>
+          if (authUsername != username) {
+            throw UC4Exception.OwnerMismatch
+          }
+          if (examRegName.isEmpty) {
+            throw UC4Exception.QueryParameterError(SimpleError("exam_reg_name", "Query parameter must be set"))
+          }
+          var pdf = transcriptOfRecordsHtml
+
+          val futureFuture = for {
+            user <- userService.getUser(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+            examRegs <- examregService.getExaminationRegulations(examRegName, None).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+            examResults <- examResultService.getExamResults(Some(username), None).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+            matriculationData <- matriculationService.getMatriculationData(username).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+            enrollmentIds <- certificateService.getEnrollmentIds(Some(username)).handleRequestHeader(addAuthenticationHeader(header)).invoke()
+          } yield {
+            val examIdsToEntry = examResults.groupBy(_.examId).map {
+              case (id, results) => (id, results.head)
+            }
+            val examReg = examRegs.filter(_.name == examRegName.get).head
+
+            examService.getExams(Some(examResults.map(_.examId).mkString(",")), None, None, None, None, None, None)
+              .handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { fetchedExams =>
+
+                val exams = if (examResults.isEmpty) {
+                  Seq()
+                }
+                else {
+                  fetchedExams
+                }
+
+                val examIdToExam = exams.groupBy(_.examId).map {
+                  case (moduleId, exams) => (moduleId, exams.head)
+                }
+                val moduleIdToEntries = exams.groupBy(_.moduleId).map {
+                  case (moduleId, exams) => (moduleId, exams.map(exam => examIdsToEntry.get(exam.examId)).filter(_.isDefined).map(_.get))
+                }
+
+                courseService.getAllCourses(None, None, Some(exams.map(_.moduleId).mkString(",")), examRegName)
+                  .handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap { courses =>
+
+                    val examIdToCourse = examIdToExam.map {
+                      case (id, exam) => (id, courses.filter(_.courseId == exam.courseId).head)
+                    }
+
+                    examregService.getModules(Some(examReg.modules.map(_.id).mkString(",")), None).handleRequestHeader(addAuthenticationHeader(header)).invoke().flatMap {
+                      modules =>
+
+                        val moduleIdToName = modules.groupBy(_.id).map {
+                          case (id, modules) => (id, modules.head.name)
+                        }
+
+                        val tableContent = examReg.modules.map(_.id).map { id =>
+                          s"""<tr class="border border-black bg-tr">
+                         |  <td class="pl-4">$id: ${moduleIdToName(id)}</td>
+                         |  <td></td>
+                         |  <td></td>
+                         |</tr>""".stripMargin +
+                            moduleIdToEntries.get(id).map {
+                              entries =>
+                                entries.map { entry =>
+                                  s"""<tr>
+                                 |  <td class="border border-black pl-8">${examIdToCourse(entry.examId).courseName}</td>
+                                 |  <td class="text-center border border-black">${examIdToExam(entry.examId).ects}</td>
+                                 |  <td class="text-center border border-black">${entry.grade}</td>
+                                 |</tr>""".stripMargin
+                                }.mkString("\n")
+                            }.getOrElse("")
+                        }.mkString("\n")
+
+                        pdf = pdf.replace("{studentName}", s"${user.firstName} ${user.lastName}")
+                        pdf = pdf.replace("{matriculationId}", user.asInstanceOf[Student].matriculationId)
+                        pdf = pdf.replace("{examReg}", examRegName.get)
+                        pdf = pdf.replace("{semesters}", matriculationData.matriculationStatus.filter(_.fieldOfStudy == examRegName.get).flatMap(_.semesters).distinct.size.toString)
+                        pdf = pdf.replace("{tableContent}", tableContent)
+                        pdf = pdf.replace("{enrollmentId}", enrollmentIds.head.enrollmentId)
+                        pdf = pdf.replace("{ectsSum}", exams.map(_.ects).sum.toString)
+                        pdf = pdf.replace("{date}", ZonedDateTime.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
+                        pdf = pdf.replace("{organization}", config.getString("uc4.pdf.organization"))
+
+                        pdfService.convertHtml().invoke(PdfProcessor(pdf)).map { pdfBytes =>
+                          val output = signatureService.signPdf(pdfBytes.toArray)
+
+                          (ResponseHeader(200, MessageProtocol(contentType = Some("application/pdf")), List()), ByteString(output))
+                        }
+                    }
+                  }
+              }
+          }
+          futureFuture.flatMap(future => future)
         }
     }
 
