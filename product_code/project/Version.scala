@@ -2,20 +2,20 @@
 object Version {
 
   private val versions: Map[String, String] = Map(
-    "admission_service" -> "v0.19.2",
-    "authentication_service" -> "v0.18.0",
-    "certificate_service" -> "v0.19.1",
-    "configuration_service" -> "v0.19.1",
-    "course_service" -> "v0.17.1",
-    "exam_service" -> "v0.19.2",
-    "examreg_service" -> "v0.19.1",
-    "examresult_service" -> "v0.19.2",
-    "group_service" -> "v0.19.1",
+    "admission_service" -> "v1.0.0",
+    "authentication_service" -> "v1.0.0",
+    "certificate_service" -> "v1.0.0",
+    "configuration_service" -> "v1.0.0",
+    "course_service" -> "v1.0.0",
+    "exam_service" -> "v1.0.0",
+    "examreg_service" -> "v1.0.0",
+    "examresult_service" -> "v1.0.0",
+    "group_service" -> "v1.0.0",
     "hyperledger_api" -> "0.18.0",
-    "matriculation_service" -> "v0.19.1",
-    "operation_service" -> "v0.19.2",
-    "user_service" -> "v0.17.1",
-    "report_service" -> "v0.19.2"
+    "matriculation_service" -> "v1.0.0",
+    "operation_service" -> "v1.0.0",
+    "user_service" -> "v1.0.0",
+    "report_service" -> "v1.0.0"
   )
 
   /** Returns the version of a project

@@ -1,3 +1,8 @@
+# [v1.0.0](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.17.1...course-v1.0.0) (2021-03-15)
+## Feature
+## Refactor
+## Bugfix
+
 # [v0.17.1](https://github.com/upb-uc4/University-Credits-4.0/compare/course-v0.16.1...course-v0.17.1) (2021-02-12)
 ## Feature
 ## Refactor

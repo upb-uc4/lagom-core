@@ -1,4 +1,4 @@
-# [WIP - v0.19.1](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.18.1...certificate-v0.19.1) (2021-XX-XX)
+# [v1.0.0](https://github.com/upb-uc4/University-Credits-4.0/compare/certificate-v0.18.1...certificate-v1.0.0) (2021-03-15)
 ## Feature
  - Update to HLF-API v0.18.0
 ## Refactor
