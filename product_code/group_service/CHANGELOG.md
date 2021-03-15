@@ -1,4 +1,4 @@
-# [v1.0.0](https://github.com/upb-uc4/University-Credits-4.0/compare/group-v0.18.1...group-v1.0.0) (2021-03-15)
+# [v1.0.0](https://github.com/upb-uc4/University-Credits-4.0/compare/group-v0.16.1...group-v1.0.0) (2021-03-15)
 ## Feature
 - Update to HLF-API v0.18.0
 ## Refactor

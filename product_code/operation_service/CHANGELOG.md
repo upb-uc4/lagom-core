@@ -3,7 +3,7 @@
 - Added token with expiration date to every getProposal
 - Added token with expiration date to every getTransaction
 - Added check with expiration date to submitProposal
-- Added token with expiration date to submitTransaction
+- Added check with expiration date to submitTransaction
 ## Refactor
 ## Bugfix
 
