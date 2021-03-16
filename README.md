@@ -52,7 +52,7 @@ Use following command:
 ```shell script
 sbt runAll
 ````
-If you don\'t have sbt installed, you need to install [sbt](https://github.com/upb-uc4/lagom-core/develop/documentation/lagom-development.md).
+If you don\'t have sbt installed, you need to install [sbt](https://www.scala-sbt.org/).
 
 ### Errors
 If you encounter any unexpected errors, use following command:
@@ -96,7 +96,7 @@ File
 ````
 
 ## Maintain and extend
-In case you want to maintain or extend our lagom backend consult the [handbook](https://www.scala-sbt.org/).
+In case you want to maintain or extend our lagom backend consult the [handbook](https://github.com/upb-uc4/lagom-core/develop/documentation/lagom-development.md).
 
 ## License
 
