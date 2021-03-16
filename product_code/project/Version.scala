@@ -11,7 +11,7 @@ object Version {
     "examreg_service" -> "v1.0.0",
     "examresult_service" -> "v1.0.0",
     "group_service" -> "v1.0.0",
-    "hyperledger_api" -> "0.18.0",
+    "hyperledger_api" -> "1.0.0",
     "matriculation_service" -> "v1.0.0",
     "operation_service" -> "v1.0.0",
     "user_service" -> "v1.0.0",
