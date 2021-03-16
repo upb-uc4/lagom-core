@@ -96,7 +96,7 @@ File
 ````
 
 ## Maintain and extend
-In case you want to maintain or extend our lagom backend consult the [handbook](https://github.com/upb-uc4/lagom-core/develop/documentation/lagom-development.md).
+In case you want to maintain or extend our lagom backend consult the [handbook](https://github.com/upb-uc4/lagom-core/blob/develop/documentation/lagom-development.md).
 
 ## License
 
