@@ -13,6 +13,7 @@
   * [Change settings of postgres](#change-settings-of-postgres)
   * [Dependecies of the different services](#dependecies-of-the-different-services)
   * [Running tests in IntelliJ](#running-tests-in-intellij)
+  * [Maintain and extend](#maintain-and-extend)
   * [License](#license)
 
 ---
@@ -51,7 +52,7 @@ Use following command:
 ```shell script
 sbt runAll
 ````
-If you don\'t have sbt installed, you need to install [sbt](https://www.scala-sbt.org/).
+If you don\'t have sbt installed, you need to install [sbt](https://github.com/upb-uc4/lagom-core/develop/documentation/lagom-development.md).
 
 ### Errors
 If you encounter any unexpected errors, use following command:
@@ -93,6 +94,9 @@ File
         - sbt
           [ ] Maximum Heap Size (MB) [  512  ]
 ````
+
+## Maintain and extend
+In case you want to maintain or extend our lagom backend consult the [handbook](https://www.scala-sbt.org/).
 
 ## License
 
